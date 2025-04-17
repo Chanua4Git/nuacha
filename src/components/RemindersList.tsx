@@ -35,11 +35,11 @@ const RemindersList = () => {
             const dueDate = parseISO(reminder.dueDate);
             const daysLeft = differenceInDays(dueDate, today);
             
-            let status: 'warning' | 'default' | 'destructive' = 'default';
+            let status: 'default' | 'destructive' | 'outline' | 'secondary' = 'default';
             if (daysLeft <= 0) {
               status = 'destructive';
             } else if (daysLeft <= 3) {
-              status = 'warning';
+              status = 'secondary';
             }
             
             return (

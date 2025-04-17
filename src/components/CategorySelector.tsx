@@ -7,7 +7,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
-import { tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { Category } from '@/data/mockData';
 
 interface CategorySelectorProps {
@@ -31,7 +31,7 @@ const CategorySelector = ({ value, onChange }: CategorySelectorProps) => {
   return (
     <div className="mb-4">
       <div className="flex items-center mb-2">
-        <tag className="h-4 w-4 mr-2 text-muted-foreground" />
+        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
         <label className="text-sm font-medium">Category</label>
       </div>
       <Select

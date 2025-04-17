@@ -7,7 +7,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
-import { users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 const FamilySelector = () => {
   const { families, selectedFamily, setSelectedFamily } = useExpense();
@@ -15,7 +15,7 @@ const FamilySelector = () => {
   return (
     <div className="mb-6">
       <div className="flex items-center mb-2">
-        <users className="h-5 w-5 mr-2 text-muted-foreground" />
+        <Users className="h-5 w-5 mr-2 text-muted-foreground" />
         <h2 className="text-lg font-medium">Select Family</h2>
       </div>
       <Select
