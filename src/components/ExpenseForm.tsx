@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useExpense } from '@/context/ExpenseContext';
 import CategorySelector from './CategorySelector';
+import ReceiptUpload from './ReceiptUpload';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -24,8 +24,24 @@ const ExpenseForm = () => {
   const [needsReplacement, setNeedsReplacement] = useState(false);
   const [replacementFrequency, setReplacementFrequency] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = (file: File) => {
+    setReceiptImage(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  const handleImageRemove = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setReceiptImage(null);
+    setImagePreview(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedFamily) {
@@ -43,6 +59,13 @@ const ExpenseForm = () => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       
+      let receiptUrl: string | undefined;
+      if (receiptImage) {
+        // For now, we'll just store the image preview URL
+        // In a real app, you would upload this to a storage service
+        receiptUrl = imagePreview || undefined;
+      }
+      
       // Calculate next replacement date if needed
       let nextReplacementDate: string | undefined;
       if (needsReplacement && replacementFrequency) {
@@ -58,9 +81,10 @@ const ExpenseForm = () => {
         category,
         date: formattedDate,
         place,
-        needsReplacement: needsReplacement,
+        needsReplacement,
         replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
-        nextReplacementDate
+        nextReplacementDate,
+        receiptUrl
       });
       
       // Reset form
@@ -71,6 +95,7 @@ const ExpenseForm = () => {
       setPlace('');
       setNeedsReplacement(false);
       setReplacementFrequency('');
+      handleImageRemove();
       
     } catch (error) {
       console.error('Error adding expense:', error);
@@ -87,6 +112,15 @@ const ExpenseForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="receipt">Receipt Image</Label>
+            <ReceiptUpload
+              onImageUpload={handleImageUpload}
+              onImageRemove={handleImageRemove}
+              imagePreview={imagePreview}
+            />
+          </div>
+
           <div>
             <Label htmlFor="amount">Amount ($)</Label>
             <Input

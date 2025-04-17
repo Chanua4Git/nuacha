@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Family {
@@ -25,6 +24,7 @@ export interface Expense {
   needsReplacement?: boolean;
   replacementFrequency?: number; // in days
   nextReplacementDate?: string;
+  receiptUrl?: string; // New field for receipt image URL
 }
 
 export interface Reminder {
