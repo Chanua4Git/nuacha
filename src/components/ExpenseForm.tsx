@@ -1,18 +1,16 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import { useExpense } from '@/context/ExpenseContext';
+import { format } from 'date-fns';
 import CategorySelector from './CategorySelector';
 import ReceiptUpload from './ReceiptUpload';
+import AmountInput from './expense-form/AmountInput';
+import DescriptionInput from './expense-form/DescriptionInput';
+import DateSelector from './expense-form/DateSelector';
+import PlaceInput from './expense-form/PlaceInput';
+import ReplacementSection from './expense-form/ReplacementSection';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -61,12 +59,9 @@ const ExpenseForm = () => {
       
       let receiptUrl: string | undefined;
       if (receiptImage) {
-        // For now, we'll just store the image preview URL
-        // In a real app, you would upload this to a storage service
         receiptUrl = imagePreview || undefined;
       }
       
-      // Calculate next replacement date if needed
       let nextReplacementDate: string | undefined;
       if (needsReplacement && replacementFrequency) {
         const nextDate = new Date(date);
@@ -113,7 +108,6 @@ const ExpenseForm = () => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="receipt">Receipt Image</Label>
             <ReceiptUpload
               onImageUpload={handleImageUpload}
               onImageRemove={handleImageRemove}
@@ -121,105 +115,38 @@ const ExpenseForm = () => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="amount">Amount ($)</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
+          <AmountInput 
+            value={amount}
+            onChange={setAmount}
+          />
           
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="What was this expense for?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
+          <DescriptionInput
+            value={description}
+            onChange={setDescription}
+          />
           
           <CategorySelector
             value={category}
             onChange={setCategory}
           />
           
-          <div>
-            <Label htmlFor="date">Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal mt-1",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <DateSelector
+            date={date}
+            onSelect={setDate}
+          />
           
-          <div>
-            <Label htmlFor="place">Place</Label>
-            <Input
-              id="place"
-              placeholder="Where was this expense made?"
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
+          <PlaceInput
+            value={place}
+            onChange={setPlace}
+          />
           
           {selectedFamily?.id === '1' && (
-            <div className="space-y-4 pt-2 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="needs-replacement">Needs Replacement</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Will this item need to be replaced in the future?
-                  </p>
-                </div>
-                <Switch
-                  id="needs-replacement"
-                  checked={needsReplacement}
-                  onCheckedChange={setNeedsReplacement}
-                />
-              </div>
-              
-              {needsReplacement && (
-                <div>
-                  <Label htmlFor="replacement-frequency">Replacement Frequency (days)</Label>
-                  <Input
-                    id="replacement-frequency"
-                    type="number"
-                    placeholder="e.g., 30, 90, 180"
-                    value={replacementFrequency}
-                    onChange={(e) => setReplacementFrequency(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              )}
-            </div>
+            <ReplacementSection
+              needsReplacement={needsReplacement}
+              replacementFrequency={replacementFrequency}
+              onNeedsReplacementChange={setNeedsReplacement}
+              onFrequencyChange={setReplacementFrequency}
+            />
           )}
         </CardContent>
         <CardFooter>
