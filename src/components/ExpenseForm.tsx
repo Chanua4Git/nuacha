@@ -11,6 +11,7 @@ import DescriptionInput from './expense-form/DescriptionInput';
 import DateSelector from './expense-form/DateSelector';
 import PlaceInput from './expense-form/PlaceInput';
 import ReplacementSection from './expense-form/ReplacementSection';
+import { toast } from 'sonner';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -39,16 +40,25 @@ const ExpenseForm = () => {
     setImagePreview(null);
   };
 
+  const handleOcrData = (data: any) => {
+    if (data.amount) setAmount(data.amount);
+    if (data.description) setDescription(data.description);
+    if (data.place) setPlace(data.place);
+    if (data.date) setDate(data.date);
+    
+    // Don't set category automatically as it needs user judgment
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedFamily) {
-      alert('Please select a family first');
+      toast.error('Please select a family first');
       return;
     }
     
     if (!amount || !description || !category || !date || !place) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     
@@ -92,9 +102,11 @@ const ExpenseForm = () => {
       setReplacementFrequency('');
       handleImageRemove();
       
+      toast.success('Expense added successfully');
+      
     } catch (error) {
       console.error('Error adding expense:', error);
-      alert('An error occurred while adding the expense');
+      toast.error('An error occurred while adding the expense');
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +123,7 @@ const ExpenseForm = () => {
             <ReceiptUpload
               onImageUpload={handleImageUpload}
               onImageRemove={handleImageRemove}
+              onDataExtracted={handleOcrData}
               imagePreview={imagePreview}
             />
           </div>

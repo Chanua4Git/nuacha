@@ -1,17 +1,26 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Receipt, Image as ImageIcon, X } from 'lucide-react';
+import { Receipt, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { extractReceiptData } from '@/utils/receiptOcr';
+import { toast } from 'sonner';
 
 interface ReceiptUploadProps {
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
+  onDataExtracted: (data: any) => void;
   imagePreview: string | null;
 }
 
-const ReceiptUpload = ({ onImageUpload, onImageRemove, imagePreview }: ReceiptUploadProps) => {
+const ReceiptUpload = ({ 
+  onImageUpload, 
+  onImageRemove, 
+  onDataExtracted,
+  imagePreview 
+}: ReceiptUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -22,20 +31,36 @@ const ReceiptUpload = ({ onImageUpload, onImageRemove, imagePreview }: ReceiptUp
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      onImageUpload(file);
+      await processReceiptImage(file);
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onImageUpload(file);
+      await processReceiptImage(file);
+    }
+  };
+
+  const processReceiptImage = async (file: File) => {
+    onImageUpload(file);
+    
+    setIsProcessing(true);
+    try {
+      const extractedData = await extractReceiptData(file);
+      onDataExtracted(extractedData);
+      toast.success('Receipt processed successfully');
+    } catch (error) {
+      console.error('Error processing receipt:', error);
+      toast.error('Failed to process receipt automatically');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -65,6 +90,7 @@ const ReceiptUpload = ({ onImageUpload, onImageRemove, imagePreview }: ReceiptUp
                 <span className="font-medium text-primary">Click to upload</span> or drag and drop
               </div>
               <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+              <p className="text-xs text-muted-foreground">We'll automatically extract receipt details</p>
             </div>
           </label>
         </div>
@@ -80,9 +106,19 @@ const ReceiptUpload = ({ onImageUpload, onImageRemove, imagePreview }: ReceiptUp
             size="icon"
             className="absolute -top-2 -right-2 h-6 w-6"
             onClick={onImageRemove}
+            disabled={isProcessing}
           >
             <X className="h-4 w-4" />
           </Button>
+          
+          {isProcessing && (
+            <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
+              <div className="bg-white p-4 rounded-md flex flex-col items-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm font-medium">Processing receipt...</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
