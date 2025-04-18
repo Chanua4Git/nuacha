@@ -1,17 +1,26 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthProvider';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      const intendedPath = localStorage.getItem('intendedPath') || '/';
+      localStorage.removeItem('intendedPath');
+      navigate(intendedPath);
+    }
+  }, [user, navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +53,8 @@ const Signup = () => {
         description: "Welcome to Nuacha. Your account has been created successfully."
       });
       
-      // For development, navigate to login
-      navigate('/login');
+      // Keep user on signup page until email is verified
+      // They will be redirected once verified through the auth state change
     } catch (error: any) {
       console.error('Signup error:', error);
       toast("Something didn't go as planned", {
