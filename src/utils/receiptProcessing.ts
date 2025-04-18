@@ -135,7 +135,7 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
 /**
  * Calls the Supabase Edge Function for OCR processing
  */
-async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
+export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
     // Add timestamp to help avoid caching issues
     const timestamp = new Date().getTime();
