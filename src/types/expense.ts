@@ -19,4 +19,5 @@ export interface OCRResult {
   description?: string;
   place?: string;
   confidence?: number;
+  error?: string;  // Added error property
 }
