@@ -16,7 +16,10 @@ async function convertHeicToJpeg(file: File): Promise<File> {
         quality: 0.8
       });
       
-      return new File([jpegBlob], file.name.replace(/\.heic$/i, '.jpg'), {
+      // Handle both possible return types from heic2any (Blob or Blob[])
+      const singleBlob = Array.isArray(jpegBlob) ? jpegBlob[0] : jpegBlob;
+      
+      return new File([singleBlob], file.name.replace(/\.heic$/i, '.jpg'), {
         type: 'image/jpeg'
       });
     } catch (error) {
