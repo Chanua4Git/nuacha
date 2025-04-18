@@ -16,9 +16,9 @@ const Index = () => {
         
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Household Expense Tracker</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Calm, mindful financial entries</h1>
             <p className="text-muted-foreground mt-1">
-              Track and manage expenses across multiple families
+              A softer way to track spending across families
             </p>
           </div>
           

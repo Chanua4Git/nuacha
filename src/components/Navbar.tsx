@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X } from 'lucide-react';
@@ -23,7 +22,7 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
         <div className="flex items-center">
           <h1 className="text-xl font-bold">
-            Household Insight
+            Nuacha
             {selectedFamily && (
               <span 
                 className="ml-2 text-sm font-medium px-2 py-1 rounded-full" 

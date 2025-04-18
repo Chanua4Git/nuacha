@@ -55,10 +55,12 @@ const ReceiptUpload = ({
     try {
       const extractedData = await extractReceiptData(file);
       onDataExtracted(extractedData);
-      toast.success('Receipt processed successfully');
+      toast.success('Receipt details gently applied');
     } catch (error) {
       console.error('Error processing receipt:', error);
-      toast.error('Failed to process receipt automatically');
+      toast("We couldn't read all the details", {
+        description: "You can still add the information yourself when you're ready."
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -87,10 +89,10 @@ const ReceiptUpload = ({
             <div className="flex flex-col items-center gap-2">
               <Receipt className="h-8 w-8 text-gray-400" />
               <div className="text-sm text-gray-600">
-                <span className="font-medium text-primary">Click to upload</span> or drag and drop
+                <span className="font-medium text-primary">Add a receipt</span> or gently drop it here
               </div>
               <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
-              <p className="text-xs text-muted-foreground">We'll automatically extract receipt details</p>
+              <p className="text-xs text-muted-foreground">We'll help fill in the details from your receipt</p>
             </div>
           </label>
         </div>
@@ -115,7 +117,7 @@ const ReceiptUpload = ({
             <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
               <div className="bg-white p-4 rounded-md flex flex-col items-center gap-2">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-sm font-medium">Processing receipt...</p>
+                <p className="text-sm font-medium">Reading your receipt...</p>
               </div>
             </div>
           )}

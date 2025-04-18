@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +57,9 @@ const ExpenseForm = () => {
     }
     
     if (!amount || !description || !category || !date || !place) {
-      toast.error('Please fill in all required fields');
+      toast("Let's fill in all the details before we save this expense", {
+        description: "Some information is still needed to help track this expense properly."
+      });
       return;
     }
     
@@ -102,11 +103,13 @@ const ExpenseForm = () => {
       setReplacementFrequency('');
       handleImageRemove();
       
-      toast.success('Expense added successfully');
+      toast.success("All set. You're doing beautifully.");
       
     } catch (error) {
       console.error('Error adding expense:', error);
-      toast.error('An error occurred while adding the expense');
+      toast("Something didn't go as planned", {
+        description: "We weren't able to save your expense. Would you like to try again?"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -115,7 +118,7 @@ const ExpenseForm = () => {
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">Add New Expense</CardTitle>
+        <CardTitle className="text-xl font-semibold">Ready to gently log today's spending?</CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -168,7 +171,7 @@ const ExpenseForm = () => {
             className="w-full"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Adding...' : 'Add Expense'}
+            {isSubmitting ? 'Saving...' : 'Save expense'}
           </Button>
         </CardFooter>
       </form>
