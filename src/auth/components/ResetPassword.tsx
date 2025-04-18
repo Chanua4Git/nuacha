@@ -18,18 +18,17 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
+  const isSettingNewPassword = !!token;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const isSettingNewPassword = !!token;
-
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
-      toast('We need your email address', {
+      toast("Let's fill in your email", {
         description: 'Please enter the email address associated with your account.',
       });
       return;
@@ -68,7 +67,7 @@ const ResetPassword = () => {
     }
 
     if (password.length < 6) {
-      toast('Your password needs to be a bit longer', {
+      toast('Password is too short', {
         description: 'For your security, please use at least 6 characters.',
       });
       return;
@@ -77,9 +76,7 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabaseClient.auth.updateUser({
-        password,
-      });
+      const { error } = await supabaseClient.auth.updateUser({ password });
 
       if (error) throw error;
 
@@ -110,11 +107,14 @@ const ResetPassword = () => {
             : "We'll send you a link to reset your password"}
         </CardDescription>
       </CardHeader>
+
       <form onSubmit={isSettingNewPassword ? handleUpdatePassword : handleSendResetLink}>
         <CardContent className="space-y-4">
           {isSettingNewPassword ? (
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">New Password</label>
+              <label htmlFor="password" className="text-sm font-medium">
+                New Password
+              </label>
               <Input
                 id="password"
                 type="password"
@@ -128,7 +128,9 @@ const ResetPassword = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
               <Input
                 id="email"
                 type="email"
@@ -140,12 +142,9 @@ const ResetPassword = () => {
             </div>
           )}
         </CardContent>
+
         <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading
               ? (isSettingNewPassword ? 'Updating...' : 'Sending...')
               : (isSettingNewPassword ? 'Update password' : 'Send reset link')}
