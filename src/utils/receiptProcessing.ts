@@ -1,6 +1,7 @@
 
 import { OCRResult } from '@/types/expense';
 import { supabaseClient } from '@/auth/utils/supabaseClient';
+import { toast } from 'sonner';
 
 /**
  * Uploads a receipt image to Supabase storage
@@ -19,6 +20,9 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
     
     if (error) {
       console.error('Error uploading receipt:', error);
+      toast.error("We couldn't save your receipt", {
+        description: "There was a problem uploading the image. Please try again."
+      });
       return null;
     }
     
@@ -30,6 +34,9 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
     return publicUrl;
   } catch (error) {
     console.error('Error in receipt upload:', error);
+    toast.error("Something went wrong", {
+      description: "We encountered an unexpected error while processing your receipt."
+    });
     return null;
   }
 }
@@ -48,7 +55,10 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     // Upload the receipt to Supabase storage
     const receiptUrl = await uploadReceiptToStorage(file, session.user.id);
     if (!receiptUrl) {
-      throw new Error('Failed to upload receipt');
+      return {
+        confidence: 0.1,
+        error: 'Failed to upload receipt'
+      };
     }
     
     // Call the Supabase Edge Function to process the receipt
@@ -56,9 +66,15 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
   } catch (error) {
     console.error('Error in processReceiptImage:', error);
     
+    // Provide more detailed error feedback
+    toast.error("Receipt processing failed", {
+      description: "We couldn't extract details from your receipt. Please try again or enter details manually."
+    });
+    
     // Return a minimal result with low confidence to indicate failure
     return {
-      confidence: 0.1
+      confidence: 0.1,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -74,12 +90,20 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     
     if (error) {
       console.error('Error from Edge Function:', error);
+      toast.error("Receipt processing error", {
+        description: "The receipt couldn't be processed. Please try again."
+      });
       throw error;
     }
     
     return mapOcrResponseToFormData(data);
   } catch (error) {
     console.error('Error processing receipt with edge function:', error);
+    
+    toast.error("Processing didn't work", {
+      description: "We couldn't read the receipt details. You can enter them manually."
+    });
+    
     throw error;
   }
 }
@@ -92,8 +116,9 @@ function mapOcrResponseToFormData(ocrResponse: any): OCRResult {
   return {
     amount: ocrResponse.amount?.value || '',
     date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
-    description: ocrResponse.line_items?.length > 0 ? 
-      ocrResponse.line_items[0].description : 'Purchase',
+    description: ocrResponse.line_items?.length > 0 
+      ? ocrResponse.line_items[0].description 
+      : 'Purchase',
     place: ocrResponse.supplier?.value || ocrResponse.merchant_name?.value || '',
     confidence: ocrResponse.confidence || 0.5
   };
@@ -103,5 +128,6 @@ function mapOcrResponseToFormData(ocrResponse: any): OCRResult {
  * Validates that the OCR result has sufficient confidence to be used
  */
 export function validateOCRResult(result: OCRResult): boolean {
-  return result.confidence !== undefined && result.confidence > 0.7;
+  // Lower the confidence threshold to be more lenient
+  return result.confidence !== undefined && result.confidence > 0.3;
 }
