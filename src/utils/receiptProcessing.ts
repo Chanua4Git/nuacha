@@ -1,5 +1,6 @@
+
 import { OCRResult } from '@/types/expense';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import heic2any from 'heic2any';
 
@@ -22,7 +23,7 @@ async function convertHeicToJpeg(file: File): Promise<File> {
       });
     } catch (error) {
       console.error('Error converting HEIC to JPEG:', error);
-      throw new Error('Unable to convert your image. Please try uploading a JPEG or PNG instead.');
+      throw new Error("This image format isn't supported yet. Would you like to try with a JPEG or PNG instead?");
     }
   }
   return file;
@@ -47,8 +48,8 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
     
     if (error) {
       console.error('Error uploading receipt:', error);
-      toast("We couldn't save your receipt", {
-        description: "There was a problem uploading the image. Please try again with a different photo."
+      toast("We couldn't save your receipt right now", {
+        description: "Let's try again in a moment, or you can add the details manually."
       });
       return null;
     }
@@ -62,7 +63,7 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
   } catch (error) {
     console.error('Error in receipt upload:', error);
     toast("We couldn't save your receipt", {
-      description: "There was a problem uploading the image. Please try again with a different photo."
+      description: "You can still enter the details manually when you're ready."
     });
     return null;
   }
@@ -75,7 +76,7 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
-      throw new Error('User not authenticated');
+      throw new Error('Please sign in to upload receipts');
     }
     
     const receiptUrl = await uploadReceiptToStorage(file, session.user.id);
@@ -95,17 +96,17 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     } catch (error) {
       console.error('Error processing receipt with edge function:', error);
       
-      let errorMessage = "The image might be unclear or in an unsupported format.";
+      let errorMessage = "The image might not be clear enough for us to read.";
       if (error instanceof Error) {
         if (error.message.includes('format')) {
           errorMessage = error.message;
         } else if (error.message.includes('fetch image')) {
-          errorMessage = "We couldn't read the image properly. The file might be corrupted.";
+          errorMessage = "We're having trouble reading this image. Would you like to try another one?";
         }
       }
       
       toast("We couldn't process your receipt", {
-        description: errorMessage + " You can still enter details manually."
+        description: errorMessage + " Feel free to enter the details manually."
       });
       
       return {
@@ -142,8 +143,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     if (error) {
       console.error('Error from Edge Function:', error);
       
-      toast("We couldn't process your receipt", {
-        description: error.message || "There was a problem reading the receipt. Please try again with a different image."
+      toast("We couldn't process your receipt right now", {
+        description: error.message || "Let's try again in a moment, or you can enter the details manually."
       });
       
       return {
@@ -153,8 +154,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     }
     
     if (!data) {
-      toast("Receipt processing didn't return any data", {
-        description: "The image might be unclear or in an unsupported format."
+      toast("The receipt processing didn't return any data", {
+        description: "The image might not be clear enough for us to read. Feel free to enter the details manually."
       });
       
       return {
@@ -165,7 +166,7 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     
     if (data.error) {
       toast("We couldn't process your receipt", {
-        description: data.error || "There was a problem reading the receipt."
+        description: data.error || "Let's try another image or enter the details manually."
       });
       
       return {
@@ -178,8 +179,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
   } catch (error) {
     console.error('Unexpected error in processReceiptWithEdgeFunction:', error);
     
-    toast("An unexpected error occurred", {
-      description: "We couldn't process the receipt. Please try again later."
+    toast("Something unexpected happened", {
+      description: "You can still enter the expense details manually."
     });
     
     return {
