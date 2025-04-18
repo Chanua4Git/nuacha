@@ -1,6 +1,6 @@
 
 import { OCRResult } from '@/types/expense';
-import { supabaseClient } from '@/auth/utils/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
@@ -11,7 +11,7 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
     
-    const { data, error } = await supabaseClient.storage
+    const { data, error } = await supabase.storage
       .from('receipts')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -20,22 +20,23 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
     
     if (error) {
       console.error('Error uploading receipt:', error);
-      toast.error("We couldn't save your receipt", {
-        description: "There was a problem uploading the image. Please try again."
+      toast("We couldn't save your receipt", {
+        description: "There was a problem uploading the image. Please try again with a different photo."
       });
       return null;
     }
     
     // Get public URL for the uploaded file
-    const { data: { publicUrl } } = supabaseClient.storage
+    const { data: { publicUrl } } = supabase.storage
       .from('receipts')
       .getPublicUrl(data.path);
     
+    console.log('📸 Receipt uploaded successfully:', publicUrl);
     return publicUrl;
   } catch (error) {
     console.error('Error in receipt upload:', error);
-    toast.error("Something went wrong", {
-      description: "We encountered an unexpected error while processing your receipt."
+    toast("Something went wrong", {
+      description: "We encountered an unexpected error while saving your receipt."
     });
     return null;
   }
@@ -47,7 +48,7 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
 export async function processReceiptImage(file: File): Promise<OCRResult> {
   try {
     // First, check if user is authenticated
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       throw new Error('User not authenticated');
     }
@@ -57,18 +58,22 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     if (!receiptUrl) {
       return {
         confidence: 0.1,
-        error: 'Failed to upload receipt'
+        error: 'Unable to save your receipt'
       };
     }
     
+    console.log('📄 Processing receipt:', receiptUrl);
+    
     // Call the Supabase Edge Function to process the receipt
-    return await processReceiptWithEdgeFunction(receiptUrl);
+    const result = await processReceiptWithEdgeFunction(receiptUrl);
+    console.log('✅ Receipt processed:', result);
+    return result;
   } catch (error) {
     console.error('Error in processReceiptImage:', error);
     
     // Provide more detailed error feedback
-    toast.error("Receipt processing failed", {
-      description: "We couldn't extract details from your receipt. Please try again or enter details manually."
+    toast("Receipt processing didn't work", {
+      description: "We couldn't read the details from your receipt. You can enter them manually."
     });
     
     // Return a minimal result with low confidence to indicate failure
@@ -84,15 +89,12 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
  */
 export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
-    const { data, error } = await supabaseClient.functions.invoke('process-receipt', {
+    const { data, error } = await supabase.functions.invoke('process-receipt', {
       body: { receiptUrl }
     });
     
     if (error) {
       console.error('Error from Edge Function:', error);
-      toast.error("Receipt processing error", {
-        description: "The receipt couldn't be processed. Please try again."
-      });
       throw error;
     }
     
@@ -100,8 +102,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
   } catch (error) {
     console.error('Error processing receipt with edge function:', error);
     
-    toast.error("Processing didn't work", {
-      description: "We couldn't read the receipt details. You can enter them manually."
+    toast("Couldn't process your receipt", {
+      description: "The image might be unclear. Try uploading a clearer photo or enter details manually."
     });
     
     throw error;

@@ -1,5 +1,5 @@
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { mindeeClient } from './mindee.ts';
 
 const corsHeaders = {
@@ -18,11 +18,12 @@ serve(async (req) => {
   }
 
   try {
-    // Get Mindee API key from env vars (set in Supabase secrets)
+    // Get Mindee API key from env vars
     const apiKey = Deno.env.get('MINDEE_API_KEY');
     if (!apiKey) {
+      console.error('❌ Missing Mindee API key');
       return new Response(
-        JSON.stringify({ error: 'Missing API key' }),
+        JSON.stringify({ error: 'Configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -31,12 +32,27 @@ serve(async (req) => {
     const { receiptUrl } = await req.json() as RequestBody;
     
     if (!receiptUrl) {
+      console.error('❌ Missing receipt URL');
       return new Response(
         JSON.stringify({ error: 'Missing receipt URL' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Validate URL is from Supabase Storage
+    const projectId = 'fjrxqeyexlusjwzzecal';
+    const expectedUrlPrefix = `https://${projectId}.supabase.co/storage/v1/object/public/receipts/`;
+    
+    if (!receiptUrl.startsWith(expectedUrlPrefix)) {
+      console.error('❌ Invalid image URL. Must point to Supabase storage:', receiptUrl);
+      return new Response(
+        JSON.stringify({ error: 'Image URL not valid or publicly accessible' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('🧾 Sending to Mindee:', receiptUrl);
+    
     // Call Mindee API
     const result = await mindeeClient(apiKey, receiptUrl);
 
@@ -49,7 +65,10 @@ serve(async (req) => {
     console.error('Error processing receipt:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error occurred' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        details: error
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
