@@ -1,7 +1,6 @@
 
-// Mindee API client for Deno/Edge Function
-
-export async function mindeeClient(apiKey: string, receiptUrl: string) {
+// code for handling mindee API
+export const mindeeClient = async (apiKey: string, receiptUrl: string) => {
   try {
     // Set up Mindee API endpoint for v4
     const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v4/predict';
@@ -32,7 +31,6 @@ export async function mindeeClient(apiKey: string, receiptUrl: string) {
       method: 'POST',
       headers: {
         'Authorization': `Token ${apiKey}`,
-        // Do not set Content-Type - let the browser set it with the boundary
       },
       body: formData
     });
