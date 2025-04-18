@@ -1,25 +1,29 @@
 
-// Follow these steps to make this Edge Function work once Supabase is connected:
-// 1. Deploy this function to your Supabase project
-// 2. Set the MINDEE_API_KEY in your Supabase project's secrets
-//    (supabase secrets set MINDEE_API_KEY=your_api_key)
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { mindeeClient } from './mindee.ts';
 
-// This interface defines the shape of the request body
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 interface RequestBody {
   receiptUrl: string;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     // Get Mindee API key from env vars (set in Supabase secrets)
     const apiKey = Deno.env.get('MINDEE_API_KEY');
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'Missing API key' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -29,7 +33,7 @@ serve(async (req) => {
     if (!receiptUrl) {
       return new Response(
         JSON.stringify({ error: 'Missing receipt URL' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -39,14 +43,14 @@ serve(async (req) => {
     // Return OCR results as JSON
     return new Response(
       JSON.stringify(result),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error processing receipt:', error);
     
     return new Response(
       JSON.stringify({ error: error.message || 'Unknown error occurred' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

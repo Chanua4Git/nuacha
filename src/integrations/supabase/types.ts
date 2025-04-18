@@ -9,7 +9,166 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string | null
+          family_id: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          family_id?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          family_id?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          date: string
+          description: string
+          family_id: string
+          id: string
+          needs_replacement: boolean | null
+          next_replacement_date: string | null
+          place: string
+          receipt_url: string | null
+          replacement_frequency: number | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          date: string
+          description: string
+          family_id: string
+          id?: string
+          needs_replacement?: boolean | null
+          next_replacement_date?: string | null
+          place: string
+          receipt_url?: string | null
+          replacement_frequency?: number | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          date?: string
+          description?: string
+          family_id?: string
+          id?: string
+          needs_replacement?: boolean | null
+          next_replacement_date?: string | null
+          place?: string
+          receipt_url?: string | null
+          replacement_frequency?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      families: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          created_at: string | null
+          due_date: string
+          family_id: string
+          frequency: number | null
+          id: string
+          is_recurring: boolean
+          related_expense_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          due_date: string
+          family_id: string
+          frequency?: number | null
+          id?: string
+          is_recurring?: boolean
+          related_expense_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          due_date?: string
+          family_id?: string
+          frequency?: number | null
+          id?: string
+          is_recurring?: boolean
+          related_expense_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_related_expense_id_fkey"
+            columns: ["related_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
