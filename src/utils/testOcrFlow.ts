@@ -1,5 +1,6 @@
 
-import { uploadReceiptToStorage, processReceiptWithEdgeFunction } from './receiptProcessing';
+import { uploadReceiptToStorage } from './receipt/imageProcessing';
+import { processReceiptWithEdgeFunction } from './receipt/ocrProcessing';
 import { toast } from 'sonner';
 
 /**

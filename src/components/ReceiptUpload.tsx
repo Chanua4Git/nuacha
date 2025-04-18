@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Receipt, X, Loader2, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { processReceiptImage, validateOCRResult } from '@/utils/receiptProcessing';
+import { processReceiptImage, validateOCRResult } from '@/utils/receipt';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 
