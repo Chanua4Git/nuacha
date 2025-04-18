@@ -22,6 +22,11 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
       return null;
     }
     
+    // If we're using the mock client, generate a fake URL for development
+    if (!data) {
+      return URL.createObjectURL(file);
+    }
+    
     // Get public URL for the uploaded file
     const { data: { publicUrl } } = supabase.storage
       .from('receipts')
@@ -64,7 +69,21 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       body: { receiptUrl }
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error from Edge Function:', error);
+      throw error;
+    }
+    
+    // If we're using the mock client, generate fake OCR data
+    if (!data) {
+      return {
+        amount: (Math.random() * 100 + 10).toFixed(2),
+        description: 'Sample Purchase',
+        place: 'Sample Store',
+        date: new Date(),
+        confidence: 0.85
+      };
+    }
     
     return mapOcrResponseToFormData(data);
   } catch (error) {

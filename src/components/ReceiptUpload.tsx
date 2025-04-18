@@ -54,7 +54,7 @@ const ReceiptUpload = ({
     
     setIsProcessing(true);
     try {
-      // This function will be updated to use Supabase once connected
+      // Even without Supabase connection, this will return mock data
       const extractedData = await processReceiptImage(file);
       
       if (validateOCRResult(extractedData)) {
