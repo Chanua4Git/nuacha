@@ -54,6 +54,7 @@ const ReceiptUpload = ({
     
     setIsProcessing(true);
     try {
+      // This function will be updated to use Supabase once connected
       const extractedData = await processReceiptImage(file);
       
       if (validateOCRResult(extractedData)) {
