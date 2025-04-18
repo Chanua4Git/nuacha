@@ -2,18 +2,45 @@
 import { OCRResult } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import heic2any from 'heic2any';
+
+/**
+ * Converts HEIC images to JPEG if needed
+ */
+async function convertHeicToJpeg(file: File): Promise<File> {
+  if (file.type === 'image/heic' || file.type === 'image/heif') {
+    try {
+      const jpegBlob = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.8
+      });
+      
+      return new File([jpegBlob], file.name.replace(/\.heic$/i, '.jpg'), {
+        type: 'image/jpeg'
+      });
+    } catch (error) {
+      console.error('Error converting HEIC to JPEG:', error);
+      throw new Error('Unable to convert your image. Please try uploading a JPEG or PNG instead.');
+    }
+  }
+  return file;
+}
 
 /**
  * Uploads a receipt image to Supabase storage
  */
 export async function uploadReceiptToStorage(file: File, userId: string): Promise<string | null> {
   try {
-    const fileExt = file.name.split('.').pop();
+    // Convert HEIC to JPEG if needed
+    const processedFile = await convertHeicToJpeg(file);
+    
+    const fileExt = processedFile.name.split('.').pop();
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
     
     const { data, error } = await supabase.storage
       .from('receipts')
-      .upload(fileName, file, {
+      .upload(fileName, processedFile, {
         cacheControl: '3600',
         upsert: false
       });
@@ -36,7 +63,7 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
   } catch (error) {
     console.error('Error in receipt upload:', error);
     toast("Something went wrong", {
-      description: "We encountered an unexpected error while saving your receipt."
+      description: error instanceof Error ? error.message : "We encountered an unexpected error while saving your receipt."
     });
     return null;
   }
@@ -98,12 +125,21 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       throw error;
     }
     
+    if (!data) {
+      throw new Error('No data returned from receipt processing');
+    }
+    
     return mapOcrResponseToFormData(data);
   } catch (error) {
     console.error('Error processing receipt with edge function:', error);
     
+    let errorMessage = "The image might be unclear or in an unsupported format.";
+    if (error instanceof Error && error.message.includes('format')) {
+      errorMessage = error.message;
+    }
+    
     toast("Couldn't process your receipt", {
-      description: "The image might be unclear. Try uploading a clearer photo or enter details manually."
+      description: errorMessage + " Try uploading a clearer photo or enter details manually."
     });
     
     throw error;

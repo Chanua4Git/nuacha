@@ -55,6 +55,15 @@ serve(async (req) => {
     
     // Call Mindee API
     const result = await mindeeClient(apiKey, receiptUrl);
+    
+    // If result has an error property, something went wrong with Mindee
+    if ('error' in result) {
+      console.error('❌ Mindee API error:', result.error);
+      return new Response(
+        JSON.stringify({ error: result.error }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Return OCR results as JSON
     return new Response(

@@ -11,6 +11,8 @@ export async function mindeeClient(apiKey: string, receiptUrl: string) {
       'Content-Type': 'application/json'
     };
     
+    console.log('📤 Calling Mindee API with URL:', receiptUrl);
+    
     // Make request to Mindee API
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -18,12 +20,21 @@ export async function mindeeClient(apiKey: string, receiptUrl: string) {
       body: JSON.stringify({ document: receiptUrl })
     });
     
+    const responseText = await response.text();
+    console.log('📥 Mindee API response:', responseText);
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Mindee API Error ${response.status}: ${errorText}`);
+      // Try to parse error response
+      try {
+        const errorData = JSON.parse(responseText);
+        const errorMessage = errorData.api_request?.error || errorData.message || 'Unknown Mindee API error';
+        throw new Error(`Mindee API Error ${response.status}: ${errorMessage}`);
+      } catch (parseError) {
+        throw new Error(`Mindee API Error ${response.status}: ${responseText}`);
+      }
     }
     
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     
     // Extract and map the relevant information
     const document = data.document.inference.prediction;
@@ -54,7 +65,9 @@ export async function mindeeClient(apiKey: string, receiptUrl: string) {
     };
   } catch (error) {
     console.error('Error in Mindee client:', error);
-    throw error;
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error in Mindee client'
+    };
   }
 }
 
