@@ -1,3 +1,4 @@
+
 import { OCRResult } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -91,9 +92,32 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     
     console.log('📄 Processing receipt:', receiptUrl);
     
-    const result = await processReceiptWithEdgeFunction(receiptUrl);
-    console.log('✅ Receipt processed:', result);
-    return result;
+    try {
+      const result = await processReceiptWithEdgeFunction(receiptUrl);
+      console.log('✅ Receipt processed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error processing receipt with edge function:', error);
+      
+      // Provide a more user-friendly error message based on the error
+      let errorMessage = "The image might be unclear or in an unsupported format.";
+      if (error instanceof Error) {
+        if (error.message.includes('format')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('fetch image')) {
+          errorMessage = "We couldn't read the image properly. The file might be corrupted.";
+        }
+      }
+      
+      toast("We couldn't process your receipt", {
+        description: errorMessage + " You can still enter details manually."
+      });
+      
+      return {
+        confidence: 0.1,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
   } catch (error) {
     console.error('Error in processReceiptImage:', error);
     
@@ -111,10 +135,14 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
 /**
  * Calls the Supabase Edge Function for OCR processing
  */
-export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
+async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
+    // Add timestamp to help avoid caching issues
+    const timestamp = new Date().getTime();
+    const urlWithTimestamp = `${receiptUrl}?t=${timestamp}`;
+    
     const { data, error } = await supabase.functions.invoke('process-receipt', {
-      body: { receiptUrl }
+      body: { receiptUrl: urlWithTimestamp }
     });
     
     if (error) {
@@ -126,19 +154,13 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       throw new Error('No data returned from receipt processing');
     }
     
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
     return mapOcrResponseToFormData(data);
   } catch (error) {
     console.error('Error processing receipt with edge function:', error);
-    
-    let errorMessage = "The image might be unclear or in an unsupported format.";
-    if (error instanceof Error && error.message.includes('format')) {
-      errorMessage = error.message;
-    }
-    
-    toast("We couldn't process your receipt", {
-      description: errorMessage + " Try uploading a clearer photo or enter details manually."
-    });
-    
     throw error;
   }
 }

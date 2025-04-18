@@ -3,7 +3,7 @@
 
 export async function mindeeClient(apiKey: string, receiptUrl: string) {
   try {
-    // Set up Mindee API endpoint and headers for v4
+    // Set up Mindee API endpoint for v4
     const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v4/predict';
     
     console.log('📥 Fetching receipt from URL:', receiptUrl);
@@ -11,41 +11,50 @@ export async function mindeeClient(apiKey: string, receiptUrl: string) {
     // First fetch the image from the Supabase URL
     const imageResponse = await fetch(receiptUrl);
     if (!imageResponse.ok) {
+      const errorText = await imageResponse.text();
+      console.error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+      console.error('Response text:', errorText);
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
     
     // Get the image blob
     const imageBlob = await imageResponse.blob();
+    console.log(`📄 Retrieved image (${Math.round(imageBlob.size / 1024)}KB)`);
     
     // Create FormData and append the image
     const formData = new FormData();
-    formData.append('document', imageBlob);
+    formData.append('document', imageBlob, 'receipt.jpg');
     
-    console.log('📤 Calling Mindee API...');
+    console.log('📤 Calling Mindee API with FormData...');
     
     // Make request to Mindee API
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${apiKey}`,
-        // Let fetch set the content-type for FormData
+        // Do not set Content-Type - let the browser set it with the boundary
       },
       body: formData
     });
     
+    // Get the response text first to log it and then parse it
     const responseText = await response.text();
-    console.log('📥 Mindee API response:', responseText);
+    console.log('📥 Mindee API response status:', response.status, response.statusText);
     
     if (!response.ok) {
       // Try to parse error response
       try {
         const errorData = JSON.parse(responseText);
         const errorMessage = errorData.api_request?.error || errorData.message || 'Unknown Mindee API error';
+        console.error('🚨 Mindee API error details:', errorData);
         throw new Error(`Mindee API Error ${response.status}: ${errorMessage}`);
       } catch (parseError) {
+        console.error('🚨 Could not parse Mindee error response:', responseText);
         throw new Error(`Mindee API Error ${response.status}: ${responseText}`);
       }
     }
+    
+    console.log('✅ Successfully processed receipt with Mindee');
     
     const data = JSON.parse(responseText);
     

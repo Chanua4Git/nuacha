@@ -23,7 +23,7 @@ serve(async (req) => {
     if (!apiKey) {
       console.error('❌ Missing Mindee API key');
       return new Response(
-        JSON.stringify({ error: 'Configuration error' }),
+        JSON.stringify({ error: 'Configuration error: Missing API key' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
