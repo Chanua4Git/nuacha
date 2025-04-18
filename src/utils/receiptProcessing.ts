@@ -1,4 +1,3 @@
-
 import { OCRResult } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,7 +15,6 @@ async function convertHeicToJpeg(file: File): Promise<File> {
         quality: 0.8
       });
       
-      // Handle both possible return types from heic2any (Blob or Blob[])
       const singleBlob = Array.isArray(jpegBlob) ? jpegBlob[0] : jpegBlob;
       
       return new File([singleBlob], file.name.replace(/\.heic$/i, '.jpg'), {
@@ -35,7 +33,6 @@ async function convertHeicToJpeg(file: File): Promise<File> {
  */
 export async function uploadReceiptToStorage(file: File, userId: string): Promise<string | null> {
   try {
-    // Convert HEIC to JPEG if needed
     const processedFile = await convertHeicToJpeg(file);
     
     const fileExt = processedFile.name.split('.').pop();
@@ -56,7 +53,6 @@ export async function uploadReceiptToStorage(file: File, userId: string): Promis
       return null;
     }
     
-    // Get public URL for the uploaded file
     const { data: { publicUrl } } = supabase.storage
       .from('receipts')
       .getPublicUrl(data.path);
@@ -99,7 +95,6 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     } catch (error) {
       console.error('Error processing receipt with edge function:', error);
       
-      // Provide a more user-friendly error message based on the error
       let errorMessage = "The image might be unclear or in an unsupported format.";
       if (error instanceof Error) {
         if (error.message.includes('format')) {
@@ -137,31 +132,60 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
  */
 export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
-    // Add timestamp to help avoid caching issues
     const timestamp = new Date().getTime();
     const urlWithTimestamp = `${receiptUrl}?t=${timestamp}`;
     
     const { data, error } = await supabase.functions.invoke('process-receipt', {
-      body: { receiptUrl: urlWithTimestamp }
+      body: JSON.stringify({ receiptUrl: urlWithTimestamp })
     });
     
     if (error) {
       console.error('Error from Edge Function:', error);
-      throw error;
+      
+      toast("We couldn't process your receipt", {
+        description: error.message || "There was a problem reading the receipt. Please try again with a different image."
+      });
+      
+      return {
+        confidence: 0.1,
+        error: error.message || 'Unknown error occurred'
+      };
     }
     
     if (!data) {
-      throw new Error('No data returned from receipt processing');
+      toast("Receipt processing didn't return any data", {
+        description: "The image might be unclear or in an unsupported format."
+      });
+      
+      return {
+        confidence: 0.1,
+        error: 'No data returned from receipt processing'
+      };
     }
     
     if (data.error) {
-      throw new Error(data.error);
+      toast("We couldn't process your receipt", {
+        description: data.error || "There was a problem reading the receipt."
+      });
+      
+      return {
+        confidence: 0.1,
+        error: data.error
+      };
     }
     
-    return mapOcrResponseToFormData(data);
+    return mapOcrResponseToFormData(data.prediction || {});
   } catch (error) {
-    console.error('Error processing receipt with edge function:', error);
-    throw error;
+    console.error('Unexpected error in processReceiptWithEdgeFunction:', error);
+    
+    toast("An unexpected error occurred", {
+      description: "We couldn't process the receipt. Please try again later."
+    });
+    
+    return {
+      confidence: 0.1,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
   }
 }
 
@@ -169,7 +193,6 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
  * Maps the raw OCR response to our application's format
  */
 function mapOcrResponseToFormData(ocrResponse: any): OCRResult {
-  // This will map the Mindee API response to our application's format
   return {
     amount: ocrResponse.amount?.value || '',
     date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
@@ -185,6 +208,5 @@ function mapOcrResponseToFormData(ocrResponse: any): OCRResult {
  * Validates that the OCR result has sufficient confidence to be used
  */
 export function validateOCRResult(result: OCRResult): boolean {
-  // Lower the confidence threshold to be more lenient
   return result.confidence !== undefined && result.confidence > 0.3;
 }
