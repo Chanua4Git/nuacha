@@ -19,5 +19,6 @@ export interface OCRResult {
   description?: string;
   place?: string;
   confidence?: number;
-  error?: string;  // Added error property
+  error?: string;
+  type?: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR';
 }
