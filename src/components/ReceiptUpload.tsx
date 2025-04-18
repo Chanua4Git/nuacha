@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Receipt, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { extractReceiptData } from '@/utils/receiptOcr';
+import { processReceiptImage, validateOCRResult } from '@/utils/receiptProcessing';
 import { toast } from 'sonner';
+import { OCRResult } from '@/types/expense';
 
 interface ReceiptUploadProps {
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
-  onDataExtracted: (data: any) => void;
+  onDataExtracted: (data: OCRResult) => void;
   imagePreview: string | null;
 }
 
@@ -37,28 +38,36 @@ const ReceiptUpload = ({
     
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      await processReceiptImage(file);
+      await processReceipt(file);
     }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await processReceiptImage(file);
+      await processReceipt(file);
     }
   };
 
-  const processReceiptImage = async (file: File) => {
+  const processReceipt = async (file: File) => {
     onImageUpload(file);
     
     setIsProcessing(true);
     try {
-      const extractedData = await extractReceiptData(file);
-      onDataExtracted(extractedData);
-      toast.success('Receipt details gently applied');
+      const extractedData = await processReceiptImage(file);
+      
+      if (validateOCRResult(extractedData)) {
+        onDataExtracted(extractedData);
+        toast.success('Receipt details gently applied');
+      } else {
+        toast("The receipt details weren't clear enough", {
+          description: "Feel free to adjust the information as needed."
+        });
+        onDataExtracted(extractedData); // Still provide data for manual correction
+      }
     } catch (error) {
       console.error('Error processing receipt:', error);
-      toast("We couldn't read all the details", {
+      toast("We couldn't read the receipt details", {
         description: "You can still add the information yourself when you're ready."
       });
     } finally {
