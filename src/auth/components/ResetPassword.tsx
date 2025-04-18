@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -140,7 +141,11 @@ const ResetPassword = () => {
           )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
             {isLoading
               ? (isSettingNewPassword ? 'Updating...' : 'Sending...')
               : (isSettingNewPassword ? 'Update password' : 'Send reset link')}
