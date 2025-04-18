@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -23,6 +24,7 @@ const ResetPassword = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,13 +45,21 @@ const ResetPassword = () => {
 
       if (error) throw error;
 
+      setEmailSent(true);
       toast.success('Reset link sent', {
         description: 'Check your email for a link to reset your password.',
       });
     } catch (error: any) {
       console.error('Reset password error:', error);
+      
+      let errorMessage = "We couldn't send a reset link. Please try again.";
+      
+      if (error.message.includes("not found")) {
+        errorMessage = "We couldn't find an account with that email address.";
+      }
+      
       toast("Something didn't go as planned", {
-        description: error.message || "We couldn't send a reset link. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -61,14 +71,21 @@ const ResetPassword = () => {
 
     if (!password) {
       toast('Please enter a new password', {
-        description: 'Your new password should be at least 6 characters long.',
+        description: 'Your new password should be at least 8 characters long.',
       });
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast('Password is too short', {
-        description: 'For your security, please use at least 6 characters.',
+        description: 'For your security, please use at least 8 characters.',
+      });
+      return;
+    }
+
+    if (!/\d/.test(password)) {
+      toast('Password needs a number', {
+        description: 'Please include at least one number in your password.',
       });
       return;
     }
@@ -84,16 +101,61 @@ const ResetPassword = () => {
         description: 'Your password has been updated successfully.',
       });
 
-      navigate('/login');
+      // Short delay before navigating to give user time to see the success message
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
     } catch (error: any) {
       console.error('Update password error:', error);
+      
+      let errorMessage = "We couldn't update your password. Please try again.";
+      
+      if (error.message.includes("expired")) {
+        errorMessage = "Your reset link has expired. Please request a new one.";
+        // Navigate back to reset password request page
+        navigate('/reset-password');
+      }
+      
       toast("Something didn't go as planned", {
-        description: error.message || "We couldn't update your password. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (emailSent && !isSettingNewPassword) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
+          <CardDescription>We've sent you a password reset link</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-center py-4">
+            Please check your email ({email}) for a link to reset your password.
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
+            Don't see the email? Check your spam folder or try again.
+          </p>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <Button 
+            variant="outline" 
+            onClick={() => setEmailSent(false)} 
+            className="w-full"
+          >
+            Back
+          </Button>
+          <div className="text-center text-sm">
+            <Link to="/login" className="text-primary hover:underline">
+              Back to sign in
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -121,10 +183,20 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full"
+                disabled={isLoading}
               />
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 6 characters long
-              </p>
+              <div className="space-y-1 mt-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={password.length >= 8 ? "text-green-700" : "text-muted-foreground"}>
+                    ✓ At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={/\d/.test(password) ? "text-green-700" : "text-muted-foreground"}>
+                    ✓ At least one number
+                  </span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -138,6 +210,7 @@ const ResetPassword = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
           )}
@@ -145,9 +218,14 @@ const ResetPassword = () => {
 
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading
-              ? (isSettingNewPassword ? 'Updating...' : 'Sending...')
-              : (isSettingNewPassword ? 'Update password' : 'Send reset link')}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isSettingNewPassword ? 'Updating...' : 'Sending...'}
+              </>
+            ) : (
+              isSettingNewPassword ? 'Update password' : 'Send reset link'
+            )}
           </Button>
           <div className="text-center text-sm">
             <Link to="/login" className="text-primary hover:underline">

@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthProvider';
 import { Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,7 +20,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [user, isLoading, location]);
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your account...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

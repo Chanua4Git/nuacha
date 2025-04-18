@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -36,18 +37,35 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabaseClient.auth.signInWithPassword({
+      const { error, data } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
       
-      toast.success("Welcome back");
+      // Check if user has verified their email
+      if (data?.user && !data.user.email_confirmed_at) {
+        toast("Please verify your email", {
+          description: "Check your inbox for a verification link."
+        });
+      } else {
+        toast.success("Welcome back");
+      }
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Improved error UX with user-friendly messages
+      let errorMessage = "We couldn't sign you in. Please try again.";
+      
+      if (error.message.includes("Invalid login")) {
+        errorMessage = "Your email or password seems incorrect. Please try again.";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Please check your email and verify your account first.";
+      }
+      
       toast("Something didn't go as planned", {
-        description: error.message || "We couldn't sign you in. Please try again."
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -71,6 +89,7 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="w-full"
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -86,12 +105,24 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full"
+              disabled={isLoading}
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
           </Button>
           <div className="text-center text-sm">
             Don't have an account?{' '}
