@@ -32,7 +32,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 relative">
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium text-foreground">
           Email
@@ -61,14 +61,14 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
+        <label htmlFor="interestType" className="block text-sm font-medium text-foreground mb-1">
           Why are you interested in Nuacha?
         </label>
-        <Select value={interestType} onValueChange={setInterestType}>
-          <SelectTrigger>
+        <Select value={interestType} onValueChange={setInterestType} required>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select your interest" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[100]">
             <SelectItem value="personal">Personal use</SelectItem>
             <SelectItem value="family">Family expense management</SelectItem>
             <SelectItem value="small-business">Small business</SelectItem>
@@ -87,17 +87,17 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           value={additionalInfo}
           onChange={(e) => setAdditionalInfo(e.target.value)}
           placeholder="Share any questions or thoughts"
-          className="h-24"
+          className="h-24 mb-4"
         />
       </div>
 
-      <div className="pt-4">
+      <div className="pt-2">
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Processing..." : "Get My Report"}
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-muted-foreground text-center mt-4">
         Your information will be used to send you the expense report and provide relevant updates.
         We respect your privacy.
       </p>
