@@ -1,19 +1,12 @@
 
-import { useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { validatePassword } from '../utils/passwordValidation';
+import { EmailSentCard } from './reset-password/EmailSentCard';
+import { RequestResetForm } from './reset-password/RequestResetForm';
+import { UpdatePasswordForm } from './reset-password/UpdatePasswordForm';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -25,6 +18,13 @@ const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [validations, setValidations] = useState(validatePassword(''));
+
+  useEffect(() => {
+    if (isSettingNewPassword) {
+      setValidations(validatePassword(password));
+    }
+  }, [password, isSettingNewPassword]);
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,16 +76,9 @@ const ResetPassword = () => {
       return;
     }
 
-    if (password.length < 8) {
-      toast('Password is too short', {
-        description: 'For your security, please use at least 8 characters.',
-      });
-      return;
-    }
-
-    if (!/\d/.test(password)) {
-      toast('Password needs a number', {
-        description: 'Please include at least one number in your password.',
+    if (!validations.length || !validations.number) {
+      toast('Password requirements not met', {
+        description: 'Please make sure your password meets all the requirements.',
       });
       return;
     }
@@ -101,7 +94,6 @@ const ResetPassword = () => {
         description: 'Your password has been updated successfully.',
       });
 
-      // Short delay before navigating to give user time to see the success message
       setTimeout(() => {
         navigate('/login');
       }, 1500);
@@ -112,7 +104,6 @@ const ResetPassword = () => {
       
       if (error.message.includes("expired")) {
         errorMessage = "Your reset link has expired. Please request a new one.";
-        // Navigate back to reset password request page
         navigate('/reset-password');
       }
       
@@ -125,116 +116,28 @@ const ResetPassword = () => {
   };
 
   if (emailSent && !isSettingNewPassword) {
+    return <EmailSentCard email={email} onBack={() => setEmailSent(false)} />;
+  }
+
+  if (isSettingNewPassword) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
-          <CardDescription>We've sent you a password reset link</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-center py-4">
-            Please check your email ({email}) for a link to reset your password.
-          </p>
-          <p className="text-sm text-muted-foreground text-center">
-            Don't see the email? Check your spam folder or try again.
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            variant="outline" 
-            onClick={() => setEmailSent(false)} 
-            className="w-full"
-          >
-            Back
-          </Button>
-          <div className="text-center text-sm">
-            <Link to="/login" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+      <UpdatePasswordForm
+        password={password}
+        isLoading={isLoading}
+        validations={validations}
+        onPasswordChange={setPassword}
+        onSubmit={handleUpdatePassword}
+      />
     );
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-semibold">
-          {isSettingNewPassword ? 'Create a new password' : 'Reset your password'}
-        </CardTitle>
-        <CardDescription>
-          {isSettingNewPassword
-            ? 'Enter a new password for your account'
-            : "We'll send you a link to reset your password"}
-        </CardDescription>
-      </CardHeader>
-
-      <form onSubmit={isSettingNewPassword ? handleUpdatePassword : handleSendResetLink}>
-        <CardContent className="space-y-4">
-          {isSettingNewPassword ? (
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                New Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full"
-                disabled={isLoading}
-              />
-              <div className="space-y-1 mt-2">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={password.length >= 8 ? "text-green-700" : "text-muted-foreground"}>
-                    ✓ At least 8 characters
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={/\d/.test(password) ? "text-green-700" : "text-muted-foreground"}>
-                    ✓ At least one number
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full"
-                disabled={isLoading}
-              />
-            </div>
-          )}
-        </CardContent>
-
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isSettingNewPassword ? 'Updating...' : 'Sending...'}
-              </>
-            ) : (
-              isSettingNewPassword ? 'Update password' : 'Send reset link'
-            )}
-          </Button>
-          <div className="text-center text-sm">
-            <Link to="/login" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+    <RequestResetForm
+      email={email}
+      isLoading={isLoading}
+      onEmailChange={setEmail}
+      onSubmit={handleSendResetLink}
+    />
   );
 };
 
