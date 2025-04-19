@@ -1,4 +1,3 @@
-
 export interface ReceiptLineItem {
   description: string;
   quantity?: number;
@@ -10,11 +9,29 @@ export interface ReceiptLineItem {
   sku?: string;
 }
 
+interface MindeeLineItem {
+  description: { value: string };
+  quantity?: { value: number };
+  unit_price?: { 
+    amount?: { 
+      value: string | number 
+    } 
+  };
+  total_amount?: { 
+    amount?: { 
+      value: string | number 
+    } 
+  };
+  confidence?: number;
+  discount?: boolean;
+  product_code?: { value: string };
+}
+
 export interface MindeeOCRResult {
   amount?: { value: string; confidence: number };
   date?: { value: string; confidence: number };
   supplier?: { value: string; confidence: number };
-  lineItems?: ReceiptLineItem[];
+  lineItems?: MindeeLineItem[];
   tax?: {
     amount: string;
     rate?: string;
