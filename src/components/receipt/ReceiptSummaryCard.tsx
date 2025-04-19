@@ -4,19 +4,16 @@ import { OCRResult } from '@/types/expense';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ShoppingBag, CreditCard, MapPin, Calendar, Clock } from 'lucide-react';
+import { ShoppingBag, Calendar, Clock } from 'lucide-react';
+import DataRow from './DataRow';
+import PaymentInfo from './PaymentInfo';
+import AddressInfo from './AddressInfo';
 
 interface ReceiptSummaryCardProps {
   receiptData: OCRResult;
 }
 
 const ReceiptSummaryCard: React.FC<ReceiptSummaryCardProps> = ({ receiptData }) => {
-  const formatCurrency = (amount: string | undefined) => {
-    if (!amount) return '-';
-    return `$${parseFloat(amount).toFixed(2)}`;
-  };
-  
   const formatDate = (date: Date | undefined) => {
     if (!date) return '-';
     return format(date, 'MMM d, yyyy');
@@ -43,77 +40,36 @@ const ReceiptSummaryCard: React.FC<ReceiptSummaryCardProps> = ({ receiptData }) 
       </CardHeader>
       <CardContent>
         <dl className="space-y-2">
-          <div className="flex justify-between py-1">
-            <dt className="text-muted-foreground">Store:</dt>
-            <dd className="font-medium">{receiptData.storeDetails?.name || receiptData.description || '-'}</dd>
-          </div>
+          <DataRow
+            label="Store"
+            value={receiptData.storeDetails?.name || receiptData.description || '-'}
+          />
           
-          <div className="flex justify-between py-1">
-            <dt className="text-muted-foreground">Date:</dt>
-            <dd className="font-medium flex items-center">
-              <Calendar className="w-3 h-3 mr-1 text-muted-foreground" />
-              {formatDate(receiptData.date)}
-            </dd>
-          </div>
+          <DataRow
+            label="Date"
+            value={formatDate(receiptData.date)}
+            icon={Calendar}
+          />
           
           {receiptData.transactionTime && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Time:</dt>
-              <dd className="font-medium flex items-center">
-                <Clock className="w-3 h-3 mr-1 text-muted-foreground" />
-                {formatTime(receiptData.transactionTime.value)}
-              </dd>
-            </div>
+            <DataRow
+              label="Time"
+              value={formatTime(receiptData.transactionTime.value)}
+              icon={Clock}
+            />
           )}
           
-          {receiptData.subtotal && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Subtotal:</dt>
-              <dd className="font-medium">{formatCurrency(receiptData.subtotal.amount)}</dd>
-            </div>
-          )}
+          <PaymentInfo
+            subtotal={receiptData.subtotal}
+            tax={receiptData.tax}
+            total={receiptData.amount}
+            paymentMethod={receiptData.paymentMethod}
+          />
           
-          {receiptData.tax && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Tax:</dt>
-              <dd className="font-medium">{formatCurrency(receiptData.tax.amount)}</dd>
-            </div>
-          )}
-          
-          <Separator />
-          
-          <div className="flex justify-between py-1">
-            <dt className="text-muted-foreground">Total:</dt>
-            <dd className="font-medium text-lg">{formatCurrency(receiptData.amount)}</dd>
-          </div>
-          
-          {receiptData.paymentMethod && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Paid with:</dt>
-              <dd className="font-medium flex items-center">
-                <CreditCard className="w-3 h-3 mr-1 text-muted-foreground" />
-                {receiptData.paymentMethod.type}
-                {receiptData.paymentMethod.lastDigits && ` (${receiptData.paymentMethod.lastDigits})`}
-              </dd>
-            </div>
-          )}
-          
-          {receiptData.storeDetails?.address && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Address:</dt>
-              <dd className="font-medium text-right flex items-start">
-                <MapPin className="w-3 h-3 mr-1 mt-1 text-muted-foreground" />
-                <span>{receiptData.storeDetails.address}</span>
-              </dd>
-            </div>
-          )}
-          
-          {receiptData.receiptNumber && (
-            <div className="flex justify-between py-1">
-              <dt className="text-muted-foreground">Receipt #:</dt>
-              <dd className="font-medium">{receiptData.receiptNumber.value}</dd>
-            </div>
-          )}
+          <AddressInfo
+            storeDetails={receiptData.storeDetails}
+            receiptNumber={receiptData.receiptNumber}
+          />
         </dl>
         
         {receiptData.confidence && (
