@@ -41,6 +41,39 @@ export type Database = {
           },
         ]
       }
+      demo_leads: {
+        Row: {
+          additional_info: string | null
+          created_at: string | null
+          email: string
+          id: string
+          interest_type: string | null
+          last_contact: string | null
+          name: string
+          receipt_data: Json | null
+        }
+        Insert: {
+          additional_info?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          interest_type?: string | null
+          last_contact?: string | null
+          name: string
+          receipt_data?: Json | null
+        }
+        Update: {
+          additional_info?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          interest_type?: string | null
+          last_contact?: string | null
+          name?: string
+          receipt_data?: Json | null
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number

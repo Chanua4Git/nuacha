@@ -3,3 +3,7 @@ project_id = "fjrxqeyexlusjwzzecal"
 
 [functions.process-receipt]
 verify_jwt = true
+
+[functions.send-receipt-report]
+verify_jwt = false
+
