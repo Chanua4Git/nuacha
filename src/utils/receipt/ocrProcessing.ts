@@ -14,17 +14,21 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     
     if (error) {
       console.error('❌ Error from Edge Function:', error);
+      handleOcrError({ type: 'SERVER_ERROR', error: error.message });
       return {
         confidence: 0.1,
-        error: error.message || "We couldn't process your receipt right now",
+        error: error.message,
+        type: 'SERVER_ERROR'
       };
     }
     
     if (!data) {
       console.error('❌ No data returned from Edge Function');
+      handleOcrError({ type: 'SERVER_ERROR', error: "We couldn't process your receipt" });
       return {
         confidence: 0.1,
-        error: "We couldn't read the receipt details",
+        error: "We couldn't process your receipt",
+        type: 'SERVER_ERROR'
       };
     }
     
@@ -34,6 +38,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       return {
         confidence: data.confidence || 0.1,
         error: data.error,
+        type: data.type,
+        ...data.data
       };
     }
     
@@ -47,7 +53,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     
     return {
       confidence: 0.1,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: 'SERVER_ERROR'
     };
   }
 }
@@ -82,6 +89,13 @@ function handleOcrError(data: { type: string; error: string }) {
 }
 
 function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
+  if (import.meta.env.DEV) {
+    console.log('OCR Debug:', { 
+      confidence: ocrResponse.confidence,
+      response: ocrResponse 
+    });
+  }
+
   return {
     amount: ocrResponse.amount?.value || '',
     date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
