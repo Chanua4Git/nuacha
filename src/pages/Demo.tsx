@@ -10,6 +10,8 @@ import { OCRResult } from "@/types/expense";
 import LeadCaptureForm from "@/components/demo/LeadCaptureForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ExpenseCard from "@/components/ExpenseCard";
+import { format } from "date-fns";
 
 const Demo = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -50,41 +52,40 @@ const Demo = () => {
     setIsSubmitting(true);
 
     try {
-      // Store lead in database
+      // Store lead in database with JSON-compatible receipt data
       const { error: dbError } = await supabase.from('demo_leads').insert({
         email: data.email,
         name: data.name,
         interest_type: data.interestType,
         additional_info: data.additionalInfo,
-        receipt_data: extractedData
+        receipt_data: JSON.parse(JSON.stringify(extractedData))
       });
 
       if (dbError) throw dbError;
 
-      // Send email report
-      const response = await fetch('https://fjrxqeyexlusjwzzecal.functions.supabase.co/send-receipt-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          name: data.name,
-          receiptData: extractedData,
-          interestType: data.interestType
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send email');
-
       setDemoComplete(true);
-      toast.success("Report sent! Check your email");
+      toast.success("Thank you for trying Nuacha!");
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Couldn't send your report. Please try again.");
+      toast.error("We couldn't save your information. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const demoExpense = extractedData ? {
+    id: 'demo',
+    familyId: 'demo',
+    amount: parseFloat(extractedData.amount || '0'),
+    description: extractedData.description || 'Purchase',
+    category: 'demo',
+    date: extractedData.date ? format(extractedData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+    place: extractedData.place || 'Store',
+    receiptUrl: imagePreview || undefined
+  } : null;
+
+  const handleTryAnother = () => {
+    handleImageRemove();
   };
 
   return (
@@ -116,22 +117,32 @@ const Demo = () => {
         ) : !demoComplete ? (
           <Card className="p-6">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-playfair mb-2">Get Your Personalized Expense Report</h2>
+              <h2 className="text-2xl font-playfair mb-2">See How Nuacha Works</h2>
               <p className="text-muted-foreground">
-                Enter your details to receive a detailed analysis of your receipt and see how Nuacha can transform your expense management.
+                Enter your details to see how Nuacha can transform your expense management.
               </p>
             </div>
             <LeadCaptureForm onSubmit={handleLeadSubmit} isLoading={isSubmitting} />
           </Card>
         ) : (
-          <div className="text-center space-y-6">
-            <h2 className="text-2xl font-playfair">Thank You!</h2>
-            <p className="text-muted-foreground">
-              Your personalized expense report has been sent to your email. While you wait, why not explore more of what Nuacha has to offer?
-            </p>
-            <Button size="lg" asChild>
-              <Link to="/options">Explore Nuacha Solutions</Link>
-            </Button>
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-playfair mb-4">Here's How Your Receipt Looks in Nuacha</h2>
+              <p className="text-muted-foreground mb-6">
+                This is how your expenses will appear in the app, making it easy to track and manage your spending.
+              </p>
+            </div>
+            
+            {demoExpense && <ExpenseCard expense={demoExpense} />}
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Button onClick={handleTryAnother} variant="outline">
+                Try Another Receipt
+              </Button>
+              <Button size="lg" asChild>
+                <Link to="/options">Explore Nuacha Solutions</Link>
+              </Button>
+            </div>
           </div>
         )}
       </div>
