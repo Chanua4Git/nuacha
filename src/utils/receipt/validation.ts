@@ -25,3 +25,4 @@ export function validateOCRResult(result: OCRResult): boolean {
   // Fall back to overall confidence check
   return result.confidence > 0.3 && hasBasicData;
 }
+
