@@ -1,9 +1,9 @@
-
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./auth/contexts/AuthProvider";
 import Login from "./auth/components/Login";
@@ -16,19 +16,15 @@ import { useEffect } from "react";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Add viewport meta tag for better mobile support
   useEffect(() => {
-    // Check if the viewport meta tag already exists
     let viewportMeta = document.querySelector('meta[name="viewport"]');
     
-    // If it doesn't exist, create and add it
     if (!viewportMeta) {
       viewportMeta = document.createElement('meta');
       viewportMeta.setAttribute('name', 'viewport');
       document.head.appendChild(viewportMeta);
     }
     
-    // Set the content attribute for optimal mobile viewing
     viewportMeta.setAttribute(
       'content', 
       'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
@@ -49,25 +45,20 @@ const App = () => {
           />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/app" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
