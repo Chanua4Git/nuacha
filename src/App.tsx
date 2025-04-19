@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
+import { ExpenseProvider } from "./context/ExpenseContext";
 
 const queryClient = new QueryClient();
 
@@ -38,42 +39,44 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster 
-            position="top-center"
-            toastOptions={{
-              style: {
-                maxWidth: '90vw',
-              },
-            }}
-          />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/app" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/demo" element={<Demo />} />
-                  <Route path="/options" element={<Options />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
+        <ExpenseProvider>
+          <TooltipProvider>
+            <Toaster 
+              position="top-center"
+              toastOptions={{
+                style: {
+                  maxWidth: '90vw',
+                },
+              }}
+            />
+            <BrowserRouter>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/app" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/demo" element={<Demo />} />
+                    <Route path="/options" element={<Options />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ExpenseProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
