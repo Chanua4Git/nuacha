@@ -168,3 +168,4 @@ interface ReceiptLineItem {
   discounted?: boolean;
   sku?: string;
 }
+

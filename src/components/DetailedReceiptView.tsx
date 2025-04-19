@@ -227,3 +227,4 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({
 };
 
 export default DetailedReceiptView;
+
