@@ -12,18 +12,18 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      padding: "2rem",
       screens: {
-        '2xl': '1400px'
-      }
+        "2xl": "1400px",
+      },
     },
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: '#5A7684',
           foreground: '#FFFFFF'
@@ -32,13 +32,18 @@ export default {
           DEFAULT: '#F4E8D3',
           foreground: '#2F2F2F'
         },
+        soft: {
+          green: '#C3DCD1',
+          blush: '#F1CBC7',
+          gray: '#F6F6F7'
+        },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))'
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
+          foreground: '#5C5C5C'
         },
         expense: {
           blue: '#0EA5E9',
@@ -50,6 +55,7 @@ export default {
       },
       fontFamily: {
         'playfair': ['"Playfair Display"', 'serif'],
+        'body': ['Inter', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',
