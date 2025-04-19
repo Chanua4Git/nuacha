@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Download, Scan, Shield, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Landing = () => {
   return <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -18,7 +17,7 @@ const Landing = () => {
             <div className="pt-4">
               <Link to="/demo">
                 <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
-                  Experience Nuacha's Receipt Scanning in Seconds
+                  Discover our receipt scanning solution
                   <ArrowRight className="ml-2" />
                 </Button>
               </Link>
@@ -52,6 +51,7 @@ const Landing = () => {
       </section>
 
       {/* Try It Out Section */}
+      
 
       {/* Call to Action Section */}
       <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
@@ -132,7 +132,6 @@ const Landing = () => {
       </footer>
     </div>;
 };
-
 const features = [{
   title: "Cultivate Calm with Organized Finances",
   description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
@@ -146,5 +145,4 @@ const features = [{
   description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
   icon: Shield
 }];
-
 export default Landing;
