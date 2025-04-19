@@ -69,12 +69,14 @@ const ReceiptUpload = ({
     
     setIsProcessing(true);
     try {
-      // Even without Supabase connection, this will return mock data
       const extractedData = await processReceiptImage(file);
       
       if (validateOCRResult(extractedData)) {
         onDataExtracted(extractedData);
         toast.success('Receipt details gently applied');
+      } else if (extractedData.error) {
+        // The error will be handled by the toast messages in processReceiptImage
+        onDataExtracted(extractedData); // Still provide any partial data for manual correction
       } else {
         toast("The receipt details weren't clear enough", {
           description: "Feel free to adjust the information as needed."

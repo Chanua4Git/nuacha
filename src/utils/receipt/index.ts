@@ -9,6 +9,9 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
+      toast("You'll need to sign in to upload receipts", {
+        description: "We'll keep your receipt details secure."
+      });
       throw new Error('Please sign in to upload receipts');
     }
     

@@ -1,24 +1,11 @@
 
 // code for handling mindee API
-export const mindeeClient = async (apiKey: string, receiptUrl: string) => {
+export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
   try {
     // Set up Mindee API endpoint for v4
     const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v4/predict';
     
-    console.log('📥 Fetching receipt from URL:', receiptUrl);
-    
-    // First fetch the image from the Supabase URL
-    const imageResponse = await fetch(receiptUrl);
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text();
-      console.error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
-      console.error('Response text:', errorText);
-      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
-    }
-    
-    // Get the image blob
-    const imageBlob = await imageResponse.blob();
-    console.log(`📄 Retrieved image (${Math.round(imageBlob.size / 1024)}KB)`);
+    console.log(`📄 Processing receipt image (${Math.round(imageBlob.size / 1024)}KB)`);
     
     // Create FormData and append the image
     const formData = new FormData();

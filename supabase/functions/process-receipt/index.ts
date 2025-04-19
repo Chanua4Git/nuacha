@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { mindeeClient } from './mindee.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,14 +24,29 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('MINDEE_API_KEY');
-    if (!apiKey) {
+    const mindeeApiKey = Deno.env.get('MINDEE_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!mindeeApiKey) {
       console.error('❌ Missing Mindee API key');
       return new Response(
         JSON.stringify({
           error: "We're experiencing technical difficulties with our receipt processing service",
           type: 'SERVER_ERROR',
           details: 'Configuration error: Missing API key'
+        } as ErrorResponse),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Missing Supabase credentials for admin access');
+      return new Response(
+        JSON.stringify({
+          error: "We're experiencing technical difficulties with our receipt processing service",
+          type: 'SERVER_ERROR',
+          details: 'Configuration error: Missing Supabase admin credentials'
         } as ErrorResponse),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -50,12 +66,13 @@ serve(async (req) => {
       );
     }
 
-    const cleanUrl = receiptUrl.split('?')[0];
+    // Extract the path from the URL
+    // Example URL: https://fjrxqeyexlusjwzzecal.supabase.co/storage/v1/object/public/receipts/userId/timestamp.jpg
     const projectId = 'fjrxqeyexlusjwzzecal';
     const expectedUrlPrefix = `https://${projectId}.supabase.co/storage/v1/object/public/receipts/`;
     
-    if (!cleanUrl.startsWith(expectedUrlPrefix)) {
-      console.error('❌ Invalid image URL. Must point to Supabase storage:', cleanUrl);
+    if (!receiptUrl.startsWith(expectedUrlPrefix)) {
+      console.error('❌ Invalid image URL. Must point to Supabase storage:', receiptUrl);
       return new Response(
         JSON.stringify({
           error: "We're having trouble accessing your receipt image",
@@ -66,9 +83,37 @@ serve(async (req) => {
       );
     }
 
-    console.log('🧾 Processing receipt from:', cleanUrl);
+    // Extract the path from the URL by removing the prefix and any query parameters
+    const receiptPath = receiptUrl
+      .replace(expectedUrlPrefix, '')
+      .split('?')[0]; // Remove any query parameters
     
-    const result = await mindeeClient(apiKey, cleanUrl);
+    console.log('🧾 Processing receipt path:', receiptPath);
+    
+    // Initialize Supabase Admin Client
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Download the image directly using the Supabase Admin Client
+    const { data: imageData, error: downloadError } = await supabaseAdmin.storage
+      .from('receipts')
+      .download(receiptPath);
+    
+    if (downloadError || !imageData) {
+      console.error('❌ Error downloading receipt from storage:', downloadError);
+      return new Response(
+        JSON.stringify({
+          error: "We couldn't access your receipt image",
+          type: 'FETCH_ERROR',
+          details: downloadError?.message || 'Unknown error accessing image'
+        } as ErrorResponse),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`📄 Downloaded image (${Math.round(imageData.size / 1024)}KB)`);
+    
+    // Process the image using Mindee
+    const result = await mindeeClient(mindeeApiKey, imageData);
     
     if ('error' in result) {
       console.error('🚨 Error processing receipt:', result.error);
@@ -78,7 +123,7 @@ serve(async (req) => {
       
       if (result.error.includes('fetch image')) {
         errorResponse = {
-          error: "We're having trouble accessing this image. Could you try uploading it again?",
+          error: "We're having trouble processing this image. Could you try uploading it again?",
           type: 'FETCH_ERROR',
           details: result.error
         };
