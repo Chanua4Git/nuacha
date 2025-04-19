@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import ExpenseCard from "@/components/ExpenseCard";
 import { format } from "date-fns";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
+import DetailedReceiptView from "@/components/DetailedReceiptView";
 
 const Demo = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -92,7 +93,7 @@ const Demo = () => {
     <>
       <DemoBreadcrumbs currentPage="demo" />
       <div className="min-h-screen bg-background py-12 px-4">
-        <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-playfair">Try Our Receipt Scanner</h1>
             <p className="text-lg text-muted-foreground">
@@ -135,7 +136,22 @@ const Demo = () => {
                 </p>
               </div>
               
+              {/* Traditional expense card view */}
               {demoExpense && <ExpenseCard expense={demoExpense} />}
+              
+              {/* Enhanced detailed receipt view */}
+              {extractedData && (
+                <div className="mt-8">
+                  <h3 className="text-xl font-playfair mb-4">Detailed Receipt Information</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Nuacha captures extensive details from your receipts, giving you deeper insights into your spending.
+                  </p>
+                  <DetailedReceiptView 
+                    receiptData={extractedData} 
+                    receiptImage={imagePreview || undefined} 
+                  />
+                </div>
+              )}
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Button onClick={handleTryAnother} variant="outline">

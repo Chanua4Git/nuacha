@@ -108,17 +108,52 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
     });
   }
 
+  // Enhanced mapping to include all available data
   return {
+    // Basic fields
     amount: ocrResponse.amount?.value || '',
     date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
-    description: ocrResponse.line_items?.length > 0 
-      ? ocrResponse.line_items[0].description 
+    description: ocrResponse.lineItems?.length > 0 
+      ? ocrResponse.lineItems[0].description 
       : 'Purchase',
     place: ocrResponse.supplier?.value || '',
-    confidence: ocrResponse.confidence || 0.5
+    confidence: ocrResponse.confidence || 0.5,
+    
+    // Enhanced fields
+    lineItems: ocrResponse.lineItems,
+    tax: ocrResponse.tax,
+    total: ocrResponse.total,
+    subtotal: ocrResponse.subtotal,
+    discount: ocrResponse.discount,
+    paymentMethod: ocrResponse.paymentMethod,
+    storeDetails: ocrResponse.storeDetails,
+    receiptNumber: ocrResponse.receiptNumber,
+    transactionTime: ocrResponse.transactionTime,
+    currency: ocrResponse.currency,
+    confidence_summary: ocrResponse.confidence_summary
   };
 }
 
 export function validateOCRResult(result: OCRResult): boolean {
-  return result.confidence !== undefined && result.confidence > 0.3;
+  // Enhanced validation that takes into account more than just overall confidence
+  if (!result.confidence) return false;
+  
+  // Check for minimum viable data
+  const hasBasicData = result.amount && result.date;
+  
+  // If we have confidence summary, use it for more granular validation
+  if (result.confidence_summary) {
+    const summary = result.confidence_summary;
+    // Check if critical fields have reasonable confidence
+    if (summary.total > 0.6 && summary.date > 0.5) {
+      return true;
+    }
+    // If line items have good confidence, allow the result even if other fields are weaker
+    if (summary.line_items > 0.7 && hasBasicData) {
+      return true;
+    }
+  }
+  
+  // Fall back to overall confidence check
+  return result.confidence > 0.3 && hasBasicData;
 }
