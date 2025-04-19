@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Download, Scan, Shield, Users2 } from "lucide-react";
@@ -132,6 +133,7 @@ const Landing = () => {
       </footer>
     </div>;
 };
+
 const features = [{
   title: "Cultivate Calm with Organized Finances",
   description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
@@ -145,4 +147,5 @@ const features = [{
   description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
   icon: Shield
 }];
+
 export default Landing;
