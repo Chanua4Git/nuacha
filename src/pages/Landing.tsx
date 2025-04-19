@@ -1,4 +1,7 @@
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Shield, Scan, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 
