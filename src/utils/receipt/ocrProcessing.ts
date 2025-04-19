@@ -32,13 +32,23 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       };
     }
     
+    if (data.type === 'FETCH_ERROR') {
+      console.error('❌ Edge Function returned error:', data);
+      handleOcrError(data);
+      return {
+        confidence: data.confidence || 0.1,
+        error: data.message,
+        type: data.type
+      };
+    }
+    
     if (data.error) {
       console.error('❌ Edge Function returned error:', data);
       handleOcrError(data);
       return {
         confidence: data.confidence || 0.1,
         error: data.error,
-        type: data.type,
+        type: data.type || 'SERVER_ERROR',
         ...data.data
       };
     }
@@ -59,7 +69,9 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
   }
 }
 
-function handleOcrError(data: { type: string; error: string }) {
+function handleOcrError(data: { type: string; error: string; message?: string }) {
+  const description = data.message || "You can still enter the details manually.";
+  
   switch(data.type) {
     case 'FETCH_ERROR':
       toast("We're having trouble accessing this image", {
@@ -83,7 +95,7 @@ function handleOcrError(data: { type: string; error: string }) {
       break;
     default:
       toast("Something went wrong while processing your receipt", {
-        description: "You can still enter the details manually."
+        description
       });
   }
 }
