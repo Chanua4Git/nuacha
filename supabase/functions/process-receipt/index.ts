@@ -33,7 +33,7 @@ serve(async (req) => {
           type: 'SERVER_ERROR',
           message: 'Configuration error: Missing required credentials'
         } as ErrorResponse),
-        { status: 500, headers: corsHeaders }
+        { status: 200, headers: corsHeaders }
       );
     }
 
@@ -122,7 +122,7 @@ serve(async (req) => {
           type: 'SERVER_ERROR',
           message: 'Please try again in a moment'
         } as ErrorResponse),
-        { status: 500, headers: corsHeaders }
+        { status: 200, headers: corsHeaders }
       );
     }
     
@@ -157,7 +157,7 @@ serve(async (req) => {
         type: 'SERVER_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       } as ErrorResponse),
-      { status: 500, headers: corsHeaders }
+      { status: 200, headers: corsHeaders }
     );
   }
 });
