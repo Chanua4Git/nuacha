@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut } from 'lucide-react';
@@ -10,6 +9,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '@/auth/utils/supabaseClient';
 import { toast } from 'sonner';
 
+const HIDDEN_ROUTES = ['/', '/demo', '/options'];
+
 const Navbar = () => {
   const { selectedFamily } = useExpense();
   const isMobile = useIsMobile();
@@ -17,6 +18,10 @@ const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  if (HIDDEN_ROUTES.includes(location.pathname)) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {

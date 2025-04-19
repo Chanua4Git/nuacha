@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -12,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExpenseCard from "@/components/ExpenseCard";
 import { format } from "date-fns";
+import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 
 const Demo = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -52,7 +52,6 @@ const Demo = () => {
     setIsSubmitting(true);
 
     try {
-      // Store lead in database with JSON-compatible receipt data
       const { error: dbError } = await supabase.from('demo_leads').insert({
         email: data.email,
         name: data.name,
@@ -89,64 +88,67 @@ const Demo = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-20 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div className="text-center space-y-6">
-          <h1 className="text-4xl font-playfair">Try Our Receipt Scanner</h1>
-          <p className="text-lg text-muted-foreground">
-            Experience how Nuacha simplifies expense tracking with intelligent receipt scanning.
-          </p>
-        </div>
-
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            This demo showcases Nuacha's receipt scanning functionality. Your uploaded receipt will not be saved or stored. Please do not upload sensitive documents.
-          </AlertDescription>
-        </Alert>
-
-        {!showLeadForm ? (
-          <Card className="p-6">
-            <ReceiptUpload
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              onDataExtracted={handleDataExtracted}
-              imagePreview={imagePreview}
-            />
-          </Card>
-        ) : !demoComplete ? (
-          <Card className="p-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-playfair mb-2">See How Nuacha Works</h2>
-              <p className="text-muted-foreground">
-                Enter your details to see how Nuacha can transform your expense management.
-              </p>
-            </div>
-            <LeadCaptureForm onSubmit={handleLeadSubmit} isLoading={isSubmitting} />
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-playfair mb-4">Here's How Your Receipt Looks in Nuacha</h2>
-              <p className="text-muted-foreground mb-6">
-                This is how your expenses will appear in the app, making it easy to track and manage your spending.
-              </p>
-            </div>
-            
-            {demoExpense && <ExpenseCard expense={demoExpense} />}
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button onClick={handleTryAnother} variant="outline">
-                Try Another Receipt
-              </Button>
-              <Button size="lg" asChild>
-                <Link to="/options">Explore Nuacha Solutions</Link>
-              </Button>
-            </div>
+    <>
+      <DemoBreadcrumbs currentPage="demo" />
+      <div className="min-h-screen bg-background py-12 px-4">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl font-playfair">Try Our Receipt Scanner</h1>
+            <p className="text-lg text-muted-foreground">
+              Experience how Nuacha simplifies expense tracking with intelligent receipt scanning.
+            </p>
           </div>
-        )}
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              This demo showcases Nuacha's receipt scanning functionality. Your uploaded receipt will not be saved or stored. Please do not upload sensitive documents.
+            </AlertDescription>
+          </Alert>
+
+          {!showLeadForm ? (
+            <Card className="p-6">
+              <ReceiptUpload
+                onImageUpload={handleImageUpload}
+                onImageRemove={handleImageRemove}
+                onDataExtracted={handleDataExtracted}
+                imagePreview={imagePreview}
+              />
+            </Card>
+          ) : !demoComplete ? (
+            <Card className="p-6">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-playfair mb-2">See How Nuacha Works</h2>
+                <p className="text-muted-foreground">
+                  Enter your details to see how Nuacha can transform your expense management.
+                </p>
+              </div>
+              <LeadCaptureForm onSubmit={handleLeadSubmit} isLoading={isSubmitting} />
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-playfair mb-4">Here's How Your Receipt Looks in Nuacha</h2>
+                <p className="text-muted-foreground mb-6">
+                  This is how your expenses will appear in the app, making it easy to track and manage your spending.
+                </p>
+              </div>
+              
+              {demoExpense && <ExpenseCard expense={demoExpense} />}
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button onClick={handleTryAnother} variant="outline">
+                  Try Another Receipt
+                </Button>
+                <Button size="lg" asChild>
+                  <Link to="/options">Explore Nuacha Solutions</Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
