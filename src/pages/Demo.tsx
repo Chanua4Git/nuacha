@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -20,9 +21,11 @@ const Demo = () => {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extractedData, setExtractedData] = useState<OCRResult | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const navigate = useNavigate();
 
   const handleImageUpload = (file: File) => {
+    setCurrentFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
@@ -38,6 +41,7 @@ const Demo = () => {
     setDemoComplete(false);
     setShowLeadForm(false);
     setExtractedData(null);
+    setCurrentFile(null);
   };
 
   const handleDataExtracted = (data: OCRResult) => {
@@ -90,15 +94,23 @@ const Demo = () => {
     id: 'demo',
     familyId: 'demo',
     amount: parseFloat(extractedData.amount || '0'),
-    description: extractedData.description || 'Purchase',
+    description: extractedData.storeDetails?.name || extractedData.description || 'Purchase',
     category: 'demo',
     date: extractedData.date ? format(extractedData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-    place: extractedData.place || 'Store',
+    place: extractedData.storeDetails?.address || extractedData.place || 'Store',
     receiptUrl: imagePreview || undefined
   } : null;
 
   const handleTryAnother = () => {
     handleImageRemove();
+  };
+  
+  const handleRetry = () => {
+    if (currentFile) {
+      handleImageUpload(currentFile);
+      setShowLeadForm(false);
+      setDemoComplete(false);
+    }
   };
 
   return (
@@ -158,12 +170,16 @@ const Demo = () => {
                   </p>
                   <DetailedReceiptView 
                     receiptData={extractedData} 
-                    receiptImage={imagePreview || undefined} 
+                    receiptImage={imagePreview || undefined}
+                    onRetry={handleRetry}
                   />
                 </div>
               )}
               
-              <div className="flex justify-center pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button onClick={handleTryAnother} variant="outline">
+                  Try Another Receipt
+                </Button>
                 <Button size="lg" asChild>
                   <Link to="/options">Explore Nuacha Solutions</Link>
                 </Button>

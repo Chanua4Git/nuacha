@@ -4,20 +4,26 @@ import { OCRResult, ReceiptLineItem } from '@/types/expense';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon, ShoppingBag, CreditCard, MapPin, Calendar, Clock, Receipt } from 'lucide-react';
+import { InfoIcon, ShoppingBag, CreditCard, MapPin, Calendar, Clock, Receipt, RefreshCw } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 interface DetailedReceiptViewProps {
   receiptData: OCRResult;
   receiptImage?: string;
+  onRetry?: () => void;
 }
 
 const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ 
   receiptData, 
-  receiptImage 
+  receiptImage,
+  onRetry
 }) => {
   const hasLineItems = receiptData.lineItems && receiptData.lineItems.length > 0;
+  const isLowConfidence = receiptData.confidence && receiptData.confidence < 0.7;
+  
   const formatCurrency = (amount: string | undefined) => {
     if (!amount) return '-';
     return `$${parseFloat(amount).toFixed(2)}`;
@@ -41,6 +47,26 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({
 
   return (
     <div className="space-y-4">
+      {isLowConfidence && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <InfoIcon className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Some details may not have been read correctly.
+            {onRetry && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2 text-yellow-800" 
+                onClick={onRetry}
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Try scanning again
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Receipt Image */}
         {receiptImage && (
@@ -75,7 +101,7 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({
             <dl className="space-y-2">
               <div className="flex justify-between py-1">
                 <dt className="text-muted-foreground">Store:</dt>
-                <dd className="font-medium">{receiptData.storeDetails?.name || receiptData.place || '-'}</dd>
+                <dd className="font-medium">{receiptData.storeDetails?.name || receiptData.description || '-'}</dd>
               </div>
               
               <div className="flex justify-between py-1">
@@ -164,28 +190,26 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({
             <CardTitle className="text-lg">Items Purchased</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 font-medium text-muted-foreground">Item</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Qty</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Price</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receiptData.lineItems.map((item: ReceiptLineItem, index: number) => (
-                    <tr key={index} className="border-b border-gray-100">
-                      <td className="py-2">{item.description}</td>
-                      <td className="text-right py-2">{item.quantity || 1}</td>
-                      <td className="text-right py-2">{formatCurrency(item.unitPrice)}</td>
-                      <td className="text-right py-2 font-medium">{formatCurrency(item.totalPrice)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {receiptData.lineItems.map((item: ReceiptLineItem, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell className="text-right">{item.quantity || 1}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(item.totalPrice)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             
             {receiptData.lineItems.some(item => item.confidence < 0.6) && (
               <Alert className="mt-4 bg-yellow-50">

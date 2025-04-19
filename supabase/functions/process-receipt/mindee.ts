@@ -1,9 +1,9 @@
 
-// code for handling mindee API
+// code for handling mindee API v5
 export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
   try {
-    // Set up Mindee API endpoint for v4
-    const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v4/predict';
+    // Set up Mindee API endpoint for v5
+    const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v5/predict';
     
     console.log(`📄 Processing receipt image (${Math.round(imageBlob.size / 1024)}KB)`);
     
@@ -43,68 +43,82 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
     
     const data = JSON.parse(responseText);
     
-    // Map the v4 API response format
-    const document = data.document.inference.prediction;
-    const lineItems = processLineItems(document.line_items || []);
+    // Map the v5 API response format - this is the key change!
+    const document = data.document;
+    const prediction = document.inference.prediction;
+    
+    // Process line items from v5 format
+    const lineItems = processLineItems(prediction.line_items || []);
+    
+    // Calculate overall confidence from all fields
+    const confidenceScores = [
+      prediction.total_amount?.confidence,
+      prediction.date?.confidence,
+      prediction.supplier_name?.confidence
+    ].filter(Boolean);
+    
+    const overallConfidence = confidenceScores.length > 0 
+      ? confidenceScores.reduce((sum, val) => sum + val, 0) / confidenceScores.length 
+      : 0.5;
     
     return {
       // Basic receipt info
       amount: {
-        value: document.total_amount?.value,
-        confidence: document.total_amount?.confidence
+        value: prediction.total_amount?.value,
+        confidence: prediction.total_amount?.confidence
       },
       date: {
-        value: document.date?.value,
-        confidence: document.date?.confidence
+        value: prediction.date?.value,
+        confidence: prediction.date?.confidence
       },
       supplier: {
-        value: document.merchant_name?.value,
-        confidence: document.merchant_name?.confidence
+        value: prediction.supplier_name?.value || prediction.supplier?.value,
+        confidence: prediction.supplier_name?.confidence || prediction.supplier?.confidence
       },
       
       // Enhanced receipt details
       lineItems: lineItems,
-      tax: document.taxes && document.taxes.length > 0 ? {
-        amount: document.taxes[0].value,
-        rate: document.taxes[0].rate,
-        confidence: document.taxes[0].confidence || 0
+      tax: prediction.taxes && prediction.taxes.length > 0 ? {
+        amount: prediction.taxes[0].value,
+        rate: prediction.taxes[0].rate,
+        confidence: prediction.taxes[0].confidence || 0
       } : undefined,
       total: {
-        amount: document.total_amount?.value,
-        confidence: document.total_amount?.confidence || 0
+        amount: prediction.total_amount?.value,
+        confidence: prediction.total_amount?.confidence || 0
       },
-      subtotal: document.subtotal_amount ? {
-        amount: document.subtotal_amount.value,
-        confidence: document.subtotal_amount.confidence || 0
+      subtotal: prediction.subtotal_amount ? {
+        amount: prediction.subtotal_amount.value,
+        confidence: prediction.subtotal_amount.confidence || 0
       } : undefined,
       storeDetails: {
-        name: document.merchant_name?.value,
-        address: document.merchant_address?.value,
-        phone: document.merchant_phone?.value,
-        website: document.merchant_website?.value,
-        confidence: document.merchant_name?.confidence || 0
+        name: prediction.supplier_name?.value || prediction.supplier?.value,
+        address: prediction.supplier_address?.value,
+        phone: prediction.supplier_phone_number?.value,
+        website: prediction.supplier_website?.value,
+        confidence: prediction.supplier_name?.confidence || 0
       },
-      receiptNumber: document.receipt_number ? {
-        value: document.receipt_number.value,
-        confidence: document.receipt_number.confidence || 0
+      receiptNumber: prediction.receipt_number ? {
+        value: prediction.receipt_number.value,
+        confidence: prediction.receipt_number.confidence || 0
       } : undefined,
-      transactionTime: document.time ? {
-        value: new Date(`${document.date?.value || ''} ${document.time.value}`),
-        confidence: document.time.confidence || 0
+      transactionTime: prediction.time ? {
+        value: new Date(`${prediction.date?.value || ''} ${prediction.time.value}`),
+        confidence: prediction.time.confidence || 0
       } : undefined,
-      currency: document.currency?.value,
-      paymentMethod: document.payment_details ? {
-        type: document.payment_details.method || 'unknown',
-        lastDigits: document.payment_details.card_number?.split(' ').pop(),
-        confidence: document.payment_details.confidence || 0
+      currency: prediction.currency?.value,
+      paymentMethod: prediction.payment.method ? {
+        type: prediction.payment.method,
+        lastDigits: prediction.payment.card_number?.split(' ').pop(),
+        confidence: prediction.payment.confidence || 0
       } : undefined,
       confidence_summary: {
-        overall: calculateOverallConfidence(document),
+        overall: overallConfidence,
         line_items: lineItems.length > 0 ? 
           lineItems.reduce((sum, item) => sum + item.confidence, 0) / lineItems.length : 0,
-        total: document.total_amount?.confidence || 0,
-        date: document.date?.confidence || 0,
-        merchant: document.merchant_name?.confidence || 0
+        total: prediction.total_amount?.confidence || 0,
+        date: prediction.date?.confidence || 0,
+        merchant: prediction.supplier_name?.confidence || 0
       }
     };
   } catch (error) {
@@ -116,16 +130,16 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
   }
 }
 
-// Process line items from Mindee API response
+// Process line items from Mindee v5 API response
 function processLineItems(items: any[]): ReceiptLineItem[] {
   return items.map(item => ({
     description: item.description || 'Unknown item',
     quantity: item.quantity || 1,
-    unitPrice: item.unit_price,
-    totalPrice: item.total_amount || '0',
+    unitPrice: item.unit_price?.value,
+    totalPrice: item.total_amount?.value || '0',
     confidence: calculateLineItemConfidence(item),
     discounted: !!item.discount,
-    sku: item.product_code
+    sku: item.product_code?.value
   }));
 }
 
@@ -135,20 +149,8 @@ function calculateLineItemConfidence(item: any): number {
     item.confidence,
     item.description_confidence,
     item.quantity_confidence,
-    item.unit_price_confidence,
-    item.total_amount_confidence
-  ].filter(Boolean);
-  
-  if (confidenceValues.length === 0) return 0;
-  return confidenceValues.reduce((sum, val) => sum + val, 0) / confidenceValues.length;
-}
-
-// Helper function to calculate overall confidence from the Mindee response
-function calculateOverallConfidence(document: any): number {
-  const confidenceValues = [
-    document.total_amount_confidence,
-    document.date_confidence,
-    document.merchant_name_confidence
+    item.unit_price?.confidence,
+    item.total_amount?.confidence
   ].filter(Boolean);
   
   if (confidenceValues.length === 0) return 0;

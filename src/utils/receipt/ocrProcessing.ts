@@ -110,14 +110,13 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
 
   // Enhanced mapping to include all available data
   return {
-    // Basic fields
-    amount: ocrResponse.amount?.value || '',
+    // Basic fields - prioritize values from the store details if available
+    amount: ocrResponse.amount?.value || (ocrResponse.total?.amount) || '',
     date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
-    description: ocrResponse.lineItems?.length > 0 
-      ? ocrResponse.lineItems[0].description 
-      : 'Purchase',
-    place: ocrResponse.supplier?.value || '',
-    confidence: ocrResponse.confidence || 0.5,
+    description: ocrResponse.storeDetails?.name || ocrResponse.supplier?.value || 
+      (ocrResponse.lineItems && ocrResponse.lineItems.length > 0 ? ocrResponse.lineItems[0].description : 'Purchase'),
+    place: ocrResponse.storeDetails?.address || ocrResponse.supplier?.value || '',
+    confidence: ocrResponse.confidence || ocrResponse.confidence_summary?.overall || 0.5,
     
     // Enhanced fields
     lineItems: ocrResponse.lineItems,
