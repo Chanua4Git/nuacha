@@ -10,19 +10,11 @@ export interface ReceiptLineItem {
 }
 
 interface MindeeLineItem {
-  description: { value: string };
-  quantity?: { value: number };
-  unit_price?: { 
-    amount?: { 
-      value: string | number 
-    } 
-  };
-  total_amount?: { 
-    amount?: { 
-      value: string | number 
-    } 
-  };
-  confidence?: number;
+  description: string;
+  quantity: number | null;
+  unit_price: number | null;
+  total_amount: number | null;
+  confidence: number;
   discount?: boolean;
   product_code?: { value: string };
 }
