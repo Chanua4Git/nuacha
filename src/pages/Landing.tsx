@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Scan, Shield, Users2 } from "lucide-react";
+import { ArrowRight, Download, Scan, Shield, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Landing = () => {
@@ -18,9 +18,9 @@ const Landing = () => {
               Effortlessly manage expenses for all your families, gaining clarity and control that nurtures your well-being.
             </p>
             <div className="pt-4">
-              <Link to="/signup">
-                <Button size="lg" className="rounded-full px-8">
-                  Embrace Financial Peace
+              <Link to="/options">
+                <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
+                  Discover Your Ideal Solution
                   <ArrowRight className="ml-2" />
                 </Button>
               </Link>
@@ -55,6 +55,26 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Try It Out Section */}
+      <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F4E8D3]/20 to-transparent">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-playfair mb-6">
+            Experience Nuacha's Receipt Scanning in Seconds
+          </h2>
+          <p className="text-lg mb-8 text-muted-foreground">
+            Download a sample receipt and see how Nuacha instantly captures expense details. No sign-up required.
+          </p>
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="rounded-full px-8 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684]/10"
+          >
+            <Download className="mr-2" />
+            Download Sample Receipt
+          </Button>
+        </div>
+      </section>
+
       {/* Call to Action Section */}
       <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
         <div className="max-w-4xl mx-auto text-center">
@@ -64,36 +84,96 @@ const Landing = () => {
           <p className="text-lg mb-8 text-white/90">
             Start your journey to mindful financial management today.
           </p>
-          <Link to="/signup">
+          <Link to="/demo">
             <Button
               size="lg"
               variant="secondary"
               className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90"
             >
-              Begin Your Gentle Path to Clarity
+              Try a Quick Demo
               <ArrowRight className="ml-2" />
             </Button>
           </Link>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 md:px-6 lg:px-8 bg-background">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-playfair text-lg mb-4">About Nuacha</h3>
+              <p className="text-sm text-muted-foreground">
+                A softer way to track spending and manage family finances.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-playfair text-lg mb-4">Legal</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground">
+                    Terms of Service
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-playfair text-lg mb-4">Support</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/help" className="text-sm text-muted-foreground hover:text-foreground">
+                    Help Center
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-playfair text-lg mb-4">Connect</h3>
+              <div className="flex space-x-4">
+                <a href="#" className="text-muted-foreground hover:text-foreground">
+                  Twitter
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground">
+                  LinkedIn
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="mt-12 pt-8 border-t border-border">
+            <p className="text-center text-sm text-muted-foreground">
+              © {new Date().getFullYear()} Nuacha. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
 
 const features = [
   {
-    title: "Multi-Family Management",
-    description: "Organize expenses for multiple families in one serene space, maintaining clarity and peace of mind.",
+    title: "Cultivate Calm with Organized Finances",
+    description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
     icon: Users2,
   },
   {
-    title: "Gentle Receipt Capture",
-    description: "Effortlessly capture and organize receipts with our intelligent scanning technology.",
+    title: "Release the Stress of Manual Entry",
+    description: "Gently capture and organize receipts with our intelligent scanning technology, freeing your time and mind.",
     icon: Scan,
   },
   {
-    title: "Private & Protected",
-    description: "Rest easy knowing your financial information is secure and protected.",
+    title: "Nurture Future Security",
+    description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
     icon: Shield,
   },
 ];
