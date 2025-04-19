@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -52,20 +53,20 @@ const Demo = () => {
     setIsSubmitting(true);
 
     try {
-      const { error: dbError } = await supabase.from('demo_leads').insert({
+      const { error } = await supabase.from('demo_leads').insert({
         email: data.email,
         name: data.name,
         interest_type: data.interestType,
         additional_info: data.additionalInfo,
-        receipt_data: JSON.parse(JSON.stringify(extractedData))
+        receipt_data: extractedData ? JSON.stringify(extractedData) : null
       });
 
-      if (dbError) throw dbError;
+      if (error) throw error;
 
       setDemoComplete(true);
       toast.success("Thank you for trying Nuacha!");
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error submitting lead:', error);
       toast.error("We couldn't save your information. Please try again.");
     } finally {
       setIsSubmitting(false);
