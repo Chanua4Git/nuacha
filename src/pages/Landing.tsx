@@ -1,12 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Download, Scan, Shield, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Landing = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative py-20 px-4 md:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
@@ -42,15 +39,13 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <Card key={feature.title} className="border-none shadow-sm bg-card/50 backdrop-blur">
+            {features.map(feature => <Card key={feature.title} className="border-none shadow-sm bg-card/50 backdrop-blur">
                 <CardContent className="pt-6">
                   <feature.icon className="w-10 h-10 text-[#5A7684] mb-4" />
                   <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -64,14 +59,7 @@ const Landing = () => {
           <p className="text-lg mb-8 text-muted-foreground">
             Download a sample receipt and see how Nuacha instantly captures expense details. No sign-up required.
           </p>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="rounded-full px-8 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684]/10"
-          >
-            <Download className="mr-2" />
-            Download Sample Receipt
-          </Button>
+          
         </div>
       </section>
 
@@ -85,11 +73,7 @@ const Landing = () => {
             Start your journey to mindful financial management today.
           </p>
           <Link to="/demo">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90"
-            >
+            <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90">
               Try a Quick Demo
               <ArrowRight className="ml-2" />
             </Button>
@@ -156,26 +140,19 @@ const Landing = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
-const features = [
-  {
-    title: "Cultivate Calm with Organized Finances",
-    description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
-    icon: Users2,
-  },
-  {
-    title: "Release the Stress of Manual Entry",
-    description: "Gently capture and organize receipts with our intelligent scanning technology, freeing your time and mind.",
-    icon: Scan,
-  },
-  {
-    title: "Nurture Future Security",
-    description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
-    icon: Shield,
-  },
-];
-
+const features = [{
+  title: "Cultivate Calm with Organized Finances",
+  description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
+  icon: Users2
+}, {
+  title: "Release the Stress of Manual Entry",
+  description: "Gently capture and organize receipts with our intelligent scanning technology, freeing your time and mind.",
+  icon: Scan
+}, {
+  title: "Nurture Future Security",
+  description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
+  icon: Shield
+}];
 export default Landing;
