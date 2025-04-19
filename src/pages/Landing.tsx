@@ -18,9 +18,9 @@ const Landing = () => {
               Effortlessly manage expenses for all your families, gaining clarity and control that nurtures your well-being.
             </p>
             <div className="pt-4">
-              <Link to="/options">
+              <Link to="/demo">
                 <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
-                  Discover Your Ideal Solution
+                  Discover our receipt scanning solution
                   <ArrowRight className="ml-2" />
                 </Button>
               </Link>
