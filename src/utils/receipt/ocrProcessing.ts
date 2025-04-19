@@ -36,7 +36,7 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
       console.error('❌ Edge Function returned error:', data);
       handleOcrError(data);
       return {
-        confidence: data.confidence || 0.1,
+        confidence: 0.1,
         error: data.message,
         type: data.type
       };
@@ -139,7 +139,7 @@ export function validateOCRResult(result: OCRResult): boolean {
   if (!result.confidence) return false;
   
   // Check for minimum viable data
-  const hasBasicData = result.amount && result.date;
+  const hasBasicData = Boolean(result.amount && result.date);
   
   // If we have confidence summary, use it for more granular validation
   if (result.confidence_summary) {
