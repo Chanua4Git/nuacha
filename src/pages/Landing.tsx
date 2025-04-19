@@ -51,17 +51,7 @@ const Landing = () => {
       </section>
 
       {/* Try It Out Section */}
-      <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F4E8D3]/20 to-transparent">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-playfair mb-6">
-            Experience Nuacha's Receipt Scanning in Seconds
-          </h2>
-          <p className="text-lg mb-8 text-muted-foreground">
-            Download a sample receipt and see how Nuacha instantly captures expense details. No sign-up required.
-          </p>
-          
-        </div>
-      </section>
+      
 
       {/* Call to Action Section */}
       <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
