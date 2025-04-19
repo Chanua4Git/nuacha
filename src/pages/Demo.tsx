@@ -1,10 +1,9 @@
-
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { OCRResult } from "@/types/expense";
 import LeadCaptureForm from "@/components/demo/LeadCaptureForm";
@@ -21,6 +20,7 @@ const Demo = () => {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extractedData, setExtractedData] = useState<OCRResult | null>(null);
+  const navigate = useNavigate();
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -62,13 +62,25 @@ const Demo = () => {
         receipt_data: extractedData ? JSON.stringify(extractedData) : null
       });
 
+      if (error?.code === '23505') {
+        toast("You've already tried Nuacha!", {
+          description: "Ready to explore more? Check out our solutions.",
+          action: {
+            label: "View Solutions",
+            onClick: () => navigate('/options')
+          }
+        });
+        setDemoComplete(true);
+        return;
+      }
+
       if (error) throw error;
 
       setDemoComplete(true);
       toast.success("Thank you for trying Nuacha!");
     } catch (error) {
       console.error('Error submitting lead:', error);
-      toast.error("We couldn't save your information. Please try again.");
+      toast.error("Something went wrong. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
@@ -136,10 +148,8 @@ const Demo = () => {
                 </p>
               </div>
               
-              {/* Traditional expense card view */}
               {demoExpense && <ExpenseCard expense={demoExpense} />}
               
-              {/* Enhanced detailed receipt view */}
               {extractedData && (
                 <div className="mt-8">
                   <h3 className="text-xl font-playfair mb-4">Detailed Receipt Information</h3>
@@ -153,10 +163,7 @@ const Demo = () => {
                 </div>
               )}
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Button onClick={handleTryAnother} variant="outline">
-                  Try Another Receipt
-                </Button>
+              <div className="flex justify-center pt-4">
                 <Button size="lg" asChild>
                   <Link to="/options">Explore Nuacha Solutions</Link>
                 </Button>
