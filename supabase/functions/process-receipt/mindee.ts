@@ -1,5 +1,6 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// code for handling mindee API v5
 export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
   try {
     // Set up Mindee API endpoint for v5
@@ -107,10 +108,10 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob) => {
         confidence: prediction.time.confidence || 0
       } : undefined,
       currency: prediction.currency?.value,
-      paymentMethod: prediction.payment.method ? {
+      paymentMethod: prediction.payment?.method ? {
         type: prediction.payment.method,
         lastDigits: prediction.payment.card_number?.split(' ').pop(),
-        confidence: prediction.payment.confidence || 0
+        confidence: prediction.payment.confidence ?? 0
       } : undefined,
       confidence_summary: {
         overall: overallConfidence,
@@ -168,4 +169,3 @@ interface ReceiptLineItem {
   discounted?: boolean;
   sku?: string;
 }
-
