@@ -37,57 +37,87 @@ serve(async (req) => {
       );
     }
 
-    const { receiptUrl } = await req.json();
+    const requestBody = await req.json();
+    let imageData: Blob;
     
-    if (!receiptUrl) {
+    // Handle demo mode/direct base64 upload (for unauthenticated users)
+    if (requestBody.receiptBase64 && requestBody.contentType) {
+      console.log('🧾 Processing receipt from base64 data (demo mode)');
+      
+      // Convert base64 to Blob
+      const binaryString = atob(requestBody.receiptBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      imageData = new Blob([bytes], { type: requestBody.contentType });
+      console.log(`📄 Converted base64 to Blob (${Math.round(imageData.size / 1024)}KB)`);
+    } 
+    // Handle standard storage-based processing (for authenticated users)
+    else if (requestBody.receiptUrl) {
+      const receiptUrl = requestBody.receiptUrl;
+      
+      if (!receiptUrl) {
+        return new Response(
+          JSON.stringify({
+            error: "We couldn't find the receipt image",
+            type: 'UPLOAD_ERROR',
+            message: 'Please try uploading your receipt again'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      const projectId = 'fjrxqeyexlusjwzzecal';
+      const expectedUrlPrefix = `https://${projectId}.supabase.co/storage/v1/object/public/receipts/`;
+      
+      if (!receiptUrl.startsWith(expectedUrlPrefix)) {
+        return new Response(
+          JSON.stringify({
+            error: "We're having trouble accessing your receipt",
+            type: 'FETCH_ERROR',
+            message: 'The image location is not valid'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      const receiptPath = receiptUrl
+        .replace(expectedUrlPrefix, '')
+        .split('?')[0];
+      
+      console.log('🧾 Processing receipt path:', receiptPath);
+      
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: downloadedImageData, error: downloadError } = await supabaseAdmin.storage
+        .from('receipts')
+        .download(receiptPath);
+      
+      if (downloadError || !downloadedImageData) {
+        console.error('❌ Error downloading receipt:', downloadError);
+        return new Response(
+          JSON.stringify({
+            error: "We couldn't access your receipt image",
+            type: 'FETCH_ERROR',
+            message: downloadError?.message || 'Please try uploading again'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
+      imageData = downloadedImageData;
+      console.log(`📄 Downloaded image (${Math.round(imageData.size / 1024)}KB)`);
+    } else {
       return new Response(
         JSON.stringify({
           error: "We couldn't find the receipt image",
           type: 'UPLOAD_ERROR',
-          message: 'Please try uploading your receipt again'
+          message: 'Please provide either a receipt URL or base64 image data'
         } as ErrorResponse),
         { status: 200, headers: corsHeaders }
       );
     }
-
-    const projectId = 'fjrxqeyexlusjwzzecal';
-    const expectedUrlPrefix = `https://${projectId}.supabase.co/storage/v1/object/public/receipts/`;
-    
-    if (!receiptUrl.startsWith(expectedUrlPrefix)) {
-      return new Response(
-        JSON.stringify({
-          error: "We're having trouble accessing your receipt",
-          type: 'FETCH_ERROR',
-          message: 'The image location is not valid'
-        } as ErrorResponse),
-        { status: 200, headers: corsHeaders }
-      );
-    }
-
-    const receiptPath = receiptUrl
-      .replace(expectedUrlPrefix, '')
-      .split('?')[0];
-    
-    console.log('🧾 Processing receipt path:', receiptPath);
-    
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: imageData, error: downloadError } = await supabaseAdmin.storage
-      .from('receipts')
-      .download(receiptPath);
-    
-    if (downloadError || !imageData) {
-      console.error('❌ Error downloading receipt:', downloadError);
-      return new Response(
-        JSON.stringify({
-          error: "We couldn't access your receipt image",
-          type: 'FETCH_ERROR',
-          message: downloadError?.message || 'Please try uploading again'
-        } as ErrorResponse),
-        { status: 200, headers: corsHeaders }
-      );
-    }
-    
-    console.log(`📄 Downloaded image (${Math.round(imageData.size / 1024)}KB)`);
     
     const result = await mindeeClient(mindeeApiKey, imageData);
     

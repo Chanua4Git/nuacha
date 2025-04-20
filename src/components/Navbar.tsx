@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut } from 'lucide-react';
@@ -6,7 +7,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabaseClient } from '@/auth/utils/supabaseClient';
 import { toast } from 'sonner';
 
 const HIDDEN_ROUTES = ['/', '/demo', '/options'];
@@ -15,7 +15,7 @@ const Navbar = () => {
   const { selectedFamily } = useExpense();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,9 +25,8 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await supabaseClient.auth.signOut();
+      await signOut();
       toast.success('Signed out successfully');
-      navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Error signing out');

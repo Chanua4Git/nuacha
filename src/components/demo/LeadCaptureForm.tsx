@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,6 +61,19 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           />
         </div>
 
+        <div className="space-y-2 mt-6">
+          <label htmlFor="additionalInfo" className="block text-sm font-medium text-foreground">
+            Anything else you'd like to tell us?
+          </label>
+          <Textarea
+            id="additionalInfo"
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+            placeholder="Share any questions or thoughts"
+            className="min-h-[100px]"
+          />
+        </div>
+
         <div className="space-y-2 relative">
           <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
             Why are you interested in Nuacha?
@@ -76,19 +90,6 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2 mt-6">
-          <label htmlFor="additionalInfo" className="block text-sm font-medium text-foreground">
-            Anything else you'd like to tell us?
-          </label>
-          <Textarea
-            id="additionalInfo"
-            value={additionalInfo}
-            onChange={(e) => setAdditionalInfo(e.target.value)}
-            placeholder="Share any questions or thoughts"
-            className="min-h-[100px]"
-          />
         </div>
       </div>
 

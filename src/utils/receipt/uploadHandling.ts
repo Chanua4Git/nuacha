@@ -6,20 +6,24 @@ import { convertHeicToJpeg } from './imageProcessing';
 export async function handleReceiptUpload(file: File): Promise<string | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      toast("You'll need to sign in to upload receipts", {
-        description: "We'll keep your receipt details secure."
-      });
-      throw new Error('Please sign in to upload receipts');
-    }
     
-    const receiptUrl = await uploadReceiptToStorage(file, session.user.id);
-    if (!receiptUrl) {
-      return null;
+    // If user is authenticated, upload to storage
+    if (session?.user) {
+      const receiptUrl = await uploadReceiptToStorage(file, session.user.id);
+      if (!receiptUrl) {
+        return null;
+      }
+      
+      console.log('📄 Processing receipt:', receiptUrl);
+      return receiptUrl;
+    } 
+    // For unauthenticated users (demo mode), return a temporary object URL
+    else {
+      // For demo users, just return a local object URL
+      const objectUrl = URL.createObjectURL(file);
+      console.log('📄 Processing demo receipt (local):', objectUrl);
+      return objectUrl;
     }
-    
-    console.log('📄 Processing receipt:', receiptUrl);
-    return receiptUrl;
   } catch (error) {
     console.error('Error in handleReceiptUpload:', error);
     return null;

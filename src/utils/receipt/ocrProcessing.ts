@@ -8,8 +8,43 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
   try {
     console.log('📄 Processing receipt:', receiptUrl);
     
+    // Check if this is a local file URL (for demo/unauthenticated users)
+    const isLocalFileUrl = receiptUrl.startsWith('blob:');
+    let requestBody: any = { receiptUrl };
+    
+    // For demo users (unauthenticated), we need to send the file directly
+    if (isLocalFileUrl) {
+      try {
+        const response = await fetch(receiptUrl);
+        const blob = await response.blob();
+        
+        // Convert blob to base64
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            // Remove the data URL prefix
+            const base64Content = base64data.split(',')[1];
+            resolve(base64Content);
+          };
+        });
+        reader.readAsDataURL(blob);
+        
+        const base64Content = await base64Promise;
+        requestBody = { 
+          receiptBase64: base64Content,
+          contentType: blob.type,
+          isDemo: true
+        };
+        
+      } catch (error) {
+        console.error('Error processing local file:', error);
+        throw new Error('Failed to process local receipt file');
+      }
+    }
+    
     const { data, error } = await supabase.functions.invoke('process-receipt', {
-      body: JSON.stringify({ receiptUrl })
+      body: JSON.stringify(requestBody)
     });
     
     if (error) {
@@ -156,4 +191,3 @@ export function validateOCRResult(result: OCRResult): boolean {
   // Fall back to overall confidence check
   return result.confidence > 0.3 && hasBasicData;
 }
-
