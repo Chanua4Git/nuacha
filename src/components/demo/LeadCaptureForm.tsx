@@ -32,7 +32,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 relative">
+    <form onSubmit={handleSubmit} className="space-y-8 relative overflow-visible">
       <div className="space-y-6">
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium text-foreground">
@@ -61,6 +61,29 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           />
         </div>
 
+        <div className="space-y-2 relative mb-8">
+          <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
+            Why are you interested in Nuacha?
+          </label>
+          <Select value={interestType} onValueChange={setInterestType} required>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select your interest" />
+            </SelectTrigger>
+            <SelectContent 
+              position="popper" 
+              className="w-full bg-popover" 
+              align="start"
+              sideOffset={5}
+            >
+              <SelectItem value="personal">Personal use</SelectItem>
+              <SelectItem value="family">Family expense management</SelectItem>
+              <SelectItem value="small-business">Small business</SelectItem>
+              <SelectItem value="large-business">Large business</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="space-y-2 mt-6">
           <label htmlFor="additionalInfo" className="block text-sm font-medium text-foreground">
             Anything else you'd like to tell us?
@@ -73,27 +96,9 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
             className="min-h-[100px]"
           />
         </div>
-
-        <div className="space-y-2 relative">
-          <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
-            Why are you interested in Nuacha?
-          </label>
-          <Select value={interestType} onValueChange={setInterestType} required>
-            <SelectTrigger className="w-full relative">
-              <SelectValue placeholder="Select your interest" />
-            </SelectTrigger>
-            <SelectContent sideOffset={8} className="absolute">
-              <SelectItem value="personal">Personal use</SelectItem>
-              <SelectItem value="family">Family expense management</SelectItem>
-              <SelectItem value="small-business">Small business</SelectItem>
-              <SelectItem value="large-business">Large business</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
-      <div>
+      <div className="sticky bottom-0 bg-background pt-4">
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Processing..." : "Get My Report"}
         </Button>
@@ -108,3 +113,4 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
 };
 
 export default LeadCaptureForm;
+
