@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabaseClient } from '../utils/supabaseClient';
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { EmailSentCard } from './reset-password/EmailSentCard';
 import { RequestResetForm } from './reset-password/RequestResetForm';
@@ -25,7 +24,7 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password/confirm`,
       });
 

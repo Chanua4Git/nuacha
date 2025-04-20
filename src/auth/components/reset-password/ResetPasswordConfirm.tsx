@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabaseClient } from '../../utils/supabaseClient';
+import { supabase } from "@/integrations/supabase/client";
 import { validatePassword } from '../../utils/passwordValidation';
 import { UpdatePasswordForm } from './UpdatePasswordForm';
 import { toast } from 'sonner';
@@ -37,8 +36,7 @@ const ResetPasswordConfirm = () => {
       }
 
       try {
-        // Attempt to establish a session with both tokens
-        const { data: { session }, error } = await supabaseClient.auth.setSession({
+        const { data: { session }, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
         });
@@ -86,7 +84,7 @@ const ResetPasswordConfirm = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabaseClient.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ password });
 
       if (error) throw error;
 
@@ -94,7 +92,7 @@ const ResetPasswordConfirm = () => {
         description: 'Your password has been reset successfully.',
       });
 
-      await supabaseClient.auth.signOut();
+      await supabase.auth.signOut();
       
       navigate('/login', { 
         replace: true,
