@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   session: Session | null;
@@ -23,22 +24,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Create a signOut function that properly clears the session
   const signOut = async () => {
-    await supabaseClient.auth.signOut();
-    // Explicitly clear state to ensure UI updates immediately
-    setSession(null);
-    setUser(null);
-    // Force a page reload to clear any cached state throughout the app
-    window.location.href = '/';
+    try {
+      await supabaseClient.auth.signOut();
+      setSession(null);
+      setUser(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log('Auth state changed:', event);
+      (_event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
@@ -55,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <AuthContext.Provider value={{ session, user, isLoading, signOut }}>

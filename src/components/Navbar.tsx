@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut } from 'lucide-react';
+import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,26 +23,50 @@ const Navbar = () => {
     return null;
   }
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast.success('Signed out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Error signing out');
+  const handleAuthAction = async () => {
+    if (user) {
+      try {
+        await signOut();
+        toast.success('Signed out successfully');
+      } catch (error) {
+        console.error('Logout error:', error);
+        toast.error('Error signing out');
+      }
+    } else {
+      navigate('/login');
     }
   };
 
-  const navItems = [
+  const navItems = user ? [
     { name: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/' },
     { name: 'Add Expense', icon: <PlusCircle className="h-5 w-5" />, path: '/add-expense' },
     { name: 'Reports', icon: <BarChart3 className="h-5 w-5" />, path: '/reports' },
     { name: 'Reminders', icon: <Calendar className="h-5 w-5" />, path: '/reminders' },
-  ];
+  ] : [];
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  const AuthButton = () => (
+    <Button
+      variant="ghost"
+      className={`${user ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : ''}`}
+      onClick={handleAuthAction}
+    >
+      {user ? (
+        <>
+          <LogOut className="h-5 w-5 mr-2" />
+          <span className="hidden lg:inline">Sign out</span>
+        </>
+      ) : (
+        <>
+          <LogIn className="h-5 w-5 mr-2" />
+          <span className="hidden lg:inline">Sign in</span>
+        </>
+      )}
+    </Button>
+  );
 
   return (
     <header className="sticky top-0 z-10 w-full bg-white border-b border-gray-200 shadow-sm">
@@ -101,14 +125,25 @@ const Navbar = () => {
                 <div className="border-t p-4">
                   <Button
                     variant="ghost"
-                    className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50 w-full h-12 text-base"
+                    className={`justify-start w-full h-12 text-base ${
+                      user ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : ''
+                    }`}
                     onClick={() => {
                       setIsMenuOpen(false);
-                      handleLogout();
+                      handleAuthAction();
                     }}
                   >
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Sign out
+                    {user ? (
+                      <>
+                        <LogOut className="h-5 w-5 mr-3" />
+                        Sign out
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="h-5 w-5 mr-3" />
+                        Sign in
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -129,14 +164,7 @@ const Navbar = () => {
                 </Link>
               </Button>
             ))}
-            <Button
-              variant="ghost"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5 mr-2" />
-              <span className="hidden lg:inline">Sign out</span>
-            </Button>
+            <AuthButton />
           </nav>
         )}
       </div>
