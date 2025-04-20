@@ -7,7 +7,6 @@ function extractPrice(value: number | null): string {
   }
 
   // Values from Mindee are already in dollars.cents format
-  // Add validation and sanity checks
   const price = value;
   
   // Log original value for debugging
@@ -35,20 +34,18 @@ export function processLineItems(items: MindeeLineItem[]): ReceiptLineItem[] {
   return items.map(item => {
     console.log('Raw line item:', JSON.stringify(item, null, 2));
     
-    const unitPriceRaw = item.unit_price;
+    // Only use total_amount, ignore unit_price
     const totalAmountRaw = item.total_amount;
     
     // Enhanced logging for price debugging
     console.log('Processing item:', {
       description: item.description,
-      rawUnitPrice: unitPriceRaw,
       rawTotalAmount: totalAmountRaw
     });
     
     const processedItem = {
       description: item.description || 'Unknown item',
       quantity: item.quantity ?? 1,
-      unitPrice: extractPrice(unitPriceRaw),
       totalPrice: extractPrice(totalAmountRaw),
       confidence: calculateLineItemConfidence(item),
       discounted: !!item.discount,

@@ -1,4 +1,3 @@
-
 export interface Expense {
   id: string;
   familyId: string;
@@ -75,11 +74,9 @@ export interface OCRResult {
 export interface ReceiptLineItem {
   description: string;
   quantity?: number;
-  unitPrice?: string;
   totalPrice: string;
   confidence: number;
   category?: string;
   discounted?: boolean;
   sku?: string;
 }
-

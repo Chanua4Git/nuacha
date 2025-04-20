@@ -31,7 +31,6 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData }) => {
             <TableRow>
               <TableHead>Item</TableHead>
               <TableHead className="text-right">Qty</TableHead>
-              <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
@@ -40,7 +39,6 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData }) => {
               <TableRow key={index}>
                 <TableCell>{item.description}</TableCell>
                 <TableCell className="text-right">{item.quantity || 1}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
                 <TableCell className="text-right font-medium">{formatCurrency(item.totalPrice)}</TableCell>
               </TableRow>
             ))}
