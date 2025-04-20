@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
 import { toast } from 'sonner';
@@ -12,19 +12,14 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
-  const isSettingNewPassword = !!token;
+  const type = searchParams.get('type');
+  const isSettingNewPassword = type === 'recovery' && token;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [validations, setValidations] = useState(validatePassword(''));
-
-  useEffect(() => {
-    if (isSettingNewPassword) {
-      setValidations(validatePassword(password));
-    }
-  }, [password, isSettingNewPassword]);
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +35,7 @@ const ResetPassword = () => {
 
     try {
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password?type=recovery`,
       });
 
       if (error) throw error;
@@ -90,9 +85,12 @@ const ResetPassword = () => {
 
       if (error) throw error;
 
-      toast.success('Password updated', {
-        description: 'Your password has been updated successfully.',
+      toast.success('Password updated successfully', {
+        description: 'Your password has been reset. You can now sign in with your new password.',
       });
+
+      // Clear any existing sessions
+      await supabaseClient.auth.signOut();
 
       setTimeout(() => {
         navigate('/login');
@@ -125,7 +123,10 @@ const ResetPassword = () => {
         password={password}
         isLoading={isLoading}
         validations={validations}
-        onPasswordChange={setPassword}
+        onPasswordChange={(newPassword) => {
+          setPassword(newPassword);
+          setValidations(validatePassword(newPassword));
+        }}
         onSubmit={handleUpdatePassword}
       />
     );
