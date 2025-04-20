@@ -32,7 +32,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 relative">
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium text-foreground">
             Email
@@ -60,15 +60,15 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
             Why are you interested in Nuacha?
           </label>
           <Select value={interestType} onValueChange={setInterestType} required>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full relative">
               <SelectValue placeholder="Select your interest" />
             </SelectTrigger>
-            <SelectContent sideOffset={4} className="z-[100]">
+            <SelectContent sideOffset={8} className="absolute">
               <SelectItem value="personal">Personal use</SelectItem>
               <SelectItem value="family">Family expense management</SelectItem>
               <SelectItem value="small-business">Small business</SelectItem>
@@ -78,7 +78,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 mt-6">
           <label htmlFor="additionalInfo" className="block text-sm font-medium text-foreground">
             Anything else you'd like to tell us?
           </label>
