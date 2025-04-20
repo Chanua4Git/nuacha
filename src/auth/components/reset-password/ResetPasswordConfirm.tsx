@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const ResetPasswordConfirm = () => {
   const location = useLocation();
@@ -22,8 +23,12 @@ const ResetPasswordConfirm = () => {
       const hashParams = new URLSearchParams(location.hash.substring(1));
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
       
+      console.log('Token validation:', { type, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+
       if (!accessToken || type !== 'recovery') {
+        console.error('Invalid reset link:', { type, hasAccessToken: !!accessToken });
         setIsValid(false);
         toast.error('Invalid reset link', {
           description: 'Please request a new password reset link.',
@@ -31,21 +36,31 @@ const ResetPasswordConfirm = () => {
         return;
       }
 
-      // Store the access token in the session
-      const { data: { session }, error } = await supabaseClient.auth.setSession({
-        access_token: accessToken,
-        refresh_token: '',
-      });
+      try {
+        // Attempt to establish a session with both tokens
+        const { data: { session }, error } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
 
-      if (error || !session) {
+        if (error) {
+          console.error('Session establishment error:', error);
+          throw error;
+        }
+
+        if (!session) {
+          console.error('No session established');
+          throw new Error('No session established');
+        }
+
+        setIsValid(true);
+      } catch (error: any) {
+        console.error('Token validation error:', error);
         setIsValid(false);
         toast.error('Reset link expired', {
           description: 'Please request a new password reset link.',
         });
-        return;
       }
-
-      setIsValid(true);
     };
 
     validateResetToken();
@@ -104,7 +119,10 @@ const ResetPasswordConfirm = () => {
   if (isValid === null) {
     return (
       <div className="flex justify-center items-center min-h-screen p-4">
-        <p className="text-muted-foreground">Verifying reset link...</p>
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p className="text-muted-foreground">Verifying reset link...</p>
+        </div>
       </div>
     );
   }
