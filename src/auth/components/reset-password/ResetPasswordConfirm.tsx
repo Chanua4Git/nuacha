@@ -28,12 +28,12 @@ const ResetPasswordConfirm = () => {
       }
 
       try {
-        const { error } = await supabaseClient.auth.verifyOtp({
-          token,
-          type: 'recovery'
-        });
+        // Use the correct method for validating a recovery token
+        // The API expects the token in the URL which Supabase already processed
+        // We just need to check if the session is now valid
+        const { data, error } = await supabaseClient.auth.getSession();
 
-        if (error) {
+        if (error || !data.session) {
           setIsValid(false);
           return;
         }
