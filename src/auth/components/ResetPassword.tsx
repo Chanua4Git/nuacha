@@ -25,12 +25,8 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      // Get the current hostname and protocol
-      const origin = window.location.origin;
-      const redirectURL = `${origin}/reset-password/confirm`;
-      
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectURL,
+        redirectTo: `${window.location.origin}/reset-password/confirm`,
       });
 
       if (error) throw error;

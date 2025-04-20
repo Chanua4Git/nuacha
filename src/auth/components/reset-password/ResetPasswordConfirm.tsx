@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../../utils/supabaseClient';
 import { validatePassword } from '../../utils/passwordValidation';
 import { UpdatePasswordForm } from './UpdatePasswordForm';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 const ResetPasswordConfirm = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
@@ -19,10 +19,11 @@ const ResetPasswordConfirm = () => {
 
   useEffect(() => {
     const validateResetToken = async () => {
-      // Get token from URL parameters
-      const type = searchParams.get('type');
+      const hashParams = new URLSearchParams(location.hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
       
-      if (type !== 'recovery') {
+      if (!accessToken || type !== 'recovery') {
         setIsValid(false);
         toast.error('Invalid reset link', {
           description: 'Please request a new password reset link.',
@@ -30,9 +31,12 @@ const ResetPasswordConfirm = () => {
         return;
       }
 
-      // For recovery flow, if we have a valid token, we'll have access to the session
-      const { data: { session }, error } = await supabaseClient.auth.getSession();
-      
+      // Store the access token in the session
+      const { data: { session }, error } = await supabaseClient.auth.setSession({
+        access_token: accessToken,
+        refresh_token: '',
+      });
+
       if (error || !session) {
         setIsValid(false);
         toast.error('Reset link expired', {
@@ -45,7 +49,7 @@ const ResetPasswordConfirm = () => {
     };
 
     validateResetToken();
-  }, [searchParams]);
+  }, [location]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +79,6 @@ const ResetPasswordConfirm = () => {
         description: 'Your password has been reset successfully.',
       });
 
-      // Clear any existing sessions and redirect to login
       await supabaseClient.auth.signOut();
       
       navigate('/login', { 
