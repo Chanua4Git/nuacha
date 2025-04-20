@@ -16,8 +16,8 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (!email) {
-      toast("Let's fill in your email", {
-        description: 'Please enter the email address associated with your account.',
+      toast.error('Email required', {
+        description: 'Please enter your email address.',
       });
       return;
     }
@@ -25,26 +25,32 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
+      // Get the current hostname and protocol
+      const origin = window.location.origin;
+      const redirectURL = `${origin}/reset-password/confirm`;
+      
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password/confirm`,
+        redirectTo: redirectURL,
       });
 
       if (error) throw error;
 
       setEmailSent(true);
       toast.success('Reset link sent', {
-        description: 'Check your email for a link to reset your password.',
+        description: 'Please check your email for the password reset link.',
       });
     } catch (error: any) {
       console.error('Reset password error:', error);
       
-      let errorMessage = "We couldn't send a reset link. Please try again.";
+      let errorMessage = "We couldn't send the reset link. Please try again.";
       
-      if (error.message.includes("not found")) {
-        errorMessage = "We couldn't find an account with that email address.";
+      if (error.message.includes("Email rate limit exceeded")) {
+        errorMessage = "Too many requests. Please wait a few minutes and try again.";
+      } else if (error.message.includes("User not found")) {
+        errorMessage = "No account found with this email address.";
       }
       
-      toast("Something didn't go as planned", {
+      toast.error('Reset link failed', {
         description: errorMessage,
       });
     } finally {
@@ -57,12 +63,14 @@ const ResetPassword = () => {
   }
 
   return (
-    <RequestResetForm
-      email={email}
-      isLoading={isLoading}
-      onEmailChange={setEmail}
-      onSubmit={handleSendResetLink}
-    />
+    <div className="container max-w-md mx-auto p-4 mt-8">
+      <RequestResetForm
+        email={email}
+        isLoading={isLoading}
+        onEmailChange={setEmail}
+        onSubmit={handleSendResetLink}
+      />
+    </div>
   );
 };
 

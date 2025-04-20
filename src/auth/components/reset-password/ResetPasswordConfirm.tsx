@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabaseClient } from '../../utils/supabaseClient';
 import { validatePassword } from '../../utils/passwordValidation';
 import { UpdatePasswordForm } from './UpdatePasswordForm';
@@ -19,29 +19,29 @@ const ResetPasswordConfirm = () => {
 
   useEffect(() => {
     const validateResetToken = async () => {
-      const token = searchParams.get('token');
+      // Get token from URL parameters
       const type = searchParams.get('type');
       
-      if (!token || type !== 'recovery') {
+      if (type !== 'recovery') {
         setIsValid(false);
+        toast.error('Invalid reset link', {
+          description: 'Please request a new password reset link.',
+        });
         return;
       }
 
-      try {
-        // Use the correct method for validating a recovery token
-        // The API expects the token in the URL which Supabase already processed
-        // We just need to check if the session is now valid
-        const { data, error } = await supabaseClient.auth.getSession();
-
-        if (error || !data.session) {
-          setIsValid(false);
-          return;
-        }
-        setIsValid(true);
-      } catch (error) {
-        console.error('Token validation error:', error);
+      // For recovery flow, if we have a valid token, we'll have access to the session
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      
+      if (error || !session) {
         setIsValid(false);
+        toast.error('Reset link expired', {
+          description: 'Please request a new password reset link.',
+        });
+        return;
       }
+
+      setIsValid(true);
     };
 
     validateResetToken();
@@ -51,15 +51,15 @@ const ResetPasswordConfirm = () => {
     e.preventDefault();
 
     if (!password) {
-      toast('Please enter a new password', {
-        description: 'Your new password should be at least 8 characters long.',
+      toast.error('Password required', {
+        description: 'Please enter your new password.',
       });
       return;
     }
 
     if (!validations.length || !validations.number) {
-      toast('Password requirements not met', {
-        description: 'Please make sure your password meets all the requirements.',
+      toast.error('Invalid password', {
+        description: 'Please ensure your password meets all requirements.',
       });
       return;
     }
@@ -71,40 +71,39 @@ const ResetPasswordConfirm = () => {
 
       if (error) throw error;
 
-      toast.success('Password updated successfully', {
-        description: 'Your password has been reset. You can now sign in with your new password.',
+      toast.success('Password updated', {
+        description: 'Your password has been reset successfully.',
       });
 
-      // Clear any existing sessions
+      // Clear any existing sessions and redirect to login
       await supabaseClient.auth.signOut();
-
-      setTimeout(() => {
-        navigate('/login?resetSuccess=true');
-      }, 1500);
+      
+      navigate('/login', { 
+        replace: true,
+        state: { message: 'passwordReset' } 
+      });
     } catch (error: any) {
       console.error('Update password error:', error);
+      toast.error('Password update failed', {
+        description: error.message || 'Please try again or request a new reset link.',
+      });
       
-      let errorMessage = "We couldn't update your password. Please try again.";
-      
-      if (error.message.includes("expired")) {
-        errorMessage = "Your reset link has expired. Please request a new one.";
+      if (error.message.includes('expired')) {
         setTimeout(() => {
           navigate('/reset-password');
-        }, 1500);
+        }, 2000);
       }
-      
-      toast("Something didn't go as planned", {
-        description: errorMessage
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
   if (isValid === null) {
-    return <div className="flex justify-center items-center min-h-screen">
-      Verifying reset link...
-    </div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen p-4">
+        <p className="text-muted-foreground">Verifying reset link...</p>
+      </div>
+    );
   }
 
   if (isValid === false) {
@@ -112,7 +111,7 @@ const ResetPasswordConfirm = () => {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <Alert variant="destructive" className="max-w-md mb-4">
           <AlertDescription>
-            Your password reset link is invalid or has expired.
+            This password reset link is invalid or has expired.
           </AlertDescription>
         </Alert>
         <Button asChild>
@@ -123,16 +122,18 @@ const ResetPasswordConfirm = () => {
   }
 
   return (
-    <UpdatePasswordForm
-      password={password}
-      isLoading={isLoading}
-      validations={validations}
-      onPasswordChange={(newPassword) => {
-        setPassword(newPassword);
-        setValidations(validatePassword(newPassword));
-      }}
-      onSubmit={handleUpdatePassword}
-    />
+    <div className="container max-w-md mx-auto p-4 mt-8">
+      <UpdatePasswordForm
+        password={password}
+        isLoading={isLoading}
+        validations={validations}
+        onPasswordChange={(newPassword) => {
+          setPassword(newPassword);
+          setValidations(validatePassword(newPassword));
+        }}
+        onSubmit={handleUpdatePassword}
+      />
+    </div>
   );
 };
 
