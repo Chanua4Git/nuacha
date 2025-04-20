@@ -20,14 +20,20 @@ const ResetPasswordConfirm = () => {
   useEffect(() => {
     const validateResetToken = async () => {
       const token = searchParams.get('token');
-      if (!token) {
+      const type = searchParams.get('type');
+      
+      if (!token || type !== 'recovery') {
         setIsValid(false);
         return;
       }
-      
+
       try {
-        const { data, error } = await supabaseClient.auth.getUser();
-        if (error || !data.user) {
+        const { error } = await supabaseClient.auth.verifyOtp({
+          token,
+          type: 'recovery'
+        });
+
+        if (error) {
           setIsValid(false);
           return;
         }
@@ -88,7 +94,7 @@ const ResetPasswordConfirm = () => {
       }
       
       toast("Something didn't go as planned", {
-        description: errorMessage,
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
