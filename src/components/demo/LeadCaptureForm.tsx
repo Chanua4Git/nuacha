@@ -61,7 +61,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           />
         </div>
 
-        <div className="space-y-2 mt-6">
+        <div className="space-y-2">
           <label htmlFor="additionalInfo" className="block text-sm font-medium text-foreground">
             Anything else you'd like to tell us?
           </label>
@@ -70,11 +70,11 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
             placeholder="Share any questions or thoughts"
-            className="min-h-[100px]"
+            className="min-h-[100px] mb-6"
           />
         </div>
 
-        <div className="space-y-2 relative">
+        <div className="space-y-2 relative mb-16">
           <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
             Why are you interested in Nuacha?
           </label>
@@ -82,7 +82,12 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
             <SelectTrigger className="w-full relative">
               <SelectValue placeholder="Select your interest" />
             </SelectTrigger>
-            <SelectContent sideOffset={8} className="absolute">
+            <SelectContent 
+              sideOffset={8} 
+              className="absolute z-[9999]"
+              collisionPadding={16}
+              alignOffset={-10}
+            >
               <SelectItem value="personal">Personal use</SelectItem>
               <SelectItem value="family">Family expense management</SelectItem>
               <SelectItem value="small-business">Small business</SelectItem>
@@ -93,7 +98,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
         </div>
       </div>
 
-      <div>
+      <div className="pt-6">
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Processing..." : "Get My Report"}
         </Button>
