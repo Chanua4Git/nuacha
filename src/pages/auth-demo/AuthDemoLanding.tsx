@@ -92,32 +92,46 @@ const AuthDemoLanding = () => {
     }
   }, [user]); // don't include demoStep, avoid re-entry on rerenders
 
-  // Handle demo progression for local testing convenience
-  const handleStepClick = (i: number) => {
-    setDemoStep(i);
-    setDemoProgress(i);
-  };
-
-  // Responsive stack for steps
+  // Card rendering logic: show only current, or [previous + current] steps, never future! 
+  // e.g. step 0: signup only
+  //      step 1: signup (done) + login (active)
+  //      step 2+: signup (done) + login(done) + reset (active)
+  //      never show step 3 since reset is always active unless you want "All Done!".
   const stepCards = useMemo(() => {
     const cards = [];
-    // Step 1: Sign Up
-    cards.push(
-      <AuthDemoStepCard
-        key="signup"
-        step={1}
-        title={steps[0].title}
-        description={steps[0].description}
-        ctaLabel={steps[0].ctaLabel}
-        to={steps[0].to}
-        highlight={demoStep === 0}
-        disabled={demoStep > 0}
-        done={demoStep > 0}
-        className="mb-5"
-      />
-    );
-    // Step 2: Login
-    if (demoStep > 0) {
+    if (demoStep === 0) {
+      // Only show signup card
+      cards.push(
+        <AuthDemoStepCard
+          key="signup"
+          step={1}
+          title={steps[0].title}
+          description={steps[0].description}
+          ctaLabel={steps[0].ctaLabel}
+          to={steps[0].to}
+          highlight={true}
+          disabled={false}
+          done={false}
+          className="mb-5"
+        />
+      );
+    }
+    if (demoStep === 1) {
+      // Show signup (done) and login (active)
+      cards.push(
+        <AuthDemoStepCard
+          key="signup"
+          step={1}
+          title={steps[0].title}
+          description={steps[0].description}
+          ctaLabel={steps[0].ctaLabel}
+          to={steps[0].to}
+          highlight={false}
+          disabled={true}
+          done={true}
+          className="mb-5"
+        />
+      );
       cards.push(
         <AuthDemoStepCard
           key="login"
@@ -126,15 +140,43 @@ const AuthDemoLanding = () => {
           description={steps[1].description}
           ctaLabel={steps[1].ctaLabel}
           to={steps[1].to}
-          highlight={demoStep === 1}
-          disabled={demoStep < 1 || demoStep > 1}
-          done={demoStep > 1}
+          highlight={true}
+          disabled={false}
+          done={false}
           className="mb-5"
         />
       );
     }
-    // Step 3: Password Reset
-    if (user && demoStep > 1) {
+    if (demoStep >= 2) {
+      // Show signup (done), login (done), reset (active/done)
+      cards.push(
+        <AuthDemoStepCard
+          key="signup"
+          step={1}
+          title={steps[0].title}
+          description={steps[0].description}
+          ctaLabel={steps[0].ctaLabel}
+          to={steps[0].to}
+          highlight={false}
+          disabled={true}
+          done={true}
+          className="mb-5"
+        />
+      );
+      cards.push(
+        <AuthDemoStepCard
+          key="login"
+          step={2}
+          title={steps[1].title}
+          description={steps[1].description}
+          ctaLabel={steps[1].ctaLabel}
+          to={steps[1].to}
+          highlight={false}
+          disabled={true}
+          done={true}
+          className="mb-5"
+        />
+      );
       cards.push(
         <AuthDemoStepCard
           key="reset"
@@ -144,7 +186,7 @@ const AuthDemoLanding = () => {
           ctaLabel={steps[2].ctaLabel}
           to={steps[2].to}
           highlight={demoStep === 2}
-          disabled={demoStep < 2}
+          disabled={false}
           done={demoStep > 2}
         />
       );
@@ -166,7 +208,7 @@ const AuthDemoLanding = () => {
     <div className="min-h-screen bg-background pb-16">
       <AuthDemoBreadcrumbs currentPage="landing" />
       <section className="flex flex-col items-center w-full px-2 sm:px-4 py-4 max-w-2xl mx-auto">
-        <div className="w-full">
+        <div className="w-full flex flex-col items-center">
           {stepCards}
         </div>
         <div className="flex justify-center w-full mt-2">
@@ -185,4 +227,3 @@ const AuthDemoLanding = () => {
 };
 
 export default AuthDemoLanding;
-
