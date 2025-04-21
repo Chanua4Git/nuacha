@@ -6,6 +6,8 @@ import AuthDemoBreadcrumbs from "@/components/auth-demo/AuthDemoBreadcrumbs";
 import AuthDemoFeatureBreakdown from "@/components/auth-demo/AuthDemoFeatureBreakdown";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { toast } from "@/hooks/use-toast";
+import AuthDemoHero from "@/components/auth-demo/AuthDemoHero";
+import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 
 const steps = [
   {
@@ -64,7 +66,6 @@ const AuthDemoLanding = () => {
 
   // On verification complete - step up to Login
   useEffect(() => {
-    // Only run if arrived with ?verified=true
     if (justVerified) {
       setDemoStep(1);
       setDemoProgress(1);
@@ -90,18 +91,15 @@ const AuthDemoLanding = () => {
       setDemoStep(2);
       setDemoProgress(2);
     }
-  }, [user]); // don't include demoStep, avoid re-entry on rerenders
+  }, [user]);
 
-  // Handle demo progression for local testing convenience
   const handleStepClick = (i: number) => {
     setDemoStep(i);
     setDemoProgress(i);
   };
 
-  // Responsive stack for steps
   const stepCards = useMemo(() => {
     const cards = [];
-    // Step 1: Sign Up
     cards.push(
       <AuthDemoStepCard
         key="signup"
@@ -116,7 +114,6 @@ const AuthDemoLanding = () => {
         className="mb-5"
       />
     );
-    // Step 2: Login
     if (demoStep > 0) {
       cards.push(
         <AuthDemoStepCard
@@ -133,7 +130,6 @@ const AuthDemoLanding = () => {
         />
       );
     }
-    // Step 3: Password Reset
     if (user && demoStep > 1) {
       cards.push(
         <AuthDemoStepCard
@@ -150,10 +146,8 @@ const AuthDemoLanding = () => {
       );
     }
     return cards;
-    // eslint-disable-next-line
   }, [demoStep, user]);
 
-  // Scroll to features handler
   const handleFeatureClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const elem = document.getElementById("auth-demo-features");
@@ -164,6 +158,9 @@ const AuthDemoLanding = () => {
 
   return (
     <div className="min-h-screen bg-background pb-16">
+      {/* Hero section at the top */}
+      <AuthDemoHero />
+
       <AuthDemoBreadcrumbs currentPage="landing" />
       <section className="flex flex-col items-center w-full px-2 sm:px-4 py-4 max-w-2xl mx-auto">
         <div className="w-full">
@@ -180,6 +177,9 @@ const AuthDemoLanding = () => {
         </div>
       </section>
       <AuthDemoFeatureBreakdown />
+
+      {/* Plans section at the bottom */}
+      <AuthDemoPlansSection />
     </div>
   );
 };
