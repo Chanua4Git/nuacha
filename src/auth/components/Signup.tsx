@@ -4,9 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
-import { validatePassword } from '../utils/passwordValidation';
+import { validatePassword, PasswordPolicy } from '../utils/passwordValidation';
 import { SignupForm } from './signup/SignupForm';
 import { EmailSentCard } from './signup/EmailSentCard';
+
+const PASSWORD_POLICY: PasswordPolicy = {
+  minLength: 8,
+  requireNumber: true,
+  requireSpecialOrUpper: true
+};
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -15,7 +21,7 @@ const Signup = () => {
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [validations, setValidations] = useState(validatePassword(''));
+  const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
 
   useEffect(() => {
     if (user) {
@@ -26,7 +32,7 @@ const Signup = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    setValidations(validatePassword(password));
+    setValidations(validatePassword(password, PASSWORD_POLICY));
   }, [password]);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -39,9 +45,9 @@ const Signup = () => {
       return;
     }
     
-    if (!validations.length || !validations.number) {
+    if (!validations.length || !validations.number || !validations.special) {
       toast("Your password needs to meet all requirements", {
-        description: "Please make sure your password is at least 8 characters long and contains at least one number."
+        description: "Please ensure your password meets the requirements below."
       });
       return;
     }
@@ -96,6 +102,7 @@ const Signup = () => {
       onEmailChange={setEmail}
       onPasswordChange={setPassword}
       onSubmit={handleSignup}
+      passwordPolicy={PASSWORD_POLICY}
     />
   );
 };

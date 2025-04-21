@@ -11,9 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { ValidationChecks } from './ValidationChecks';
-import { PasswordValidations } from '../../utils/passwordValidation';
+import { PasswordValidations, PasswordPolicy } from '../../utils/passwordValidation';
 
 interface SignupFormProps {
   email: string;
@@ -23,6 +23,7 @@ interface SignupFormProps {
   onEmailChange: (email: string) => void;
   onPasswordChange: (password: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  passwordPolicy?: PasswordPolicy;
 }
 
 export const SignupForm = ({
@@ -33,7 +34,10 @@ export const SignupForm = ({
   onEmailChange,
   onPasswordChange,
   onSubmit,
+  passwordPolicy,
 }: SignupFormProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -52,19 +56,33 @@ export const SignupForm = ({
               placeholder="you@example.com"
               className="w-full"
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
-              className="w-full"
-              disabled={isLoading}
-            />
-            <ValidationChecks validations={validations} />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => onPasswordChange(e.target.value)}
+                className="w-full pr-10"
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+                onClick={() => setShowPassword(s => !s)}
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            <ValidationChecks validations={validations} passwordPolicy={passwordPolicy} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
