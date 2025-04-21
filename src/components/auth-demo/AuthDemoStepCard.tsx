@@ -14,11 +14,7 @@ type AuthDemoStepCardProps = {
   className?: string;
 };
 
-/**
- * Step Card for the guided auth demo flow.
- * Shows a checkmark when done, color cues for current/disabled states.
- */
-const AuthDemoStepCard = ({
+export const AuthDemoStepCard = ({
   step,
   title,
   description,
@@ -71,4 +67,3 @@ const AuthDemoStepCard = ({
   </div>
 );
 
-export default AuthDemoStepCard;
