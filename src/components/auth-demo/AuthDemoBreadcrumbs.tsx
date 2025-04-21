@@ -1,5 +1,5 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,36 +17,41 @@ const AuthDemoBreadcrumbs = ({ currentPage }: AuthDemoBreadcrumbsProps) => {
   return (
     <Breadcrumb className="max-w-6xl mx-auto px-4 py-4">
       <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link to="/">Home</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        {(currentPage === "plans" || currentPage === "features" || currentPage === "landing") && (
+        {/* Auth Demo Landing: single breadcrumb */}
+        {currentPage === "landing" && (
+          <BreadcrumbItem>
+            <BreadcrumbPage>Authentication Demo</BreadcrumbPage>
+          </BreadcrumbItem>
+        )}
+
+        {/* Plans: Auth Demo (link) > Auth Solutions (current) */}
+        {currentPage === "plans" && (
           <>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/auth-demo">Try Auth Demo</Link>
+                <Link to="/auth-demo">Authentication Demo</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Auth Solutions</BreadcrumbPage>
+            </BreadcrumbItem>
           </>
         )}
-        {currentPage === "plans" && (
-          <BreadcrumbItem>
-            <BreadcrumbPage>Solutions</BreadcrumbPage>
-          </BreadcrumbItem>
-        )}
+
+        {/* Features: Auth Demo (link) > Features (current) */}
         {currentPage === "features" && (
-          <BreadcrumbItem>
-            <BreadcrumbPage>Features</BreadcrumbPage>
-          </BreadcrumbItem>
-        )}
-        {currentPage === "landing" && (
-          <BreadcrumbItem>
-            <BreadcrumbPage>Auth Demo</BreadcrumbPage>
-          </BreadcrumbItem>
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/auth-demo">Authentication Demo</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Features</BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
         )}
       </BreadcrumbList>
     </Breadcrumb>
