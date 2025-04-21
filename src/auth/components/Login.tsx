@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
 import { Loader2 } from 'lucide-react';
 import { useLogin } from "../hooks/useLogin";
+import BackToAuthDemo from "./BackToAuthDemo";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -34,6 +35,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-accent/10">
       <Card className="auth-card">
         <CardHeader className="space-y-1 text-center">
+          <BackToAuthDemo />
           <CardTitle className="text-2xl font-playfair">Welcome back</CardTitle>
           <CardDescription>
             Sign in to continue your mindful financial journey

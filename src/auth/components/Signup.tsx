@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -7,6 +6,7 @@ import { useAuth } from '../contexts/AuthProvider';
 import { validatePassword, PasswordPolicy } from '../utils/passwordValidation';
 import { SignupForm } from './signup/SignupForm';
 import { EmailSentCard } from './signup/EmailSentCard';
+import BackToAuthDemo from "./BackToAuthDemo";
 
 const PASSWORD_POLICY: PasswordPolicy = {
   minLength: 8,
@@ -94,16 +94,19 @@ const Signup = () => {
   }
 
   return (
-    <SignupForm
-      email={email}
-      password={password}
-      isLoading={isLoading}
-      validations={validations}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onSubmit={handleSignup}
-      passwordPolicy={PASSWORD_POLICY}
-    />
+    <div>
+      <BackToAuthDemo />
+      <SignupForm
+        email={email}
+        password={password}
+        isLoading={isLoading}
+        validations={validations}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleSignup}
+        passwordPolicy={PASSWORD_POLICY}
+      />
+    </div>
   );
 };
 

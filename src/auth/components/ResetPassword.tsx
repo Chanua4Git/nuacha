@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { EmailSentCard } from './reset-password/EmailSentCard';
 import { RequestResetForm } from './reset-password/RequestResetForm';
+import BackToAuthDemo from "./BackToAuthDemo";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ const ResetPassword = () => {
 
   return (
     <div className="container max-w-md mx-auto p-4 mt-8">
+      <BackToAuthDemo />
       <RequestResetForm
         email={email}
         isLoading={isLoading}

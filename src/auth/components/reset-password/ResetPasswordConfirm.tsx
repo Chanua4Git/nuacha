@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import BackToAuthDemo from "../BackToAuthDemo";
 
 const ResetPasswordConfirm = () => {
   const location = useLocation();
@@ -142,6 +143,7 @@ const ResetPasswordConfirm = () => {
 
   return (
     <div className="container max-w-md mx-auto p-4 mt-8">
+      <BackToAuthDemo />
       <UpdatePasswordForm
         password={password}
         isLoading={isLoading}
