@@ -16,6 +16,7 @@ const plans = [
     cta: "Start Your Free Auth Trial",
     ctaLink: "/login",
     icon: <Shield className="h-8 w-8 text-[#5A7684]" />,
+    variant: "primary" as const,
   },
   {
     title: "Nuacha Auth Done-For-You",
@@ -29,7 +30,7 @@ const plans = [
     cta: "Request a Consultation",
     ctaLink: "/contact",
     icon: <Users className="h-8 w-8 text-[#5A7684]" />,
-    variant: "secondary",
+    variant: "secondary" as const,
   },
 ];
 
@@ -46,7 +47,7 @@ const AuthDemoPlans = () => (
         </p>
       </div>
       <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-        {plans.map((plan, i) => (
+        {plans.map((plan) => (
           <PlanCard key={plan.title} {...plan} />
         ))}
       </div>
