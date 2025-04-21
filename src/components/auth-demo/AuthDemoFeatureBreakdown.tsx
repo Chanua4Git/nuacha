@@ -1,5 +1,5 @@
 
-import { Check, ShieldCheck, Package, Wrench, Zap, Key, User } from "lucide-react";
+import { Check, Key, User } from "lucide-react";
 
 const features = [
   {
@@ -10,7 +10,7 @@ const features = [
   {
     title: "Secure Sessions",
     description: "Session persistence and token auto-refresh with Supabase",
-    icon: <ShieldCheck className="w-6 h-6 text-[#5A7684]" />,
+    icon: <Check className="w-6 h-6 text-[#5A7684]" />,
   },
   {
     title: "Auth Context",
@@ -20,22 +20,22 @@ const features = [
   {
     title: "Protected Routes",
     description: "Block unauthenticated access and redirect cleanly",
-    icon: <ShieldCheck className="w-6 h-6 text-[#5A7684]" />,
+    icon: <Check className="w-6 h-6 text-[#5A7684]" />,
   },
   {
     title: "Configurable UI",
     description: "Customize form copy, validation rules, themes",
-    icon: <Wrench className="w-6 h-6 text-[#5A7684]" />,
+    icon: <Check className="w-6 h-6 text-[#5A7684]" />,
   },
   {
     title: "Packaging Ready",
     description: "Modular file structure for reuse, SaaS or DFY deployment",
-    icon: <Package className="w-6 h-6 text-[#5A7684]" />,
+    icon: <Check className="w-6 h-6 text-[#5A7684]" />,
   },
 ];
 
 const AuthDemoFeatureBreakdown = () => (
-  <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-transparent to-[#F4E8D3]/20">
+  <section id="auth-demo-features" className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-transparent to-[#F4E8D3]/20">
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-14">
         <h2 className="text-3xl md:text-4xl font-playfair mb-4">

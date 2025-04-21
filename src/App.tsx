@@ -1,7 +1,8 @@
+
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
@@ -21,30 +22,34 @@ import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
 import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
 import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 
+// New: custom hook for hiding navbar on /auth-demo
+import { useLocation as useRRLocation } from "react-router-dom";
+
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
     let viewportMeta = document.querySelector('meta[name="viewport"]');
-    
     if (!viewportMeta) {
       viewportMeta = document.createElement('meta');
       viewportMeta.setAttribute('name', 'viewport');
       document.head.appendChild(viewportMeta);
     }
-    
     viewportMeta.setAttribute(
-      'content', 
+      'content',
       'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
     );
   }, []);
+
+  const location = useRRLocation();
+  const hideNavbar = /^\/auth-demo(\/.*)?$/.test(location.pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ExpenseProvider>
           <TooltipProvider>
-            <Toaster 
+            <Toaster
               position="top-center"
               toastOptions={{
                 style: {
@@ -53,7 +58,7 @@ const App = () => {
               }}
             />
             <div className="min-h-screen flex flex-col">
-              <Navbar />
+              {!hideNavbar && <Navbar />}
               <main className="flex-1">
                 <Routes>
                   <Route path="/" element={<Landing />} />
