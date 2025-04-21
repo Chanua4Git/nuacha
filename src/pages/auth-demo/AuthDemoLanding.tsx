@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
 import AuthDemoBreadcrumbs from "@/components/auth-demo/AuthDemoBreadcrumbs";
 import AuthDemoFeatureBreakdown from "@/components/auth-demo/AuthDemoFeatureBreakdown";
+import AuthDemoHero from "@/components/auth-demo/AuthDemoHero";
+import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { toast } from "@/hooks/use-toast";
 
@@ -207,6 +209,7 @@ const AuthDemoLanding = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       <AuthDemoBreadcrumbs currentPage="landing" />
+      <AuthDemoHero />
       <section className="flex flex-col items-center w-full px-2 sm:px-4 py-4 max-w-2xl mx-auto">
         <div className="w-full flex flex-col items-center">
           {stepCards}
@@ -222,8 +225,10 @@ const AuthDemoLanding = () => {
         </div>
       </section>
       <AuthDemoFeatureBreakdown />
+      <AuthDemoPlansSection />
     </div>
   );
 };
 
 export default AuthDemoLanding;
+
