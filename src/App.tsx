@@ -1,4 +1,3 @@
-
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,6 +17,9 @@ import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
 import { ExpenseProvider } from "./context/ExpenseContext";
+import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
+import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
+import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,9 @@ const App = () => {
                       <Dashboard />
                     </ProtectedRoute>
                   } />
+                  <Route path="/auth-demo" element={<AuthDemoLanding />} />
+                  <Route path="/auth-demo/plans" element={<AuthDemoPlans />} />
+                  <Route path="/auth-demo/features" element={<AuthDemoFeatures />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
