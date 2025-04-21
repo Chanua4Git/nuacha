@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +11,7 @@ type AuthDemoStepCardProps = {
   done?: boolean;
   highlight?: boolean;
   className?: string;
+  onClick?: () => void;
 };
 
 export const AuthDemoStepCard = ({
@@ -24,6 +24,7 @@ export const AuthDemoStepCard = ({
   done,
   highlight,
   className,
+  onClick,
 }: AuthDemoStepCardProps) => (
   <div
     className={cn(
@@ -50,20 +51,28 @@ export const AuthDemoStepCard = ({
       {description && (
         <p className="text-muted-foreground text-sm text-center max-w-sm">{description}</p>
       )}
-      <Button
-        asChild
-        className="mt-3 w-full max-w-xs text-base rounded-xl"
-        size="lg"
-        tabIndex={disabled ? -1 : 0}
-        aria-disabled={disabled}
-        variant={highlight || !disabled ? "default" : "outline"}
+      <button
+        type="button"
+        className="mt-3 w-full max-w-xs text-base rounded-xl inline-flex justify-center items-center px-6 py-3 font-medium shadow focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 transition disabled:opacity-60 disabled:cursor-not-allowed bg-primary text-primary-foreground hover:bg-primary/90"
         disabled={disabled}
+        aria-disabled={disabled}
+        tabIndex={disabled ? -1 : 0}
+        onClick={onClick}
+        style={{ display: highlight || !disabled ? "" : "none" }}
       >
-        <a href={to} tabIndex={-1}>
+        {ctaLabel}
+      </button>
+      {/* Fallback link for non-interactive cards */}
+      {(!highlight && disabled) && (
+        <a
+          href={to}
+          tabIndex={-1}
+          className="pointer-events-none mt-3 w-full max-w-xs text-base rounded-xl opacity-60 bg-gray-200 py-3 text-center"
+          aria-disabled="true"
+        >
           {ctaLabel}
         </a>
-      </Button>
+      )}
     </div>
   </div>
 );
-

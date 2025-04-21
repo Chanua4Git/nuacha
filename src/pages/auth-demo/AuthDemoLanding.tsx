@@ -8,6 +8,7 @@ import AuthDemoHero from "@/components/auth-demo/AuthDemoHero";
 import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { toast } from "@/hooks/use-toast";
+import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCaptureModal";
 
 const steps = [
   {
@@ -64,6 +65,9 @@ const AuthDemoLanding = () => {
     getVerifiedFromSearch(location.search)
   );
 
+  // Lead modal
+  const [leadOpen, setLeadOpen] = useState(false);
+
   // On verification complete - step up to Login
   useEffect(() => {
     // Only run if arrived with ?verified=true
@@ -82,8 +86,8 @@ const AuthDemoLanding = () => {
 
       setJustVerified(false);
     }
-  // intentionally not adding setJustVerified as dep
-  // eslint-disable-next-line
+    // intentionally not adding setJustVerified as dep
+    // eslint-disable-next-line
   }, [location.search]);
 
   // When user logs in, step up to Password Reset
@@ -115,6 +119,7 @@ const AuthDemoLanding = () => {
           disabled={false}
           done={false}
           className="mb-5"
+          onClick={() => setLeadOpen(true)}
         />
       );
     }
@@ -226,9 +231,9 @@ const AuthDemoLanding = () => {
       </section>
       <AuthDemoFeatureBreakdown />
       <AuthDemoPlansSection />
+      <AuthDemoLeadCaptureModal open={leadOpen} onOpenChange={setLeadOpen} />
     </div>
   );
 };
 
 export default AuthDemoLanding;
-
