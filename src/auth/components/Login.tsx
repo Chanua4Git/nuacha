@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -8,13 +7,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
 import { Loader2 } from 'lucide-react';
+import { useLogin } from "../hooks/useLogin";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const { login, loading } = useLogin();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -24,52 +25,9 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast("Let's fill in all the fields", {
-        description: "Both email and password are needed to sign in."
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const { error, data } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      
-      // Check if user has verified their email
-      if (data?.user && !data.user.email_confirmed_at) {
-        toast("Please verify your email", {
-          description: "Check your inbox for a verification link."
-        });
-      } else {
-        toast.success("Welcome back");
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      
-      // Improved error UX with user-friendly messages
-      let errorMessage = "We couldn't sign you in. Please try again.";
-      
-      if (error.message.includes("Invalid login")) {
-        errorMessage = "Your email or password seems incorrect. Please try again.";
-      } else if (error.message.includes("Email not confirmed")) {
-        errorMessage = "Please check your email and verify your account first.";
-      }
-      
-      toast("Something didn't go as planned", {
-        description: errorMessage
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    login(email, password);
   };
 
   return (
@@ -81,7 +39,7 @@ const Login = () => {
             Sign in to continue your mindful financial journey
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="auth-label">Email</label>
@@ -92,7 +50,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="auth-input"
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -108,7 +66,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="auth-input"
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
           </CardContent>
@@ -116,9 +74,9 @@ const Login = () => {
             <Button 
               type="submit" 
               className="auth-button" 
-              disabled={isLoading}
+              disabled={loading}
             >
-              {isLoading ? (
+              {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...
