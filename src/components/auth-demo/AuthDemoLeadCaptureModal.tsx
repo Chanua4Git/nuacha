@@ -24,7 +24,7 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDem
     setTimeout(() => {
       setIsLoading(false);
       onOpenChange(false);
-      navigate("/signup");
+      navigate("/signup?from=auth-demo");
     }, 700);
   }
 
