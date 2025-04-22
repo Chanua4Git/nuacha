@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
@@ -17,7 +16,7 @@ const steps = [
     title: "Step 1: Try Sign Up",
     description: "You'll receive a real email. Be sure to verify before returning.",
     ctaLabel: "Try Sign Up",
-    to: "/signup",
+    to: "/signup?from=auth-demo",
   },
   {
     title: "Step 2: Try Login",

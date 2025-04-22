@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
@@ -22,14 +23,16 @@ const Signup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
+  const location = useLocation();
+  const isAuthDemo = location.search.includes('from=auth-demo');
 
   useEffect(() => {
-    if (user) {
+    if (user && !isAuthDemo) {
       const intendedPath = localStorage.getItem('intendedPath') || '/';
       localStorage.removeItem('intendedPath');
       navigate(intendedPath);
     }
-  }, [user, navigate]);
+  }, [user, navigate, isAuthDemo]);
 
   useEffect(() => {
     setValidations(validatePassword(password, PASSWORD_POLICY));
@@ -55,11 +58,15 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      const redirectTo = isAuthDemo 
+        ? `${window.location.origin}/auth-demo?verified=true`
+        : `${window.location.origin}/dashboard`;
+
       const { error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: redirectTo,
         }
       });
       
@@ -95,7 +102,7 @@ const Signup = () => {
 
   return (
     <div>
-      <BackToAuthDemo />
+      {isAuthDemo && <BackToAuthDemo />}
       <SignupForm
         email={email}
         password={password}
