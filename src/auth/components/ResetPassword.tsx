@@ -14,6 +14,7 @@ const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  // In demo mode if query param is present
   const isAuthDemo = location.search.includes('from=auth-demo');
 
   const handleSendResetLink = async (e: React.FormEvent) => {
@@ -29,6 +30,7 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
+      // If demo, after reset, redirect to /auth-demo?reset=success. Otherwise, regular flow.
       const redirectTo = isAuthDemo
         ? `${window.location.origin}/auth-demo?reset=success`
         : `${window.location.origin}/reset-password/confirm`;

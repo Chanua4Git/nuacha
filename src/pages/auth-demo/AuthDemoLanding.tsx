@@ -16,20 +16,22 @@ const steps = [
     title: "Step 1: Try Sign Up",
     description: "You'll receive a real email. Be sure to verify before returning.",
     ctaLabel: "Try Sign Up",
-    to: "/signup?from=auth-demo",
+    // Always use from=auth-demo so the signup flow triggers redirect to /auth-demo
+    to: "/signup?from=auth-demo"
   },
   {
     title: "Step 2: Try Login",
     description: "After verifying your email, log in using your new credentials.",
     ctaLabel: "Try Login",
-    to: "/login",
+    to: "/login"
   },
   {
     title: "Step 3: Try Password Reset",
     description: "Try resetting your password to see the full experience.",
     ctaLabel: "Try Password Reset",
-    to: "/reset-password?from=auth-demo",
-  },
+    // Always include the from=auth-demo query for reset as well.
+    to: "/reset-password?from=auth-demo"
+  }
 ];
 
 function getDemoProgress() {
@@ -44,9 +46,11 @@ function setDemoProgress(step: number) {
   localStorage.setItem("authDemo_step", String(step));
 }
 
+// The core function to detect if redirected for verification
 const getVerifiedFromSearch = (search: string) => {
   try {
     const params = new URLSearchParams(search);
+    // Only counts as demo verification if verified=true is set
     return params.get("verified") === "true";
   } catch {
     return false;
@@ -56,6 +60,7 @@ const getVerifiedFromSearch = (search: string) => {
 const getResetSuccessFromSearch = (search: string) => {
   try {
     const params = new URLSearchParams(search);
+    // For demo: reset must be success
     return params.get("reset") === "success";
   } catch {
     return false;
@@ -67,7 +72,9 @@ const AuthDemoLanding = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
+  // The core state logic to track demo progress
   const [demoStep, setDemoStep] = useState(() => getDemoProgress());
+  // For detecting redirect after verification in the demo flow
   const [justVerified, setJustVerified] = useState(() =>
     getVerifiedFromSearch(location.search)
   );
@@ -78,6 +85,7 @@ const AuthDemoLanding = () => {
   const [leadOpen, setLeadOpen] = useState(false);
 
   useEffect(() => {
+    // If redirected after email verification in demo mode
     if (justVerified) {
       setDemoStep(1);
       setDemoProgress(1);
@@ -85,15 +93,17 @@ const AuthDemoLanding = () => {
         description: "Now try logging in with your new account."
       });
 
+      // Clean up URL so query param doesn't persist
       const url = new URL(window.location.href);
       url.searchParams.delete("verified");
       window.history.replaceState({}, document.title, url.pathname);
 
       setJustVerified(false);
     }
-  }, [location.search]);
+  }, [justVerified, location.search]);
 
   useEffect(() => {
+    // After demo reset password completion, i.e. redirected to /auth-demo?reset=success
     if (justReset) {
       setDemoStep(3);
       setDemoProgress(3);
@@ -109,6 +119,7 @@ const AuthDemoLanding = () => {
     }
   }, [justReset, location.search]);
 
+  // When user logs in, progress demo to step 2 if appropriate
   useEffect(() => {
     if (user && demoStep < 2) {
       setDemoStep(2);
