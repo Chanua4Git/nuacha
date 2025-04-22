@@ -26,6 +26,12 @@ const Signup = () => {
   const location = useLocation();
   const isAuthDemo = location.search.includes('from=auth-demo');
 
+  // Log the search params and the isAuthDemo value
+  useEffect(() => {
+    console.log("Signup component mounted with search:", location.search);
+    console.log("Is from auth demo:", isAuthDemo);
+  }, [location.search, isAuthDemo]);
+
   // When user is logged in, redirect out unless in auth demo
   useEffect(() => {
     if (user && !isAuthDemo) {
@@ -138,4 +144,3 @@ const Signup = () => {
 };
 
 export default Signup;
-

@@ -20,13 +20,16 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange, onComplet
       description: "Your interest is noted. Redirecting you to sign up.",
     });
 
+    // Call onComplete first, then close modal
+    if (onComplete) {
+      onComplete();
+    }
+    
+    // Small delay before closing the modal to allow navigation to trigger
     setTimeout(() => {
-      if (onComplete) onComplete();   // let parent handle navigation
-      setTimeout(() => {
-        setIsLoading(false);
-        onOpenChange(false);
-      }, 150);
-    }, 700);
+      setIsLoading(false);
+      onOpenChange(false);
+    }, 300);
   }
 
   return (

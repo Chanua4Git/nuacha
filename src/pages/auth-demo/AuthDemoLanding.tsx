@@ -25,6 +25,8 @@ const AuthDemoLanding = () => {
   const navigate = useNavigate();
 
   function handleLeadComplete() {
+    // Direct navigation to signup with query parameter
+    console.log("Navigating to signup from auth-demo landing");
     navigate("/signup?from=auth-demo");
   }
 
@@ -70,7 +72,11 @@ const AuthDemoLanding = () => {
       </section>
       <AuthDemoFeatureBreakdown />
       <AuthDemoPlansSection />
-      <AuthDemoLeadCaptureModal open={leadOpen} onOpenChange={setLeadOpen} onComplete={handleLeadComplete} />
+      <AuthDemoLeadCaptureModal 
+        open={leadOpen} 
+        onOpenChange={setLeadOpen} 
+        onComplete={handleLeadComplete} 
+      />
     </div>
   );
 };
