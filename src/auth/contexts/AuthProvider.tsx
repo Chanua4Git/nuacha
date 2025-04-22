@@ -2,23 +2,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
-
-// --- DEMO MODE HELPERS ---
-function getAuthDemoActiveFromLS(): boolean {
-  return localStorage.getItem('authDemoActive') === 'true';
-}
-function setAuthDemoActiveToLS(active: boolean) {
-  if (active) {
-    localStorage.setItem('authDemoActive', 'true');
-  } else {
-    localStorage.removeItem('authDemoActive');
-  }
-}
-function shouldEnableAuthDemo(location: { search: string; pathname: string }) {
-  // By convention, any route containing 'from=auth-demo' is considered demo flow
-  return location.search.includes('from=auth-demo') ||
-    location.pathname.startsWith('/auth-demo');
-}
+import {
+  setAuthDemoActive,
+  clearAuthDemo,
+  isAuthDemoActive,
+  shouldEnableAuthDemo,
+  getVerifiedFromSearch,
+} from '../utils/authDemoHelpers';
 
 type AuthContextType = {
   session: Session | null;
@@ -55,31 +45,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [authDemoActive, setAuthDemoActiveRaw] = useState(getAuthDemoActiveFromLS()); // Demo flow state
+  const [authDemoActive, setAuthDemoActiveRaw] = useState(isAuthDemoActive()); // Demo flow state
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Custom setter to sync LS and state
-  const setAuthDemoActive = (active: boolean) => {
-    setAuthDemoActiveToLS(active);
-    setAuthDemoActiveRaw(active);
+  const setAuthDemoActiveSync = (active: boolean) => {
+    if (active) {
+      setAuthDemoActive();
+      setAuthDemoActiveRaw(true);
+    } else {
+      clearAuthDemo();
+      setAuthDemoActiveRaw(false);
+    }
   };
 
-  // Persist/capture demo flow on mount or navigation changes
   useEffect(() => {
     const newActive = shouldEnableAuthDemo(location);
     if (newActive !== authDemoActive) {
-      setAuthDemoActive(newActive);
+      setAuthDemoActiveSync(newActive);
     }
-    // Best effort: keep demo status in sync if someone arrives directly to demo page
     if (!newActive && authDemoActive && !location.pathname.startsWith('/auth-demo')) {
-      setAuthDemoActive(false);
+      setAuthDemoActiveSync(false);
     }
     // eslint-disable-next-line
   }, [location]);
 
-  // Auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -87,16 +78,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
 
-        // Special: if auth-demo, DO NOT auto-redirect to dashboard
-        // Otherwise, use login redirect logic as before (safeGetIntendedPath etc)
+        const searchParams = new URLSearchParams(window.location.search);
+        const isEmailVerified = searchParams.get("verified") === "true";
+
+        if (authDemoActive && isEmailVerified) {
+          window.history.replaceState({}, "", `${window.location.pathname}`);
+          navigate("/auth-demo?verified=true", { replace: true });
+          return;
+        }
+
         if (event === 'SIGNED_IN') {
-          if (getAuthDemoActiveFromLS()) {
-            // Stay in the demo flow: redirect to /auth-demo, NOT dashboard
+          if (isAuthDemoActive()) {
             if (!location.pathname.startsWith('/auth-demo')) {
               navigate('/auth-demo', { replace: true });
             }
           } else {
-            // Normal: redirect to intendedPath or /
             const intendedPath = safeGetIntendedPath();
             localStorage.removeItem('intendedPath');
             if (location.pathname !== intendedPath) {
@@ -107,7 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
     supabaseClient.auth.getSession()
       .then(({ data: { session: currentSession } }) => {
         setSession(currentSession);
@@ -122,18 +117,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  // We want to run this only once—DO NOT add location as a dep; would cause double nav
-  // eslint-disable-next-line
   }, []);
 
-  // If user/session changes, clean up intendedPath if authenticated
   useEffect(() => {
     if (user && session && !authDemoActive) {
       localStorage.removeItem("intendedPath");
     }
   }, [user, session, authDemoActive]);
 
-  // When leaving demo mode (sign out, nav away): clear demo marker!
   const signOut = async () => {
     try {
       await supabaseClient.auth.signOut();
@@ -143,10 +134,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setUser(null);
       setTimeout(() => {
-        // Explicitly clear demo flow when signing out from demo context
-        setAuthDemoActive(false);
-        if (getAuthDemoActiveFromLS()) {
-          setAuthDemoActive(false);
+        setAuthDemoActiveSync(false);
+        if (isAuthDemoActive()) {
+          setAuthDemoActiveSync(false);
         }
         navigate('/login', { replace: true });
       }, 50);
@@ -154,7 +144,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, signOut, authDemoActive, setAuthDemoActive }}>
+    <AuthContext.Provider value={{
+      session,
+      user,
+      isLoading,
+      signOut,
+      authDemoActive,
+      setAuthDemoActive: setAuthDemoActiveSync
+    }}>
       {children}
     </AuthContext.Provider>
   );
