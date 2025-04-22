@@ -1,4 +1,5 @@
 
+
 export const AUTH_DEMO_KEY = "authDemoActive";
 export const AUTH_DEMO_STEP_KEY = "authDemo_step";
 
@@ -11,6 +12,11 @@ export const clearAuthDemo = () => {
 
 /** Returns true if demo mode is active */
 export const isAuthDemoActive = () => localStorage.getItem(AUTH_DEMO_KEY) === "true";
+
+/** Determine if auth demo mode should be enabled based on URL */
+export const shouldEnableAuthDemo = (location: { pathname: string }) => {
+  return location.pathname.startsWith('/auth-demo');
+};
 
 /** Used to extract ?verified=true or ?reset=success flags from query */
 export function getVerifiedFromSearch(search: string) {
