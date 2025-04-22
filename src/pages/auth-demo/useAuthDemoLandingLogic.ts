@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { toast } from "sonner";
-import { getVerifiedFromSearch, getResetSuccessFromSearch } from "@/auth/utils/authDemoHelpers";
+import {
+  getVerifiedFromSearch,
+  getResetSuccessFromSearch,
+  getDemoProgress,
+  setDemoProgress,
+  clearAuthDemo,
+} from "@/auth/utils/authDemoHelpers";
 
 export function useAuthDemoLandingLogic() {
   const location = useLocation();
@@ -15,19 +21,6 @@ export function useAuthDemoLandingLogic() {
   const [justReset, setJustReset] = useState(() => getResetSuccessFromSearch(location.search));
   const [leadOpen, setLeadOpen] = useState(false);
 
-  // Helpers for localStorage step progress
-  function getDemoProgress() {
-    const raw = localStorage.getItem("authDemo_step");
-    let step = parseInt(raw ?? "0", 10);
-    if (isNaN(step) || step < 0) step = 0;
-    if (step > 3) step = 3;
-    return step;
-  }
-
-  function setDemoProgress(step: number) {
-    localStorage.setItem("authDemo_step", String(step));
-  }
-
   // Effect: handle just verified
   useEffect(() => {
     if (justVerified) {
@@ -36,7 +29,7 @@ export function useAuthDemoLandingLogic() {
       toast.success("✅ Email verified!", {
         description: "You're in the demo now. Now try logging in with your new account."
       });
-      // Clean URL
+      // Clean URL after param processed
       const url = new URL(window.location.href);
       url.searchParams.delete("verified");
       window.history.replaceState({}, document.title, url.pathname);
@@ -52,7 +45,7 @@ export function useAuthDemoLandingLogic() {
       toast.success("🔐 Password reset complete!", {
         description: "You've completed the authentication demo. Try logging in."
       });
-      // Clean URL
+      // Clean URL after param processed
       const url = new URL(window.location.href);
       url.searchParams.delete("reset");
       window.history.replaceState({}, document.title, url.pathname);
@@ -71,7 +64,7 @@ export function useAuthDemoLandingLogic() {
   // Handler for resetting the demo
   const handleResetDemo = async () => {
     try {
-      localStorage.removeItem("authDemo_step");
+      clearAuthDemo();
       setDemoStep(0);
       setDemoProgress(0);
 
