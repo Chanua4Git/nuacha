@@ -3,29 +3,28 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AuthDemoLeadCaptureForm, { AuthDemoLeadCaptureData } from "./AuthDemoLeadCaptureForm";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthDemoLeadCaptureModalProps {
   open: boolean;
   onOpenChange: (val: boolean) => void;
-  onComplete?: () => void; // new prop
 }
 
-export default function AuthDemoLeadCaptureModal({ open, onOpenChange, onComplete }: AuthDemoLeadCaptureModalProps) {
+export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDemoLeadCaptureModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   function handleSubmit(data: AuthDemoLeadCaptureData) {
     setIsLoading(true);
+    // Here, sending data or analytics logic could be added (not required for now)
     toast({
       title: "Thank you!",
       description: "Your interest is noted. Redirecting you to sign up.",
     });
-
     setTimeout(() => {
-      if (onComplete) onComplete();   // let parent handle navigation
-      setTimeout(() => {
-        setIsLoading(false);
-        onOpenChange(false);
-      }, 150);
+      setIsLoading(false);
+      onOpenChange(false);
+      navigate("/signup");
     }, 700);
   }
 

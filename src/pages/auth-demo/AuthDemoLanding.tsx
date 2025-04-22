@@ -8,7 +8,6 @@ import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCaptureModal";
 import { useAuthDemoLandingLogic } from "./useAuthDemoLandingLogic";
 import { useAuthDemoStepCards } from "./useAuthDemoStepCards";
-import { useNavigate } from "react-router-dom";
 
 const AuthDemoLanding = () => {
   const {
@@ -22,13 +21,6 @@ const AuthDemoLanding = () => {
   } = useAuthDemoLandingLogic();
 
   const stepCards = useAuthDemoStepCards(demoStep, user, setLeadOpen);
-  const navigate = useNavigate();
-
-  function handleLeadComplete() {
-    // Direct navigation to signup with query parameter
-    console.log("Navigating to signup from auth-demo landing");
-    navigate("/signup?from=auth-demo");
-  }
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -72,11 +64,7 @@ const AuthDemoLanding = () => {
       </section>
       <AuthDemoFeatureBreakdown />
       <AuthDemoPlansSection />
-      <AuthDemoLeadCaptureModal 
-        open={leadOpen} 
-        onOpenChange={setLeadOpen} 
-        onComplete={handleLeadComplete} 
-      />
+      <AuthDemoLeadCaptureModal open={leadOpen} onOpenChange={setLeadOpen} />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -26,21 +25,11 @@ const Signup = () => {
   const location = useLocation();
   const isAuthDemo = location.search.includes('from=auth-demo');
 
-  // Log the search params and the isAuthDemo value
-  useEffect(() => {
-    console.log("Signup component mounted with search:", location.search);
-    console.log("Is from auth demo:", isAuthDemo);
-  }, [location.search, isAuthDemo]);
-
-  // When user is logged in, redirect out unless in auth demo
   useEffect(() => {
     if (user && !isAuthDemo) {
       const intendedPath = localStorage.getItem('intendedPath') || '/';
       localStorage.removeItem('intendedPath');
       navigate(intendedPath);
-    } else if (user && isAuthDemo) {
-      // If user is logged in and in demo, ensure they land in demo, not regular app
-      navigate('/auth-demo', { replace: true });
     }
   }, [user, navigate, isAuthDemo]);
 
@@ -68,9 +57,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Always set redirect and final navigation with correct context
-      const demoParam = isAuthDemo ? "?from=auth-demo" : "";
-      const emailRedirectTo = isAuthDemo 
+      const redirectTo = isAuthDemo 
         ? `${window.location.origin}/auth-demo?verified=true`
         : `${window.location.origin}/dashboard`;
 
@@ -78,7 +65,7 @@ const Signup = () => {
         email,
         password,
         options: {
-          emailRedirectTo,
+          emailRedirectTo: redirectTo,
         }
       });
       
@@ -96,12 +83,6 @@ const Signup = () => {
       
       if (error.message.includes("already registered")) {
         errorMessage = "This email is already registered. Try signing in instead.";
-        // If they're already registered and came from demo, help them back to login page with param preserved
-        if (isAuthDemo) {
-          setTimeout(() => {
-            navigate("/login?from=auth-demo");
-          }, 1200);
-        }
       } else if (error.message.includes("valid email")) {
         errorMessage = "Please enter a valid email address.";
       }
@@ -115,15 +96,7 @@ const Signup = () => {
   };
 
   if (emailSent) {
-    // If they go "back" from the EmailSentCard, it brings them back to sign up page, preserving params
-    const handleBack = () => {
-      setEmailSent(false);
-      if (isAuthDemo) {
-        // Always preserve context
-        navigate("/signup?from=auth-demo");
-      }
-    };
-    return <EmailSentCard email={email} onBack={handleBack} />;
+    return <EmailSentCard email={email} onBack={() => setEmailSent(false)} />;
   }
 
   return (

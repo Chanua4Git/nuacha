@@ -1,4 +1,3 @@
-import { Location } from 'react-router-dom';
 
 export const AUTH_DEMO_KEY = "authDemoActive";
 export const AUTH_DEMO_STEP_KEY = "authDemo_step";
@@ -41,19 +40,4 @@ export function getDemoProgress(): number {
 }
 export function setDemoProgress(step: number) {
   localStorage.setItem(AUTH_DEMO_STEP_KEY, String(step));
-}
-
-/** Determines if the auth demo should be enabled based on URL parameters */
-export function shouldEnableAuthDemo(location: Location): boolean {
-  const params = new URLSearchParams(location.search);
-  const fromAuthDemo = params.get("from") === "auth-demo";
-  const verifiedParam = params.get("verified") === "true";
-  const resetParam = params.get("reset") === "success";
-  
-  return (
-    fromAuthDemo || 
-    verifiedParam || 
-    resetParam || 
-    location.pathname.startsWith('/auth-demo')
-  );
 }
