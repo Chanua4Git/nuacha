@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
@@ -7,8 +6,10 @@ import AuthDemoFeatureBreakdown from "@/components/auth-demo/AuthDemoFeatureBrea
 import AuthDemoHero from "@/components/auth-demo/AuthDemoHero";
 import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import { useAuth } from "@/auth/contexts/AuthProvider";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCaptureModal";
+import { Button } from "@/components/ui/button";
+import { LogOut, RefreshCw } from "lucide-react";
 
 const steps = [
   {
@@ -31,9 +32,7 @@ const steps = [
   },
 ];
 
-// Simple local demo progress tracker
 function getDemoProgress() {
-  // 0 - signup, 1 - login, 2 - reset, 3 - done
   const raw = localStorage.getItem("authDemo_step");
   let step = parseInt(raw ?? "0", 10);
   if (isNaN(step) || step < 0) step = 0;
@@ -57,20 +56,16 @@ const getVerifiedFromSearch = (search: string) => {
 const AuthDemoLanding = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
-  // Track the demo step (0: signup, 1: login, 2: reset, 3: done)
   const [demoStep, setDemoStep] = useState(() => getDemoProgress());
   const [justVerified, setJustVerified] = useState(() =>
     getVerifiedFromSearch(location.search)
   );
 
-  // Lead modal
   const [leadOpen, setLeadOpen] = useState(false);
 
-  // On verification complete - step up to Login
   useEffect(() => {
-    // Only run if arrived with ?verified=true
     if (justVerified) {
       setDemoStep(1);
       setDemoProgress(1);
@@ -79,34 +74,24 @@ const AuthDemoLanding = () => {
         description: "Now try logging in with your new account.",
       });
 
-      // Remove ?verified=true from URL for cleanliness
       const url = new URL(window.location.href);
       url.searchParams.delete("verified");
       window.history.replaceState({}, document.title, url.pathname);
 
       setJustVerified(false);
     }
-    // intentionally not adding setJustVerified as dep
-    // eslint-disable-next-line
   }, [location.search]);
 
-  // When user logs in, step up to Password Reset
   useEffect(() => {
     if (user && demoStep < 2) {
       setDemoStep(2);
       setDemoProgress(2);
     }
-  }, [user]); // don't include demoStep, avoid re-entry on rerenders
+  }, [user]);
 
-  // Card rendering logic: show only current, or [previous + current] steps, never future! 
-  // e.g. step 0: signup only
-  //      step 1: signup (done) + login (active)
-  //      step 2+: signup (done) + login(done) + reset (active)
-  //      never show step 3 since reset is always active unless you want "All Done!".
   const stepCards = useMemo(() => {
     const cards = [];
     if (demoStep === 0) {
-      // Only show signup card
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -124,7 +109,6 @@ const AuthDemoLanding = () => {
       );
     }
     if (demoStep === 1) {
-      // Show signup (done) and login (active)
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -155,7 +139,6 @@ const AuthDemoLanding = () => {
       );
     }
     if (demoStep >= 2) {
-      // Show signup (done), login (done), reset (active/done)
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -199,10 +182,8 @@ const AuthDemoLanding = () => {
       );
     }
     return cards;
-    // eslint-disable-next-line
   }, [demoStep, user]);
 
-  // Scroll to features handler
   const handleFeatureClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const elem = document.getElementById("auth-demo-features");
@@ -211,14 +192,59 @@ const AuthDemoLanding = () => {
     }
   };
 
+  const handleResetDemo = async () => {
+    try {
+      localStorage.removeItem("authDemo_step");
+      setDemoStep(0);
+      setDemoProgress(0);
+
+      if (user) {
+        await signOut();
+      }
+
+      toast.success("Demo reset successfully", {
+        description: "You can now start the demo from the beginning."
+      });
+    } catch (error) {
+      console.error("Error resetting demo:", error);
+      toast.error("Could not reset demo", {
+        description: "Please try again or refresh the page."
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-16">
       <AuthDemoBreadcrumbs currentPage="landing" />
       <AuthDemoHero />
       <section className="flex flex-col items-center w-full px-2 sm:px-4 py-4 max-w-2xl mx-auto">
+        <div className="w-full flex justify-end gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetDemo}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reset Demo
+          </Button>
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={signOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          )}
+        </div>
+
         <div className="w-full flex flex-col items-center">
           {stepCards}
         </div>
+
         <div className="flex justify-center w-full mt-2">
           <button
             onClick={handleFeatureClick}
