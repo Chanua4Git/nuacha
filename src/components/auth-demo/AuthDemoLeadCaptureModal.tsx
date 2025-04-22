@@ -16,15 +16,20 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDem
 
   function handleSubmit(data: AuthDemoLeadCaptureData) {
     setIsLoading(true);
-    // Here, sending data or analytics logic could be added (not required for now)
     toast({
       title: "Thank you!",
       description: "Your interest is noted. Redirecting you to sign up.",
     });
+
+    // Perform navigation before closing the modal
     setTimeout(() => {
-      setIsLoading(false);
-      onOpenChange(false);
+      console.log("Navigating to /signup?from=auth-demo from AuthDemoLeadCaptureModal");
       navigate("/signup?from=auth-demo");
+      // Delay closing modal slightly to allow route transition
+      setTimeout(() => {
+        setIsLoading(false);
+        onOpenChange(false);
+      }, 150);
     }, 700);
   }
 
@@ -43,3 +48,4 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDem
     </Dialog>
   );
 }
+
