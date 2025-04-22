@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { EmailSentCard } from './reset-password/EmailSentCard';
@@ -8,9 +9,12 @@ import BackToAuthDemo from "./BackToAuthDemo";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+
+  const isAuthDemo = location.search.includes('from=auth-demo');
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +29,12 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
+      const redirectTo = isAuthDemo
+        ? `${window.location.origin}/auth-demo?reset=success`
+        : `${window.location.origin}/reset-password/confirm`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password/confirm`,
+        redirectTo,
       });
 
       if (error) throw error;

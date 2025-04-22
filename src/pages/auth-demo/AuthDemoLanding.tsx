@@ -28,7 +28,7 @@ const steps = [
     title: "Step 3: Try Password Reset",
     description: "Try resetting your password to see the full experience.",
     ctaLabel: "Try Password Reset",
-    to: "/reset-password",
+    to: "/reset-password?from=auth-demo",
   },
 ];
 
@@ -53,6 +53,15 @@ const getVerifiedFromSearch = (search: string) => {
   }
 };
 
+const getResetSuccessFromSearch = (search: string) => {
+  try {
+    const params = new URLSearchParams(search);
+    return params.get("reset") === "success";
+  } catch {
+    return false;
+  }
+};
+
 const AuthDemoLanding = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,6 +70,9 @@ const AuthDemoLanding = () => {
   const [demoStep, setDemoStep] = useState(() => getDemoProgress());
   const [justVerified, setJustVerified] = useState(() =>
     getVerifiedFromSearch(location.search)
+  );
+  const [justReset, setJustReset] = useState(() =>
+    getResetSuccessFromSearch(location.search)
   );
 
   const [leadOpen, setLeadOpen] = useState(false);
@@ -80,6 +92,22 @@ const AuthDemoLanding = () => {
       setJustVerified(false);
     }
   }, [location.search]);
+
+  useEffect(() => {
+    if (justReset) {
+      setDemoStep(3);
+      setDemoProgress(3);
+      toast("Password reset complete!", {
+        description: "You've completed the authentication demo. Thank you!"
+      });
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete("reset");
+      window.history.replaceState({}, document.title, url.pathname);
+
+      setJustReset(false);
+    }
+  }, [justReset, location.search]);
 
   useEffect(() => {
     if (user && demoStep < 2) {
