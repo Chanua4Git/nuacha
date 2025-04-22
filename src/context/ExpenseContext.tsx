@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { Family, Category, Expense, Reminder, families, categories, expenses, reminders } from '../data/mockData';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "@/components/ui/sonner";
