@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -46,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [authDemoActive, setAuthDemoActiveRaw] = useState(isAuthDemoActive());
+  const [authDemoActive, setAuthDemoActiveRaw] = useState(isAuthDemoActive()); // Demo flow state
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -73,7 +72,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [location]);
 
   useEffect(() => {
-    // Setup auth state listener
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
@@ -83,27 +81,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const searchParams = new URLSearchParams(window.location.search);
         const isEmailVerified = searchParams.get("verified") === "true";
 
-        // --- DEMO FLOW ENFORCEMENT LOGIC ---
-        if (authDemoActive) {
-          if (isEmailVerified) {
-            // Always redirect to /auth-demo?verified=true
-            if (window.location.pathname !== "/auth-demo" || !window.location.search.includes("verified=true")) {
-              navigate("/auth-demo?verified=true", { replace: true });
-              return;
-            }
-          } else {
-            // After signup or signin, always remain in auth-demo
+        if (authDemoActive && isEmailVerified) {
+          window.history.replaceState({}, "", `${window.location.pathname}`);
+          navigate("/auth-demo?verified=true", { replace: true });
+          return;
+        }
+
+        if (event === 'SIGNED_IN') {
+          if (isAuthDemoActive()) {
             if (!location.pathname.startsWith('/auth-demo')) {
               navigate('/auth-demo', { replace: true });
-              return;
             }
-          }
-        } else {
-          // Standard app auth handling
-          const intendedPath = safeGetIntendedPath();
-          localStorage.removeItem('intendedPath');
-          if (location.pathname !== intendedPath) {
-            navigate(intendedPath, { replace: true });
+          } else {
+            const intendedPath = safeGetIntendedPath();
+            localStorage.removeItem('intendedPath');
+            if (location.pathname !== intendedPath) {
+              navigate(intendedPath, { replace: true });
+            }
           }
         }
       }
@@ -123,7 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [authDemoActive, location, navigate]);
+  }, []);
 
   useEffect(() => {
     if (user && session && !authDemoActive) {
@@ -140,7 +134,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setUser(null);
       setTimeout(() => {
-        setAuthDemoActiveSync(false); // Will clear both demo keys
+        setAuthDemoActiveSync(false);
+        if (isAuthDemoActive()) {
+          setAuthDemoActiveSync(false);
+        }
         navigate('/login', { replace: true });
       }, 50);
     }
