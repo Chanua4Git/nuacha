@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
@@ -14,7 +15,7 @@ import { LogOut, RefreshCw } from "lucide-react";
 const steps = [
   {
     title: "Step 1: Try Sign Up",
-    description: "You’ll receive a real email. Be sure to verify before returning.",
+    description: "You'll receive a real email. Be sure to verify before returning.",
     ctaLabel: "Try Sign Up",
     to: "/signup",
   },
@@ -69,9 +70,8 @@ const AuthDemoLanding = () => {
     if (justVerified) {
       setDemoStep(1);
       setDemoProgress(1);
-      toast({
-        title: "You're verified!",
-        description: "Now try logging in with your new account.",
+      toast("You're verified!", {
+        description: "Now try logging in with your new account."
       });
 
       const url = new URL(window.location.href);
