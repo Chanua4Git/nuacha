@@ -1,8 +1,17 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabaseClient } from "../utils/supabaseClient";
 import { toast } from "sonner";
+
+// Helper for "from=auth-demo" detection
+function getAuthDemoActive() {
+  try {
+    return localStorage.getItem('authDemoActive') === 'true';
+  } catch {
+    return false;
+  }
+}
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -57,7 +66,13 @@ export function useLogin() {
         toast.success("Welcome back");
       }
 
-      // Redirect logic
+      // Auth demo: always redirect to /auth-demo if demo is active
+      if (getAuthDemoActive()) {
+        navigate('/auth-demo', { replace: true });
+        return;
+      }
+
+      // Normal user redirect
       const intendedPath = localStorage.getItem("intendedPath") || "/";
       localStorage.removeItem("intendedPath");
       navigate(intendedPath);
