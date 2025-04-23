@@ -62,7 +62,7 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         window.history.replaceState({}, document.title, url.toString());
       }, 500);
     }
-  }, [location.search, demoStep, setDemoStep]);
+  }, [location.search, demoStep]);
 
   // Reset the entire demo state
   const resetDemo = () => {
