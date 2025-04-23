@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AuthDemoLeadCaptureForm, { AuthDemoLeadCaptureData } from "./AuthDemoLeadCaptureForm";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { AuthDemoService } from "@/auth/services/AuthDemoService";
 
 interface AuthDemoLeadCaptureModalProps {
   open: boolean;
@@ -16,15 +17,19 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDem
 
   function handleSubmit(data: AuthDemoLeadCaptureData) {
     setIsLoading(true);
-    // Here, sending data or analytics logic could be added (not required for now)
-    toast({
-      title: "Thank you!",
+    
+    // Store the email for the demo flow
+    AuthDemoService.setDemoEmail(data.email);
+    
+    toast.success("Thank you!", {
       description: "Your interest is noted. Redirecting you to sign up.",
     });
+
     setTimeout(() => {
       setIsLoading(false);
       onOpenChange(false);
-      navigate("/signup");
+      // Use AuthDemoService to get the proper signup URL with demo context
+      navigate(AuthDemoService.getSignupUrl());
     }, 700);
   }
 
