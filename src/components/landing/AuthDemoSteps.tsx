@@ -8,23 +8,26 @@ import { toast } from "sonner";
 export const AuthDemoSteps = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, authDemoActive, signOut } = useAuth();
+  const { user, authDemoActive } = useAuth();
+  
   const isVerified = new URLSearchParams(location.search).get("verified") === "true";
+  const isFromAuthDemo = new URLSearchParams(location.search).get("from") === "auth-demo";
 
   useEffect(() => {
-    if (isVerified) {
+    if (isVerified && isFromAuthDemo) {
       toast.success("✅ Email verified!", {
         description: "You're in the demo now. Try logging in with your new account."
       });
       // Clean URL
       const url = new URL(window.location.href);
       url.searchParams.delete("verified");
+      url.searchParams.delete("from");
       window.history.replaceState({}, document.title, url.pathname);
     }
-  }, [isVerified]);
+  }, [isVerified, isFromAuthDemo]);
 
-  // Don't show if not in demo mode and not just verified
-  if (!authDemoActive && !isVerified) {
+  // Show if in demo mode or just verified from demo
+  if (!authDemoActive && !isFromAuthDemo && !isVerified) {
     return null;
   }
 

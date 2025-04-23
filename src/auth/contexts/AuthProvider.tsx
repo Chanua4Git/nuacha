@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -80,10 +81,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const searchParams = new URLSearchParams(window.location.search);
         const isEmailVerified = searchParams.get("verified") === "true";
+        const isFromAuthDemo = searchParams.get("from") === "auth-demo";
 
-        if (authDemoActive && isEmailVerified) {
-          window.history.replaceState({}, "", `${window.location.pathname}`);
-          navigate("/", { replace: true });
+        // Handle auth demo verification flow
+        if (isEmailVerified && isFromAuthDemo) {
+          setAuthDemoActiveSync(true);
+          window.history.replaceState({}, "", "/");
           return;
         }
 
