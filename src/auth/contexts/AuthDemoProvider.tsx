@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthDemoService, AuthDemoStep } from '../services/AuthDemoService';
 import { toast } from 'sonner';
+import { supabaseClient } from '../utils/supabaseClient';
 
 type AuthDemoContextType = {
   demoStep: AuthDemoStep;
@@ -27,18 +27,15 @@ const AuthDemoContext = createContext<AuthDemoContextType>({
 export const useAuthDemo = () => useContext(AuthDemoContext);
 
 export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // State management
   const [demoStep, setDemoStepState] = useState<AuthDemoStep>(AuthDemoService.getCurrentStep());
   const [isDemoVerified, setIsDemoVerified] = useState<boolean>(false);
   const location = useLocation();
 
-  // Define setDemoStep function before using it in any hooks
   const setDemoStep = (step: AuthDemoStep) => {
     AuthDemoService.setCurrentStep(step);
     setDemoStepState(step);
   };
 
-  // Check URL parameters for verification status
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const isVerified = searchParams.get("verified") === "true";
@@ -47,15 +44,15 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isVerified && isFromAuthDemo) {
       setIsDemoVerified(true);
       
-      // Updated verification success message
       if (demoStep === AuthDemoStep.Initial) {
         setDemoStep(AuthDemoStep.SignedUp);
-        toast.success("You're in the demo now!", {
-          description: "You've created a new account. Try logging in now."
+        supabaseClient.auth.signOut().then(() => {
+          toast.success("You're in the demo now!", {
+            description: "You've created a new account. Try logging in now."
+          });
         });
       }
       
-      // Clean URL params after processing
       setTimeout(() => {
         const url = new URL(window.location.href);
         url.searchParams.delete("verified");
@@ -64,7 +61,6 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [location.search, demoStep]);
 
-  // Reset the entire demo state
   const resetDemo = () => {
     AuthDemoService.resetDemo();
     setDemoStepState(AuthDemoStep.Initial);
@@ -74,13 +70,11 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  // Set the email used for verification
   const setVerificationEmail = (email: string) => {
     AuthDemoService.setDemoEmail(email);
     AuthDemoService.setVerificationPending(true);
   };
 
-  // Check if the demo is active based on URL or localStorage
   const isDemoActive = () => {
     return demoStep > AuthDemoStep.Initial || 
            location.pathname.startsWith('/auth-demo') || 
