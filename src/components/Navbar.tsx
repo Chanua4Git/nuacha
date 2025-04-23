@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight } from 'lucide-react';
@@ -19,8 +18,37 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Only render navbar on non-hidden routes
   if (HIDDEN_ROUTES.includes(location.pathname)) {
-    return null;
+    return (
+      <header className="sticky top-0 z-10 w-full bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto flex justify-between items-center h-16 px-4">
+          <h1 className="text-xl font-bold">
+            <Link to="/">Nuacha</Link>
+          </h1>
+          
+          {user && (
+            <Button 
+              variant="ghost" 
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={async () => {
+                try {
+                  await signOut();
+                  toast.success('Signed out successfully');
+                  navigate('/');
+                } catch (error) {
+                  console.error('Logout error:', error);
+                  toast.error('Error signing out');
+                }
+              }}
+            >
+              <LogOut className="h-5 w-5 mr-2" />
+              <span>Sign out</span>
+            </Button>
+          )}
+        </div>
+      </header>
+    );
   }
 
   const handleAuthAction = async () => {
