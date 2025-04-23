@@ -8,6 +8,7 @@ import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCaptureModal";
 import { useAuthDemoLandingLogic } from "./useAuthDemoLandingLogic";
 import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
+import { useAuthDemoStepCards } from "./useAuthDemoStepCards";
 
 const AuthDemoLanding = () => {
   const {
