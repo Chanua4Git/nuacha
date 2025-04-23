@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -57,8 +58,9 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Always redirect to landing page for auth demo
       const redirectTo = isAuthDemo 
-        ? `${window.location.origin}/auth-demo?verified=true`
+        ? `${window.location.origin}/?verified=true`
         : `${window.location.origin}/dashboard`;
 
       const { error } = await supabaseClient.auth.signUp({
