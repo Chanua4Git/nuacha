@@ -7,11 +7,10 @@ import AuthDemoFeatureBreakdown from "@/components/auth-demo/AuthDemoFeatureBrea
 import AuthDemoPlansSection from "@/components/auth-demo/AuthDemoPlansSection";
 import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCaptureModal";
 import { useAuthDemoLandingLogic } from "./useAuthDemoLandingLogic";
-import { useAuthDemoStepCards } from "./useAuthDemoStepCards";
+import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
 
 const AuthDemoLanding = () => {
   const {
-    demoStep,
     setLeadOpen,
     leadOpen,
     user,
@@ -19,8 +18,12 @@ const AuthDemoLanding = () => {
     handleResetDemo,
     handleFeatureClick,
   } = useAuthDemoLandingLogic();
-
-  const stepCards = useAuthDemoStepCards(demoStep, user, setLeadOpen);
+  
+  // Use the updated hook from our AuthDemoProvider
+  const { demoStep } = useAuthDemo();
+  
+  // Use the updated step cards hook
+  const stepCards = useAuthDemoStepCards(user, setLeadOpen);
 
   return (
     <div className="min-h-screen bg-background pb-16">

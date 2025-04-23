@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -47,9 +48,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authDemoActive, setAuthDemoActiveRaw] = useState(isAuthDemoActive()); // Demo flow state
   const urlParamsProcessed = useRef(false);
+  const navigationInProgress = useRef(false);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Safely navigate to prevent multiple redirects
+  const safeNavigate = (path: string, options: { replace?: boolean } = {}) => {
+    // Prevent multiple navigations in quick succession
+    if (navigationInProgress.current) return;
+    
+    navigationInProgress.current = true;
+    navigate(path, options);
+    
+    // Reset after a short delay
+    setTimeout(() => {
+      navigationInProgress.current = false;
+    }, 300);
+  };
 
   const setAuthDemoActiveSync = (active: boolean) => {
     if (active) {
@@ -70,6 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isFromAuthDemo = searchParams.get("from") === "auth-demo";
 
     if (isEmailVerified && isFromAuthDemo) {
+      // Process verification first to avoid race conditions
+      console.log("AuthProvider: Processing verification parameters");
       setAuthDemoActiveSync(true);
       localStorage.setItem("verificationComplete", "true");
       urlParamsProcessed.current = true;
@@ -79,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log("Auth state change:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
@@ -87,21 +106,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const verificationComplete = localStorage.getItem("verificationComplete") === "true";
           
           if (verificationComplete) {
+            console.log("AuthProvider: Verification complete, cleaning up");
             localStorage.removeItem("verificationComplete");
             window.history.replaceState({}, "", "/");
-            navigate("/", { replace: true });
+            safeNavigate("/", { replace: true });
             return;
           }
 
           if (isAuthDemoActive()) {
             if (!location.pathname.startsWith('/auth-demo')) {
-              navigate('/', { replace: true });
+              safeNavigate('/', { replace: true });
             }
           } else {
             const intendedPath = safeGetIntendedPath();
             localStorage.removeItem('intendedPath');
             if (location.pathname !== intendedPath) {
-              navigate(intendedPath, { replace: true });
+              safeNavigate(intendedPath, { replace: true });
             }
           }
         }
@@ -140,9 +160,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setTimeout(() => {
         if (isAuthDemoActive()) {
-          navigate('/auth-demo', { replace: true });
+          safeNavigate('/auth-demo', { replace: true });
         } else {
-          navigate('/login', { replace: true });
+          safeNavigate('/login', { replace: true });
         }
       }, 50);
     }

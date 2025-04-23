@@ -1,6 +1,8 @@
 
 import { useMemo } from "react";
 import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
+import { AuthDemoService, AuthDemoStep } from "@/auth/services/AuthDemoService";
+import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
 
 // Steps config used for generating step cards
 const steps = [
@@ -8,7 +10,7 @@ const steps = [
     title: "Step 1: Try Sign Up",
     description: "You'll receive a real email. Be sure to verify before returning.",
     ctaLabel: "Try Sign Up",
-    to: "/signup?from=auth-demo"
+    to: AuthDemoService.getSignupUrl()
   },
   {
     title: "Step 2: Try Login",
@@ -20,15 +22,18 @@ const steps = [
     title: "Step 3: Try Password Reset",
     description: "Try resetting your password to see the full experience.",
     ctaLabel: "Try Password Reset",
-    to: "/reset-password?from=auth-demo"
+    to: AuthDemoService.getResetPasswordUrl()
   }
 ];
 
-export function useAuthDemoStepCards(demoStep: number, user: any, setLeadOpen: (v: boolean) => void) {
+export function useAuthDemoStepCards(user: any, setLeadOpen: (v: boolean) => void) {
+  // Get demo step from our context
+  const { demoStep } = useAuthDemo();
+  
   // Returns step cards for AuthDemoLanding
   return useMemo(() => {
     const cards = [];
-    if (demoStep === 0) {
+    if (demoStep === AuthDemoStep.Initial) {
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -45,7 +50,7 @@ export function useAuthDemoStepCards(demoStep: number, user: any, setLeadOpen: (
         />
       );
     }
-    if (demoStep === 1) {
+    if (demoStep === AuthDemoStep.SignedUp) {
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -75,7 +80,7 @@ export function useAuthDemoStepCards(demoStep: number, user: any, setLeadOpen: (
         />
       );
     }
-    if (demoStep >= 2) {
+    if (demoStep >= AuthDemoStep.LoggedIn) {
       cards.push(
         <AuthDemoStepCard
           key="signup"
@@ -112,9 +117,9 @@ export function useAuthDemoStepCards(demoStep: number, user: any, setLeadOpen: (
           description="You've experienced the full authentication flow. Try resetting your password to see the end-to-end journey."
           ctaLabel={steps[2].ctaLabel}
           to={steps[2].to}
-          highlight={demoStep === 2}
+          highlight={demoStep === AuthDemoStep.LoggedIn}
           disabled={false}
-          done={demoStep > 2}
+          done={demoStep > AuthDemoStep.LoggedIn}
         />
       );
     }

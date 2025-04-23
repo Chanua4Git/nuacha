@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -7,6 +8,8 @@ import { validatePassword, PasswordPolicy } from '../utils/passwordValidation';
 import { SignupForm } from './signup/SignupForm';
 import { EmailSentCard } from './signup/EmailSentCard';
 import BackToAuthDemo from "./BackToAuthDemo";
+import { useAuthDemo } from '../contexts/AuthDemoProvider';
+import { AuthDemoService } from '../services/AuthDemoService';
 
 const PASSWORD_POLICY: PasswordPolicy = {
   minLength: 8,
@@ -24,6 +27,7 @@ const Signup = () => {
   const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
   const location = useLocation();
   const isAuthDemo = location.search.includes('from=auth-demo');
+  const { setVerificationEmail } = useAuthDemo();
 
   useEffect(() => {
     if (user && !isAuthDemo) {
@@ -57,9 +61,12 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Use our demo service to get the redirect URL if in demo mode
       const redirectTo = isAuthDemo 
-        ? `${window.location.origin}/?from=auth-demo&verified=true`
+        ? AuthDemoService.getVerificationRedirectUrl()
         : `${window.location.origin}/dashboard`;
+
+      console.log("Signup redirectTo:", redirectTo);
 
       const { error } = await supabaseClient.auth.signUp({
         email,
@@ -72,6 +79,12 @@ const Signup = () => {
       if (error) throw error;
       
       setEmailSent(true);
+      
+      // Store the email for the demo flow if in demo mode
+      if (isAuthDemo) {
+        setVerificationEmail(email);
+      }
+      
       toast.success("Verification email sent", {
         description: "Please check your email to verify your account before continuing."
       });

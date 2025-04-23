@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./auth/contexts/AuthProvider";
+import { AuthDemoProvider } from "./auth/contexts/AuthDemoProvider";
 import Login from "./auth/components/Login";
 import Signup from "./auth/components/Signup";
 import ResetPassword from "./auth/components/ResetPassword";
@@ -21,6 +22,7 @@ import { ExpenseProvider } from "./context/ExpenseContext";
 import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
 import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
 import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
+import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
 
 // New: custom hook for hiding navbar on /auth-demo
 import { useLocation as useRRLocation } from "react-router-dom";
@@ -44,49 +46,55 @@ const App = () => {
   const location = useRRLocation();
   const hideNavbar = /^\/auth-demo(\/.*)?$/.test(location.pathname);
 
+  // Enable debug panel during development
+  const showDebugPanel = import.meta.env.DEV;
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ExpenseProvider>
-          <TooltipProvider>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  maxWidth: '90vw',
-                },
-              }}
-            />
-            <div className="min-h-screen flex flex-col">
-              {!hideNavbar && <Navbar />}
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/app" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/demo" element={<Demo />} />
-                  <Route path="/options" element={<Options />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/reset-password/confirm" element={<ResetPasswordConfirm />} />
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/auth-demo" element={<AuthDemoLanding />} />
-                  <Route path="/auth-demo/plans" element={<AuthDemoPlans />} />
-                  <Route path="/auth-demo/features" element={<AuthDemoFeatures />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </TooltipProvider>
-        </ExpenseProvider>
+        <AuthDemoProvider>
+          <ExpenseProvider>
+            <TooltipProvider>
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    maxWidth: '90vw',
+                  },
+                }}
+              />
+              <div className="min-h-screen flex flex-col">
+                {!hideNavbar && <Navbar />}
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/app" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/demo" element={<Demo />} />
+                    <Route path="/options" element={<Options />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/reset-password/confirm" element={<ResetPasswordConfirm />} />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/auth-demo" element={<AuthDemoLanding />} />
+                    <Route path="/auth-demo/plans" element={<AuthDemoPlans />} />
+                    <Route path="/auth-demo/features" element={<AuthDemoFeatures />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <AuthDemoDebugPanel visible={showDebugPanel} />
+              </div>
+            </TooltipProvider>
+          </ExpenseProvider>
+        </AuthDemoProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
