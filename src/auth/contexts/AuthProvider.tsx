@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -47,6 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authDemoActive, setAuthDemoActiveRaw] = useState(isAuthDemoActive()); // Demo flow state
+  const urlParamsProcessed = useRef(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,15 +61,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Handle URL parameters and demo state
   useEffect(() => {
-    const newActive = shouldEnableAuthDemo(location);
-    if (newActive !== authDemoActive) {
-      setAuthDemoActiveSync(newActive);
+    if (urlParamsProcessed.current) return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const isEmailVerified = searchParams.get("verified") === "true";
+    const isFromAuthDemo = searchParams.get("from") === "auth-demo";
+
+    if (isEmailVerified && isFromAuthDemo) {
+      setAuthDemoActiveSync(true);
+      localStorage.setItem("verificationComplete", "true");
+      urlParamsProcessed.current = true;
     }
-    if (!newActive && authDemoActive && !location.pathname.startsWith('/auth-demo')) {
-      setAuthDemoActiveSync(false);
-    }
-    // eslint-disable-next-line
   }, [location]);
 
   useEffect(() => {
@@ -79,18 +83,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
 
-        const searchParams = new URLSearchParams(window.location.search);
-        const isEmailVerified = searchParams.get("verified") === "true";
-        const isFromAuthDemo = searchParams.get("from") === "auth-demo";
-
-        // Handle auth demo verification flow
-        if (isEmailVerified && isFromAuthDemo) {
-          setAuthDemoActiveSync(true);
-          window.history.replaceState({}, "", "/");
-          return;
-        }
-
         if (event === 'SIGNED_IN') {
+          const verificationComplete = localStorage.getItem("verificationComplete") === "true";
+          
+          if (verificationComplete) {
+            localStorage.removeItem("verificationComplete");
+            window.history.replaceState({}, "", "/");
+            navigate("/", { replace: true });
+            return;
+          }
+
           if (isAuthDemoActive()) {
             if (!location.pathname.startsWith('/auth-demo')) {
               navigate('/', { replace: true });

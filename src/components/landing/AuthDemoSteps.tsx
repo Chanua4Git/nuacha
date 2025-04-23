@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,11 +17,6 @@ export const AuthDemoSteps = () => {
       toast.success("✅ Email verified!", {
         description: "You're in the demo now. Try logging in with your new account."
       });
-      // Clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("verified");
-      url.searchParams.delete("from");
-      window.history.replaceState({}, document.title, url.pathname);
     }
   }, [isVerified, isFromAuthDemo]);
 
