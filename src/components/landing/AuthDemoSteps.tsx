@@ -19,8 +19,8 @@ export const AuthDemoSteps = () => {
   // Handle verification success notification
   useEffect(() => {
     if (isVerified && isFromAuthDemo) {
-      toast.success("✅ Email verified!", {
-        description: "You're in the demo now. Try logging in with your new account."
+      toast.success("✅ You're in the demo and logged in!", {
+        description: "Try Step 3: Password Reset to complete the demo."
       });
       
       // Advance to the next step after verification

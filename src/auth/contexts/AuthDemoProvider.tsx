@@ -47,11 +47,11 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isVerified && isFromAuthDemo) {
       setIsDemoVerified(true);
       
-      // Handle verification completion
+      // Handle verification completion with updated message
       if (demoStep === AuthDemoStep.Initial) {
         setDemoStep(AuthDemoStep.SignedUp);
-        toast.success("✅ Email verified!", {
-          description: "You're in the demo now. Try logging in with your new account."
+        toast.success("✅ You're in the demo and logged in!", {
+          description: "Try Step 3: Password Reset to complete the demo."
         });
       }
       

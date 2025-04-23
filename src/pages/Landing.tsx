@@ -11,6 +11,9 @@ const Landing = () => {
     <>
       <DemoBreadcrumbs currentPage="home" />
       <div className="min-h-screen bg-background py-12 px-4">
+        {/* Auth Demo Steps - Moved above hero */}
+        <AuthDemoSteps />
+        
         {/* Hero Section */}
         <section className="relative py-20 px-4 md:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
@@ -32,9 +35,6 @@ const Landing = () => {
             </div>
           </div>
         </section>
-
-        {/* Auth Demo Steps - New Section */}
-        <AuthDemoSteps />
 
         {/* Who is Nuacha For Section */}
         <WhoIsNuachaFor />
