@@ -32,7 +32,7 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isDemoVerified, setIsDemoVerified] = useState<boolean>(false);
   const location = useLocation();
 
-  // Persist demo step changes to localStorage - define this function early
+  // Define setDemoStep function before using it in any hooks
   const setDemoStep = (step: AuthDemoStep) => {
     AuthDemoService.setCurrentStep(step);
     setDemoStepState(step);

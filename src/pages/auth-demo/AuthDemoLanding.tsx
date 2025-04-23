@@ -11,7 +11,7 @@ import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
 import { useAuthDemoStepCards } from "./useAuthDemoStepCards";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { AuthDemoService } from "@/auth/services/AuthDemoService";
+import { AuthDemoService, AuthDemoStep } from "@/auth/services/AuthDemoService";
 
 const AuthDemoLanding = () => {
   const {
@@ -33,8 +33,8 @@ const AuthDemoLanding = () => {
     const isFromAuthDemo = searchParams.get("from") === "auth-demo";
 
     if (isVerified && isFromAuthDemo) {
-      // Set demo step to signed up after verification
-      setDemoStep(AuthDemoService.getCurrentStep());
+      console.log("Verified parameters detected, setting demo step to SignedUp");
+      setDemoStep(AuthDemoStep.SignedUp);
     }
   }, [location.search, setDemoStep]);
   
