@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -39,7 +40,6 @@ export const AuthDemoSteps = () => {
     }
   }, [user, demoStep, setDemoStep]);
 
-  // Show if in demo mode or just verified from demo
   const shouldShow = demoStep > AuthDemoStep.Initial || isFromAuthDemo || isVerified;
   if (!shouldShow) {
     return null;
@@ -84,6 +84,7 @@ export const AuthDemoSteps = () => {
             done={user !== null || demoStep > AuthDemoStep.LoggedIn}
             highlight={demoStep === AuthDemoStep.SignedUp && !user}
             onClick={() => handleStep("/login")}
+            showSignOut={user !== null && demoStep === AuthDemoStep.SignedUp}
           />
           
           <AuthDemoStepCard
