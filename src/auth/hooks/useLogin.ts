@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../utils/supabaseClient";
 import { toast } from "sonner";
 
@@ -63,19 +62,17 @@ export function useLogin() {
           description: "Check your inbox for a verification link."
         });
       } else {
-        toast.success("Welcome back");
-      }
+        // Auth demo: always redirect to /auth-demo if demo is active
+        if (getAuthDemoActive()) {
+          navigate('/auth-demo', { replace: true });
+          return;
+        }
 
-      // Auth demo: always redirect to /auth-demo if demo is active
-      if (getAuthDemoActive()) {
-        navigate('/auth-demo', { replace: true });
-        return;
+        // Normal user redirect
+        const intendedPath = localStorage.getItem("intendedPath") || "/";
+        localStorage.removeItem("intendedPath");
+        navigate(intendedPath);
       }
-
-      // Normal user redirect
-      const intendedPath = localStorage.getItem("intendedPath") || "/";
-      localStorage.removeItem("intendedPath");
-      navigate(intendedPath);
 
     } catch (err: any) {
       toast.error("An unknown error occurred.");

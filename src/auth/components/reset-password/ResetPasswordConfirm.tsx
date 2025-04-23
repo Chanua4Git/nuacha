@@ -89,8 +89,8 @@ const ResetPasswordConfirm = () => {
 
       if (error) throw error;
 
-      toast.success('Password updated', {
-        description: 'Your password has been reset successfully.',
+      toast.success('Password updated successfully', {
+        description: 'You have completed the demo! Try logging in with your new password.',
       });
 
       await supabase.auth.signOut();
