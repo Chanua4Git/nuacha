@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthDemoService, AuthDemoStep } from '../services/AuthDemoService';
@@ -31,6 +32,12 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isDemoVerified, setIsDemoVerified] = useState<boolean>(false);
   const location = useLocation();
 
+  // Persist demo step changes to localStorage - define this function early
+  const setDemoStep = (step: AuthDemoStep) => {
+    AuthDemoService.setCurrentStep(step);
+    setDemoStepState(step);
+  };
+
   // Check URL parameters for verification status
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -56,12 +63,6 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, 500);
     }
   }, [location.search, demoStep, setDemoStep]);
-
-  // Persist demo step changes to localStorage
-  const setDemoStep = (step: AuthDemoStep) => {
-    AuthDemoService.setCurrentStep(step);
-    setDemoStepState(step);
-  };
 
   // Reset the entire demo state
   const resetDemo = () => {
