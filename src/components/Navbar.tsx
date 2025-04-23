@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn } from 'lucide-react';
+import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,7 +15,7 @@ const Navbar = () => {
   const { selectedFamily } = useExpense();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, authDemoActive } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,8 +38,8 @@ const Navbar = () => {
   };
 
   const navItems = user ? [
-    { name: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/' },
-    { name: 'Add Expense', icon: <PlusCircle className="h-5 w-5" />, path: '/add-expense' },
+    { name: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/dashboard' },
+    { name: 'Add Expense', icon: <PlusCircle className="h-5 w-5" />, path: '/app' },
     { name: 'Reports', icon: <BarChart3 className="h-5 w-5" />, path: '/reports' },
     { name: 'Reminders', icon: <Calendar className="h-5 w-5" />, path: '/reminders' },
   ] : [];
@@ -71,9 +71,9 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-10 w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold">
-            Nuacha
+            <Link to={user ? "/dashboard" : "/"}>Nuacha</Link>
             {selectedFamily && (
               <span 
                 className="ml-2 text-sm font-medium px-2 py-1 rounded-full" 
@@ -83,7 +83,26 @@ const Navbar = () => {
               </span>
             )}
           </h1>
+          {authDemoActive && (
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full hidden sm:inline-block">
+              Demo Mode
+            </span>
+          )}
         </div>
+
+        {authDemoActive && !isMobile && (
+          <div className="flex items-center">
+            <Button 
+              variant="ghost"
+              size="sm"
+              className="mr-2"
+              onClick={() => navigate('/auth-demo')}
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Back to Demo Guide
+            </Button>
+          </div>
+        )}
 
         {isMobile ? (
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -96,7 +115,14 @@ const Navbar = () => {
             <SheetContent side="right" className="w-[80%] max-w-[300px] p-0">
               <div className="flex flex-col h-full">
                 <div className="border-b p-4 flex justify-between items-center">
-                  <h2 className="font-semibold text-lg">Menu</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-lg">Menu</h2>
+                    {authDemoActive && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        Demo Mode
+                      </span>
+                    )}
+                  </div>
                   <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
                     <X className="h-5 w-5" />
                     <span className="sr-only">Close menu</span>
@@ -119,6 +145,20 @@ const Navbar = () => {
                         </Link>
                       </Button>
                     ))}
+                    
+                    {authDemoActive && (
+                      <Button
+                        variant="ghost"
+                        className="justify-start h-12 text-base w-full"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate('/auth-demo');
+                        }}
+                      >
+                        <ArrowRight className="h-5 w-5 mr-3" />
+                        Back to Demo Guide
+                      </Button>
+                    )}
                   </nav>
                 </div>
                 

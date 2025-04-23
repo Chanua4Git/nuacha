@@ -82,6 +82,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const searchParams = new URLSearchParams(window.location.search);
         const isEmailVerified = searchParams.get("verified") === "true";
 
+        if (authDemoActive && isEmailVerified && event === 'SIGNED_IN') {
+          window.history.replaceState({}, "", `${window.location.pathname}`);
+          navigate("/dashboard?verified=true", { replace: true });
+          return;
+        }
+
         if (authDemoActive && isEmailVerified) {
           window.history.replaceState({}, "", `${window.location.pathname}`);
           navigate("/auth-demo?verified=true", { replace: true });
@@ -90,8 +96,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (event === 'SIGNED_IN') {
           if (isAuthDemoActive()) {
-            if (!location.pathname.startsWith('/auth-demo')) {
-              navigate('/auth-demo', { replace: true });
+            if (!location.pathname.startsWith('/auth-demo') && !location.pathname.startsWith('/dashboard')) {
+              navigate('/dashboard', { replace: true });
             }
           } else {
             const intendedPath = safeGetIntendedPath();
@@ -135,11 +141,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setUser(null);
       setTimeout(() => {
-        setAuthDemoActiveSync(false);
         if (isAuthDemoActive()) {
-          setAuthDemoActiveSync(false);
+          navigate('/auth-demo', { replace: true });
+        } else {
+          navigate('/login', { replace: true });
         }
-        navigate('/login', { replace: true });
       }, 50);
     }
   };

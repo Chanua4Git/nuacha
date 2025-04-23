@@ -36,13 +36,23 @@ export function useAuthDemoLandingLogic() {
       toast.success("✅ Email verified!", {
         description: "You're in the demo now. Now try logging in with your new account."
       });
-      // Clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("verified");
-      window.history.replaceState({}, document.title, url.pathname);
+      
+      // If user is already authenticated, redirect to dashboard with verified flag
+      if (user) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("verified");
+        url.pathname = "/dashboard";
+        url.searchParams.set("verified", "true");
+        navigate(url.toString(), { replace: true });
+      } else {
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("verified");
+        window.history.replaceState({}, document.title, url.pathname);
+      }
       setJustVerified(false);
     }
-  }, [justVerified, location.search]);
+  }, [justVerified, location.search, user, navigate]);
 
   // Effect: handle just reset
   useEffect(() => {
@@ -66,7 +76,7 @@ export function useAuthDemoLandingLogic() {
       setDemoStep(2);
       setDemoProgress(2);
     }
-  }, [user]);
+  }, [user, demoStep]);
 
   // Handler for resetting the demo
   const handleResetDemo = async () => {
