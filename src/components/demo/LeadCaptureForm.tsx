@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef } from "react";
 
@@ -23,17 +29,12 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      email,
-      name,
-      interestType,
-      additionalInfo,
-    });
+    onSubmit({ email, name, interestType, additionalInfo });
   };
 
   return (
-    <div className="max-h-[80vh] overflow-y-auto relative rounded-lg pb-[200px]">
-      <form onSubmit={handleSubmit} className="space-y-8 relative">
+    <div className="max-h-[80vh] overflow-y-auto overflow-visible relative rounded-lg">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-6">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
@@ -64,11 +65,11 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
 
           <div className="space-y-2">
             <label htmlFor="interestType" className="block text-sm font-medium text-foreground">
-              Why are you interested in Nuacha?
+              What brings you to Nuacha's authentication demo?
             </label>
-            <Select 
-              value={interestType} 
-              onValueChange={setInterestType} 
+            <Select
+              value={interestType}
+              onValueChange={setInterestType}
               required
               onOpenChange={(open) => {
                 if (open && submitButtonRef.current) {
@@ -80,7 +81,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
                 <SelectValue placeholder="Select your interest" />
               </SelectTrigger>
               <SelectContent
-                portal={false}
+                portal
                 position="popper"
                 className="w-full bg-popover shadow-lg z-[9999]"
                 align="start"
@@ -88,9 +89,9 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
                 collisionPadding={20}
               >
                 <SelectItem value="personal">Personal use</SelectItem>
-                <SelectItem value="family">Family expense management</SelectItem>
-                <SelectItem value="small-business">Small business</SelectItem>
-                <SelectItem value="large-business">Large business</SelectItem>
+                <SelectItem value="client-demo">Testing for client demo</SelectItem>
+                <SelectItem value="developer">Developer review</SelectItem>
+                <SelectItem value="comparing">Comparing authentication tools</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -110,13 +111,14 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           </div>
         </div>
 
-        <div className="pt-6" ref={submitButtonRef}>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Processing..." : "Get My Report"}
-          </Button>
+        <div className="pb-[120px]">
+          <div ref={submitButtonRef} className="bg-background py-4">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Processing..." : "Continue to Sign Up"}
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground text-center mt-4">
-            Your information will be used to send you the expense report and provide relevant updates.
-            We respect your privacy.
+            Your info won’t be sold or spammed. This just helps us shape Nuacha.
           </p>
         </div>
       </form>
