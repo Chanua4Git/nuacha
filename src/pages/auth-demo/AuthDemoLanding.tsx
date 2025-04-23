@@ -9,6 +9,9 @@ import AuthDemoLeadCaptureModal from "@/components/auth-demo/AuthDemoLeadCapture
 import { useAuthDemoLandingLogic } from "./useAuthDemoLandingLogic";
 import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
 import { useAuthDemoStepCards } from "./useAuthDemoStepCards";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { AuthDemoService } from "@/auth/services/AuthDemoService";
 
 const AuthDemoLanding = () => {
   const {
@@ -20,8 +23,20 @@ const AuthDemoLanding = () => {
     handleFeatureClick,
   } = useAuthDemoLandingLogic();
   
-  // Use the updated hook from our AuthDemoProvider
-  const { demoStep } = useAuthDemo();
+  const { demoStep, setDemoStep } = useAuthDemo();
+  const location = useLocation();
+  
+  // Handle verification parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const isVerified = searchParams.get("verified") === "true";
+    const isFromAuthDemo = searchParams.get("from") === "auth-demo";
+
+    if (isVerified && isFromAuthDemo) {
+      // Set demo step to signed up after verification
+      setDemoStep(AuthDemoService.getCurrentStep());
+    }
+  }, [location.search, setDemoStep]);
   
   // Use the updated step cards hook
   const stepCards = useAuthDemoStepCards(user, setLeadOpen);

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthDemoService, AuthDemoStep } from '../services/AuthDemoService';
@@ -56,7 +55,7 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         window.history.replaceState({}, document.title, url.toString());
       }, 500);
     }
-  }, [location.search, demoStep]);
+  }, [location.search, demoStep, setDemoStep]);
 
   // Persist demo step changes to localStorage
   const setDemoStep = (step: AuthDemoStep) => {

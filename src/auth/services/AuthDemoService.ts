@@ -1,4 +1,3 @@
-
 /**
  * AuthDemoService - Manages the auth demo flow state and transitions
  * Provides centralized control of the demo state to prevent race conditions
@@ -112,6 +111,6 @@ export class AuthDemoService {
    * Get the redirect URL for after email verification
    */
   static getVerificationRedirectUrl(): string {
-    return `${window.location.origin}/?from=auth-demo&verified=true`;
+    return `${window.location.origin}/auth-demo?from=auth-demo&verified=true`;
   }
 }
