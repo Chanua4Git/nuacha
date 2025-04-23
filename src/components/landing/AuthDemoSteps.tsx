@@ -22,7 +22,7 @@ export const AuthDemoSteps = () => {
         description: "You've created a new account. Try logging in now."
       });
       
-      // Set demo step after verification
+      // Advance to the next step after verification
       if (demoStep < AuthDemoStep.SignedUp) {
         setDemoStep(AuthDemoStep.SignedUp);
       }
@@ -46,15 +46,7 @@ export const AuthDemoSteps = () => {
   }
 
   const handleStep = (path: string) => {
-    if (path === "/login" && user) {
-      // Sign out if user is logged in and trying to access login
-      const { auth } = supabaseClient;
-      auth.signOut().then(() => {
-        navigate(path);
-      });
-    } else {
-      navigate(path);
-    }
+    navigate(path);
   };
 
   return (
