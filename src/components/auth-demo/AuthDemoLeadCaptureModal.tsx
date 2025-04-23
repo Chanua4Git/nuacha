@@ -5,6 +5,7 @@ import AuthDemoLeadCaptureForm, { AuthDemoLeadCaptureData } from "./AuthDemoLead
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AuthDemoService } from "@/auth/services/AuthDemoService";
+import { setAuthDemoActive } from "@/auth/utils/authDemoHelpers";
 
 interface AuthDemoLeadCaptureModalProps {
   open: boolean;
@@ -17,6 +18,9 @@ export default function AuthDemoLeadCaptureModal({ open, onOpenChange }: AuthDem
 
   function handleSubmit(data: AuthDemoLeadCaptureData) {
     setIsLoading(true);
+    
+    // Set auth demo mode active
+    setAuthDemoActive();
     
     // Store the email for the demo flow
     AuthDemoService.setDemoEmail(data.email);
