@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,8 +32,8 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
   };
 
   return (
-    <div className="max-h-[80vh] overflow-y-auto relative rounded-lg">
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="max-h-[80vh] overflow-y-auto relative rounded-lg pb-[200px]">
+      <form onSubmit={handleSubmit} className="space-y-8 relative">
         <div className="space-y-6">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
@@ -80,9 +79,10 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
               <SelectTrigger id="interestType" className="w-full">
                 <SelectValue placeholder="Select your interest" />
               </SelectTrigger>
-              <SelectContent 
-                position="popper" 
-                className="w-full bg-popover shadow-lg" 
+              <SelectContent
+                portal={false}
+                position="popper"
+                className="w-full bg-popover shadow-lg z-[9999]"
                 align="start"
                 sideOffset={5}
                 collisionPadding={20}
@@ -110,13 +110,10 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
           </div>
         </div>
 
-        <div className="pb-[120px]">
-          <div ref={submitButtonRef} className="bg-background py-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Processing..." : "Get My Report"}
-            </Button>
-          </div>
-
+        <div className="pt-6" ref={submitButtonRef}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Processing..." : "Get My Report"}
+          </Button>
           <p className="text-xs text-muted-foreground text-center mt-4">
             Your information will be used to send you the expense report and provide relevant updates.
             We respect your privacy.
