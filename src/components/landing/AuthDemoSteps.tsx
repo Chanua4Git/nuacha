@@ -94,7 +94,7 @@ export const AuthDemoSteps = () => {
             done={user !== null || demoStep > AuthDemoStep.LoggedIn}
             highlight={demoStep === AuthDemoStep.SignedUp && !user}
             onClick={() => handleStep("/login")}
-            showSignOut={user !== null && demoStep === AuthDemoStep.SignedUp}
+            showSignOut={user !== null && (demoStep === AuthDemoStep.SignedUp || demoStep === AuthDemoStep.LoggedIn)}
           />
           
           <AuthDemoStepCard
