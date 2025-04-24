@@ -54,11 +54,24 @@ export const AuthDemoSteps = () => {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-playfair mb-4">
-            Try Our Authentication Demo
+            {demoStep >= AuthDemoStep.Completed 
+              ? "Demo Completed!" 
+              : "Try Our Authentication Demo"}
           </h2>
           <p className="text-muted-foreground">
-            Experience our secure and user-friendly authentication system
+            {demoStep >= AuthDemoStep.Completed 
+              ? "You've experienced our secure authentication system. Ready to explore our solutions?"
+              : "Experience our secure and user-friendly authentication system"}
           </p>
+          {demoStep >= AuthDemoStep.Completed && (
+            <Button 
+              onClick={() => navigate("/auth-demo/plans")}
+              className="mt-6"
+              size="lg"
+            >
+              View Our Solutions
+            </Button>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

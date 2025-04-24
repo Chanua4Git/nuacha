@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import BackToAuthDemo from "../BackToAuthDemo";
+import { useAuthDemo } from '@/auth/contexts/AuthDemoProvider';
+import { AuthDemoStep } from '@/auth/services/AuthDemoService';
 
 const ResetPasswordConfirm = () => {
   const location = useLocation();
@@ -17,6 +19,8 @@ const ResetPasswordConfirm = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [validations, setValidations] = useState(validatePassword(''));
+  const { setDemoStep } = useAuthDemo();
+  const isAuthDemo = location.search.includes('from=auth-demo');
 
   useEffect(() => {
     const validateResetToken = async () => {
@@ -89,16 +93,22 @@ const ResetPasswordConfirm = () => {
 
       if (error) throw error;
 
-      toast.success('Password updated successfully', {
-        description: 'You have completed the demo! Try logging in with your new password.',
-      });
-
-      await supabase.auth.signOut();
-      
-      navigate('/login', { 
-        replace: true,
-        state: { message: 'passwordReset' } 
-      });
+      if (isAuthDemo) {
+        setDemoStep(AuthDemoStep.Completed);
+        toast.success('Demo completed!', {
+          description: "Let's explore which Nuacha solution fits your needs.",
+        });
+        
+        await supabase.auth.signOut();
+        navigate('/auth-demo/plans', { replace: true });
+      } else {
+        toast.success('Password updated successfully');
+        await supabase.auth.signOut();
+        navigate('/login', { 
+          replace: true,
+          state: { message: 'passwordReset' } 
+        });
+      }
     } catch (error: any) {
       console.error('Update password error:', error);
       toast.error('Password update failed', {
