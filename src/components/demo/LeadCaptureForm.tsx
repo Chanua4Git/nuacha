@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -81,7 +82,6 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
                 <SelectValue placeholder="Select your interest" />
               </SelectTrigger>
               <SelectContent
-                portal
                 position="popper"
                 className="w-full bg-popover shadow-lg z-[9999]"
                 align="start"
@@ -118,7 +118,7 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-4">
-            Your info won’t be sold or spammed. This just helps us shape Nuacha.
+            Your info won't be sold or spammed. This just helps us shape Nuacha.
           </p>
         </div>
       </form>
