@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -6,6 +5,7 @@ import { AuthDemoStepCard } from "@/components/auth-demo/AuthDemoStepCard";
 import { toast } from "sonner";
 import { AuthDemoService, AuthDemoStep } from "@/auth/services/AuthDemoService";
 import { useAuthDemo } from "@/auth/contexts/AuthDemoProvider";
+import { Button } from "@/components/ui/button";
 
 export const AuthDemoSteps = () => {
   const location = useLocation();
@@ -16,21 +16,18 @@ export const AuthDemoSteps = () => {
   const isVerified = new URLSearchParams(location.search).get("verified") === "true";
   const isFromAuthDemo = new URLSearchParams(location.search).get("from") === "auth-demo";
 
-  // Handle verification success notification
   useEffect(() => {
     if (isVerified && isFromAuthDemo) {
       toast.success("You're in the demo now!", {
         description: "You've created a new account. Try logging in now."
       });
       
-      // Advance to the next step after verification
       if (demoStep < AuthDemoStep.SignedUp) {
         setDemoStep(AuthDemoStep.SignedUp);
       }
     }
   }, [isVerified, isFromAuthDemo, demoStep, setDemoStep]);
 
-  // Advance to logged in step when user logs in
   useEffect(() => {
     if (user && demoStep === AuthDemoStep.SignedUp) {
       setDemoStep(AuthDemoStep.LoggedIn);
