@@ -25,26 +25,32 @@ export const useProfile = () => {
       }
 
       try {
-        // The issue is here - we need to use a direct raw query instead of a 'from' query
-        // since 'profiles' is not in the generated types
+        // Use a raw query instead of RPC to avoid type errors
         const { data, error } = await supabaseClient
-          .rpc('get_profile_by_id', { user_id: user.id })
+          .from('auth.users')
+          .select('id, email')
+          .eq('id', user.id)
           .single();
 
         if (error) {
-          // If the RPC method doesn't exist yet, we'll create a simple profile object
-          // This is a fallback until we create a proper profiles table
+          // If there's an error with the query, create a fallback profile
+          console.warn('Error fetching profile, using fallback profile');
           setProfile({
             id: user.id,
             email: user.email || '',
             role: 'user',
             created_at: new Date().toISOString()
           });
-          console.warn('Profile RPC not found, using fallback profile');
           return;
         }
         
-        setProfile(data as Profile);
+        // Transform user data into a profile object
+        setProfile({
+          id: data.id,
+          email: data.email || '',
+          role: 'user', // Default role
+          created_at: new Date().toISOString()
+        });
       } catch (err: any) {
         console.error('Error fetching profile:', err);
         setError(err);
