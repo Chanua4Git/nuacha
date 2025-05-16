@@ -9,27 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      categories: {
+      budgets: {
         Row: {
-          color: string
+          amount: number
+          category_id: string
           created_at: string | null
-          family_id: string | null
+          family_id: string
           id: string
-          name: string
+          month: string
+          year: number
         }
         Insert: {
-          color: string
+          amount: number
+          category_id: string
           created_at?: string | null
-          family_id?: string | null
+          family_id: string
           id?: string
-          name: string
+          month: string
+          year: number
         }
         Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string | null
+          family_id?: string
+          id?: string
+          month?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          budget: number | null
+          color: string
+          created_at: string | null
+          description: string | null
+          family_id: string | null
+          icon: string | null
+          id: string
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          color: string
+          created_at?: string | null
+          description?: string | null
+          family_id?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          budget?: number | null
           color?: string
           created_at?: string | null
+          description?: string | null
           family_id?: string | null
+          icon?: string | null
           id?: string
           name?: string
+          parent_id?: string | null
         }
         Relationships: [
           {
@@ -37,6 +94,13 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -83,11 +147,17 @@ export type Database = {
           description: string
           family_id: string
           id: string
+          is_tax_deductible: boolean | null
           needs_replacement: boolean | null
           next_replacement_date: string | null
+          payment_method: string | null
           place: string
           receipt_url: string | null
           replacement_frequency: number | null
+          tags: string[] | null
+          tax_amount: number | null
+          transaction_id: string | null
+          vendor_id: string | null
         }
         Insert: {
           amount: number
@@ -97,11 +167,17 @@ export type Database = {
           description: string
           family_id: string
           id?: string
+          is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          payment_method?: string | null
           place: string
           receipt_url?: string | null
           replacement_frequency?: number | null
+          tags?: string[] | null
+          tax_amount?: number | null
+          transaction_id?: string | null
+          vendor_id?: string | null
         }
         Update: {
           amount?: number
@@ -111,11 +187,17 @@ export type Database = {
           description?: string
           family_id?: string
           id?: string
+          is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          payment_method?: string | null
           place?: string
           receipt_url?: string | null
           replacement_frequency?: number | null
+          tags?: string[] | null
+          tax_amount?: number | null
+          transaction_id?: string | null
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -201,6 +283,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_templates: {
+        Row: {
+          config: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          name: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

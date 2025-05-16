@@ -1,3 +1,4 @@
+
 export interface Expense {
   id: string;
   familyId: string;
@@ -10,6 +11,11 @@ export interface Expense {
   replacementFrequency?: number;
   nextReplacementDate?: string;
   receiptUrl?: string;
+  taxAmount?: number;
+  isTaxDeductible?: boolean;
+  paymentMethod?: string;
+  tags?: string[];
+  transactionId?: string;
 }
 
 export interface OCRResult {
