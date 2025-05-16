@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +30,7 @@ const Accounting = () => {
         </div>
         
         <div className="mb-8">
+          {/* FamilySelector now properly accepts the onFamilyChange prop */}
           <FamilySelector onFamilyChange={setSelectedFamilyId} />
         </div>
         

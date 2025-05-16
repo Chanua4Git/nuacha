@@ -8,8 +8,13 @@ import {
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
 import { Users } from 'lucide-react';
+import { Dispatch, SetStateAction } from 'react';
 
-const FamilySelector = () => {
+interface FamilySelectorProps {
+  onFamilyChange?: Dispatch<SetStateAction<string>>;
+}
+
+const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
   const { families, selectedFamily, setSelectedFamily } = useExpense();
 
   return (
@@ -23,6 +28,11 @@ const FamilySelector = () => {
         onValueChange={(value) => {
           const family = families.find(f => f.id === value);
           setSelectedFamily(family || null);
+          
+          // Call the optional onFamilyChange prop if provided
+          if (onFamilyChange) {
+            onFamilyChange(value);
+          }
         }}
       >
         <SelectTrigger className="w-full">

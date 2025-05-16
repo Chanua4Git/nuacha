@@ -69,9 +69,18 @@ export const useBudgets = (familyId?: string, month?: string, year?: number) => 
 
   const createBudget = async (budgetData: BudgetFormData) => {
     try {
+      // Fix: Convert BudgetFormData to the expected structure
+      const budgetToInsert = {
+        family_id: budgetData.familyId,
+        category_id: budgetData.categoryId,
+        month: budgetData.month,
+        year: budgetData.year,
+        amount: budgetData.amount
+      };
+      
       const { data, error } = await supabase
         .from('budgets')
-        .insert([budgetData])
+        .insert([budgetToInsert])
         .select();
       
       if (error) throw error;
