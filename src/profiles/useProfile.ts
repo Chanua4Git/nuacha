@@ -25,34 +25,16 @@ export const useProfile = () => {
       }
 
       try {
-        // Use a raw query instead of RPC to avoid type errors
-        const { data, error } = await supabaseClient
-          .from('auth.users')
-          .select('id, email')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          // If there's an error with the query, create a fallback profile
-          console.warn('Error fetching profile, using fallback profile');
-          setProfile({
-            id: user.id,
-            email: user.email || '',
-            role: 'user',
-            created_at: new Date().toISOString()
-          });
-          return;
-        }
-        
-        // Transform user data into a profile object
+        // Since we can't directly query auth.users through the client,
+        // we'll create a profile from the authenticated user data
         setProfile({
-          id: data.id,
-          email: data.email || '',
+          id: user.id,
+          email: user.email || '',
           role: 'user', // Default role
           created_at: new Date().toISOString()
         });
       } catch (err: any) {
-        console.error('Error fetching profile:', err);
+        console.error('Error creating profile:', err);
         setError(err);
         
         // Create a fallback profile from the user object
