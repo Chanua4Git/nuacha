@@ -43,13 +43,15 @@ export function processLineItems(items: MindeeLineItem[]): ReceiptLineItem[] {
       rawTotalAmount: totalAmountRaw
     });
     
-    const processedItem = {
+    const processedItem: ReceiptLineItem = {
       description: item.description || 'Unknown item',
       quantity: item.quantity ?? 1,
       totalPrice: extractPrice(totalAmountRaw),
       confidence: calculateLineItemConfidence(item),
       discounted: !!item.discount,
-      sku: item.product_code?.value
+      sku: item.product_code?.value,
+      suggestedCategoryId: item.suggestedCategoryId,
+      categoryConfidence: item.categoryConfidence
     };
     
     // Log processed results

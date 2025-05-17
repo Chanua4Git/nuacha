@@ -1,3 +1,4 @@
+
 export interface ReceiptLineItem {
   description: string;
   quantity?: number;
@@ -7,6 +8,9 @@ export interface ReceiptLineItem {
   category?: string;
   discounted?: boolean;
   sku?: string;
+  suggestedCategoryId?: string;
+  categoryConfidence?: number;
+  matchedRuleId?: string;
 }
 
 interface MindeeLineItem {
@@ -17,6 +21,8 @@ interface MindeeLineItem {
   confidence: number;
   discount?: boolean;
   product_code?: { value: string };
+  suggestedCategoryId?: string;
+  categoryConfidence?: number;
 }
 
 export interface MindeeOCRResult {

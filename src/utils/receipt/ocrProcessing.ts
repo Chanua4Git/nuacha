@@ -3,6 +3,7 @@ import { OCRResult } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MindeeResponse } from './types';
+import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 
 export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
@@ -190,4 +191,131 @@ export function validateOCRResult(result: OCRResult): boolean {
   
   // Fall back to overall confidence check
   return result.confidence > 0.3 && hasBasicData;
+}
+
+// New function to save receipt details and line items
+export async function saveReceiptDetailsAndLineItems(
+  expenseId: string, 
+  ocrResult: OCRResult
+): Promise<{ receiptDetail: ReceiptDetail | null; lineItems: ReceiptLineItem[] | null }> {
+  try {
+    // First, save the receipt details
+    const receiptDetail: ReceiptDetail = {
+      expenseId: expenseId,
+      rawData: ocrResult,
+      vendorName: ocrResult.storeDetails?.name || ocrResult.place,
+      vendorAddress: ocrResult.storeDetails?.address,
+      vendorPhone: ocrResult.storeDetails?.phone,
+      vendorWebsite: ocrResult.storeDetails?.website,
+      receiptNumber: ocrResult.receiptNumber?.value,
+      transactionTime: ocrResult.transactionTime?.value.toISOString(),
+      subtotal: ocrResult.subtotal?.amount ? parseFloat(ocrResult.subtotal.amount) : undefined,
+      taxAmount: ocrResult.tax?.amount ? parseFloat(ocrResult.tax.amount) : undefined,
+      paymentMethod: ocrResult.paymentMethod?.type,
+      currency: ocrResult.currency,
+      confidenceSummary: ocrResult.confidence_summary
+    };
+    
+    // Insert receipt details into database
+    const { data: detailData, error: detailError } = await supabase
+      .from('receipt_details')
+      .insert([{
+        expense_id: expenseId,
+        raw_data: receiptDetail.rawData,
+        vendor_name: receiptDetail.vendorName,
+        vendor_address: receiptDetail.vendorAddress,
+        vendor_phone: receiptDetail.vendorPhone,
+        vendor_website: receiptDetail.vendorWebsite,
+        receipt_number: receiptDetail.receiptNumber,
+        transaction_time: receiptDetail.transactionTime,
+        subtotal: receiptDetail.subtotal,
+        tax_amount: receiptDetail.taxAmount,
+        payment_method: receiptDetail.paymentMethod,
+        currency: receiptDetail.currency,
+        confidence_summary: receiptDetail.confidenceSummary
+      }])
+      .select()
+      .single();
+    
+    if (detailError) {
+      console.error('Error saving receipt details:', detailError);
+      return { receiptDetail: null, lineItems: null };
+    }
+    
+    // Now save line items if they exist
+    if (ocrResult.lineItems && ocrResult.lineItems.length > 0) {
+      const lineItemsToInsert = ocrResult.lineItems.map(item => ({
+        expense_id: expenseId,
+        description: item.description,
+        quantity: item.quantity,
+        total_price: parseFloat(item.totalPrice),
+        suggested_category_id: item.suggestedCategoryId,
+        category_confidence: item.categoryConfidence,
+        sku: item.sku,
+        discount: item.discounted
+      }));
+      
+      const { data: lineItemsData, error: lineItemsError } = await supabase
+        .from('receipt_line_items')
+        .insert(lineItemsToInsert)
+        .select(`
+          *,
+          category:category_id(id, name, color),
+          suggestedCategory:suggested_category_id(id, name, color)
+        `);
+      
+      if (lineItemsError) {
+        console.error('Error saving line items:', lineItemsError);
+        return { 
+          receiptDetail: {
+            ...receiptDetail,
+            id: detailData.id,
+            createdAt: detailData.created_at
+          }, 
+          lineItems: null 
+        };
+      }
+      
+      // Map the returned data to our frontend format
+      const mappedLineItems = lineItemsData.map(item => ({
+        id: item.id,
+        expenseId: item.expense_id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.total_price,
+        categoryId: item.category_id,
+        suggestedCategoryId: item.suggested_category_id,
+        categoryConfidence: item.category_confidence,
+        sku: item.sku,
+        discount: item.discount,
+        createdAt: item.created_at,
+        category: item.category,
+        suggestedCategory: item.suggestedCategory,
+        isEditing: false
+      }));
+      
+      return { 
+        receiptDetail: {
+          ...receiptDetail,
+          id: detailData.id,
+          createdAt: detailData.created_at
+        }, 
+        lineItems: mappedLineItems 
+      };
+    }
+    
+    return { 
+      receiptDetail: {
+        ...receiptDetail,
+        id: detailData.id,
+        createdAt: detailData.created_at
+      }, 
+      lineItems: [] 
+    };
+    
+  } catch (error) {
+    console.error('Error saving receipt data:', error);
+    return { receiptDetail: null, lineItems: null };
+  }
 }

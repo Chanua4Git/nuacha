@@ -12,6 +12,8 @@ import DateSelector from './DateSelector';
 import PlaceInput from './PlaceInput';
 import ReplacementSection from './ReplacementSection';
 import { toast } from 'sonner';
+import { OCRResult } from '@/types/expense';
+import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -25,6 +27,7 @@ const ExpenseForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
@@ -38,9 +41,12 @@ const ExpenseForm = () => {
     }
     setReceiptImage(null);
     setImagePreview(null);
+    setOcrResult(null);
   };
 
-  const handleOcrData = (data: any) => {
+  const handleOcrData = (data: OCRResult) => {
+    setOcrResult(data);
+    
     if (data.amount) setAmount(data.amount);
     if (data.description) setDescription(data.description);
     if (data.place) setPlace(data.place);
@@ -79,7 +85,8 @@ const ExpenseForm = () => {
         nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
       }
       
-      addExpense({
+      // Add expense first
+      const newExpense = await addExpense({
         familyId: selectedFamily.id,
         amount: parseFloat(amount),
         description,
@@ -92,6 +99,17 @@ const ExpenseForm = () => {
         receiptUrl
       });
       
+      // If we have OCR data and the expense was created successfully, save receipt details
+      if (ocrResult && newExpense && newExpense.id) {
+        try {
+          await saveReceiptDetailsAndLineItems(newExpense.id, ocrResult);
+          console.log('✅ Receipt details and line items saved');
+        } catch (error) {
+          console.error('Error saving receipt details:', error);
+          // We don't want to fail the whole submission if just the receipt details fail
+        }
+      }
+      
       // Reset form
       setAmount('');
       setDescription('');
@@ -100,6 +118,7 @@ const ExpenseForm = () => {
       setPlace('');
       setNeedsReplacement(false);
       setReplacementFrequency('');
+      setOcrResult(null);
       handleImageRemove();
       
       toast.success('Expense added successfully');

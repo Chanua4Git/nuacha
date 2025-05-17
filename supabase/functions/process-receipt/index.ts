@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { mindeeClient } from './mindee.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { suggestCategories } from './category-suggestions.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -167,6 +168,46 @@ serve(async (req) => {
         }),
         { status: 200, headers: corsHeaders }
       );
+    }
+
+    // If we have line items, try to suggest categories for them
+    if (result.lineItems && result.lineItems.length > 0 && supabaseUrl && supabaseServiceKey) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      
+      try {
+        // Get the vendor name to help with categorization
+        const vendorName = result.supplier?.value || 
+                          result.storeDetails?.name || 
+                          "";
+        
+        // Get categories from database to use for suggestions
+        const { data: categories } = await supabaseAdmin
+          .from('categories')
+          .select('*');
+        
+        // Get categorization rules if available
+        const { data: rules } = await supabaseAdmin
+          .from('categorization_rules')
+          .select('*')
+          .eq('is_active', true)
+          .order('priority', { ascending: false });
+        
+        if (categories) {
+          // Process line items and suggest categories
+          const enhancedLineItems = await suggestCategories(
+            result.lineItems,
+            vendorName,
+            categories,
+            rules || []
+          );
+          
+          // Replace the original line items with the enhanced ones
+          result.lineItems = enhancedLineItems;
+        }
+      } catch (error) {
+        console.error('Error suggesting categories:', error);
+        // We don't want to fail the whole process if category suggestion fails
+      }
     }
     
     console.log('✅ Successfully processed receipt');

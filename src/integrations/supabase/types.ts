@@ -105,6 +105,53 @@ export type Database = {
           },
         ]
       }
+      categorization_rules: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          pattern: string
+          pattern_type: string
+          priority: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          pattern: string
+          pattern_type: string
+          priority?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          pattern?: string
+          pattern_type?: string
+          priority?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorization_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_leads: {
         Row: {
           additional_info: string | null
@@ -232,6 +279,138 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      receipt_details: {
+        Row: {
+          confidence_summary: Json | null
+          created_at: string | null
+          currency: string | null
+          discount_amount: number | null
+          expense_id: string
+          id: string
+          payment_method: string | null
+          raw_data: Json | null
+          receipt_number: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          transaction_time: string | null
+          vendor_address: string | null
+          vendor_name: string | null
+          vendor_phone: string | null
+          vendor_website: string | null
+        }
+        Insert: {
+          confidence_summary?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          expense_id: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          receipt_number?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          transaction_time?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_phone?: string | null
+          vendor_website?: string | null
+        }
+        Update: {
+          confidence_summary?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          expense_id?: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          receipt_number?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          transaction_time?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_phone?: string | null
+          vendor_website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_details_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipt_line_items: {
+        Row: {
+          category_confidence: number | null
+          category_id: string | null
+          created_at: string | null
+          description: string
+          discount: boolean | null
+          expense_id: string
+          id: string
+          quantity: number | null
+          sku: string | null
+          suggested_category_id: string | null
+          total_price: number
+          unit_price: number | null
+        }
+        Insert: {
+          category_confidence?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description: string
+          discount?: boolean | null
+          expense_id: string
+          id?: string
+          quantity?: number | null
+          sku?: string | null
+          suggested_category_id?: string | null
+          total_price: number
+          unit_price?: number | null
+        }
+        Update: {
+          category_confidence?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string
+          discount?: boolean | null
+          expense_id?: string
+          id?: string
+          quantity?: number | null
+          sku?: string | null
+          suggested_category_id?: string | null
+          total_price?: number
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_line_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reminders: {
         Row: {
