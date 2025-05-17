@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Category } from '@/types/expense';
+import { Category, CategoryWithChildren } from '@/types/accounting';
 import { toast } from 'sonner';
 
 interface UseCategoriesOptions {
@@ -11,8 +11,40 @@ interface UseCategoriesOptions {
 
 export const useCategories = (familyId?: string, includeGeneralCategories: boolean = true) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [hierarchicalCategories, setHierarchicalCategories] = useState<CategoryWithChildren[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  // Build hierarchical structure from flat categories
+  const buildHierarchy = (categories: Category[]): CategoryWithChildren[] => {
+    // Create a map of categories by id for easy access
+    const categoryMap = new Map<string, CategoryWithChildren>();
+    
+    // Initialize the map with all categories
+    categories.forEach(cat => {
+      categoryMap.set(cat.id, { ...cat, children: [] });
+    });
+    
+    // Create hierarchical structure
+    const rootCategories: CategoryWithChildren[] = [];
+    
+    // Process each category to build the tree
+    categories.forEach(cat => {
+      const category = categoryMap.get(cat.id);
+      if (!category) return;
+      
+      if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+        // This is a child category, add it to its parent's children
+        const parent = categoryMap.get(cat.parent_id);
+        parent?.children?.push(category);
+      } else {
+        // This is a root category
+        rootCategories.push(category);
+      }
+    });
+    
+    return rootCategories;
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -38,10 +70,18 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
           id: item.id,
           name: item.name,
           color: item.color,
-          familyId: item.family_id
+          familyId: item.family_id,
+          parent_id: item.parent_id,
+          budget: item.budget,
+          description: item.description,
+          icon: item.icon
         }));
         
         setCategories(mappedCategories);
+        
+        // Build and set hierarchical categories
+        const hierarchical = buildHierarchy(mappedCategories);
+        setHierarchicalCategories(hierarchical);
       } catch (err: any) {
         console.error('Error fetching categories:', err);
         setError(err);
@@ -63,7 +103,11 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         .insert([{
           name: category.name,
           color: category.color,
-          family_id: category.familyId
+          family_id: category.familyId,
+          parent_id: category.parent_id,
+          budget: category.budget,
+          description: category.description,
+          icon: category.icon
         }])
         .select();
       
@@ -73,10 +117,18 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         id: data[0].id,
         name: data[0].name,
         color: data[0].color,
-        familyId: data[0].family_id
+        familyId: data[0].family_id,
+        parent_id: data[0].parent_id,
+        budget: data[0].budget,
+        description: data[0].description,
+        icon: data[0].icon
       };
       
-      setCategories(prev => [...prev, newCategory]);
+      setCategories(prev => {
+        const updated = [...prev, newCategory];
+        setHierarchicalCategories(buildHierarchy(updated));
+        return updated;
+      });
       
       toast("Category added successfully", {
         description: `"${category.name}" has been created.`
@@ -99,6 +151,10 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       if (updates.name !== undefined) updatesToApply.name = updates.name;
       if (updates.color !== undefined) updatesToApply.color = updates.color;
       if (updates.familyId !== undefined) updatesToApply.family_id = updates.familyId;
+      if (updates.parent_id !== undefined) updatesToApply.parent_id = updates.parent_id;
+      if (updates.budget !== undefined) updatesToApply.budget = updates.budget;
+      if (updates.description !== undefined) updatesToApply.description = updates.description;
+      if (updates.icon !== undefined) updatesToApply.icon = updates.icon;
       
       const { data, error } = await supabase
         .from('categories')
@@ -108,12 +164,17 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       
       if (error) throw error;
       
-      setCategories(prev => prev.map(category => {
-        if (category.id === id) {
-          return { ...category, ...updates };
-        }
-        return category;
-      }));
+      setCategories(prev => {
+        const updated = prev.map(category => {
+          if (category.id === id) {
+            return { ...category, ...updates };
+          }
+          return category;
+        });
+        
+        setHierarchicalCategories(buildHierarchy(updated));
+        return updated;
+      });
       
       toast("Category updated successfully", {
         description: `Changes to "${updates.name || 'category'}" have been saved.`
@@ -151,7 +212,11 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       
       if (error) throw error;
       
-      setCategories(prev => prev.filter(category => category.id !== id));
+      setCategories(prev => {
+        const updated = prev.filter(category => category.id !== id);
+        setHierarchicalCategories(buildHierarchy(updated));
+        return updated;
+      });
       
       toast("Category deleted successfully", {
         description: "The category has been removed."
@@ -167,6 +232,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   return {
     categories,
+    hierarchicalCategories,
     isLoading,
     error,
     createCategory,

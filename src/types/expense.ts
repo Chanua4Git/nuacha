@@ -12,6 +12,10 @@ export interface Category {
   name: string;
   color: string;
   familyId?: string; // If null, it's a general category
+  parent_id?: string; // Parent category id for hierarchical categories
+  budget?: number; // Optional budget for the category
+  description?: string; // Optional description
+  icon?: string; // Optional icon identifier
 }
 
 // Expense type

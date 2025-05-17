@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Family, Category, Expense, Reminder } from '@/types/expense';
 import { useFamilies } from '@/hooks/useFamilies';
@@ -71,7 +70,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     deleteReminder
   } = useReminders(selectedFamily?.id);
   
-  // Get categories using the selected family - fix the parameter passing
+  // Get categories using the selected family
   const {
     categories,
     isLoading: categoriesLoading
