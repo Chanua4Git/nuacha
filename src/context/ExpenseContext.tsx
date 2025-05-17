@@ -1,8 +1,11 @@
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Family, Category, Expense, Reminder, families, categories, expenses, reminders } from '../data/mockData';
-import { v4 as uuidv4 } from 'uuid';
-import { toast } from "@/components/ui/sonner";
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { Family, Category, Expense, Reminder } from '@/types/expense';
+import { useFamilies } from '@/hooks/useFamilies';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useReminders } from '@/hooks/useReminders';
+import { useCategories } from '@/hooks/useCategories';
+import { toast } from "sonner";
 
 interface ExpenseContextType {
   families: Family[];
@@ -11,14 +14,15 @@ interface ExpenseContextType {
   reminders: Reminder[];
   selectedFamily: Family | null;
   setSelectedFamily: (family: Family | null) => void;
-  addExpense: (expense: Omit<Expense, 'id'>) => void;
-  addReminder: (reminder: Omit<Reminder, 'id'>) => void;
-  updateExpense: (expense: Expense) => void;
-  deleteExpense: (id: string) => void;
-  updateReminder: (reminder: Reminder) => void;
-  deleteReminder: (id: string) => void;
+  addExpense: (expense: Omit<Expense, 'id'>) => Promise<Expense | undefined>;
+  addReminder: (reminder: Omit<Reminder, 'id'>) => Promise<Reminder | undefined>;
+  updateExpense: (expense: Expense) => Promise<any>;
+  deleteExpense: (id: string) => Promise<void>;
+  updateReminder: (reminder: Reminder) => Promise<any>;
+  deleteReminder: (id: string) => Promise<void>;
   filteredExpenses: (filters: ExpenseFilters) => Expense[];
   upcomingReminders: () => Reminder[];
+  isLoading: boolean;
 }
 
 export interface ExpenseFilters {
@@ -34,83 +38,93 @@ export interface ExpenseFilters {
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedFamily, setSelectedFamily] = useState<Family | null>(families[0]);
-  const [expensesList, setExpensesList] = useState<Expense[]>(expenses);
-  const [remindersList, setRemindersList] = useState<Reminder[]>(reminders);
-
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
-    const newExpense = { ...expense, id: uuidv4() };
-    
-    // If expense needs replacement, add a reminder automatically
-    if (expense.needsReplacement && expense.replacementFrequency && expense.nextReplacementDate) {
-      addReminder({
-        familyId: expense.familyId,
-        title: `${expense.description} replacement`,
-        dueDate: expense.nextReplacementDate,
-        isRecurring: true,
-        frequency: expense.replacementFrequency,
-        type: 'replacement',
-        relatedExpenseId: newExpense.id,
-      });
+  // State for the selected family
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
+  
+  // Loading state for the entire context
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Get families from the hook
+  const { 
+    families, 
+    isLoading: familiesLoading,
+    createFamily,
+    updateFamily,
+    deleteFamily
+  } = useFamilies();
+  
+  // Get expenses using the selected family
+  const {
+    expenses,
+    isLoading: expensesLoading,
+    createExpense,
+    updateExpense,
+    deleteExpense
+  } = useExpenses({ familyId: selectedFamily?.id });
+  
+  // Get reminders using the selected family
+  const {
+    reminders,
+    isLoading: remindersLoading,
+    createReminder,
+    updateReminder,
+    deleteReminder
+  } = useReminders(selectedFamily?.id);
+  
+  // Get categories using the selected family
+  const {
+    categories,
+    isLoading: categoriesLoading
+  } = useCategories({ familyId: selectedFamily?.id, includeGeneralCategories: true });
+  
+  // Set the first family as selected when families are loaded
+  useEffect(() => {
+    if (families.length > 0 && !selectedFamily) {
+      setSelectedFamily(families[0]);
     }
     
-    setExpensesList(prev => [...prev, newExpense]);
-    toast.success('Expense added successfully');
-    return newExpense;
-  };
+    // Update overall loading state
+    setIsLoading(familiesLoading || expensesLoading || remindersLoading || categoriesLoading);
+  }, [families, familiesLoading, expensesLoading, remindersLoading, categoriesLoading, selectedFamily]);
 
-  const updateExpense = (expense: Expense) => {
-    setExpensesList(prev => prev.map(item => item.id === expense.id ? expense : item));
-    
-    // Update related reminder if exists
-    if (expense.needsReplacement && expense.nextReplacementDate) {
-      const relatedReminder = remindersList.find(r => r.relatedExpenseId === expense.id);
-      if (relatedReminder) {
-        updateReminder({
-          ...relatedReminder,
+  // Add a new expense
+  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+    try {
+      const newExpense = await createExpense(expense);
+      
+      // If expense needs replacement, add a reminder automatically
+      if (expense.needsReplacement && expense.replacementFrequency && expense.nextReplacementDate && newExpense) {
+        await createReminder({
+          familyId: expense.familyId,
           title: `${expense.description} replacement`,
           dueDate: expense.nextReplacementDate,
+          isRecurring: true,
           frequency: expense.replacementFrequency,
+          type: 'replacement',
+          relatedExpenseId: newExpense.id,
         });
       }
-    }
-    
-    toast.success('Expense updated successfully');
-  };
-
-  const deleteExpense = (id: string) => {
-    setExpensesList(prev => prev.filter(item => item.id !== id));
-    
-    // Delete related reminders
-    setRemindersList(prev => prev.filter(item => item.relatedExpenseId !== id));
-    
-    toast.success('Expense deleted successfully');
-  };
-
-  const addReminder = (reminder: Omit<Reminder, 'id'>) => {
-    const newReminder = { ...reminder, id: uuidv4() };
-    setRemindersList(prev => [...prev, newReminder]);
-    toast.success('Reminder added successfully');
-    return newReminder;
-  };
-
-  const updateReminder = (reminder: Reminder) => {
-    setRemindersList(prev => prev.map(item => item.id === reminder.id ? reminder : item));
-    toast.success('Reminder updated successfully');
-  };
-
-  const deleteReminder = (id: string) => {
-    setRemindersList(prev => prev.filter(item => item.id !== id));
-    toast.success('Reminder deleted successfully');
-  };
-
-  const filteredExpenses = (filters: ExpenseFilters): Expense[] => {
-    return expensesList.filter(expense => {
-      // Always filter by selected family
-      if (selectedFamily && expense.familyId !== selectedFamily.id) {
-        return false;
-      }
       
+      return newExpense;
+    } catch (error) {
+      console.error('Error in addExpense:', error);
+      return undefined;
+    }
+  };
+
+  // Add a new reminder
+  const addReminder = async (reminder: Omit<Reminder, 'id'>) => {
+    try {
+      return await createReminder(reminder);
+    } catch (error) {
+      console.error('Error in addReminder:', error);
+      return undefined;
+    }
+  };
+
+  // Filter expenses based on provided filters
+  const filteredExpenses = (filters: ExpenseFilters): Expense[] => {
+    return expenses.filter(expense => {      
       // Filter by category
       if (filters.categoryId && expense.category !== filters.categoryId) {
         return false;
@@ -154,17 +168,13 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // Get upcoming reminders (due within the next 14 days)
   const upcomingReminders = (): Reminder[] => {
     const today = new Date();
     const twoWeeksFromNow = new Date();
     twoWeeksFromNow.setDate(today.getDate() + 14);
     
-    return remindersList.filter(reminder => {
-      // Only show reminders for the selected family
-      if (selectedFamily && reminder.familyId !== selectedFamily.id) {
-        return false;
-      }
-      
+    return reminders.filter(reminder => {
       const dueDate = new Date(reminder.dueDate);
       return dueDate >= today && dueDate <= twoWeeksFromNow;
     }).sort((a, b) => {
@@ -177,8 +187,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       value={{
         families,
         categories,
-        expenses: expensesList,
-        reminders: remindersList,
+        expenses,
+        reminders,
         selectedFamily,
         setSelectedFamily,
         addExpense,
@@ -189,6 +199,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         deleteReminder,
         filteredExpenses,
         upcomingReminders,
+        isLoading
       }}
     >
       {children}

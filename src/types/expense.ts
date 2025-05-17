@@ -1,4 +1,20 @@
 
+// Family type
+export interface Family {
+  id: string;
+  name: string;
+  color: string;
+}
+
+// Category type
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  familyId?: string; // If null, it's a general category
+}
+
+// Expense type
 export interface Expense {
   id: string;
   familyId: string;
@@ -8,7 +24,7 @@ export interface Expense {
   date: string;
   place: string;
   needsReplacement?: boolean;
-  replacementFrequency?: number;
+  replacementFrequency?: number; // in days
   nextReplacementDate?: string;
   receiptUrl?: string;
   taxAmount?: number;
@@ -18,6 +34,19 @@ export interface Expense {
   transactionId?: string;
 }
 
+// Reminder type
+export interface Reminder {
+  id: string;
+  familyId: string;
+  title: string;
+  dueDate: string;
+  isRecurring: boolean;
+  frequency?: number; // in days
+  type: 'bill' | 'replacement';
+  relatedExpenseId?: string;
+}
+
+// OCR result type
 export interface OCRResult {
   amount?: string;
   date?: Date;

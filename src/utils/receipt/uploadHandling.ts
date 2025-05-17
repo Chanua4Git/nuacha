@@ -19,14 +19,48 @@ export async function handleReceiptUpload(file: File): Promise<string | null> {
     } 
     // For unauthenticated users (demo mode), return a temporary object URL
     else {
-      // For demo users, just return a local object URL
-      const objectUrl = URL.createObjectURL(file);
-      console.log('📄 Processing demo receipt (local):', objectUrl);
-      return objectUrl;
+      // Check if the receipts bucket exists, if not create it
+      await ensureReceiptsBucketExists();
+      
+      // Use a generic user ID for demo purposes
+      const receiptUrl = await uploadReceiptToStorage(file, 'demo-user');
+      if (!receiptUrl) {
+        return null;
+      }
+      
+      console.log('📄 Processing receipt:', receiptUrl);
+      return receiptUrl;
     }
   } catch (error) {
     console.error('Error in handleReceiptUpload:', error);
     return null;
+  }
+}
+
+async function ensureReceiptsBucketExists() {
+  try {
+    // Check if the receipts bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const receiptsBucket = buckets?.find(bucket => bucket.name === 'receipts');
+    
+    if (!receiptsBucket) {
+      console.log('Creating receipts bucket...');
+      // The bucket does not exist, try to create it in client side
+      // Note: This will only work if the user has proper permissions
+      // In production, you would typically create buckets via migration
+      const { error } = await supabase.storage.createBucket('receipts', {
+        public: false,
+        fileSizeLimit: 10485760, // 10MB
+      });
+      
+      if (error) {
+        console.error('Error creating receipts bucket:', error);
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring receipts bucket exists:', error);
+    // Continue anyway, the upload will fail if the bucket really doesn't exist
   }
 }
 
