@@ -16,9 +16,9 @@ interface ExpenseContextType {
   setSelectedFamily: (family: Family | null) => void;
   addExpense: (expense: Omit<Expense, 'id'>) => Promise<Expense | undefined>;
   addReminder: (reminder: Omit<Reminder, 'id'>) => Promise<Reminder | undefined>;
-  updateExpense: (expense: Expense) => Promise<any>;
+  updateExpense: (id: string, updates: Partial<Expense>) => Promise<any>;
   deleteExpense: (id: string) => Promise<void>;
-  updateReminder: (reminder: Reminder) => Promise<any>;
+  updateReminder: (id: string, updates: Partial<Reminder>) => Promise<any>;
   deleteReminder: (id: string) => Promise<void>;
   filteredExpenses: (filters: ExpenseFilters) => Expense[];
   upcomingReminders: () => Reminder[];
@@ -71,11 +71,11 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     deleteReminder
   } = useReminders(selectedFamily?.id);
   
-  // Get categories using the selected family
+  // Get categories using the selected family - fix the parameter passing
   const {
     categories,
     isLoading: categoriesLoading
-  } = useCategories({ familyId: selectedFamily?.id, includeGeneralCategories: true });
+  } = useCategories(selectedFamily?.id, true);
   
   // Set the first family as selected when families are loaded
   useEffect(() => {

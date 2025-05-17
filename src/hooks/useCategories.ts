@@ -1,12 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Category, CategoryWithChildren } from '@/types/accounting';
+import { Category } from '@/types/expense';
 import { toast } from 'sonner';
 
-export const useCategories = (familyId?: string) => {
+interface UseCategoriesOptions {
+  familyId?: string;
+  includeGeneralCategories?: boolean;
+}
+
+export const useCategories = (familyId?: string, includeGeneralCategories: boolean = true) => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [hierarchicalCategories, setHierarchicalCategories] = useState<CategoryWithChildren[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -17,30 +21,27 @@ export const useCategories = (familyId?: string) => {
         let query = supabase.from('categories').select('*');
         
         if (familyId) {
-          query = query.or(`family_id.eq.${familyId},family_id.is.null`);
+          if (includeGeneralCategories) {
+            // Get both family-specific and general categories
+            query = query.or(`family_id.eq.${familyId},family_id.is.null`);
+          } else {
+            // Only get family-specific categories
+            query = query.eq('family_id', familyId);
+          }
         }
         
-        const { data, error } = await query.order('name');
+        const { data, error } = await query;
         
         if (error) throw error;
         
-        setCategories(data as Category[]);
+        const mappedCategories: Category[] = data.map(item => ({
+          id: item.id,
+          name: item.name,
+          color: item.color,
+          familyId: item.family_id
+        }));
         
-        // Build hierarchical structure
-        const buildHierarchy = (items: Category[], parentId: string | null = null): CategoryWithChildren[] => {
-          const result = items
-            .filter(item => item.parent_id === parentId)
-            .map(item => {
-              const children = buildHierarchy(items, item.id);
-              return {
-                ...item,
-                children: children.length > 0 ? children : undefined,
-              };
-            });
-          return result;
-        };
-        
-        setHierarchicalCategories(buildHierarchy(data as Category[]));
+        setCategories(mappedCategories);
       } catch (err: any) {
         console.error('Error fetching categories:', err);
         setError(err);
@@ -53,24 +54,35 @@ export const useCategories = (familyId?: string) => {
     };
 
     fetchCategories();
-  }, [familyId]);
+  }, [familyId, includeGeneralCategories]);
 
-  const createCategory = async (categoryData: CategoryWithChildren) => {
+  const createCategory = async (category: Omit<Category, 'id'>) => {
     try {
       const { data, error } = await supabase
         .from('categories')
-        .insert([categoryData])
+        .insert([{
+          name: category.name,
+          color: category.color,
+          family_id: category.familyId
+        }])
         .select();
       
       if (error) throw error;
       
-      setCategories(prev => [...prev, data[0] as Category]);
+      const newCategory: Category = {
+        id: data[0].id,
+        name: data[0].name,
+        color: data[0].color,
+        familyId: data[0].family_id
+      };
       
-      toast("Category created successfully", {
-        description: "Your new category is ready to use."
+      setCategories(prev => [...prev, newCategory]);
+      
+      toast("Category added successfully", {
+        description: `"${category.name}" has been created.`
       });
       
-      return data[0];
+      return newCategory;
     } catch (err: any) {
       console.error('Error creating category:', err);
       toast("We couldn't create your category", {
@@ -82,20 +94,29 @@ export const useCategories = (familyId?: string) => {
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
     try {
+      const updatesToApply: any = {};
+      
+      if (updates.name !== undefined) updatesToApply.name = updates.name;
+      if (updates.color !== undefined) updatesToApply.color = updates.color;
+      if (updates.familyId !== undefined) updatesToApply.family_id = updates.familyId;
+      
       const { data, error } = await supabase
         .from('categories')
-        .update(updates)
+        .update(updatesToApply)
         .eq('id', id)
         .select();
       
       if (error) throw error;
       
-      setCategories(prev => 
-        prev.map(category => category.id === id ? { ...category, ...updates } : category)
-      );
+      setCategories(prev => prev.map(category => {
+        if (category.id === id) {
+          return { ...category, ...updates };
+        }
+        return category;
+      }));
       
-      toast("Category updated", {
-        description: "Your changes have been saved."
+      toast("Category updated successfully", {
+        description: `Changes to "${updates.name || 'category'}" have been saved.`
       });
       
       return data[0];
@@ -110,6 +131,19 @@ export const useCategories = (familyId?: string) => {
 
   const deleteCategory = async (id: string) => {
     try {
+      // First check if the category is in use by any expenses
+      const { data: expensesWithCategory, error: checkError } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('category', id)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      if (expensesWithCategory && expensesWithCategory.length > 0) {
+        throw new Error('This category is being used by expenses and cannot be deleted.');
+      }
+      
       const { error } = await supabase
         .from('categories')
         .delete()
@@ -119,12 +153,12 @@ export const useCategories = (familyId?: string) => {
       
       setCategories(prev => prev.filter(category => category.id !== id));
       
-      toast("Category deleted", {
+      toast("Category deleted successfully", {
         description: "The category has been removed."
       });
     } catch (err: any) {
       console.error('Error deleting category:', err);
-      toast("We couldn't delete your category", {
+      toast("We couldn't delete this category", {
         description: err.message || "Please try again."
       });
       throw err;
@@ -133,7 +167,6 @@ export const useCategories = (familyId?: string) => {
 
   return {
     categories,
-    hierarchicalCategories,
     isLoading,
     error,
     createCategory,

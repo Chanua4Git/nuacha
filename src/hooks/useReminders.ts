@@ -50,7 +50,8 @@ export const useReminders = (familyId?: string, upcoming: boolean = false) => {
           dueDate: item.due_date,
           isRecurring: item.is_recurring,
           frequency: item.frequency,
-          type: item.type,
+          // Ensure the type is either 'bill' or 'replacement'
+          type: item.type === 'bill' || item.type === 'replacement' ? item.type : 'bill',
           relatedExpenseId: item.related_expense_id
         }));
         
@@ -71,13 +72,18 @@ export const useReminders = (familyId?: string, upcoming: boolean = false) => {
 
   const createReminder = async (reminderData: Omit<Reminder, 'id'>) => {
     try {
+      // Validate that type is either 'bill' or 'replacement'
+      const type = reminderData.type === 'bill' || reminderData.type === 'replacement' 
+        ? reminderData.type 
+        : 'bill';
+
       const reminderToInsert = {
         family_id: reminderData.familyId,
         title: reminderData.title,
         due_date: reminderData.dueDate,
         is_recurring: reminderData.isRecurring,
         frequency: reminderData.frequency,
-        type: reminderData.type,
+        type: type,
         related_expense_id: reminderData.relatedExpenseId
       };
       
@@ -95,7 +101,10 @@ export const useReminders = (familyId?: string, upcoming: boolean = false) => {
         dueDate: data[0].due_date,
         isRecurring: data[0].is_recurring,
         frequency: data[0].frequency,
-        type: data[0].type,
+        // Ensure the type is either 'bill' or 'replacement'
+        type: data[0].type === 'bill' || data[0].type === 'replacement' 
+          ? data[0].type as 'bill' | 'replacement' 
+          : 'bill',
         relatedExpenseId: data[0].related_expense_id
       };
       
@@ -124,7 +133,12 @@ export const useReminders = (familyId?: string, upcoming: boolean = false) => {
       if (updates.dueDate !== undefined) updatesToApply.due_date = updates.dueDate;
       if (updates.isRecurring !== undefined) updatesToApply.is_recurring = updates.isRecurring;
       if (updates.frequency !== undefined) updatesToApply.frequency = updates.frequency;
-      if (updates.type !== undefined) updatesToApply.type = updates.type;
+      if (updates.type !== undefined) {
+        // Ensure the type is either 'bill' or 'replacement'
+        updatesToApply.type = updates.type === 'bill' || updates.type === 'replacement' 
+          ? updates.type 
+          : 'bill';
+      }
       if (updates.relatedExpenseId !== undefined) updatesToApply.related_expense_id = updates.relatedExpenseId;
       
       const { data, error } = await supabase
