@@ -11,11 +11,12 @@ export interface Category {
   id: string;
   name: string;
   color: string;
-  familyId?: string; // If null, it's a general category
+  family_id?: string; // If null, it's a general category
   parent_id?: string; // Parent category id for hierarchical categories
   budget?: number; // Optional budget for the category
   description?: string; // Optional description
   icon?: string; // Optional icon identifier
+  created_at?: string;
 }
 
 // Expense type
@@ -48,6 +49,19 @@ export interface Reminder {
   frequency?: number; // in days
   type: 'bill' | 'replacement';
   relatedExpenseId?: string;
+}
+
+// For backward compatibility and consistent casing in our application
+export interface CategoryWithCamelCase {
+  id: string;
+  name: string;
+  color: string;
+  familyId?: string;
+  parentId?: string;
+  budget?: number;
+  description?: string;
+  icon?: string;
+  createdAt?: string;
 }
 
 // OCR result type

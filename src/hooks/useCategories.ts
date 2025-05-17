@@ -1,22 +1,22 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Category, CategoryWithChildren } from '@/types/accounting';
+import { Category, CategoryWithCamelCase } from '@/types/expense';
 import { toast } from 'sonner';
 
-interface UseCategoriesOptions {
-  familyId?: string;
-  includeGeneralCategories?: boolean;
+// Interface for the hierarchical category structure
+export interface CategoryWithChildren extends CategoryWithCamelCase {
+  children?: CategoryWithChildren[];
 }
 
 export const useCategories = (familyId?: string, includeGeneralCategories: boolean = true) => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryWithCamelCase[]>([]);
   const [hierarchicalCategories, setHierarchicalCategories] = useState<CategoryWithChildren[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Build hierarchical structure from flat categories
-  const buildHierarchy = (categories: Category[]): CategoryWithChildren[] => {
+  const buildHierarchy = (categories: CategoryWithCamelCase[]): CategoryWithChildren[] => {
     // Create a map of categories by id for easy access
     const categoryMap = new Map<string, CategoryWithChildren>();
     
@@ -33,9 +33,9 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       const category = categoryMap.get(cat.id);
       if (!category) return;
       
-      if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+      if (cat.parentId && categoryMap.has(cat.parentId)) {
         // This is a child category, add it to its parent's children
-        const parent = categoryMap.get(cat.parent_id);
+        const parent = categoryMap.get(cat.parentId);
         parent?.children?.push(category);
       } else {
         // This is a root category
@@ -66,15 +66,17 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         
         if (error) throw error;
         
-        const mappedCategories: Category[] = data.map(item => ({
+        // Convert snake_case database fields to camelCase for application use
+        const mappedCategories: CategoryWithCamelCase[] = data.map(item => ({
           id: item.id,
           name: item.name,
           color: item.color,
           familyId: item.family_id,
-          parent_id: item.parent_id,
+          parentId: item.parent_id,
           budget: item.budget,
           description: item.description,
-          icon: item.icon
+          icon: item.icon,
+          createdAt: item.created_at
         }));
         
         setCategories(mappedCategories);
@@ -96,15 +98,16 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     fetchCategories();
   }, [familyId, includeGeneralCategories]);
 
-  const createCategory = async (category: Omit<Category, 'id'>) => {
+  const createCategory = async (category: Omit<CategoryWithCamelCase, 'id'>) => {
     try {
+      // Convert camelCase to snake_case for database insert
       const { data, error } = await supabase
         .from('categories')
         .insert([{
           name: category.name,
           color: category.color,
           family_id: category.familyId,
-          parent_id: category.parent_id,
+          parent_id: category.parentId,
           budget: category.budget,
           description: category.description,
           icon: category.icon
@@ -113,15 +116,17 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       
       if (error) throw error;
       
-      const newCategory: Category = {
+      // Convert snake_case back to camelCase for application use
+      const newCategory: CategoryWithCamelCase = {
         id: data[0].id,
         name: data[0].name,
         color: data[0].color,
         familyId: data[0].family_id,
-        parent_id: data[0].parent_id,
+        parentId: data[0].parent_id,
         budget: data[0].budget,
         description: data[0].description,
-        icon: data[0].icon
+        icon: data[0].icon,
+        createdAt: data[0].created_at
       };
       
       setCategories(prev => {
@@ -144,14 +149,15 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     }
   };
 
-  const updateCategory = async (id: string, updates: Partial<Category>) => {
+  const updateCategory = async (id: string, updates: Partial<CategoryWithCamelCase>) => {
     try {
+      // Convert camelCase to snake_case for database update
       const updatesToApply: any = {};
       
       if (updates.name !== undefined) updatesToApply.name = updates.name;
       if (updates.color !== undefined) updatesToApply.color = updates.color;
       if (updates.familyId !== undefined) updatesToApply.family_id = updates.familyId;
-      if (updates.parent_id !== undefined) updatesToApply.parent_id = updates.parent_id;
+      if (updates.parentId !== undefined) updatesToApply.parent_id = updates.parentId;
       if (updates.budget !== undefined) updatesToApply.budget = updates.budget;
       if (updates.description !== undefined) updatesToApply.description = updates.description;
       if (updates.icon !== undefined) updatesToApply.icon = updates.icon;
@@ -180,7 +186,18 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         description: `Changes to "${updates.name || 'category'}" have been saved.`
       });
       
-      return data[0];
+      // Convert snake_case back to camelCase
+      return {
+        id: data[0].id,
+        name: data[0].name,
+        color: data[0].color,
+        familyId: data[0].family_id,
+        parentId: data[0].parent_id,
+        budget: data[0].budget,
+        description: data[0].description,
+        icon: data[0].icon,
+        createdAt: data[0].created_at
+      };
     } catch (err: any) {
       console.error('Error updating category:', err);
       toast("We couldn't update your category", {

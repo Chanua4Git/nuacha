@@ -1,11 +1,11 @@
-
 import { Database } from '@/integrations/supabase/types';
+import { CategoryWithCamelCase } from '@/types/expense';
 
 export type Category = Database['public']['Tables']['categories']['Row'];
 export type Budget = Database['public']['Tables']['budgets']['Row'];
 export type ReportTemplate = Database['public']['Tables']['report_templates']['Row'];
 
-export type CategoryWithChildren = Category & {
+export type CategoryWithChildren = CategoryWithCamelCase & {
   children?: CategoryWithChildren[];
   path?: string[];
 };

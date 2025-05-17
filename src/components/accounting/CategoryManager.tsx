@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +55,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
         await updateCategory(editingCategory.id, {
           name: formData.name,
           color: formData.color,
-          parent_id: formData.parentId || null,
+          parentId: formData.parentId || null,
           budget: formData.budget || null,
           description: formData.description || null,
           icon: formData.icon || null,
@@ -65,12 +64,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
         await createCategory({
           name: formData.name,
           color: formData.color,
-          family_id: familyId,
-          parent_id: formData.parentId || null,
+          familyId,
+          parentId: formData.parentId || null,
           budget: formData.budget || null,
           description: formData.description || null,
           icon: formData.icon || null,
-        } as CategoryWithChildren);
+        });
       }
       
       resetForm();
@@ -85,9 +84,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     setFormData({
       name: category.name,
       color: category.color,
-      familyId: category.family_id || undefined,
-      parentId: category.parent_id || undefined,
-      budget: category.budget || undefined,
+      familyId: category.familyId,
+      parentId: category.parentId,
+      budget: category.budget,
       description: category.description || '',
       icon: category.icon || '',
     });

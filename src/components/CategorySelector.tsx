@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
 import { Tag } from 'lucide-react';
-import { Category } from '@/data/mockData';
+import { CategoryWithCamelCase } from '@/types/expense';
 
 interface CategorySelectorProps {
   value?: string;
@@ -20,10 +20,10 @@ const CategorySelector = ({ value, onChange }: CategorySelectorProps) => {
   
   // Filter categories to show general ones + those for the selected family
   const availableCategories = categories.filter(cat => 
-    !cat.familyId || (selectedFamily && cat.familyId === selectedFamily.id)
+    !cat.family_id || (selectedFamily && cat.family_id === selectedFamily.id)
   );
   
-  const getCategory = (id: string): Category | undefined => 
+  const getCategory = (id: string): CategoryWithCamelCase | undefined => 
     categories.find(c => c.id === id);
   
   const selectedCategory = value ? getCategory(value) : undefined;
