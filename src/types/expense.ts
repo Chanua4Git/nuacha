@@ -39,18 +39,6 @@ export interface Expense {
   transactionId?: string;
 }
 
-// Reminder type
-export interface Reminder {
-  id: string;
-  familyId: string;
-  title: string;
-  dueDate: string;
-  isRecurring: boolean;
-  frequency?: number; // in days
-  type: 'bill' | 'replacement';
-  relatedExpenseId?: string;
-}
-
 // For backward compatibility and consistent casing in our application
 export interface CategoryWithCamelCase {
   id: string;
@@ -117,7 +105,7 @@ export interface OCRResult {
   currency?: string;
   confidence_summary?: {
     overall: number;
-    line_items: number;
+    line_items: number; // Using snake_case to match the API response
     total: number;
     date: number;
     merchant: number;

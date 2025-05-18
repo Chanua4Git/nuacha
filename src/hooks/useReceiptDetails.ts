@@ -47,13 +47,19 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         
         // Transform to camelCase for our front-end
         if (detailData) {
-          const confidenceSummary = detailData.confidence_summary ? {
-            overall: detailData.confidence_summary.overall || 0,
-            lineItems: detailData.confidence_summary.line_items || 0, 
-            total: detailData.confidence_summary.total || 0,
-            date: detailData.confidence_summary.date || 0,
-            merchant: detailData.confidence_summary.merchant || 0
-          } : undefined;
+          let confidenceSummary;
+          
+          // Fix: Safely extract confidence_summary
+          if (detailData.confidence_summary && typeof detailData.confidence_summary === 'object') {
+            const cs = detailData.confidence_summary as Record<string, number>;
+            confidenceSummary = {
+              overall: cs.overall || 0,
+              lineItems: cs.line_items || 0, // Map from snake_case to camelCase
+              total: cs.total || 0,
+              date: cs.date || 0,
+              merchant: cs.merchant || 0
+            };
+          }
           
           setReceiptDetail({
             id: detailData.id,
@@ -76,7 +82,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         }
         
         if (itemsData && itemsData.length > 0) {
-          const mappedItems: ReceiptLineItem[] = itemsData.map(item => ({
+          // Fix: Type checking to make sure mappedItems matches ReceiptLineItem[]
+          const mappedItems = itemsData.map(item => ({
             id: item.id,
             expenseId: item.expense_id,
             description: item.description,
@@ -92,7 +99,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
             category: item.category,
             suggestedCategory: item.suggestedCategory,
             isEditing: false
-          }));
+          })) as ReceiptLineItem[];
           
           setLineItems(mappedItems);
         }

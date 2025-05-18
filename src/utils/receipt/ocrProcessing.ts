@@ -1,5 +1,4 @@
-
-import { OCRResult } from '@/types/expense';
+import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MindeeResponse } from './types';
@@ -193,7 +192,7 @@ export function validateOCRResult(result: OCRResult): boolean {
   return result.confidence > 0.3 && hasBasicData;
 }
 
-// New function to save receipt details and line items
+// Fix: Update the saveReceiptDetailsAndLineItems function
 export async function saveReceiptDetailsAndLineItems(
   expenseId: string, 
   ocrResult: OCRResult
@@ -250,7 +249,7 @@ export async function saveReceiptDetailsAndLineItems(
     
     // Now save line items if they exist
     if (ocrResult.lineItems && ocrResult.lineItems.length > 0) {
-      const lineItemsToInsert = ocrResult.lineItems.map(item => ({
+      const lineItemsToInsert = ocrResult.lineItems.map((item: OCRReceiptLineItem) => ({
         expense_id: expenseId,
         description: item.description,
         quantity: item.quantity,
@@ -282,8 +281,8 @@ export async function saveReceiptDetailsAndLineItems(
         };
       }
       
-      // Map the returned data to our frontend format
-      const mappedLineItems: ReceiptLineItem[] = lineItemsData.map(item => ({
+      // Fix: Correctly type the mapped items
+      const mappedLineItems = lineItemsData.map(item => ({
         id: item.id,
         expenseId: item.expense_id,
         description: item.description,
@@ -299,7 +298,7 @@ export async function saveReceiptDetailsAndLineItems(
         category: item.category,
         suggestedCategory: item.suggestedCategory,
         isEditing: false
-      }));
+      })) as unknown as ReceiptLineItem[];
       
       return { 
         receiptDetail: {

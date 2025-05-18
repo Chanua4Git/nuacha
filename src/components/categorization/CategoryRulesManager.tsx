@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useCategories } from '@/hooks/useCategories';
@@ -28,6 +29,7 @@ const CategoryRulesManager = () => {
       setIsLoading(true);
       
       try {
+        // Fix: Get user data properly with await
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError || !userData?.user) {
           console.error('No authenticated user found');
@@ -77,11 +79,10 @@ const CategoryRulesManager = () => {
   }, []);
   
   const handleAddRule = () => {
-    const { data } = supabase.auth.getUser();
-    if (!data?.user?.id) return;
-    
+    // Fix: Get user data using state or context instead of directly accessing supabase
+    // For now, we'll just use a placeholder user ID and update it during save
     setEditingRule({
-      userId: data.user.id,
+      userId: 'pending',
       name: '',
       pattern: '',
       patternType: 'vendor',

@@ -53,7 +53,7 @@ export type MindeeResponse = {
   confidence?: number;
   confidence_summary?: {
     overall: number;
-    line_items: number;
+    line_items: number; // Note: This uses snake_case to match the API
     total: number;
     date: number;
     merchant: number;
