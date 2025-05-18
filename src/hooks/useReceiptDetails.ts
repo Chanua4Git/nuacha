@@ -47,6 +47,14 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         
         // Transform to camelCase for our front-end
         if (detailData) {
+          const confidenceSummary = detailData.confidence_summary ? {
+            overall: detailData.confidence_summary.overall || 0,
+            lineItems: detailData.confidence_summary.line_items || 0, 
+            total: detailData.confidence_summary.total || 0,
+            date: detailData.confidence_summary.date || 0,
+            merchant: detailData.confidence_summary.merchant || 0
+          } : undefined;
+          
           setReceiptDetail({
             id: detailData.id,
             expenseId: detailData.expense_id,
@@ -62,13 +70,13 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
             discountAmount: detailData.discount_amount,
             paymentMethod: detailData.payment_method,
             currency: detailData.currency,
-            confidenceSummary: detailData.confidence_summary,
+            confidenceSummary,
             createdAt: detailData.created_at
           });
         }
         
-        if (itemsData) {
-          const mappedItems = itemsData.map(item => ({
+        if (itemsData && itemsData.length > 0) {
+          const mappedItems: ReceiptLineItem[] = itemsData.map(item => ({
             id: item.id,
             expenseId: item.expense_id,
             description: item.description,
@@ -205,26 +213,27 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         result = data;
       }
       
+      // Map result to our frontend type
+      const mappedResult: ReceiptLineItem = {
+        id: result.id,
+        expenseId: result.expense_id,
+        description: result.description,
+        quantity: result.quantity,
+        unitPrice: result.unit_price,
+        totalPrice: result.total_price,
+        categoryId: result.category_id,
+        suggestedCategoryId: result.suggested_category_id,
+        categoryConfidence: result.category_confidence,
+        sku: result.sku,
+        discount: result.discount,
+        createdAt: result.created_at,
+        category: result.category,
+        suggestedCategory: result.suggestedCategory,
+        isEditing: false
+      };
+      
       // Update line items state
       setLineItems(prev => {
-        const mappedResult = {
-          id: result.id,
-          expenseId: result.expense_id,
-          description: result.description,
-          quantity: result.quantity,
-          unitPrice: result.unit_price,
-          totalPrice: result.total_price,
-          categoryId: result.category_id,
-          suggestedCategoryId: result.suggested_category_id,
-          categoryConfidence: result.category_confidence,
-          sku: result.sku,
-          discount: result.discount,
-          createdAt: result.created_at,
-          category: result.category,
-          suggestedCategory: result.suggestedCategory,
-          isEditing: false
-        };
-        
         if (lineItem.id) {
           // Replace the existing item
           return prev.map(item => item.id === lineItem.id ? mappedResult : item);
@@ -238,7 +247,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         description: "Your changes have been saved."
       });
       
-      return result;
+      return mappedResult;
     } catch (err: any) {
       console.error('Error saving line item:', err);
       toast("We couldn't save this item", {
@@ -302,7 +311,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       if (error) throw error;
       
       // Map the returned data
-      const savedItems = data.map(item => ({
+      const savedItems: ReceiptLineItem[] = data.map(item => ({
         id: item.id,
         expenseId: item.expense_id,
         description: item.description,

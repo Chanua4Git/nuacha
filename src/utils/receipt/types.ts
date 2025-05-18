@@ -1,5 +1,5 @@
 
-import { OCRResult, ReceiptLineItem } from '@/types/expense';
+import { OCRResult } from '@/types/expense';
 
 export type ReceiptImageError = {
   message: string;
@@ -10,7 +10,7 @@ export type MindeeResponse = {
   amount?: { value: string; confidence: number };
   date?: { value: string; confidence: number };
   supplier?: { value: string; confidence: number };
-  lineItems?: ReceiptLineItem[];
+  lineItems?: any[];
   tax?: {
     amount: string;
     rate?: string;
@@ -61,4 +61,3 @@ export type MindeeResponse = {
   error?: string;
   type?: string;
 };
-

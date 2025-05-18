@@ -213,7 +213,13 @@ export async function saveReceiptDetailsAndLineItems(
       taxAmount: ocrResult.tax?.amount ? parseFloat(ocrResult.tax.amount) : undefined,
       paymentMethod: ocrResult.paymentMethod?.type,
       currency: ocrResult.currency,
-      confidenceSummary: ocrResult.confidence_summary
+      confidenceSummary: ocrResult.confidence_summary ? {
+        overall: ocrResult.confidence_summary.overall,
+        lineItems: ocrResult.confidence_summary.line_items,
+        total: ocrResult.confidence_summary.total,
+        date: ocrResult.confidence_summary.date,
+        merchant: ocrResult.confidence_summary.merchant
+      } : undefined
     };
     
     // Insert receipt details into database
@@ -277,7 +283,7 @@ export async function saveReceiptDetailsAndLineItems(
       }
       
       // Map the returned data to our frontend format
-      const mappedLineItems = lineItemsData.map(item => ({
+      const mappedLineItems: ReceiptLineItem[] = lineItemsData.map(item => ({
         id: item.id,
         expenseId: item.expense_id,
         description: item.description,

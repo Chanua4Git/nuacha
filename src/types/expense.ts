@@ -124,6 +124,7 @@ export interface OCRResult {
   };
 }
 
+// Update ReceiptLineItem definition to match what we use in the app
 export interface ReceiptLineItem {
   description: string;
   quantity?: number;
@@ -132,4 +133,6 @@ export interface ReceiptLineItem {
   category?: string;
   discounted?: boolean;
   sku?: string;
+  suggestedCategoryId?: string;
+  categoryConfidence?: number;
 }

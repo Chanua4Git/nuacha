@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useCategories } from '@/hooks/useCategories';
@@ -29,8 +28,8 @@ const CategoryRulesManager = () => {
       setIsLoading(true);
       
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData?.user) {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData?.user) {
           console.error('No authenticated user found');
           return;
         }
