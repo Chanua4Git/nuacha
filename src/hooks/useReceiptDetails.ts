@@ -88,7 +88,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           const mappedItems: ReceiptLineItem[] = itemsData.map(item => {
             // Process category and suggestedCategory to ensure they match the expected type
             let category: CategoryWithCamelCase | null = null;
-            if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+            if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
               category = {
                 id: item.category.id,
                 name: item.category.name,
@@ -97,7 +97,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
             }
             
             let suggestedCategory: CategoryWithCamelCase | null = null;
-            if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+            if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
               suggestedCategory = {
                 id: item.suggestedCategory.id,
                 name: item.suggestedCategory.name,
@@ -245,7 +245,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       
       // Map result to our frontend type with proper type safety
       let category: CategoryWithCamelCase | null = null;
-      if (result.category && typeof result.category === 'object' && 'id' in result.category) {
+      if (result.category && typeof result.category === 'object' && result.category !== null && 'id' in result.category) {
         category = {
           id: result.category.id,
           name: result.category.name,
@@ -254,7 +254,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       }
       
       let suggestedCategory: CategoryWithCamelCase | null = null;
-      if (result.suggestedCategory && typeof result.suggestedCategory === 'object' && 'id' in result.suggestedCategory) {
+      if (result.suggestedCategory && typeof result.suggestedCategory === 'object' && result.suggestedCategory !== null && 'id' in result.suggestedCategory) {
         suggestedCategory = {
           id: result.suggestedCategory.id,
           name: result.suggestedCategory.name,
@@ -362,7 +362,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       const savedItems: ReceiptLineItem[] = data.map(item => {
         // Process category and suggestedCategory properly
         let category: CategoryWithCamelCase | null = null;
-        if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+        if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
           category = {
             id: item.category.id,
             name: item.category.name,
@@ -371,7 +371,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         }
         
         let suggestedCategory: CategoryWithCamelCase | null = null;
-        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
           suggestedCategory = {
             id: item.suggestedCategory.id,
             name: item.suggestedCategory.name,

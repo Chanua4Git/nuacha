@@ -1,3 +1,4 @@
+
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -292,7 +293,7 @@ export async function saveReceiptDetailsAndLineItems(
       const mappedLineItems: ReceiptLineItem[] = lineItemsData.map(item => {
         // Process category and suggestedCategory properly
         let category: CategoryWithCamelCase | null = null;
-        if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+        if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
           category = {
             id: item.category.id,
             name: item.category.name,
@@ -301,7 +302,7 @@ export async function saveReceiptDetailsAndLineItems(
         }
         
         let suggestedCategory: CategoryWithCamelCase | null = null;
-        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
           suggestedCategory = {
             id: item.suggestedCategory.id,
             name: item.suggestedCategory.name,
