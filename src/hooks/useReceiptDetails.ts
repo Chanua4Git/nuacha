@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 import { toast } from 'sonner';
 import { Json } from '@/types/supabase';
+import { CategoryWithCamelCase } from '@/types/expense';
 
 export const useReceiptDetails = (expenseId: string | undefined) => {
   const [receiptDetail, setReceiptDetail] = useState<ReceiptDetail | null>(null);
@@ -83,9 +84,28 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         }
         
         if (itemsData && itemsData.length > 0) {
-          // Fix: Type safety with the mapper function
-          const mappedItems = itemsData.map(item => {
-            const mappedItem: ReceiptLineItem = {
+          // Fix: Type safety with the mapper function and proper null handling
+          const mappedItems: ReceiptLineItem[] = itemsData.map(item => {
+            // Process category and suggestedCategory to ensure they match the expected type
+            let category: CategoryWithCamelCase | null = null;
+            if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+              category = {
+                id: item.category.id,
+                name: item.category.name,
+                color: item.category.color
+              };
+            }
+            
+            let suggestedCategory: CategoryWithCamelCase | null = null;
+            if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+              suggestedCategory = {
+                id: item.suggestedCategory.id,
+                name: item.suggestedCategory.name,
+                color: item.suggestedCategory.color
+              };
+            }
+            
+            return {
               id: item.id,
               expenseId: item.expense_id,
               description: item.description,
@@ -98,12 +118,10 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
               sku: item.sku,
               discount: item.discount,
               createdAt: item.created_at,
-              // Ensure category and suggestedCategory are properly typed or null
-              category: item.category || null,
-              suggestedCategory: item.suggestedCategory || null,
+              category,
+              suggestedCategory,
               isEditing: false
-            };
-            return mappedItem;
+            } as ReceiptLineItem;
           });
           
           setLineItems(mappedItems);
@@ -226,6 +244,24 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       }
       
       // Map result to our frontend type with proper type safety
+      let category: CategoryWithCamelCase | null = null;
+      if (result.category && typeof result.category === 'object' && 'id' in result.category) {
+        category = {
+          id: result.category.id,
+          name: result.category.name,
+          color: result.category.color
+        };
+      }
+      
+      let suggestedCategory: CategoryWithCamelCase | null = null;
+      if (result.suggestedCategory && typeof result.suggestedCategory === 'object' && 'id' in result.suggestedCategory) {
+        suggestedCategory = {
+          id: result.suggestedCategory.id,
+          name: result.suggestedCategory.name,
+          color: result.suggestedCategory.color
+        };
+      }
+      
       const mappedResult: ReceiptLineItem = {
         id: result.id,
         expenseId: result.expense_id,
@@ -239,8 +275,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: result.sku,
         discount: result.discount,
         createdAt: result.created_at,
-        category: result.category || null,
-        suggestedCategory: result.suggestedCategory || null,
+        category,
+        suggestedCategory,
         isEditing: false
       };
       
@@ -323,23 +359,44 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       if (error) throw error;
       
       // Map the returned data with proper type safety
-      const savedItems: ReceiptLineItem[] = data.map(item => ({
-        id: item.id,
-        expenseId: item.expense_id,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        totalPrice: item.total_price,
-        categoryId: item.category_id,
-        suggestedCategoryId: item.suggested_category_id,
-        categoryConfidence: item.category_confidence,
-        sku: item.sku,
-        discount: item.discount,
-        createdAt: item.created_at,
-        category: item.category || null,
-        suggestedCategory: item.suggestedCategory || null,
-        isEditing: false
-      }));
+      const savedItems: ReceiptLineItem[] = data.map(item => {
+        // Process category and suggestedCategory properly
+        let category: CategoryWithCamelCase | null = null;
+        if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+          category = {
+            id: item.category.id,
+            name: item.category.name,
+            color: item.category.color
+          };
+        }
+        
+        let suggestedCategory: CategoryWithCamelCase | null = null;
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+          suggestedCategory = {
+            id: item.suggestedCategory.id,
+            name: item.suggestedCategory.name,
+            color: item.suggestedCategory.color
+          };
+        }
+        
+        return {
+          id: item.id,
+          expenseId: item.expense_id,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price,
+          categoryId: item.category_id,
+          suggestedCategoryId: item.suggested_category_id,
+          categoryConfidence: item.category_confidence,
+          sku: item.sku,
+          discount: item.discount,
+          createdAt: item.created_at,
+          category,
+          suggestedCategory,
+          isEditing: false
+        } as ReceiptLineItem;
+      });
       
       // Update line items state
       setLineItems(prev => [...prev, ...savedItems]);

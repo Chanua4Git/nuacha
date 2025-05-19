@@ -1,9 +1,9 @@
-
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MindeeResponse } from './types';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
+import { CategoryWithCamelCase } from '@/types/expense';
 
 export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
@@ -289,23 +289,44 @@ export async function saveReceiptDetailsAndLineItems(
       }
       
       // Fix: Correctly type the mapped items with proper null handling
-      const mappedLineItems = lineItemsData.map(item => ({
-        id: item.id,
-        expenseId: item.expense_id,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        totalPrice: item.total_price,
-        categoryId: item.category_id,
-        suggestedCategoryId: item.suggested_category_id,
-        categoryConfidence: item.category_confidence,
-        sku: item.sku,
-        discount: item.discount,
-        createdAt: item.created_at,
-        category: item.category || null,
-        suggestedCategory: item.suggestedCategory || null,
-        isEditing: false
-      })) as ReceiptLineItem[];
+      const mappedLineItems: ReceiptLineItem[] = lineItemsData.map(item => {
+        // Process category and suggestedCategory properly
+        let category: CategoryWithCamelCase | null = null;
+        if (item.category && typeof item.category === 'object' && 'id' in item.category) {
+          category = {
+            id: item.category.id,
+            name: item.category.name,
+            color: item.category.color
+          };
+        }
+        
+        let suggestedCategory: CategoryWithCamelCase | null = null;
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && 'id' in item.suggestedCategory) {
+          suggestedCategory = {
+            id: item.suggestedCategory.id,
+            name: item.suggestedCategory.name,
+            color: item.suggestedCategory.color
+          };
+        }
+        
+        return {
+          id: item.id,
+          expenseId: item.expense_id,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price,
+          categoryId: item.category_id,
+          suggestedCategoryId: item.suggested_category_id,
+          categoryConfidence: item.category_confidence,
+          sku: item.sku,
+          discount: item.discount,
+          createdAt: item.created_at,
+          category,
+          suggestedCategory,
+          isEditing: false
+        } as ReceiptLineItem;
+      });
       
       return { 
         receiptDetail: {
