@@ -293,25 +293,29 @@ export async function saveReceiptDetailsAndLineItems(
       const mappedLineItems: ReceiptLineItem[] = lineItemsData.map(item => {
         // Process category and suggestedCategory properly
         let category: CategoryWithCamelCase | null = null;
-        if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
-          // Type narrowing with explicit casting 
+        if (item.category && typeof item.category === 'object' && item.category !== null) {
+          // Type narrowing with explicit checks and casting 
           const typedCategory = item.category as { id: string; name: string; color: string };
-          category = {
-            id: typedCategory.id,
-            name: typedCategory.name,
-            color: typedCategory.color
-          };
+          if ('id' in typedCategory && 'name' in typedCategory && 'color' in typedCategory) {
+            category = {
+              id: typedCategory.id,
+              name: typedCategory.name,
+              color: typedCategory.color
+            };
+          }
         }
         
         let suggestedCategory: CategoryWithCamelCase | null = null;
-        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
-          // Type narrowing with explicit casting
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null) {
+          // Type narrowing with explicit checks and casting
           const typedSuggestedCategory = item.suggestedCategory as { id: string; name: string; color: string };
-          suggestedCategory = {
-            id: typedSuggestedCategory.id,
-            name: typedSuggestedCategory.name,
-            color: typedSuggestedCategory.color
-          };
+          if ('id' in typedSuggestedCategory && 'name' in typedSuggestedCategory && 'color' in typedSuggestedCategory) {
+            suggestedCategory = {
+              id: typedSuggestedCategory.id,
+              name: typedSuggestedCategory.name,
+              color: typedSuggestedCategory.color
+            };
+          }
         }
         
         return {

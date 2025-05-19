@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
@@ -88,25 +87,29 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           const mappedItems: ReceiptLineItem[] = itemsData.map(item => {
             // Process category and suggestedCategory to ensure they match the expected type
             let category: CategoryWithCamelCase | null = null;
-            if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
-              // Use non-null assertion after type narrowing to satisfy TypeScript
+            if (item.category && typeof item.category === 'object' && item.category !== null) {
+              // Type assertion after proper checks
               const typedCategory = item.category as { id: string; name: string; color: string };
-              category = {
-                id: typedCategory.id,
-                name: typedCategory.name,
-                color: typedCategory.color
-              };
+              if ('id' in typedCategory && 'name' in typedCategory && 'color' in typedCategory) {
+                category = {
+                  id: typedCategory.id,
+                  name: typedCategory.name,
+                  color: typedCategory.color
+                };
+              }
             }
             
             let suggestedCategory: CategoryWithCamelCase | null = null;
-            if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
-              // Use non-null assertion after type narrowing to satisfy TypeScript
+            if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null) {
+              // Type assertion after proper checks
               const typedSuggestedCategory = item.suggestedCategory as { id: string; name: string; color: string };
-              suggestedCategory = {
-                id: typedSuggestedCategory.id,
-                name: typedSuggestedCategory.name,
-                color: typedSuggestedCategory.color
-              };
+              if ('id' in typedSuggestedCategory && 'name' in typedSuggestedCategory && 'color' in typedSuggestedCategory) {
+                suggestedCategory = {
+                  id: typedSuggestedCategory.id,
+                  name: typedSuggestedCategory.name,
+                  color: typedSuggestedCategory.color
+                };
+              }
             }
             
             return {
@@ -249,25 +252,29 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       
       // Map result to our frontend type with proper type safety
       let category: CategoryWithCamelCase | null = null;
-      if (result.category && typeof result.category === 'object' && result.category !== null && 'id' in result.category) {
-        // Use non-null assertion after type narrowing to satisfy TypeScript
+      if (result.category && typeof result.category === 'object' && result.category !== null) {
+        // Type assertion after proper checks
         const typedCategory = result.category as { id: string; name: string; color: string };
-        category = {
-          id: typedCategory.id,
-          name: typedCategory.name,
-          color: typedCategory.color
-        };
+        if ('id' in typedCategory && 'name' in typedCategory && 'color' in typedCategory) {
+          category = {
+            id: typedCategory.id,
+            name: typedCategory.name,
+            color: typedCategory.color
+          };
+        }
       }
       
       let suggestedCategory: CategoryWithCamelCase | null = null;
-      if (result.suggestedCategory && typeof result.suggestedCategory === 'object' && result.suggestedCategory !== null && 'id' in result.suggestedCategory) {
-        // Use non-null assertion after type narrowing to satisfy TypeScript
+      if (result.suggestedCategory && typeof result.suggestedCategory === 'object' && result.suggestedCategory !== null) {
+        // Type assertion after proper checks
         const typedSuggestedCategory = result.suggestedCategory as { id: string; name: string; color: string };
-        suggestedCategory = {
-          id: typedSuggestedCategory.id,
-          name: typedSuggestedCategory.name,
-          color: typedSuggestedCategory.color
-        };
+        if ('id' in typedSuggestedCategory && 'name' in typedSuggestedCategory && 'color' in typedSuggestedCategory) {
+          suggestedCategory = {
+            id: typedSuggestedCategory.id,
+            name: typedSuggestedCategory.name,
+            color: typedSuggestedCategory.color
+          };
+        }
       }
       
       const mappedResult: ReceiptLineItem = {
@@ -370,25 +377,29 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
       const savedItems: ReceiptLineItem[] = data.map(item => {
         // Process category and suggestedCategory properly
         let category: CategoryWithCamelCase | null = null;
-        if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
-          // Use non-null assertion after type narrowing to satisfy TypeScript
+        if (item.category && typeof item.category === 'object' && item.category !== null) {
+          // Type assertion after proper checks
           const typedCategory = item.category as { id: string; name: string; color: string };
-          category = {
-            id: typedCategory.id,
-            name: typedCategory.name,
-            color: typedCategory.color
-          };
+          if ('id' in typedCategory && 'name' in typedCategory && 'color' in typedCategory) {
+            category = {
+              id: typedCategory.id,
+              name: typedCategory.name,
+              color: typedCategory.color
+            };
+          }
         }
         
         let suggestedCategory: CategoryWithCamelCase | null = null;
-        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
-          // Use non-null assertion after type narrowing to satisfy TypeScript
+        if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null) {
+          // Type assertion after proper checks
           const typedSuggestedCategory = item.suggestedCategory as { id: string; name: string; color: string };
-          suggestedCategory = {
-            id: typedSuggestedCategory.id,
-            name: typedSuggestedCategory.name,
-            color: typedSuggestedCategory.color
-          };
+          if ('id' in typedSuggestedCategory && 'name' in typedSuggestedCategory && 'color' in typedSuggestedCategory) {
+            suggestedCategory = {
+              id: typedSuggestedCategory.id,
+              name: typedSuggestedCategory.name,
+              color: typedSuggestedCategory.color
+            };
+          }
         }
         
         return {
