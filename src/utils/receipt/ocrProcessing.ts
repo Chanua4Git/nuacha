@@ -1,3 +1,4 @@
+
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -164,7 +165,13 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
     receiptNumber: ocrResponse.receiptNumber,
     transactionTime: ocrResponse.transactionTime,
     currency: ocrResponse.currency,
-    confidence_summary: ocrResponse.confidence_summary
+    confidence_summary: ocrResponse.confidence_summary ? {
+      overall: ocrResponse.confidence_summary.overall,
+      line_items: ocrResponse.confidence_summary.line_items,
+      total: ocrResponse.confidence_summary.total,
+      date: ocrResponse.confidence_summary.date,
+      merchant: ocrResponse.confidence_summary.merchant
+    } : undefined
   };
 }
 
@@ -281,7 +288,7 @@ export async function saveReceiptDetailsAndLineItems(
         };
       }
       
-      // Fix: Correctly type the mapped items
+      // Fix: Correctly type the mapped items with proper null handling
       const mappedLineItems = lineItemsData.map(item => ({
         id: item.id,
         expenseId: item.expense_id,
@@ -295,10 +302,10 @@ export async function saveReceiptDetailsAndLineItems(
         sku: item.sku,
         discount: item.discount,
         createdAt: item.created_at,
-        category: item.category,
-        suggestedCategory: item.suggestedCategory,
+        category: item.category || null,
+        suggestedCategory: item.suggestedCategory || null,
         isEditing: false
-      })) as unknown as ReceiptLineItem[];
+      })) as ReceiptLineItem[];
       
       return { 
         receiptDetail: {

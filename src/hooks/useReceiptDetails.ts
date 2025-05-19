@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 import { toast } from 'sonner';
+import { Json } from '@/types/supabase';
 
 export const useReceiptDetails = (expenseId: string | undefined) => {
   const [receiptDetail, setReceiptDetail] = useState<ReceiptDetail | null>(null);
@@ -53,11 +54,11 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           if (detailData.confidence_summary && typeof detailData.confidence_summary === 'object') {
             const cs = detailData.confidence_summary as Record<string, number>;
             confidenceSummary = {
-              overall: cs.overall || 0,
-              lineItems: cs.line_items || 0, // Map from snake_case to camelCase
-              total: cs.total || 0,
-              date: cs.date || 0,
-              merchant: cs.merchant || 0
+              overall: typeof cs.overall === 'number' ? cs.overall : 0,
+              lineItems: typeof cs.line_items === 'number' ? cs.line_items : 0, // Map from snake_case to camelCase
+              total: typeof cs.total === 'number' ? cs.total : 0,
+              date: typeof cs.date === 'number' ? cs.date : 0,
+              merchant: typeof cs.merchant === 'number' ? cs.merchant : 0
             };
           }
           
@@ -82,24 +83,28 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         }
         
         if (itemsData && itemsData.length > 0) {
-          // Fix: Type checking to make sure mappedItems matches ReceiptLineItem[]
-          const mappedItems = itemsData.map(item => ({
-            id: item.id,
-            expenseId: item.expense_id,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unit_price,
-            totalPrice: item.total_price,
-            categoryId: item.category_id,
-            suggestedCategoryId: item.suggested_category_id,
-            categoryConfidence: item.category_confidence,
-            sku: item.sku,
-            discount: item.discount,
-            createdAt: item.created_at,
-            category: item.category,
-            suggestedCategory: item.suggestedCategory,
-            isEditing: false
-          })) as ReceiptLineItem[];
+          // Fix: Type safety with the mapper function
+          const mappedItems = itemsData.map(item => {
+            const mappedItem: ReceiptLineItem = {
+              id: item.id,
+              expenseId: item.expense_id,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unit_price,
+              totalPrice: item.total_price,
+              categoryId: item.category_id,
+              suggestedCategoryId: item.suggested_category_id,
+              categoryConfidence: item.category_confidence,
+              sku: item.sku,
+              discount: item.discount,
+              createdAt: item.created_at,
+              // Ensure category and suggestedCategory are properly typed or null
+              category: item.category || null,
+              suggestedCategory: item.suggestedCategory || null,
+              isEditing: false
+            };
+            return mappedItem;
+          });
           
           setLineItems(mappedItems);
         }
@@ -220,7 +225,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         result = data;
       }
       
-      // Map result to our frontend type
+      // Map result to our frontend type with proper type safety
       const mappedResult: ReceiptLineItem = {
         id: result.id,
         expenseId: result.expense_id,
@@ -234,8 +239,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: result.sku,
         discount: result.discount,
         createdAt: result.created_at,
-        category: result.category,
-        suggestedCategory: result.suggestedCategory,
+        category: result.category || null,
+        suggestedCategory: result.suggestedCategory || null,
         isEditing: false
       };
       
@@ -317,7 +322,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         
       if (error) throw error;
       
-      // Map the returned data
+      // Map the returned data with proper type safety
       const savedItems: ReceiptLineItem[] = data.map(item => ({
         id: item.id,
         expenseId: item.expense_id,
@@ -331,8 +336,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: item.sku,
         discount: item.discount,
         createdAt: item.created_at,
-        category: item.category,
-        suggestedCategory: item.suggestedCategory,
+        category: item.category || null,
+        suggestedCategory: item.suggestedCategory || null,
         isEditing: false
       }));
       

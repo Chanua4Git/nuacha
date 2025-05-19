@@ -19,6 +19,18 @@ export interface Category {
   created_at?: string;
 }
 
+// Reminder type
+export interface Reminder {
+  id: string;
+  familyId: string;
+  title: string;
+  dueDate: string;
+  isRecurring: boolean;
+  frequency?: number; // in days
+  type: 'bill' | 'replacement';
+  relatedExpenseId?: string;
+}
+
 // Expense type
 export interface Expense {
   id: string;

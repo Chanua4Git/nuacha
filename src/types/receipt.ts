@@ -17,8 +17,8 @@ export interface ReceiptLineItem {
   
   // UI-only properties
   isEditing?: boolean;
-  category?: CategoryWithCamelCase;
-  suggestedCategory?: CategoryWithCamelCase;
+  category?: CategoryWithCamelCase | null;
+  suggestedCategory?: CategoryWithCamelCase | null;
 }
 
 export interface ReceiptDetail {
