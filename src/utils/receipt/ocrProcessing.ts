@@ -294,19 +294,23 @@ export async function saveReceiptDetailsAndLineItems(
         // Process category and suggestedCategory properly
         let category: CategoryWithCamelCase | null = null;
         if (item.category && typeof item.category === 'object' && item.category !== null && 'id' in item.category) {
+          // Type narrowing with explicit casting 
+          const typedCategory = item.category as { id: string; name: string; color: string };
           category = {
-            id: item.category.id,
-            name: item.category.name,
-            color: item.category.color
+            id: typedCategory.id,
+            name: typedCategory.name,
+            color: typedCategory.color
           };
         }
         
         let suggestedCategory: CategoryWithCamelCase | null = null;
         if (item.suggestedCategory && typeof item.suggestedCategory === 'object' && item.suggestedCategory !== null && 'id' in item.suggestedCategory) {
+          // Type narrowing with explicit casting
+          const typedSuggestedCategory = item.suggestedCategory as { id: string; name: string; color: string };
           suggestedCategory = {
-            id: item.suggestedCategory.id,
-            name: item.suggestedCategory.name,
-            color: item.suggestedCategory.color
+            id: typedSuggestedCategory.id,
+            name: typedSuggestedCategory.name,
+            color: typedSuggestedCategory.color
           };
         }
         
