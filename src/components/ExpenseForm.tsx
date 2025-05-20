@@ -1,16 +1,19 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExpense } from '@/context/ExpenseContext';
 import { format } from 'date-fns';
 import CategorySelector from './CategorySelector';
-import ReceiptUpload from './ReceiptUpload';
+import ReceiptUpload from './receipt/ReceiptUpload';
 import AmountInput from './expense-form/AmountInput';
 import DescriptionInput from './expense-form/DescriptionInput';
 import DateSelector from './expense-form/DateSelector';
 import PlaceInput from './expense-form/PlaceInput';
 import ReplacementSection from './expense-form/ReplacementSection';
 import { toast } from 'sonner';
+import { OCRResult } from '@/types/expense';
+import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -24,6 +27,7 @@ const ExpenseForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
@@ -37,10 +41,13 @@ const ExpenseForm = () => {
     }
     setReceiptImage(null);
     setImagePreview(null);
+    setOcrResult(null);
   };
 
-  const handleOcrData = (data: any) => {
-    if (data.amount) setAmount(data.amount);
+  const handleOcrData = (data: OCRResult) => {
+    setOcrResult(data);
+    
+    if (data.amount) setAmount(data.amount.toString());
     if (data.description) setDescription(data.description);
     if (data.place) setPlace(data.place);
     if (data.date) setDate(data.date);
@@ -52,7 +59,9 @@ const ExpenseForm = () => {
     e.preventDefault();
     
     if (!selectedFamily) {
-      toast.error('Please select a family first');
+      toast("Let's select a family first", {
+        description: "Choose which family this expense belongs to."
+      });
       return;
     }
     
@@ -80,7 +89,8 @@ const ExpenseForm = () => {
         nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
       }
       
-      addExpense({
+      // Add expense first
+      const newExpense = await addExpense({
         familyId: selectedFamily.id,
         amount: parseFloat(amount),
         description,
@@ -93,6 +103,18 @@ const ExpenseForm = () => {
         receiptUrl
       });
       
+      // If we have OCR data and the expense was created successfully, save receipt details
+      if (ocrResult && newExpense && newExpense.id) {
+        try {
+          console.log('Saving receipt details and line items for expense:', newExpense.id);
+          const result = await saveReceiptDetailsAndLineItems(newExpense.id, ocrResult);
+          console.log('✅ Receipt details and line items saved:', result);
+        } catch (error) {
+          console.error('❌ Error saving receipt details:', error);
+          // We don't want to fail the whole submission if just the receipt details fail
+        }
+      }
+      
       // Reset form
       setAmount('');
       setDescription('');
@@ -101,6 +123,7 @@ const ExpenseForm = () => {
       setPlace('');
       setNeedsReplacement(false);
       setReplacementFrequency('');
+      setOcrResult(null);
       handleImageRemove();
       
       toast.success("All set. You're doing beautifully.");

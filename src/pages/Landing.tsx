@@ -1,164 +1,103 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Shield, Scan, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
-import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
-import { AuthDemoSteps } from "@/components/landing/AuthDemoSteps";
+import { useAuth } from "@/auth/contexts/AuthProvider";
 
 const Landing = () => {
+  const { user } = useAuth();
+  
   return (
-    <>
-      <DemoBreadcrumbs currentPage="home" />
-      <div className="min-h-screen bg-background py-12 px-4">
-        {/* Auth Demo Steps - Moved above hero */}
-        <AuthDemoSteps />
-        
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 py-12">
         {/* Hero Section */}
-        <section className="relative py-20 px-4 md:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-playfair tracking-tight">
-                Find Peace in Your Finances with Nuacha
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                Effortlessly manage expenses for all your families, gaining clarity and control that nurtures your well-being.
-              </p>
-              <div className="pt-4">
-                <Link to="/demo">
-                  <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
-                    Discover our receipt scanning solution
-                    <ArrowRight className="ml-2" />
-                  </Button>
+        <section className="text-center py-12 md:py-24 max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-playfair tracking-tight mb-4">
+            A softer way to track spending
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8">
+            Calm, mindful financial tracking designed for families and caregivers.
+          </p>
+          
+          {user ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="text-center p-4 bg-primary/10 rounded-lg mb-2">
+                <p className="text-primary font-medium">You're signed in</p>
+                <p className="text-sm text-muted-foreground">Continue to the app to manage your finances</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg" className="px-8">
+                  <Link to="/app">
+                    Add Expense
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/dashboard">
+                    View Dashboard
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild size="lg" className="px-8">
+                <Link to="/signup">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Who is Nuacha For Section */}
-        <WhoIsNuachaFor />
-
-        {/* Problem/Solution Section */}
-        <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-transparent to-[#F4E8D3]/20">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-playfair mb-4">
-                Feeling Overwhelmed? Find Calm in Clarity
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Transform the stress of managing multiple family finances into a peaceful journey of organization and clarity.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {features.map(feature => <Card key={feature.title} className="border-none shadow-sm bg-card/50 backdrop-blur">
-                  <CardContent className="pt-6">
-                    <feature.icon className="w-10 h-10 text-[#5A7684] mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>)}
-            </div>
-          </div>
-        </section>
-
-        {/* Try It Out Section */}
-
-        {/* Call to Action Section */}
-        <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-playfair mb-6">
-              Give Yourself the Gift of Financial Peace
-            </h2>
-            <p className="text-lg mb-8 text-white/90">
-              Start your journey to mindful financial management today.
-            </p>
-            <Link to="/demo">
-              <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90">
-                Try a Quick Demo
-                <ArrowRight className="ml-2" />
               </Button>
-            </Link>
-          </div>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/login">
+                  Sign In
+                </Link>
+              </Button>
+            </div>
+          )}
         </section>
 
-        {/* Footer */}
-        <footer className="py-12 px-4 md:px-6 lg:px-8 bg-background">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <h3 className="font-playfair text-lg mb-4">About Nuacha</h3>
-                <p className="text-sm text-muted-foreground">
-                  A softer way to track spending and manage family finances.
-                </p>
+        {/* Feature Cards */}
+        <section className="py-12 grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-primary" />
               </div>
-              <div>
-                <h3 className="font-playfair text-lg mb-4">Legal</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
-                      Privacy Policy
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground">
-                      Terms of Service
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-playfair text-lg mb-4">Support</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground">
-                      Contact Us
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/help" className="text-sm text-muted-foreground hover:text-foreground">
-                      Help Center
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-playfair text-lg mb-4">Connect</h3>
-                <div className="flex space-x-4">
-                  <a href="#" className="text-muted-foreground hover:text-foreground">
-                    Twitter
-                  </a>
-                  <a href="#" className="text-muted-foreground hover:text-foreground">
-                    LinkedIn
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="mt-12 pt-8 border-t border-border">
-              <p className="text-center text-sm text-muted-foreground">
-                © {new Date().getFullYear()} Nuacha. All rights reserved.
+              <h3 className="text-xl font-semibold mb-2">Mindful Tracking</h3>
+              <p className="text-muted-foreground">
+                Gently track your expenses with a calm, judgment-free approach designed for mental wellbeing.
               </p>
-            </div>
-          </div>
-        </footer>
-      </div>
-    </>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
+                <Scan className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Receipt Scanning</h3>
+              <p className="text-muted-foreground">
+                Easily capture receipts and let Nuacha extract the details, saving you time and reducing stress.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
+                <Users2 className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Multi-Family Support</h3>
+              <p className="text-muted-foreground">
+                Manage expenses for multiple households or family groups, perfect for caregivers and extended families.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+      </main>
+    </div>
   );
 };
-
-const features = [{
-  title: "Cultivate Calm with Organized Finances",
-  description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
-  icon: Users2
-}, {
-  title: "Release the Stress of Manual Entry",
-  description: "Gently capture and organize receipts with our intelligent scanning technology, freeing your time and mind.",
-  icon: Scan
-}, {
-  title: "Nurture Future Security",
-  description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
-  icon: Shield
-}];
 
 export default Landing;

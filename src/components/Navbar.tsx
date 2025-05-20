@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight } from 'lucide-react';
+import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,7 +15,7 @@ const Navbar = () => {
   const { selectedFamily } = useExpense();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, authDemoActive } = useAuth();
+  const { user, signOut, authDemoActive, exitDemoMode } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,26 +27,51 @@ const Navbar = () => {
           <h1 className="text-xl font-bold">
             <Link to="/">Nuacha</Link>
           </h1>
-          
-          {user && (
-            <Button 
-              variant="ghost" 
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={async () => {
-                try {
-                  await signOut();
-                  toast.success('Signed out successfully');
-                  navigate('/');
-                } catch (error) {
-                  console.error('Logout error:', error);
-                  toast.error('Error signing out');
-                }
-              }}
-            >
-              <LogOut className="h-5 w-5 mr-2" />
-              <span>Sign out</span>
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {authDemoActive && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hidden sm:flex items-center gap-1 text-amber-600 border-amber-300 bg-amber-50"
+                onClick={exitDemoMode}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Exit Demo Mode
+              </Button>
+            )}
+            
+            {user && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/app')}
+                  className="hidden sm:flex"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Expense
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                      toast.success('Signed out successfully');
+                      navigate('/');
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                      toast.error('Error signing out');
+                    }
+                  }}
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  <span>Sign out</span>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
     );
@@ -112,25 +138,22 @@ const Navbar = () => {
             )}
           </h1>
           {authDemoActive && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full hidden sm:inline-block">
-              Demo Mode
-            </span>
+            <div className="flex items-center">
+              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full hidden sm:inline-block">
+                Demo Mode
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2 text-amber-600 hidden sm:flex items-center"
+                onClick={exitDemoMode}
+              >
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Exit Demo
+              </Button>
+            </div>
           )}
         </div>
-
-        {authDemoActive && !isMobile && (
-          <div className="flex items-center">
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="mr-2"
-              onClick={() => navigate('/auth-demo')}
-            >
-              <ArrowRight className="h-4 w-4 mr-2" />
-              Back to Demo Guide
-            </Button>
-          </div>
-        )}
 
         {isMobile ? (
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -146,7 +169,7 @@ const Navbar = () => {
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-lg">Menu</h2>
                     {authDemoActive && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
                         Demo Mode
                       </span>
                     )}
@@ -176,15 +199,15 @@ const Navbar = () => {
                     
                     {authDemoActive && (
                       <Button
-                        variant="ghost"
-                        className="justify-start h-12 text-base w-full"
+                        variant="outline"
+                        className="justify-start h-12 text-base w-full text-amber-600 border-amber-300 bg-amber-50"
                         onClick={() => {
                           setIsMenuOpen(false);
-                          navigate('/auth-demo');
+                          exitDemoMode();
                         }}
                       >
-                        <ArrowRight className="h-5 w-5 mr-3" />
-                        Back to Demo Guide
+                        <AlertTriangle className="h-4 w-4 mr-3" />
+                        Exit Demo Mode
                       </Button>
                     )}
                   </nav>
@@ -232,6 +255,17 @@ const Navbar = () => {
                 </Link>
               </Button>
             ))}
+            {authDemoActive && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-amber-600 border-amber-300 bg-amber-50 flex items-center gap-1 mr-2"
+                onClick={exitDemoMode}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Exit Demo Mode
+              </Button>
+            )}
             <AuthButton />
           </nav>
         )}
