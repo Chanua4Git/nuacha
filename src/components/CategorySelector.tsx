@@ -60,7 +60,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-50">
           {suggestedCategory && suggestedCategory.id !== value && (
             <SelectItem 
               value={suggestedCategory.id} 
@@ -76,21 +76,27 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
             </SelectItem>
           )}
           
-          {availableCategories.map((category) => (
-            <SelectItem 
-              key={category.id} 
-              value={category.id}
-              className="flex items-center"
-            >
-              <div className="flex items-center">
-                <span 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: category.color }}
-                />
-                {category.name}
-              </div>
-            </SelectItem>
-          ))}
+          {availableCategories.length === 0 ? (
+            <div className="p-2 text-sm text-muted-foreground">
+              No categories available. Please create categories first.
+            </div>
+          ) : (
+            availableCategories.map((category) => (
+              <SelectItem 
+                key={category.id} 
+                value={category.id}
+                className="flex items-center"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2" 
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
       

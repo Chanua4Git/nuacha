@@ -15,9 +15,10 @@ import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import DetailedReceiptView from './DetailedReceiptView';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
+import FamilySelector from './FamilySelector';
 
 const ExpenseForm = () => {
-  const { selectedFamily, addExpense } = useExpense();
+  const { selectedFamily, addExpense, families } = useExpense();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -166,6 +167,11 @@ const ExpenseForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {/* Add FamilySelector at the top */}
+          <div className="mb-4">
+            <FamilySelector />
+          </div>
+          
           <div>
             <ReceiptUpload
               onImageUpload={handleImageUpload}
@@ -236,7 +242,7 @@ const ExpenseForm = () => {
           <Button 
             type="submit" 
             className="w-full"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedFamily}
           >
             {isSubmitting ? 'Saving...' : 'Save expense'}
           </Button>

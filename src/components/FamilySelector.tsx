@@ -10,6 +10,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { Users } from 'lucide-react';
 import { Dispatch, SetStateAction } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from './ui/button';
+import { toast } from 'sonner';
 
 interface FamilySelectorProps {
   onFamilyChange?: Dispatch<SetStateAction<string>>;
@@ -20,7 +22,7 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
 
   if (isLoading) {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center mb-2">
           <Skeleton className="h-5 w-5 mr-2 rounded-full" />
           <Skeleton className="h-7 w-40" />
@@ -32,20 +34,29 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
 
   if (families.length === 0) {
     return (
-      <div className="mb-6 p-4 bg-accent/30 rounded-lg">
+      <div className="p-4 bg-accent/30 rounded-lg">
         <div className="flex items-center mb-2">
           <Users className="h-5 w-5 mr-2 text-muted-foreground" />
           <h2 className="text-lg font-medium">No Families</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-2">
           When you're ready, you can add your first family to start tracking expenses.
         </p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => toast("Family creation coming soon", {
+            description: "We're working on adding the ability to create families."
+          })}
+        >
+          Add Family
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="flex items-center mb-2">
         <Users className="h-5 w-5 mr-2 text-muted-foreground" />
         <h2 className="text-lg font-medium">Select Family</h2>
@@ -65,7 +76,7 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a family" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-50">
           {families.map((family) => (
             <SelectItem 
               key={family.id} 
