@@ -12,11 +12,31 @@ export interface Category {
   name: string;
   color: string;
   family_id?: string; // If null, it's a general category
-  parent_id?: string; // Parent category id for hierarchical categories
+  parent_id?: string; // Parent category for hierarchical categories
   budget?: number; // Optional budget for the category
   description?: string; // Optional description
   icon?: string; // Optional icon identifier
   created_at?: string;
+}
+
+// Family Member type
+export interface FamilyMember {
+  id: string;
+  familyId: string;
+  name: string;
+  type: string;
+  dateOfBirth?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+// Expense Member type
+export interface ExpenseMember {
+  id: string;
+  expenseId: string;
+  memberId: string;
+  allocationPercentage?: number;
+  createdAt?: string;
 }
 
 // Reminder type
@@ -49,6 +69,7 @@ export interface Expense {
   paymentMethod?: string;
   tags?: string[];
   transactionId?: string;
+  members?: FamilyMember[]; // Array of family members associated with this expense
 }
 
 // For backward compatibility and consistent casing in our application

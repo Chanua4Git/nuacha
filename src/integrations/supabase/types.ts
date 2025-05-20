@@ -185,6 +185,45 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_members: {
+        Row: {
+          allocation_percentage: number | null
+          created_at: string
+          expense_id: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          created_at?: string
+          expense_id: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          created_at?: string
+          expense_id?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_members_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -279,6 +318,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      family_members: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          family_id: string
+          id: string
+          name: string
+          notes: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          family_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          family_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipt_details: {
         Row: {

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExpense } from '@/context/ExpenseContext';
@@ -16,6 +15,9 @@ import { OCRResult } from '@/types/expense';
 import DetailedReceiptView from './DetailedReceiptView';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import FamilySelector from './FamilySelector';
+import MultipleMemberSelector from './MultipleMemberSelector';
+import { useExpenseMembers } from '@/hooks/useExpenseMembers';
+import { supabase } from '@/lib/supabase';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense, families } = useExpense();
@@ -31,6 +33,7 @@ const ExpenseForm = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [showDetailedView, setShowDetailedView] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
@@ -122,6 +125,31 @@ const ExpenseForm = () => {
         receiptUrl
       });
       
+      // If we have family members selected, add them to the expense
+      if (selectedMemberIds.length > 0 && newExpense && newExpense.id) {
+        try {
+          // Batch insert expense members
+          const expenseMembers = selectedMemberIds.map(memberId => ({
+            expense_id: newExpense.id,
+            member_id: memberId
+          }));
+          
+          const { error } = await supabase
+            .from('expense_members')
+            .insert(expenseMembers);
+          
+          if (error) throw error;
+          
+          console.log('✅ Family members associated with expense');
+        } catch (error) {
+          console.error('Error associating family members with expense:', error);
+          // Don't fail the whole submission if just the member assignments fail
+          toast("We saved your expense, but couldn't associate all family members", {
+            description: "The basic information is recorded correctly."
+          });
+        }
+      }
+      
       // If we have OCR data and the expense was successfully created, save receipt details
       if (ocrResult && newExpense && newExpense.id) {
         try {
@@ -146,6 +174,7 @@ const ExpenseForm = () => {
       setReplacementFrequency('');
       setOcrResult(null);
       setShowDetailedView(false);
+      setSelectedMemberIds([]);
       handleImageRemove();
       
       toast.success("All set. You're doing beautifully.");
@@ -228,6 +257,14 @@ const ExpenseForm = () => {
             value={place}
             onChange={setPlace}
           />
+          
+          {/* Add the MultipleMemberSelector */}
+          {selectedFamily && (
+            <MultipleMemberSelector
+              selectedMemberIds={selectedMemberIds}
+              onChange={setSelectedMemberIds}
+            />
+          )}
           
           {selectedFamily?.id === '1' && (
             <ReplacementSection

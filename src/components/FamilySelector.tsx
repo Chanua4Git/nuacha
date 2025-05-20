@@ -7,11 +7,12 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
-import { Users } from 'lucide-react';
-import { Dispatch, SetStateAction } from 'react';
+import { Users, Plus } from 'lucide-react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import FamilyFormDialog from './FamilyFormDialog';
 
 interface FamilySelectorProps {
   onFamilyChange?: Dispatch<SetStateAction<string>>;
@@ -19,6 +20,7 @@ interface FamilySelectorProps {
 
 const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
   const { families, selectedFamily, setSelectedFamily, isLoading } = useExpense();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -45,21 +47,32 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => toast("Family creation coming soon", {
-            description: "We're working on adding the ability to create families."
-          })}
+          onClick={() => setDialogOpen(true)}
         >
+          <Plus className="h-4 w-4 mr-2" />
           Add Family
         </Button>
+        
+        <FamilyFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center mb-2">
-        <Users className="h-5 w-5 mr-2 text-muted-foreground" />
-        <h2 className="text-lg font-medium">Select Family</h2>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center">
+          <Users className="h-5 w-5 mr-2 text-muted-foreground" />
+          <h2 className="text-lg font-medium">Select Family</h2>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Family
+        </Button>
       </div>
       <Select
         value={selectedFamily?.id || ''}
@@ -94,6 +107,8 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
           ))}
         </SelectContent>
       </Select>
+      
+      <FamilyFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 };
