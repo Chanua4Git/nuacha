@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -18,7 +17,6 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   authDemoActive: boolean;
   setAuthDemoActive: (active: boolean) => void;
-  exitDemoMode: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,7 +26,6 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   authDemoActive: false,
   setAuthDemoActive: () => {},
-  exitDemoMode: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -36,11 +33,11 @@ export const useAuth = () => useContext(AuthContext);
 function safeGetIntendedPath(): string {
   try {
     const path = localStorage.getItem("intendedPath");
-    if (!path) return "/app";
-    if (!path.startsWith("/")) return "/app";
+    if (!path) return "/";
+    if (!path.startsWith("/")) return "/";
     return path.replace(/\/{2,}/g, "/").replace(/[\r\n]/g, "");
   } catch {
-    return "/app";
+    return "/";
   }
 }
 
@@ -79,13 +76,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const exitDemoMode = () => {
-    clearAuthDemo();
-    setAuthDemoActiveRaw(false);
-    // Redirect to app after exiting demo mode
-    safeNavigate('/app', { replace: true });
-  };
-
   // Handle URL parameters and demo state
   useEffect(() => {
     if (urlParamsProcessed.current) return;
@@ -118,13 +108,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.log("AuthProvider: Verification complete, cleaning up");
             localStorage.removeItem("verificationComplete");
             window.history.replaceState({}, "", "/");
-            safeNavigate("/app", { replace: true });
+            safeNavigate("/", { replace: true });
             return;
           }
 
           if (isAuthDemoActive()) {
             if (!location.pathname.startsWith('/auth-demo')) {
-              safeNavigate('/app', { replace: true });
+              safeNavigate('/', { replace: true });
             }
           } else {
             const intendedPath = safeGetIntendedPath();
@@ -184,8 +174,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isLoading,
       signOut,
       authDemoActive,
-      setAuthDemoActive: setAuthDemoActiveSync,
-      exitDemoMode
+      setAuthDemoActive: setAuthDemoActiveSync
     }}>
       {children}
     </AuthContext.Provider>

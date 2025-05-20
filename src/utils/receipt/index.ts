@@ -2,16 +2,12 @@
 import { OCRResult } from '@/types/expense';
 import { handleReceiptUpload } from './uploadHandling';
 import { handleOCRError, handleUnexpectedError } from './errorHandling';
-import { validateOCRResult } from './ocrProcessing';
+import { validateOCRResult } from './validation';
 import { processReceiptWithEdgeFunction } from './ocrProcessing';
 import { toast } from 'sonner';
 
 export async function processReceiptImage(file: File): Promise<OCRResult> {
   try {
-    toast("Processing your receipt...", {
-      description: "We're extracting the information for you."
-    });
-    
     const receiptUrl = await handleReceiptUpload(file);
     if (!receiptUrl) {
       return {
@@ -23,14 +19,6 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     try {
       const result = await processReceiptWithEdgeFunction(receiptUrl);
       console.log('✅ Receipt processed:', result);
-      
-      // Even if validation fails, return the data for manual correction
-      if (!validateOCRResult(result) && !result.error) {
-        toast("We extracted some details, but they might need adjusting", {
-          description: "Feel free to make changes before saving."
-        });
-      }
-      
       return result;
     } catch (error) {
       console.error('Error processing receipt with edge function:', error);

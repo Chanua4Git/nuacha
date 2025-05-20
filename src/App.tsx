@@ -23,7 +23,9 @@ import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
 import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
 import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
-import DemoModeIndicator from "./components/DemoModeIndicator";
+
+// New: custom hook for hiding navbar on /auth-demo
+import { useLocation as useRRLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
@@ -41,7 +43,7 @@ const App = () => {
     );
   }, []);
 
-  const location = useLocation();
+  const location = useRRLocation();
   const hideNavbar = /^\/auth-demo(\/.*)?$/.test(location.pathname);
 
   // Enable debug panel during development
@@ -88,7 +90,6 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
-                <DemoModeIndicator />
                 <AuthDemoDebugPanel visible={showDebugPanel} />
               </div>
             </TooltipProvider>

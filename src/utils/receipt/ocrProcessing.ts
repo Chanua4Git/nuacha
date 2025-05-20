@@ -1,3 +1,4 @@
+
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -176,26 +177,17 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
 }
 
 export function validateOCRResult(result: OCRResult): boolean {
-  // If there's an error, we still want to provide the data for manual correction
-  if (result.error) {
-    console.log('OCR result has error but will be provided for manual correction:', result.error);
-    return true;
-  }
-  
   // Enhanced validation that takes into account more than just overall confidence
   if (!result.confidence) return false;
   
-  // Check for minimum viable data - only need some information to be present
-  const hasBasicData = Boolean(
-    (result.amount || (result.lineItems && result.lineItems.length > 0)) && 
-    (result.date || result.storeDetails)
-  );
+  // Check for minimum viable data
+  const hasBasicData = Boolean(result.amount && result.date);
   
   // If we have confidence summary, use it for more granular validation
   if (result.confidence_summary) {
     const summary = result.confidence_summary;
     // Check if critical fields have reasonable confidence
-    if (summary.total > 0.6 || summary.date > 0.5) {
+    if (summary.total > 0.6 && summary.date > 0.5) {
       return true;
     }
     // If line items have good confidence, allow the result even if other fields are weaker
@@ -204,8 +196,8 @@ export function validateOCRResult(result: OCRResult): boolean {
     }
   }
   
-  // Fall back to overall confidence check, but be more lenient
-  return result.confidence > 0.2 && hasBasicData;
+  // Fall back to overall confidence check
+  return result.confidence > 0.3 && hasBasicData;
 }
 
 // Fix: Update the saveReceiptDetailsAndLineItems function

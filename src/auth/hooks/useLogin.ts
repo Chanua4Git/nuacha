@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../utils/supabaseClient";
@@ -54,7 +53,6 @@ export function useLogin() {
         toast("Something didn't go as planned", {
           description: errorMessage,
         });
-        setLoading(false);
         return;
       }
 
@@ -63,30 +61,22 @@ export function useLogin() {
         toast("Please verify your email", {
           description: "Check your inbox for a verification link."
         });
-        setLoading(false);
-        return;
-      }
-
-      // Get the intended path or default to /app
-      const intendedPath = localStorage.getItem("intendedPath") || "/app";
-      localStorage.removeItem("intendedPath");
-
-      // If the user is in demo mode, prioritize actual app usage unless 
-      // they're explicitly interacting with the demo
-      const urlParams = new URLSearchParams(window.location.search);
-      const isExplicitlyDemo = urlParams.get("from") === "auth-demo";
-      
-      setLoading(false);
-      
-      if (isExplicitlyDemo && getAuthDemoActive()) {
-        navigate('/auth-demo', { replace: true });
       } else {
-        // For normal usage or if they're not explicitly in demo
+        // Auth demo: always redirect to /auth-demo if demo is active
+        if (getAuthDemoActive()) {
+          navigate('/auth-demo', { replace: true });
+          return;
+        }
+
+        // Normal user redirect
+        const intendedPath = localStorage.getItem("intendedPath") || "/";
+        localStorage.removeItem("intendedPath");
         navigate(intendedPath);
       }
 
     } catch (err: any) {
       toast.error("An unknown error occurred.");
+    } finally {
       setLoading(false);
     }
   };
