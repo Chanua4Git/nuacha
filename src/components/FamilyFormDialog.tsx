@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { Family } from '@/types/expense';
 import { useExpense } from '@/context/ExpenseContext';
 import { HexColorPicker } from 'react-colorful';
+import { useFamilies } from '@/hooks/useFamilies';
 
 interface FamilyFormDialogProps {
   open: boolean;
@@ -21,7 +22,8 @@ interface FamilyFormDialogProps {
 }
 
 const FamilyFormDialog = ({ open, onOpenChange, family }: FamilyFormDialogProps) => {
-  const { createFamily, updateFamily } = useExpense();
+  const { selectedFamily } = useExpense();
+  const { createFamily, updateFamily } = useFamilies();
   const [name, setName] = useState(family?.name || '');
   const [color, setColor] = useState(family?.color || '#5A7684');
   const [isSubmitting, setIsSubmitting] = useState(false);

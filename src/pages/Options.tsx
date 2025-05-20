@@ -2,8 +2,8 @@
 import { useExpense } from '@/context/ExpenseContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, Users, Tag, Calculator } from 'lucide-react';
-import { CategoryManager } from '@/components/accounting/CategoryManager';
-import { BudgetManager } from '@/components/accounting/BudgetManager';
+import CategoryManager from '@/components/accounting/CategoryManager';
+import BudgetManager from '@/components/accounting/BudgetManager';
 import FamilyMembersManager from '@/components/FamilyMembersManager';
 
 const Options = () => {
@@ -40,11 +40,23 @@ const Options = () => {
           </TabsContent>
           
           <TabsContent value="categories" className="mt-0">
-            <CategoryManager />
+            {selectedFamily ? (
+              <CategoryManager familyId={selectedFamily.id} />
+            ) : (
+              <div className="text-center p-8 text-muted-foreground">
+                <p>Please select a family first to manage categories.</p>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="budgets" className="mt-0">
-            <BudgetManager />
+            {selectedFamily ? (
+              <BudgetManager familyId={selectedFamily.id} />
+            ) : (
+              <div className="text-center p-8 text-muted-foreground">
+                <p>Please select a family first to manage budgets.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
