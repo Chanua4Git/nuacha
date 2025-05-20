@@ -29,6 +29,20 @@ import { useLocation as useRRLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
+// Helper for "auth-demo" detection and clearing
+function clearAuthDemoMode() {
+  try {
+    if (localStorage.getItem('authDemoActive') === 'true') {
+      console.log('Clearing auth demo mode');
+      localStorage.removeItem('authDemoActive');
+      return true;
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return false;
+}
+
 const App = () => {
   useEffect(() => {
     let viewportMeta = document.querySelector('meta[name="viewport"]');
@@ -41,6 +55,12 @@ const App = () => {
       'content',
       'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
     );
+    
+    // Clear auth demo mode when not on an auth-demo page
+    const pathname = window.location.pathname;
+    if (!pathname.startsWith('/auth-demo')) {
+      clearAuthDemoMode();
+    }
   }, []);
 
   const location = useRRLocation();

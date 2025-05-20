@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../utils/supabaseClient";
@@ -9,6 +10,15 @@ function getAuthDemoActive() {
     return localStorage.getItem('authDemoActive') === 'true';
   } catch {
     return false;
+  }
+}
+
+// Helper to clear auth demo mode
+function clearAuthDemoMode() {
+  try {
+    localStorage.removeItem('authDemoActive');
+  } catch {
+    // Ignore localStorage errors
   }
 }
 
@@ -62,14 +72,17 @@ export function useLogin() {
           description: "Check your inbox for a verification link."
         });
       } else {
-        // Auth demo: always redirect to /auth-demo if demo is active
+        // Clear auth demo mode on successful login
+        clearAuthDemoMode();
+        
+        // Only check for auth demo mode if we're already in it
         if (getAuthDemoActive()) {
           navigate('/auth-demo', { replace: true });
           return;
         }
 
         // Normal user redirect
-        const intendedPath = localStorage.getItem("intendedPath") || "/";
+        const intendedPath = localStorage.getItem("intendedPath") || "/app";
         localStorage.removeItem("intendedPath");
         navigate(intendedPath);
       }

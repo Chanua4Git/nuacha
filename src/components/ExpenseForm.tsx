@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,9 @@ import DateSelector from './expense-form/DateSelector';
 import PlaceInput from './expense-form/PlaceInput';
 import ReplacementSection from './expense-form/ReplacementSection';
 import { toast } from 'sonner';
+import { OCRResult } from '@/types/expense';
+import DetailedReceiptView from './DetailedReceiptView';
+import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 
 const ExpenseForm = () => {
   const { selectedFamily, addExpense } = useExpense();
@@ -24,11 +28,15 @@ const ExpenseForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  const [showDetailedView, setShowDetailedView] = useState(false);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
+    // Hide detailed view when uploading a new image
+    setShowDetailedView(false);
   };
 
   const handleImageRemove = () => {
@@ -37,22 +45,41 @@ const ExpenseForm = () => {
     }
     setReceiptImage(null);
     setImagePreview(null);
+    setOcrResult(null);
+    setShowDetailedView(false);
   };
 
-  const handleOcrData = (data: any) => {
+  const handleOcrData = (data: OCRResult) => {
+    setOcrResult(data);
+    
     if (data.amount) setAmount(data.amount);
     if (data.description) setDescription(data.description);
     if (data.place) setPlace(data.place);
     if (data.date) setDate(data.date);
     
-    // Don't set category automatically as it needs user judgment
+    // Display detailed view automatically if we have line items
+    if (data.lineItems && data.lineItems.length > 0) {
+      setShowDetailedView(true);
+    }
+  };
+
+  const handleRetry = () => {
+    if (receiptImage) {
+      // Re-process the same image
+      setImagePreview(null);
+      setOcrResult(null);
+      const previewUrl = URL.createObjectURL(receiptImage);
+      setImagePreview(previewUrl);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedFamily) {
-      toast.error('Please select a family first');
+      toast("Let's select a family first", {
+        description: "Please choose which family this expense belongs to."
+      });
       return;
     }
     
@@ -80,7 +107,8 @@ const ExpenseForm = () => {
         nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
       }
       
-      addExpense({
+      // Add expense first
+      const newExpense = await addExpense({
         familyId: selectedFamily.id,
         amount: parseFloat(amount),
         description,
@@ -93,6 +121,20 @@ const ExpenseForm = () => {
         receiptUrl
       });
       
+      // If we have OCR data and the expense was successfully created, save receipt details
+      if (ocrResult && newExpense && newExpense.id) {
+        try {
+          await saveReceiptDetailsAndLineItems(newExpense.id, ocrResult);
+          console.log('✅ Receipt details and line items saved');
+        } catch (error) {
+          console.error('Error saving receipt details:', error);
+          // We don't want to fail the whole submission if just the receipt details fail
+          toast("We saved your expense, but some receipt details couldn't be stored", {
+            description: "The basic information is recorded correctly."
+          });
+        }
+      }
+      
       // Reset form
       setAmount('');
       setDescription('');
@@ -101,6 +143,8 @@ const ExpenseForm = () => {
       setPlace('');
       setNeedsReplacement(false);
       setReplacementFrequency('');
+      setOcrResult(null);
+      setShowDetailedView(false);
       handleImageRemove();
       
       toast.success("All set. You're doing beautifully.");
@@ -130,6 +174,29 @@ const ExpenseForm = () => {
               imagePreview={imagePreview}
             />
           </div>
+          
+          {ocrResult && imagePreview && (
+            <div className="mb-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDetailedView(!showDetailedView)}
+                className="w-full"
+              >
+                {showDetailedView ? "Hide receipt details" : "Show receipt details"}
+              </Button>
+              
+              {showDetailedView && (
+                <div className="mt-4 border rounded-lg p-4 bg-gray-50">
+                  <DetailedReceiptView
+                    receiptData={ocrResult}
+                    receiptImage={imagePreview}
+                    onRetry={handleRetry}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <AmountInput 
             value={amount}
