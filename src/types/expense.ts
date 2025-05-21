@@ -156,4 +156,5 @@ export interface ReceiptLineItem {
   sku?: string;
   suggestedCategoryId?: string;
   categoryConfidence?: number;
+  expenseId?: string; // Add this to match the receipt.ts definition
 }

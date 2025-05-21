@@ -26,12 +26,21 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
 
   if (!hasLineItems) return null;
 
-  const handleSaveLineItem = async (lineItem: ReceiptLineItem) => {
+  const handleSaveLineItem = async (lineItem: ReceiptLineItem): Promise<void> => {
     if (saveLineItem) {
-      return saveLineItem(lineItem);
+      await saveLineItem(lineItem);
     }
     return Promise.resolve();
   };
+
+  // Convert receiptData.lineItems to proper format if needed
+  const displayLineItems: ReceiptLineItem[] = expenseId && lineItems.length > 0 
+    ? lineItems 
+    : (receiptData.lineItems || []).map(item => ({
+        ...item,
+        expenseId: expenseId || '',
+        totalPrice: item.totalPrice.toString()
+      }));
 
   return (
     <Card>
@@ -40,7 +49,7 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       </CardHeader>
       <CardContent className="space-y-4">
         <LineItemsTable 
-          lineItems={expenseId && lineItems.length > 0 ? lineItems : receiptData.lineItems} 
+          lineItems={displayLineItems} 
           formatCurrency={formatCurrency}
           onSaveLineItem={expenseId ? handleSaveLineItem : undefined}
           familyId={selectedFamily?.id}
