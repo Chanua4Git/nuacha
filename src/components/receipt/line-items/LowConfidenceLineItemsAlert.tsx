@@ -5,11 +5,11 @@ import { InfoIcon } from 'lucide-react';
 import { ReceiptLineItem } from '@/types/expense';
 
 interface LowConfidenceLineItemsAlertProps {
-  lineItems: ReceiptLineItem[];
+  lineItems: ReceiptLineItem[] | undefined;
 }
 
 const LowConfidenceLineItemsAlert: React.FC<LowConfidenceLineItemsAlertProps> = ({ lineItems }) => {
-  if (!lineItems.some(item => item.confidence < 0.6)) return null;
+  if (!lineItems || !lineItems.some(item => item.confidence < 0.6)) return null;
 
   return (
     <Alert className="mt-4 bg-yellow-50">

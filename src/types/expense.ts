@@ -145,11 +145,11 @@ export interface OCRResult {
   };
 }
 
-// Update ReceiptLineItem definition to match what we use in the app
+// Modified ReceiptLineItem definition to match receipt.ts ReceiptLineItem structure
 export interface ReceiptLineItem {
   description: string;
   quantity?: number;
-  totalPrice: string;
+  totalPrice: string; // Keep as string in the OCR result
   confidence: number;
   category?: string;
   discounted?: boolean;

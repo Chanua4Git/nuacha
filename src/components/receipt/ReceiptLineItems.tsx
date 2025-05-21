@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { OCRResult } from '@/types/expense';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LineItemsTable from './line-items/LineItemsTable';
@@ -39,7 +39,8 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     : (receiptData.lineItems || []).map(item => ({
         ...item,
         expenseId: expenseId || '',
-        totalPrice: item.totalPrice.toString()
+        // Convert string totalPrice to number for ReceiptLineItem compatibility
+        totalPrice: typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : (item.totalPrice || 0)
       }));
 
   return (

@@ -113,16 +113,14 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
               {isEditing ? (
                 <Input 
                   type="number"
-                  value={typeof editingItem.totalPrice === 'string' 
-                    ? parseFloat(editingItem.totalPrice) || 0 
-                    : editingItem.totalPrice || 0} 
-                  onChange={(e) => handleChange(index, 'totalPrice', e.target.value)}
+                  value={editingItem.totalPrice || 0} 
+                  onChange={(e) => handleChange(index, 'totalPrice', parseFloat(e.target.value) || 0)}
                   className="w-24 ml-auto"
                   min={0}
                   step={0.01}
                 />
               ) : (
-                formatCurrency(typeof item.totalPrice === 'string' ? item.totalPrice : item.totalPrice?.toString())
+                formatCurrency(item.totalPrice?.toString())
               )}
             </TableCell>
             <TableCell>
