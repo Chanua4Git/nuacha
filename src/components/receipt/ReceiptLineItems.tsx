@@ -37,11 +37,17 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
   const displayLineItems: ReceiptLineItem[] = expenseId && lineItems.length > 0 
     ? lineItems 
     : (receiptData.lineItems || []).map(item => ({
-        ...item,
+        id: undefined,
         expenseId: expenseId || '',
-        // Convert string totalPrice to number for ReceiptLineItem compatibility
-        totalPrice: typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : (item.totalPrice || 0)
-      }));
+        description: item.description,
+        quantity: item.quantity,
+        totalPrice: typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : (item.totalPrice || 0),
+        categoryId: item.suggestedCategoryId,
+        suggestedCategoryId: item.suggestedCategoryId,
+        categoryConfidence: item.categoryConfidence,
+        sku: item.sku,
+        discount: item.discounted
+      } as ReceiptLineItem));
 
   return (
     <Card>
