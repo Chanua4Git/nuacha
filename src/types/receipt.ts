@@ -14,6 +14,7 @@ export interface ReceiptLineItem {
   sku?: string;
   discount?: boolean;
   createdAt?: string;
+  memberId?: string;
   
   // UI-only properties
   isEditing?: boolean;

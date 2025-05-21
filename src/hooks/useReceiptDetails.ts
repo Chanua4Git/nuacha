@@ -125,6 +125,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
               sku: item.sku,
               discount: item.discount,
               createdAt: item.created_at,
+              memberId: item.member_id,
               category,
               suggestedCategory,
               isEditing: false
@@ -214,7 +215,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         suggested_category_id: lineItem.suggestedCategoryId,
         category_confidence: lineItem.categoryConfidence,
         sku: lineItem.sku,
-        discount: lineItem.discount
+        discount: lineItem.discount,
+        member_id: lineItem.memberId
       };
       
       let result;
@@ -290,6 +292,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: result.sku,
         discount: result.discount,
         createdAt: result.created_at,
+        memberId: result.member_id,
         category,
         suggestedCategory,
         isEditing: false
@@ -359,7 +362,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         suggested_category_id: item.suggestedCategoryId,
         category_confidence: item.categoryConfidence,
         sku: item.sku,
-        discount: item.discount
+        discount: item.discount,
+        member_id: item.memberId
       }));
       
       const { data, error } = await supabase
@@ -415,6 +419,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           sku: item.sku,
           discount: item.discount,
           createdAt: item.created_at,
+          memberId: item.member_id,
           category,
           suggestedCategory,
           isEditing: false

@@ -27,6 +27,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
           <TableHead className="text-right">Qty</TableHead>
           <TableHead className="text-right">Total</TableHead>
           <TableHead>Category</TableHead>
+          <TableHead>Member</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>

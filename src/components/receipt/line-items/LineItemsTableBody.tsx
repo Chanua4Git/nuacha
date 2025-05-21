@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { ReceiptLineItem } from '@/types/receipt';
 import CategorySelector from '@/components/CategorySelector';
+import FamilyMemberSelector from '@/components/FamilyMemberSelector';
 import { Button } from '@/components/ui/button';
 import { Edit, Save, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,31 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
     } catch (error) {
       console.error("Failed to update item:", error);
       toast.error("Failed to update item");
+    }
+  };
+
+  const handleMemberChange = async (value: string, item: ReceiptLineItem, index?: number) => {
+    try {
+      if (index !== undefined && editingItems[index]) {
+        // If the item is in edit mode, update the state
+        handleChange(index, 'memberId', value);
+        return;
+      }
+      
+      // If not in edit mode, save immediately
+      if (onSaveLineItem) {
+        const updatedItem = {
+          ...item,
+          memberId: value,
+          expenseId: expenseId || item.expenseId
+        };
+        
+        await onSaveLineItem(updatedItem);
+        toast.success("Family member assigned successfully");
+      }
+    } catch (error) {
+      console.error("Failed to assign family member:", error);
+      toast.error("Failed to assign family member");
     }
   };
 
@@ -142,6 +168,15 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                     }
                   }}
                   suggestedCategoryId={item.suggestedCategoryId}
+                  className="mb-0"
+                />
+              )}
+            </TableCell>
+            <TableCell>
+              {familyId && (
+                <FamilyMemberSelector
+                  value={isEditing ? editingItem.memberId : item.memberId}
+                  onChange={(value) => handleMemberChange(value, item, isEditing ? index : undefined)}
                   className="mb-0"
                 />
               )}
