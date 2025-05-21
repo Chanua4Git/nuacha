@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,24 +52,30 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     e.preventDefault();
     
     try {
+      // Process the parentId - convert "none" to null/undefined
+      const processedFormData = {
+        ...formData,
+        parentId: formData.parentId === "none" ? null : formData.parentId
+      };
+      
       if (editingCategory) {
         await updateCategory(editingCategory.id, {
-          name: formData.name,
-          color: formData.color,
-          parentId: formData.parentId || null,
-          budget: formData.budget || null,
-          description: formData.description || null,
-          icon: formData.icon || null,
+          name: processedFormData.name,
+          color: processedFormData.color,
+          parentId: processedFormData.parentId,
+          budget: processedFormData.budget || null,
+          description: processedFormData.description || null,
+          icon: processedFormData.icon || null,
         });
       } else {
         await createCategory({
-          name: formData.name,
-          color: formData.color,
+          name: processedFormData.name,
+          color: processedFormData.color,
           familyId,
-          parentId: formData.parentId || null,
-          budget: formData.budget || null,
-          description: formData.description || null,
-          icon: formData.icon || null,
+          parentId: processedFormData.parentId,
+          budget: processedFormData.budget || null,
+          description: processedFormData.description || null,
+          icon: processedFormData.icon || null,
         });
       }
       
@@ -85,7 +92,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
       name: category.name,
       color: category.color,
       familyId: category.familyId,
-      parentId: category.parentId,
+      parentId: category.parentId || "none", // Convert null/undefined to "none"
       budget: category.budget,
       description: category.description || '',
       icon: category.icon || '',
@@ -221,6 +228,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     );
   }
   
+  // Filter out categories with empty IDs to prevent errors
+  const validCategories = categories.filter(c => c.id && c.id !== '');
+  
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -295,15 +305,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
                   Parent Category
                 </label>
                 <Select
-                  value={formData.parentId}
+                  value={formData.parentId || "none"}
                   onValueChange={(value) => setFormData({...formData, parentId: value})}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="None (Top Level)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Top Level)</SelectItem>
-                    {categories
+                    <SelectItem value="none">None (Top Level)</SelectItem>
+                    {validCategories
                       .filter(c => c.id !== editingCategory?.id)
                       .map(category => (
                         <SelectItem key={category.id} value={category.id}>
