@@ -65,6 +65,9 @@ const FamilyMemberSelector = ({ value, onChange, className }: FamilyMemberSelect
     );
   }
 
+  // Filter out members with empty IDs to avoid the error
+  const validMembers = members.filter(member => member.id && member.id !== '');
+
   return (
     <div className={className}>
       <div className="flex items-center mb-2">
@@ -72,7 +75,7 @@ const FamilyMemberSelector = ({ value, onChange, className }: FamilyMemberSelect
         <label className="text-sm font-medium">Family Member</label>
       </div>
       <Select
-        value={value}
+        value={value || undefined}
         onValueChange={onChange}
       >
         <SelectTrigger className="w-full">
@@ -85,7 +88,7 @@ const FamilyMemberSelector = ({ value, onChange, className }: FamilyMemberSelect
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="z-50">
-          {members.map((member) => (
+          {validMembers.map((member) => (
             <SelectItem 
               key={member.id} 
               value={member.id}

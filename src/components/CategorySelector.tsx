@@ -23,7 +23,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
   
   // Filter categories to show general ones + those for the selected family
   const availableCategories = categories.filter(cat => 
-    !cat.family_id || (selectedFamily && cat.family_id === selectedFamily.id)
+    (cat.id && cat.id !== '') && (!cat.family_id || (selectedFamily && cat.family_id === selectedFamily.id))
   );
   
   const getCategory = (id: string): CategoryWithCamelCase | undefined => 
@@ -44,7 +44,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
         <label className="text-sm font-medium">Category</label>
       </div>
       <Select
-        value={value}
+        value={value || undefined}
         onValueChange={handleSelect}
       >
         <SelectTrigger className="w-full">
@@ -61,7 +61,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="z-50">
-          {suggestedCategory && suggestedCategory.id !== value && (
+          {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && (
             <SelectItem 
               value={suggestedCategory.id} 
               className="font-medium border-b border-dashed border-gray-200 pb-1 mb-1"

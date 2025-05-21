@@ -118,6 +118,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ familyId }) => {
     );
   }
   
+  // Filter out categories with empty IDs to prevent the error
+  const validCategories = categories.filter(category => category.id && category.id !== '');
+  
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -255,7 +258,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ familyId }) => {
                   Category
                 </label>
                 <Select
-                  value={formData.categoryId}
+                  value={formData.categoryId || undefined}
                   onValueChange={(value) => setFormData({...formData, categoryId: value})}
                   disabled={!!editingBudget}
                 >
@@ -263,7 +266,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ familyId }) => {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
+                    {validCategories.map(category => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
                       </SelectItem>
@@ -342,7 +345,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ familyId }) => {
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!formData.categoryId}>
                 {editingBudget ? 'Save Changes' : 'Create Budget'}
               </Button>
             </DialogFooter>

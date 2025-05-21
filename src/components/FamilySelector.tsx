@@ -58,6 +58,9 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
     );
   }
 
+  // Filter out families with empty IDs to avoid the error
+  const validFamilies = families.filter(family => family.id && family.id !== '');
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -75,7 +78,7 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
         </Button>
       </div>
       <Select
-        value={selectedFamily?.id || ''}
+        value={selectedFamily?.id || undefined}
         onValueChange={(value) => {
           const family = families.find(f => f.id === value);
           setSelectedFamily(family || null);
@@ -90,7 +93,7 @@ const FamilySelector = ({ onFamilyChange }: FamilySelectorProps) => {
           <SelectValue placeholder="Select a family" />
         </SelectTrigger>
         <SelectContent className="z-50">
-          {families.map((family) => (
+          {validFamilies.map((family) => (
             <SelectItem 
               key={family.id} 
               value={family.id}
