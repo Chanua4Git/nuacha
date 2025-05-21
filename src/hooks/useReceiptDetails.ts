@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
@@ -32,11 +31,23 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           throw detailError;
         }
         
-        // Fetch line items - updated to also select member_id
+        // Fetch line items - explicitly include member_id in the selection
         const { data: itemsData, error: itemsError } = await supabase
           .from('receipt_line_items')
           .select(`
-            *,
+            id,
+            expense_id,
+            description,
+            quantity,
+            unit_price,
+            total_price,
+            category_id,
+            suggested_category_id,
+            category_confidence,
+            sku,
+            discount,
+            created_at,
+            member_id,
             category:category_id(id, name, color),
             suggestedCategory:suggested_category_id(id, name, color)
           `)
@@ -49,6 +60,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         
         // Transform to camelCase for our front-end
         if (detailData) {
+          
           let confidenceSummary;
           
           // Fix: Safely extract confidence_summary
@@ -126,8 +138,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
               sku: item.sku,
               discount: item.discount,
               createdAt: item.created_at,
-              // Use optional chaining to safely access member_id (if it exists in the database)
-              memberId: item.member_id || undefined,
+              memberId: item.member_id,
               category,
               suggestedCategory,
               isEditing: false
@@ -218,7 +229,6 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         category_confidence: lineItem.categoryConfidence,
         sku: lineItem.sku,
         discount: lineItem.discount,
-        // Include member_id in the data being saved to the database
         member_id: lineItem.memberId
       };
       
@@ -231,7 +241,19 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           .update(itemToSave)
           .eq('id', lineItem.id)
           .select(`
-            *,
+            id,
+            expense_id,
+            description,
+            quantity,
+            unit_price,
+            total_price,
+            category_id,
+            suggested_category_id,
+            category_confidence,
+            sku,
+            discount,
+            created_at,
+            member_id,
             category:category_id(id, name, color),
             suggestedCategory:suggested_category_id(id, name, color)
           `)
@@ -245,7 +267,19 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           .from('receipt_line_items')
           .insert([itemToSave])
           .select(`
-            *,
+            id,
+            expense_id,
+            description,
+            quantity,
+            unit_price,
+            total_price,
+            category_id,
+            suggested_category_id,
+            category_confidence,
+            sku,
+            discount,
+            created_at,
+            member_id,
             category:category_id(id, name, color),
             suggestedCategory:suggested_category_id(id, name, color)
           `)
@@ -295,8 +329,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: result.sku,
         discount: result.discount,
         createdAt: result.created_at,
-        // Use optional chaining to safely handle member_id
-        memberId: result.member_id || undefined,
+        memberId: result.member_id,
         category,
         suggestedCategory,
         isEditing: false
@@ -367,7 +400,6 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         category_confidence: item.categoryConfidence,
         sku: item.sku,
         discount: item.discount,
-        // Include member_id in the data being saved
         member_id: item.memberId
       }));
       
@@ -375,7 +407,19 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         .from('receipt_line_items')
         .insert(itemsToSave)
         .select(`
-          *,
+          id,
+          expense_id,
+          description,
+          quantity,
+          unit_price,
+          total_price,
+          category_id,
+          suggested_category_id,
+          category_confidence,
+          sku,
+          discount,
+          created_at,
+          member_id,
           category:category_id(id, name, color),
           suggestedCategory:suggested_category_id(id, name, color)
         `);
@@ -424,8 +468,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           sku: item.sku,
           discount: item.discount,
           createdAt: item.created_at,
-          // Use optional chaining to safely handle member_id
-          memberId: item.member_id || undefined,
+          memberId: item.member_id,
           category,
           suggestedCategory,
           isEditing: false

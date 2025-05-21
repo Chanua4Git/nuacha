@@ -431,6 +431,7 @@ export type Database = {
           discount: boolean | null
           expense_id: string
           id: string
+          member_id: string | null
           quantity: number | null
           sku: string | null
           suggested_category_id: string | null
@@ -445,6 +446,7 @@ export type Database = {
           discount?: boolean | null
           expense_id: string
           id?: string
+          member_id?: string | null
           quantity?: number | null
           sku?: string | null
           suggested_category_id?: string | null
@@ -459,6 +461,7 @@ export type Database = {
           discount?: boolean | null
           expense_id?: string
           id?: string
+          member_id?: string | null
           quantity?: number | null
           sku?: string | null
           suggested_category_id?: string | null
@@ -478,6 +481,13 @@ export type Database = {
             columns: ["expense_id"]
             isOneToOne: false
             referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
             referencedColumns: ["id"]
           },
           {
