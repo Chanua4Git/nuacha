@@ -5,6 +5,7 @@ import { PlusCircle, Users, Tag, Calculator } from 'lucide-react';
 import CategoryManager from '@/components/accounting/CategoryManager';
 import BudgetManager from '@/components/accounting/BudgetManager';
 import FamilyMembersManager from '@/components/FamilyMembersManager';
+import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const Options = () => {
   const { selectedFamily } = useExpense();
@@ -12,6 +13,8 @@ const Options = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-8">
+        <AppBreadcrumbs currentPage="Configuration Options" />
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Configuration Options</h1>
           <p className="text-muted-foreground mt-1">

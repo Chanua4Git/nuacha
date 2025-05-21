@@ -4,9 +4,13 @@ import FamilySelector from '@/components/FamilySelector';
 import ExpenseForm from '@/components/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
 import RemindersList from '@/components/RemindersList';
-import { PlusCircle, ListFilter } from 'lucide-react';
+import { PlusCircle, ListFilter, Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-8">
@@ -17,7 +21,21 @@ const Index = () => {
           </p>
         </div>
         
-        <FamilySelector />
+        <div className="flex flex-col md:flex-row md:items-start gap-4 mb-8">
+          <div className="flex-1">
+            <FamilySelector />
+          </div>
+          <div>
+            <Button 
+              onClick={() => navigate('/options')} 
+              variant="outline" 
+              className="w-full md:w-auto"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              Add Categories
+            </Button>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
