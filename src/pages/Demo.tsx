@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -172,6 +171,7 @@ const Demo = () => {
                     receiptData={extractedData} 
                     receiptImage={imagePreview || undefined}
                     onRetry={handleRetry}
+                    expenseId={demoExpense?.id}
                   />
                 </div>
               )}
