@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
@@ -31,7 +32,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           throw detailError;
         }
         
-        // Fetch line items
+        // Fetch line items - updated to also select member_id
         const { data: itemsData, error: itemsError } = await supabase
           .from('receipt_line_items')
           .select(`
@@ -125,7 +126,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
               sku: item.sku,
               discount: item.discount,
               createdAt: item.created_at,
-              memberId: item.member_id,
+              // Use optional chaining to safely access member_id (if it exists in the database)
+              memberId: item.member_id || undefined,
               category,
               suggestedCategory,
               isEditing: false
@@ -216,6 +218,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         category_confidence: lineItem.categoryConfidence,
         sku: lineItem.sku,
         discount: lineItem.discount,
+        // Include member_id in the data being saved to the database
         member_id: lineItem.memberId
       };
       
@@ -292,7 +295,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         sku: result.sku,
         discount: result.discount,
         createdAt: result.created_at,
-        memberId: result.member_id,
+        // Use optional chaining to safely handle member_id
+        memberId: result.member_id || undefined,
         category,
         suggestedCategory,
         isEditing: false
@@ -363,6 +367,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
         category_confidence: item.categoryConfidence,
         sku: item.sku,
         discount: item.discount,
+        // Include member_id in the data being saved
         member_id: item.memberId
       }));
       
@@ -419,7 +424,8 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
           sku: item.sku,
           discount: item.discount,
           createdAt: item.created_at,
-          memberId: item.member_id,
+          // Use optional chaining to safely handle member_id
+          memberId: item.member_id || undefined,
           category,
           suggestedCategory,
           isEditing: false
