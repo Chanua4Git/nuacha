@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -30,6 +31,9 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+// List of app routes that should be preserved when user is authenticated
+const APP_ROUTES = ['/app', '/dashboard', '/options', '/reports', '/reminders'];
+
 function safeGetIntendedPath(): string {
   try {
     const path = localStorage.getItem("intendedPath");
@@ -39,6 +43,11 @@ function safeGetIntendedPath(): string {
   } catch {
     return "/";
   }
+}
+
+// Function to check if the current path is a protected app route
+function isAppRoute(path: string): boolean {
+  return APP_ROUTES.some(route => path === route || path.startsWith(`${route}/`));
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -56,6 +65,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const safeNavigate = (path: string, options: { replace?: boolean } = {}) => {
     // Prevent multiple navigations in quick succession
     if (navigationInProgress.current) return;
+    
+    // Don't navigate if user is already on an app route and is authenticated
+    if (user && isAppRoute(location.pathname) && isAppRoute(path)) {
+      console.log(`User already on an app route (${location.pathname}), not redirecting to ${path}`);
+      return;
+    }
     
     navigationInProgress.current = true;
     navigate(path, options);
@@ -117,8 +132,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               safeNavigate('/', { replace: true });
             }
           } else {
+            // Don't redirect if the user is already on a valid app route
+            if (isAppRoute(location.pathname)) {
+              console.log(`User already on app route (${location.pathname}), staying here`);
+              return;
+            }
+            
             const intendedPath = safeGetIntendedPath();
             localStorage.removeItem('intendedPath');
+            
             if (location.pathname !== intendedPath) {
               safeNavigate(intendedPath, { replace: true });
             }

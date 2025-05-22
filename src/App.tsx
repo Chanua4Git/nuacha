@@ -70,8 +70,8 @@ const App = () => {
     }
   }, []);
 
-  const location = useRRLocation();
-  const hideNavbar = /^\/auth-demo(\/.*)?$/.test(location.pathname);
+  // We no longer need to explicitly hide the Navbar based on paths
+  // The Navbar component will handle this internally now
 
   // Enable debug panel during development
   const showDebugPanel = import.meta.env.DEV;
@@ -91,7 +91,7 @@ const App = () => {
                 }}
               />
               <div className="min-h-screen flex flex-col">
-                {!hideNavbar && <Navbar />}
+                <Navbar />
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Landing />} />
@@ -101,7 +101,11 @@ const App = () => {
                       </ProtectedRoute>
                     } />
                     <Route path="/demo" element={<Demo />} />
-                    <Route path="/options" element={<Options />} />
+                    <Route path="/options" element={
+                      <ProtectedRoute>
+                        <Options />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
