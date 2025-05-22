@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +15,7 @@ import { OCRResult } from '@/types/expense';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 
 const ExpenseForm = () => {
-  const { selectedFamily, addExpense } = useExpense();
+  const { selectedFamily, createExpense } = useExpense();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -71,7 +70,7 @@ const ExpenseForm = () => {
     setIsSubmitting(true);
     
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
+      const formattedDate = format(date as Date, 'yyyy-MM-dd');
       
       let receiptUrl: string | undefined;
       if (receiptImage) {
@@ -86,8 +85,8 @@ const ExpenseForm = () => {
       }
       
       // Add expense first
-      const newExpense = await addExpense({
-        familyId: selectedFamily.id,
+      const newExpense = await createExpense({
+        familyId: selectedFamily!.id,
         amount: parseFloat(amount),
         description,
         category,

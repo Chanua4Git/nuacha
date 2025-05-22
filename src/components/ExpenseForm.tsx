@@ -20,7 +20,7 @@ import { useExpenseMembers } from '@/hooks/useExpenseMembers';
 import { supabase } from '@/lib/supabase';
 
 const ExpenseForm = () => {
-  const { selectedFamily, addExpense, families } = useExpense();
+  const { selectedFamily, createExpense, families } = useExpense();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -53,6 +53,7 @@ const ExpenseForm = () => {
     setShowDetailedView(false);
   };
 
+  // Use suggested category if available and no category is selected
   const handleOcrData = (data: OCRResult) => {
     setOcrResult(data);
     
@@ -111,8 +112,8 @@ const ExpenseForm = () => {
         nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
       }
       
-      // Add expense first
-      const newExpense = await addExpense({
+      // Add expense first (use createExpense instead of addExpense)
+      const newExpense = await createExpense({
         familyId: selectedFamily.id,
         amount: parseFloat(amount),
         description,

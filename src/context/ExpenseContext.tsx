@@ -1,9 +1,11 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useRef } from 'react';
-import { Family, Expense, CategoryWithCamelCase } from '@/types/expense';
+import { Family, Expense, CategoryWithCamelCase, Reminder } from '@/types/expense';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useReminders } from '@/hooks/useReminders';
 
 // Modified context type to ensure user data persistence
 export const ExpenseContext = createContext<{
@@ -20,6 +22,8 @@ export const ExpenseContext = createContext<{
   createFamily: (familyData: Omit<Family, 'id'>) => Promise<Family>;
   updateFamily: (id: string, updates: Partial<Family>) => Promise<any>;
   deleteFamily: (id: string) => Promise<void>;
+  addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<Expense>; // Added for backward compatibility
+  upcomingReminders: () => Reminder[]; // Added for RemindersList
 }>({
   families: [],
   expenses: [],
@@ -34,6 +38,8 @@ export const ExpenseContext = createContext<{
   createFamily: async () => ({ id: '', name: '', color: '' }),
   updateFamily: async () => ({}),
   deleteFamily: async () => {},
+  addExpense: async () => ({ id: '', familyId: '', amount: 0, description: '', category: '', date: '', place: '' }),
+  upcomingReminders: () => [],
 });
 
 export const useExpense = () => useContext(ExpenseContext);
@@ -65,6 +71,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     updateFamily,
     deleteFamily 
   } = useFamilies();
+
+  // Get reminders based on the selected family
+  const { reminders, isLoading: remindersLoading } = useReminders(selectedFamily?.id);
 
   // Set the selected family based on ID or first available
   useEffect(() => {
@@ -152,7 +161,22 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const isLoading = familiesLoading || categoriesLoading || expensesLoading;
+  // For backward compatibility with existing code
+  const addExpense = createExpense;
+
+  // Function to get upcoming reminders for RemindersList
+  const upcomingReminders = () => {
+    if (!selectedFamily) return [];
+    return reminders.filter(reminder => {
+      const dueDate = new Date(reminder.dueDate);
+      const today = new Date();
+      // Show reminders that are due within the next 14 days or are overdue
+      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntilDue <= 14;
+    });
+  };
+
+  const isLoading = familiesLoading || categoriesLoading || expensesLoading || remindersLoading;
 
   const value = useMemo(() => ({
     families,
@@ -168,7 +192,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     deleteExpense,
     createFamily,
     updateFamily,
-    deleteFamily
+    deleteFamily,
+    // Additional functions for backward compatibility
+    addExpense,
+    upcomingReminders
   }), [
     families, 
     expenses,
@@ -180,7 +207,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     deleteExpense,
     createFamily,
     updateFamily,
-    deleteFamily
+    deleteFamily,
+    reminders
   ]);
 
   return (

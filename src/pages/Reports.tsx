@@ -1,15 +1,15 @@
-
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExpense } from '@/context/ExpenseContext';
 import { Button } from '@/components/ui/button';
-import { Calendar, FileBarChart, Filter, Download, ListFilter } from 'lucide-react';
+import { Calendar as CalendarIcon, FileBarChart, Filter, Download, ListFilter } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import CategorySelector from '@/components/CategorySelector';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
@@ -82,8 +82,13 @@ const Reports = () => {
     // This function would load a saved report template
     const template = templates.find(t => t.id === id);
     if (template && template.config) {
-      setReportType(template.config.reportType || 'expenses');
-      setSelectedCategory(template.config.categoryId);
+      const config = template.config as Record<string, unknown>;
+      if (config.reportType && typeof config.reportType === 'string') {
+        setReportType(config.reportType);
+      }
+      if (config.categoryId && typeof config.categoryId === 'string') {
+        setSelectedCategory(config.categoryId);
+      }
       // Set other filter parameters as needed
     }
   };
@@ -125,7 +130,7 @@ const Reports = () => {
                   Category Breakdown
                 </TabsTrigger>
                 <TabsTrigger value="time">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <CalendarIcon className="h-4 w-4 mr-2" />
                   Time Trends
                 </TabsTrigger>
               </TabsList>
@@ -142,7 +147,7 @@ const Reports = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <div className="flex items-center mb-2">
-                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <label className="text-sm font-medium">Start Date</label>
                         </div>
                         <Popover>
@@ -170,7 +175,7 @@ const Reports = () => {
                       
                       <div>
                         <div className="flex items-center mb-2">
-                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <label className="text-sm font-medium">End Date</label>
                         </div>
                         <Popover>
@@ -203,7 +208,7 @@ const Reports = () => {
                         </div>
                         <CategorySelector
                           value={selectedCategory}
-                          onChange={setSelectedCategory}
+                          onChange={(value) => setSelectedCategory(value)}
                           includeAllOption={true}
                         />
                       </div>

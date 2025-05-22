@@ -16,14 +16,15 @@ interface CategorySelectorProps {
   onChange: (value: string) => void;
   className?: string;
   suggestedCategoryId?: string;
+  includeAllOption?: boolean; // Add this prop for Reports page
 }
 
-const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: CategorySelectorProps) => {
+const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption }: CategorySelectorProps) => {
   const { categories, selectedFamily } = useExpense();
   
   // Filter categories to show general ones + those for the selected family
   const availableCategories = categories.filter(cat => 
-    (cat.id && cat.id !== '') && (!cat.family_id || (selectedFamily && cat.family_id === selectedFamily.id))
+    (cat.id && cat.id !== '') && (!cat.familyId || (selectedFamily && cat.familyId === selectedFamily.id))
   );
   
   const getCategory = (id: string): CategoryWithCamelCase | undefined => 
@@ -61,6 +62,15 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId }: C
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="z-50">
+          {includeAllOption && (
+            <SelectItem value="">
+              <div className="flex items-center">
+                <span className="w-3 h-3 rounded-full mr-2 bg-gray-300" />
+                All Categories
+              </div>
+            </SelectItem>
+          )}
+          
           {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && (
             <SelectItem 
               value={suggestedCategory.id} 
