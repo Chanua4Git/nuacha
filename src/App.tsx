@@ -2,7 +2,7 @@
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
@@ -23,9 +23,7 @@ import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
 import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
 import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
-
-// New: custom hook for hiding navbar on /auth-demo
-import { useLocation as useRRLocation } from "react-router-dom";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,9 +68,6 @@ const App = () => {
     }
   }, []);
 
-  // We no longer need to explicitly hide the Navbar based on paths
-  // The Navbar component will handle this internally now
-
   // Enable debug panel during development
   const showDebugPanel = import.meta.env.DEV;
 
@@ -101,6 +96,11 @@ const App = () => {
                       </ProtectedRoute>
                     } />
                     <Route path="/demo" element={<Demo />} />
+                    <Route path="/reports" element={
+                      <ProtectedRoute>
+                        <Reports />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/options" element={
                       <ProtectedRoute>
                         <Options />

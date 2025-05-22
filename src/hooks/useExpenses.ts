@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Expense } from '@/types/expense';
 import { toast } from 'sonner';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 export interface ExpenseFilters {
   familyId?: string;
@@ -19,11 +19,19 @@ export const useExpenses = (filters?: ExpenseFilters) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchExpenses = async () => {
+      if (!user || !filters?.familyId) {
+        setExpenses([]);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
+        // Start with a basic query
         let query = supabase
           .from('expenses')
           .select('*');
@@ -100,7 +108,17 @@ export const useExpenses = (filters?: ExpenseFilters) => {
     };
 
     fetchExpenses();
-  }, [filters?.familyId, filters?.categoryId, filters?.startDate, filters?.endDate, filters?.place, filters?.minAmount, filters?.maxAmount, filters?.searchTerm]);
+  }, [
+    user,
+    filters?.familyId,
+    filters?.categoryId,
+    filters?.startDate,
+    filters?.endDate,
+    filters?.place,
+    filters?.minAmount,
+    filters?.maxAmount,
+    filters?.searchTerm
+  ]);
 
   const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
     try {

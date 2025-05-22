@@ -3,19 +3,28 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Family } from '@/types/expense';
 import { toast } from 'sonner';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 export const useFamilies = () => {
   const [families, setFamilies] = useState<Family[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchFamilies = async () => {
+      if (!user) {
+        setFamilies([]);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('families')
           .select('*')
+          .eq('user_id', user.id)
           .order('name', { ascending: true });
         
         if (error) throw error;
@@ -39,20 +48,18 @@ export const useFamilies = () => {
     };
 
     fetchFamilies();
-  }, []);
+  }, [user]);
 
   const createFamily = async (familyData: Omit<Family, 'id'>) => {
     try {
-      // Get user ID from the session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
+      if (!user) {
         throw new Error('No authenticated user');
       }
       
       const familyToInsert = {
         name: familyData.name,
         color: familyData.color,
-        user_id: session.user.id
+        user_id: user.id
       };
       
       const { data, error } = await supabase
