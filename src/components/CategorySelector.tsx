@@ -63,7 +63,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
         </SelectTrigger>
         <SelectContent className="z-50">
           {includeAllOption && (
-            <SelectItem value="">
+            <SelectItem value="all_categories">
               <div className="flex items-center">
                 <span className="w-3 h-3 rounded-full mr-2 bg-gray-300" />
                 All Categories

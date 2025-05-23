@@ -37,7 +37,7 @@ const Reports = () => {
       filtered = filtered.filter(expense => new Date(expense.date) <= endDate);
     }
     
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all_categories') {
       filtered = filtered.filter(expense => expense.category === selectedCategory);
     }
     
@@ -82,11 +82,11 @@ const Reports = () => {
     // This function would load a saved report template
     const template = templates.find(t => t.id === id);
     if (template && template.config) {
-      const config = template.config as Record<string, unknown>;
-      if (config.reportType && typeof config.reportType === 'string') {
+      const config = template.config as any;
+      if (config.reportType) {
         setReportType(config.reportType);
       }
-      if (config.categoryId && typeof config.categoryId === 'string') {
+      if (config.categoryId) {
         setSelectedCategory(config.categoryId);
       }
       // Set other filter parameters as needed
@@ -202,10 +202,6 @@ const Reports = () => {
                       </div>
                       
                       <div>
-                        <div className="flex items-center mb-2">
-                          <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <label className="text-sm font-medium">Category</label>
-                        </div>
                         <CategorySelector
                           value={selectedCategory}
                           onChange={(value) => setSelectedCategory(value)}
