@@ -38,6 +38,95 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     onChange(categoryId);
   };
 
+  // Handle cases when we're in demo mode and might not have categories
+  const renderCategories = () => {
+    if (availableCategories.length === 0) {
+      // Demo categories for use when no categories are available
+      const demoCategories = [
+        { id: 'demo-groceries', name: 'Groceries', color: '#4CAF50' },
+        { id: 'demo-utilities', name: 'Utilities', color: '#2196F3' },
+        { id: 'demo-dining', name: 'Dining Out', color: '#FF9800' },
+        { id: 'demo-transport', name: 'Transportation', color: '#795548' },
+        { id: 'demo-shopping', name: 'Shopping', color: '#E91E63' },
+      ];
+      
+      return demoCategories.map((category) => (
+        <SelectItem 
+          key={category.id} 
+          value={category.id}
+          className="flex items-center"
+        >
+          <div className="flex items-center">
+            <span 
+              className="w-3 h-3 rounded-full mr-2" 
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+          </div>
+        </SelectItem>
+      ));
+    }
+    
+    // Use real categories if available
+    return availableCategories.map((category) => (
+      <SelectItem 
+        key={category.id} 
+        value={category.id}
+        className="flex items-center"
+      >
+        <div className="flex items-center">
+          <span 
+            className="w-3 h-3 rounded-full mr-2" 
+            style={{ backgroundColor: category.color }}
+          />
+          {category.name}
+        </div>
+      </SelectItem>
+    ));
+  };
+
+  // Handle selected category display for demo modes
+  const renderSelectedCategory = () => {
+    if (selectedCategory) {
+      return (
+        <div className="flex items-center">
+          <span 
+            className="w-3 h-3 rounded-full mr-2" 
+            style={{ backgroundColor: selectedCategory.color }}
+          />
+          {selectedCategory.name}
+        </div>
+      );
+    }
+    
+    // Demo mode - check if we have a value but no matching category
+    if (value && value.startsWith('demo-')) {
+      const demoCategories = {
+        'demo-groceries': { name: 'Groceries', color: '#4CAF50' },
+        'demo-utilities': { name: 'Utilities', color: '#2196F3' },
+        'demo-dining': { name: 'Dining Out', color: '#FF9800' },
+        'demo-transport': { name: 'Transportation', color: '#795548' },
+        'demo-shopping': { name: 'Shopping', color: '#E91E63' },
+      };
+      
+      const demoCategory = demoCategories[value as keyof typeof demoCategories];
+      
+      if (demoCategory) {
+        return (
+          <div className="flex items-center">
+            <span 
+              className="w-3 h-3 rounded-full mr-2" 
+              style={{ backgroundColor: demoCategory.color }}
+            />
+            {demoCategory.name}
+          </div>
+        );
+      }
+    }
+    
+    return null;
+  };
+
   return (
     <div className={cn("mb-4", className)}>
       <div className="flex items-center mb-2">
@@ -50,15 +139,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a category">
-            {selectedCategory && (
-              <div className="flex items-center">
-                <span 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: selectedCategory.color }}
-                />
-                {selectedCategory.name}
-              </div>
-            )}
+            {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="z-50">
@@ -86,27 +167,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             </SelectItem>
           )}
           
-          {availableCategories.length === 0 ? (
-            <div className="p-2 text-sm text-muted-foreground">
-              No categories available. Please create categories first.
-            </div>
-          ) : (
-            availableCategories.map((category) => (
-              <SelectItem 
-                key={category.id} 
-                value={category.id}
-                className="flex items-center"
-              >
-                <div className="flex items-center">
-                  <span 
-                    className="w-3 h-3 rounded-full mr-2" 
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))
-          )}
+          {renderCategories()}
         </SelectContent>
       </Select>
       

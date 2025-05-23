@@ -1,7 +1,7 @@
+
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-import ReceiptUpload from "@/components/ReceiptUpload";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -10,9 +10,9 @@ import LeadCaptureForm from "@/components/demo/LeadCaptureForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExpenseCard from "@/components/ExpenseCard";
-import { format } from "date-fns";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import DetailedReceiptView from "@/components/DetailedReceiptView";
+import DemoExpenseForm from "@/components/demo/DemoExpenseForm";
 
 const Demo = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -21,6 +21,7 @@ const Demo = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extractedData, setExtractedData] = useState<OCRResult | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [demoExpense, setDemoExpense] = useState<any>(null);
   const navigate = useNavigate();
 
   const handleImageUpload = (file: File) => {
@@ -41,10 +42,15 @@ const Demo = () => {
     setShowLeadForm(false);
     setExtractedData(null);
     setCurrentFile(null);
+    setDemoExpense(null);
   };
 
   const handleDataExtracted = (data: OCRResult) => {
     setExtractedData(data);
+  };
+  
+  const handleExpenseComplete = (expenseData: any) => {
+    setDemoExpense(expenseData);
     setShowLeadForm(true);
   };
 
@@ -89,17 +95,6 @@ const Demo = () => {
     }
   };
 
-  const demoExpense = extractedData ? {
-    id: 'demo',
-    familyId: 'demo',
-    amount: parseFloat(extractedData.amount || '0'),
-    description: extractedData.storeDetails?.name || extractedData.description || 'Purchase',
-    category: 'demo',
-    date: extractedData.date ? format(extractedData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-    place: extractedData.storeDetails?.address || extractedData.place || 'Store',
-    receiptUrl: imagePreview || undefined
-  } : null;
-
   const handleTryAnother = () => {
     handleImageRemove();
   };
@@ -109,6 +104,7 @@ const Demo = () => {
       handleImageUpload(currentFile);
       setShowLeadForm(false);
       setDemoComplete(false);
+      setDemoExpense(null);
     }
   };
 
@@ -118,28 +114,28 @@ const Demo = () => {
       <div className="min-h-screen bg-background py-12 px-4">
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-6">
-            <h1 className="text-4xl font-playfair">Try Our Receipt Scanner</h1>
+            <h1 className="text-4xl font-playfair">Try Our Expense Tracker</h1>
             <p className="text-lg text-muted-foreground">
-              Experience how Nuacha simplifies expense tracking with intelligent receipt scanning.
+              Experience how Nuacha simplifies expense tracking with intelligent receipt scanning and expense management.
             </p>
           </div>
 
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              This demo showcases Nuacha's receipt scanning functionality. Your uploaded receipt will not be saved or stored. Please do not upload sensitive documents.
+              This demo showcases Nuacha's expense tracking functionality. Your uploaded receipt will not be saved or stored. Please do not upload sensitive documents.
             </AlertDescription>
           </Alert>
 
           {!showLeadForm ? (
-            <Card className="p-6">
-              <ReceiptUpload
-                onImageUpload={handleImageUpload}
-                onImageRemove={handleImageRemove}
-                onDataExtracted={handleDataExtracted}
-                imagePreview={imagePreview}
-              />
-            </Card>
+            <DemoExpenseForm
+              onComplete={handleExpenseComplete}
+              onImageUpload={handleImageUpload}
+              onImageRemove={handleImageRemove}
+              onDataExtracted={handleDataExtracted}
+              imagePreview={imagePreview}
+              extractedData={extractedData}
+            />
           ) : !demoComplete ? (
             <Card className="p-6">
               <div className="text-center mb-6">
@@ -153,7 +149,7 @@ const Demo = () => {
           ) : (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-2xl font-playfair mb-4">Here's How Your Receipt Looks in Nuacha</h2>
+                <h2 className="text-2xl font-playfair mb-4">Here's How Your Expense Looks in Nuacha</h2>
                 <p className="text-muted-foreground mb-6">
                   This is how your expenses will appear in the app, making it easy to track and manage your spending.
                 </p>
