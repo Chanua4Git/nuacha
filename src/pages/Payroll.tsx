@@ -85,12 +85,22 @@ const Payroll: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="employees">Employees</TabsTrigger>
-          <TabsTrigger value="calculator">Calculator</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+        <TabsList className="inline-flex h-12 items-center justify-start rounded-xl bg-muted p-1 text-muted-foreground w-full overflow-x-auto scrollbar-none">
+          <TabsTrigger value="about" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+            About
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="employees" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+            Employees
+          </TabsTrigger>
+          <TabsTrigger value="calculator" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+            Calculator
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+            Reports
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="about" className="space-y-8">
