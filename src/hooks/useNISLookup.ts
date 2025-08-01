@@ -35,9 +35,10 @@ export const useNISLookup = () => {
     try {
       const targetDate = effectiveDate || new Date().toISOString().split('T')[0];
       
-      const { data, error } = await supabase.rpc('get_nis_earnings_classes', {
-        target_date: targetDate
-      });
+      const { data, error } = await supabase
+        .rpc('get_nis_earnings_classes', {
+          target_date: targetDate
+        });
 
       if (error) {
         console.error('Error fetching NIS classes:', error);
