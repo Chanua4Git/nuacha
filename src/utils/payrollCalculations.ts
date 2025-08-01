@@ -40,7 +40,7 @@ export interface PayrollInput {
   other_allowances?: number;
 }
 
-// Calculate NIS contributions based on weekly wage
+// Calculate NIS contributions using Excel IFS formula logic based on daily rate multipliers
 export const calculateNISContributions = (
   weeklyWage: number,
   rates: TTNISRates = CURRENT_TT_NIS_RATES
@@ -48,14 +48,26 @@ export const calculateNISContributions = (
   employee_contribution: number;
   employer_contribution: number;
 } => {
-  // Apply TT NIS rules - wage between min and max limits
-  const effectiveWage = Math.max(
-    rates.min_weekly_wage,
-    Math.min(weeklyWage, rates.max_weekly_wage)
-  );
-
-  const employee_contribution = effectiveWage * rates.employee_rate;
-  const employer_contribution = effectiveWage * rates.employer_rate;
+  // Convert weekly wage to daily rate (5-day work week)
+  const dailyRate = weeklyWage / 5;
+  
+  // Calculate multiplier using Excel IFS formula equivalent
+  let multiplier: number;
+  
+  if (dailyRate <= 24) {
+    multiplier = dailyRate;
+  } else if (dailyRate <= 300) {
+    multiplier = 24 + (dailyRate - 24) * 0.8;
+  } else {
+    multiplier = 24 + 276 * 0.8; // Cap at max
+  }
+  
+  // Convert multiplier back to weekly wage for NIS calculation
+  const effectiveWeeklyWage = multiplier * 5;
+  
+  // Apply standard TT NIS rates to the effective weekly wage
+  const employee_contribution = effectiveWeeklyWage * rates.employee_rate;
+  const employer_contribution = effectiveWeeklyWage * rates.employer_rate;
 
   return {
     employee_contribution: Math.round(employee_contribution * 100) / 100,

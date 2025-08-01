@@ -181,7 +181,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     if (!payrollPeriod || !selectedEmployee) return;
 
     const csvData = [
-      ['Week #', 'Week Start', 'Week End', 'Pay Day', 'Pay/(8hr)dy', 'Recorded Days', 'Calculated Pay', 'Calc Pay less NIS', 'Recorded Pay', 'Total NIS Cont.', 'Net Pay'],
+      ['Week #', 'Week Start', 'Week End', 'Pay Day', 'Pay/(8hr)dy', 'Recorded Days', 'Calculated Pay', 'Calc Pay less NIS', 'Recorded Pay', 'NIS Employee Contribution', 'Total NIS Cont.', 'Net Pay'],
       ...payrollPeriod.weeks.map(week => [
         week.weekNumber,
         format(week.weekStart, 'dd/MM/yyyy'),
@@ -192,6 +192,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         formatTTCurrency(week.calculatedPay),
         formatTTCurrency(week.calcPayLessNIS),
         formatTTCurrency(week.recordedPay),
+        formatTTCurrency(week.nisEmployee),
         formatTTCurrency(week.totalNISContribution),
         formatTTCurrency(week.netPay),
       ])
@@ -383,21 +384,22 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
                   <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Week #</TableHead>
-                          <TableHead>Week Start</TableHead>
-                          <TableHead>Week End</TableHead>
-                          <TableHead>Pay Day</TableHead>
-                          <TableHead>Pay/(8hr)dy</TableHead>
-                          <TableHead>Days Worked</TableHead>
-                          <TableHead>Calculated Pay</TableHead>
-                          <TableHead>Calc Pay less NIS</TableHead>
-                          <TableHead>Recorded Pay</TableHead>
-                          <TableHead>Total NIS Cont.</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead>Week #</TableHead>
+                           <TableHead>Week Start</TableHead>
+                           <TableHead>Week End</TableHead>
+                           <TableHead>Pay Day</TableHead>
+                           <TableHead>Pay/(8hr)dy</TableHead>
+                           <TableHead>Days Worked</TableHead>
+                           <TableHead>Calculated Pay</TableHead>
+                           <TableHead>Calc Pay less NIS</TableHead>
+                           <TableHead>Recorded Pay</TableHead>
+                           <TableHead>NIS Employee Contribution</TableHead>
+                           <TableHead>Total NIS Cont.</TableHead>
+                           <TableHead>Actions</TableHead>
+                         </TableRow>
+                       </TableHeader>
                       <TableBody>
                         {payrollPeriod.weeks.map((week, index) => (
                           <TableRow key={index}>
@@ -425,16 +427,17 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                                 className="w-24"
                               />
                             </TableCell>
-                            <TableCell>{formatTTCurrency(week.totalNISContribution)}</TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                onClick={() => calculateWeeklyPayroll(index)}
-                                disabled={!weeklyInputs[index]?.daysWorked}
-                              >
-                                Calculate
-                              </Button>
-                            </TableCell>
+                             <TableCell>{formatTTCurrency(week.nisEmployee)}</TableCell>
+                             <TableCell>{formatTTCurrency(week.totalNISContribution)}</TableCell>
+                             <TableCell>
+                               <Button
+                                 size="sm"
+                                 onClick={() => calculateWeeklyPayroll(index)}
+                                 disabled={!weeklyInputs[index]?.daysWorked}
+                               >
+                                 Calculate
+                               </Button>
+                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
