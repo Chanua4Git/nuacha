@@ -1,13 +1,14 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings } from 'lucide-react';
+import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import NavigationDropdown from '@/components/navigation/NavigationDropdown';
 
 // Only hide navbar on auth pages and special demo pages
 const HIDDEN_ROUTES = ['/login', '/signup', '/reset-password', '/reset-password/confirm'];
@@ -39,13 +40,27 @@ const Navbar = () => {
     }
   };
 
-  // Enhanced navigation items for signed-in users
-  const navItems = user ? [
-    { name: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/dashboard' },
-    { name: 'Add Expense', icon: <PlusCircle className="h-5 w-5" />, path: '/app' },
-    { name: 'Reports', icon: <BarChart3 className="h-5 w-5" />, path: '/reports' },
+  // Expense dropdown items
+  const expenseItems = [
+    { name: 'Dashboard', icon: <Home className="h-4 w-4" />, path: '/dashboard' },
+    { name: 'Add Expense', icon: <PlusCircle className="h-4 w-4" />, path: '/app' },
+    { name: 'Reports', icon: <BarChart3 className="h-4 w-4" />, path: '/reports' },
+    { name: 'Settings', icon: <Settings className="h-4 w-4" />, path: '/options' },
+  ];
+
+  // Payroll dropdown items
+  const payrollItems = [
+    { name: 'Payroll Dashboard', icon: <FileBarChart className="h-4 w-4" />, path: '/payroll' },
+    { name: 'Employee Management', icon: <Users className="h-4 w-4" />, path: '/payroll/employees' },
+    { name: 'Payroll Calculator', icon: <Calculator className="h-4 w-4" />, path: '/payroll/calculator' },
+    { name: 'Payroll Reports', icon: <BarChart3 className="h-4 w-4" />, path: '/payroll/reports' },
+  ];
+
+  // Mobile navigation items (flattened for mobile)
+  const mobileNavItems = user ? [
+    ...expenseItems,
     { name: 'Reminders', icon: <Calendar className="h-5 w-5" />, path: '/reminders' },
-    { name: 'Settings', icon: <Settings className="h-5 w-5" />, path: '/options' },
+    ...payrollItems,
   ] : [];
 
   const isActive = (path: string) => {
@@ -135,7 +150,7 @@ const Navbar = () => {
                 
                 <div className="flex-1 overflow-auto py-2">
                   <nav className="flex flex-col gap-1 p-2">
-                    {navItems.map((item) => (
+                    {mobileNavItems.map((item) => (
                       <Button
                         key={item.name}
                         variant={isActive(item.path) ? "secondary" : "ghost"}
@@ -195,19 +210,22 @@ const Navbar = () => {
           </Sheet>
         ) : (
           <nav className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Button 
-                key={item.name} 
-                variant={isActive(item.path) ? "secondary" : "ghost"} 
-                className="flex items-center gap-2" 
-                asChild
-              >
-                <Link to={item.path}>
-                  {item.icon}
-                  <span className="hidden lg:inline">{item.name}</span>
-                </Link>
-              </Button>
-            ))}
+            {user && (
+              <>
+                <NavigationDropdown title="Expense" items={expenseItems} />
+                <Button 
+                  variant={isActive('/reminders') ? "secondary" : "ghost"} 
+                  className="flex items-center gap-2" 
+                  asChild
+                >
+                  <Link to="/reminders">
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden lg:inline">Reminders</span>
+                  </Link>
+                </Button>
+                <NavigationDropdown title="Payroll" items={payrollItems} />
+              </>
+            )}
             <AuthButton />
           </nav>
         )}
