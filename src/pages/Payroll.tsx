@@ -23,7 +23,7 @@ const Payroll: React.FC = () => {
   } = useSupabasePayroll();
 
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('about');
 
   const handleAddEmployee = async (data: any) => {
     const result = await addEmployee({
@@ -85,12 +85,125 @@ const Payroll: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="about">About</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
           <TabsTrigger value="calculator">Calculator</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="about" className="space-y-8">
+          {/* Hero Section */}
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl md:text-5xl font-playfair text-primary">
+              Trinidad & Tobago Payroll Made Simple
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Stop wrestling with spreadsheets and complex payroll calculations. Our specialized system handles TT employment law, NIS contributions, and local compliance — so you can focus on growing your business.
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-primary/20 hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-playfair">
+                  <Calculator className="h-5 w-5 text-primary" />
+                  Auto NIS Calculations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Automatic 3% employee and 6.25% employer NIS contributions. No more manual calculations or compliance worries.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-playfair">
+                  <Users className="h-5 w-5 text-primary" />
+                  Multiple Pay Types
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Handle hourly, daily, and monthly employees seamlessly. Perfect for TT's diverse employment landscape.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-playfair">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Ready Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Generate payroll summaries and employee reports in formats your accountant will love.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* CTA Section */}
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+            <CardContent className="p-8 text-center space-y-4">
+              <h2 className="text-2xl font-playfair text-primary">Ready to Simplify Your Payroll?</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Join hundreds of TT business owners who trust our system for accurate, compliant payroll processing.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  size="lg"
+                  onClick={() => window.open('https://wa.me/18687773737?text=Hi! I\'m interested in learning more about your payroll system for my Trinidad & Tobago business.', '_blank')}
+                  className="bg-[#25D366] hover:bg-[#128C7E] text-white"
+                >
+                  Get Started on WhatsApp
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => setActiveTab('dashboard')}
+                >
+                  Explore the System
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* FAQ Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-playfair">Frequently Asked Questions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h4 className="font-medium mb-2">Does this handle Trinidad & Tobago tax laws?</h4>
+                <p className="text-muted-foreground">
+                  Yes! Our system is built specifically for TT employment regulations, including current NIS contribution rates and local compliance requirements.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">Can I track different types of employees?</h4>
+                <p className="text-muted-foreground">
+                  Absolutely. Whether you have hourly workers, daily employees, or monthly salaried staff, our system handles all employment types common in Trinidad & Tobago.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">What about my existing employee data?</h4>
+                <p className="text-muted-foreground">
+                  We can help you migrate your current employee information. Our team provides setup assistance to get you running smoothly from day one.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
