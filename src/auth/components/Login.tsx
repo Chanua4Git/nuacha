@@ -18,13 +18,7 @@ const Login = () => {
   const { login, loading } = useLogin();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      const intendedPath = localStorage.getItem('intendedPath') || '/';
-      localStorage.removeItem('intendedPath');
-      navigate(intendedPath);
-    }
-  }, [user, navigate]);
+  // Redirect logic is handled by AuthProvider and useLogin hook
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

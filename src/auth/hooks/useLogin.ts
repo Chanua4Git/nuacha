@@ -81,10 +81,8 @@ export function useLogin() {
           return;
         }
 
-        // Normal user redirect
-        const intendedPath = localStorage.getItem("intendedPath") || "/";
-        localStorage.removeItem("intendedPath");
-        navigate(intendedPath);
+        // Redirect logic is handled by AuthProvider to avoid race conditions
+        // The AuthProvider will handle the intended path redirect
       }
 
     } catch (err: any) {

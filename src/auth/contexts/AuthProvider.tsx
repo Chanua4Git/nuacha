@@ -132,18 +132,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               safeNavigate('/', { replace: true });
             }
           } else {
-            // Don't redirect if the user is already on a valid app route
-            if (isAppRoute(location.pathname)) {
-              console.log(`User already on app route (${location.pathname}), staying here`);
+            // Check for intended path first, prioritizing user's intended destination
+            const intendedPath = safeGetIntendedPath();
+            
+            // If user has an intended path, use it regardless of current location
+            if (intendedPath !== "/" && localStorage.getItem('intendedPath')) {
+              console.log(`AuthProvider: Redirecting to intended path: ${intendedPath}`);
+              localStorage.removeItem('intendedPath');
+              safeNavigate(intendedPath, { replace: true });
               return;
             }
             
-            const intendedPath = safeGetIntendedPath();
-            localStorage.removeItem('intendedPath');
-            
-            if (location.pathname !== intendedPath) {
-              safeNavigate(intendedPath, { replace: true });
+            // If already on a valid app route and no specific intended path, stay here
+            if (isAppRoute(location.pathname)) {
+              console.log(`User already on app route (${location.pathname}), staying here`);
+              localStorage.removeItem('intendedPath'); // Clean up any stale intended path
+              return;
             }
+            
+            // Default fallback
+            safeNavigate("/", { replace: true });
           }
         }
       }
