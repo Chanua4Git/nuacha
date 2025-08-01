@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Calculator, FileText, Download, Loader2 } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { PayrollCalculator } from '@/components/payroll/PayrollCalculator';
+import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import { Employee, PayrollEntry } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
@@ -395,10 +396,26 @@ const Payroll: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <PayrollCalculator
-              employees={employees}
-              onCalculationComplete={handleCalculationComplete}
-            />
+            <Tabs defaultValue="enhanced" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="enhanced">Enhanced Calculator</TabsTrigger>
+                <TabsTrigger value="simple">Simple Calculator</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="enhanced">
+                <EnhancedPayrollCalculator 
+                  employees={employees}
+                  onCalculationComplete={handleCalculationComplete}
+                />
+              </TabsContent>
+              
+              <TabsContent value="simple">
+                <PayrollCalculator 
+                  employees={employees}
+                  onCalculationComplete={handleCalculationComplete}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </TabsContent>
 
