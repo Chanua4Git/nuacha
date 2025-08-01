@@ -6,6 +6,7 @@ import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import Payroll from "./pages/Payroll";
 import { AuthProvider } from "./auth/contexts/AuthProvider";
 import { AuthDemoProvider } from "./auth/contexts/AuthDemoProvider";
 import Login from "./auth/components/Login";
@@ -106,6 +107,7 @@ const App = () => {
                         <Options />
                       </ProtectedRoute>
                     } />
+                    <Route path="/payroll" element={<Payroll />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
