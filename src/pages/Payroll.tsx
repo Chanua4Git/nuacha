@@ -10,7 +10,6 @@ import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollC
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import { Employee, PayrollEntry } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
-
 const Payroll: React.FC = () => {
   const {
     employees,
@@ -22,71 +21,55 @@ const Payroll: React.FC = () => {
     removeEmployee,
     addPayrollPeriod,
     addPayrollEntry,
-    getEntriesForPeriod,
+    getEntriesForPeriod
   } = useSupabasePayroll();
-
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
-
   const handleAddEmployee = async (data: any) => {
     const result = await addEmployee({
       ...data,
-      is_active: true,
+      is_active: true
     });
     if (result) {
       setShowEmployeeForm(false);
     }
   };
-
   const handleEditEmployee = async (data: any) => {
     if (!editingEmployee) return;
-    
     await updateEmployee(editingEmployee.id, data);
     setEditingEmployee(null);
     setShowEmployeeForm(false);
   };
-
   const handleDeleteEmployee = async (employee: Employee) => {
     if (confirm(`Are you sure you want to remove ${employee.first_name} ${employee.last_name}? This will mark them as inactive.`)) {
       await removeEmployee(employee.id);
     }
   };
-
   const startEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee);
     setShowEmployeeForm(true);
   };
-
   const cancelForm = () => {
     setShowEmployeeForm(false);
     setEditingEmployee(null);
   };
-
   const handleCalculationComplete = (employee: Employee, calculation: any, input: any) => {
     // For now, just show success - in real app would save to payroll period
-    console.log('Payroll calculated:', { employee, calculation, input });
+    console.log('Payroll calculated:', {
+      employee,
+      calculation,
+      input
+    });
   };
-
   const exportEmployeeData = () => {
     if (employees.length === 0) return;
-
     const csvHeader = 'Employee Number,First Name,Last Name,Employment Type,Rate,Email,Phone,NIS Number\n';
-    const csvData = employees.map(emp => [
-      emp.employee_number,
-      emp.first_name,
-      emp.last_name,
-      emp.employment_type,
-      emp.employment_type === 'hourly' ? emp.hourly_rate :
-      emp.employment_type === 'daily' ? emp.daily_rate :
-      emp.monthly_salary,
-      emp.email || '',
-      emp.phone || '',
-      emp.nis_number || '',
-    ].join(',')).join('\n');
-
+    const csvData = employees.map(emp => [emp.employee_number, emp.first_name, emp.last_name, emp.employment_type, emp.employment_type === 'hourly' ? emp.hourly_rate : emp.employment_type === 'daily' ? emp.daily_rate : emp.monthly_salary, emp.email || '', emp.phone || '', emp.nis_number || ''].join(',')).join('\n');
     const csvContent = csvHeader + csvData;
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], {
+      type: 'text/csv'
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -94,9 +77,7 @@ const Payroll: React.FC = () => {
     link.click();
     window.URL.revokeObjectURL(url);
   };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
+  return <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Trinidad & Tobago Payroll System</h1>
@@ -195,18 +176,10 @@ const Payroll: React.FC = () => {
                 Join hundreds of TT business owners who trust our system for accurate, compliant payroll processing.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg"
-                  onClick={() => window.open('https://wa.me/18687773737?text=Hi! I\'m interested in learning more about your payroll system for my Trinidad & Tobago business.', '_blank')}
-                  className="bg-[#25D366] hover:bg-[#128C7E] text-white"
-                >
+                <Button size="lg" onClick={() => window.open('https://wa.me/18687773737?text=Hi! I\'m interested in learning more about your payroll system for my Trinidad & Tobago business.', '_blank')} className="bg-[#25D366] hover:bg-[#128C7E] text-white">
                   Get Started on WhatsApp
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  onClick={() => setActiveTab('dashboard')}
-                >
+                <Button size="lg" variant="outline" onClick={() => setActiveTab('dashboard')}>
                   Explore the System
                 </Button>
               </div>
@@ -291,23 +264,17 @@ const Payroll: React.FC = () => {
               <CardDescription>Latest payroll activities and updates</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
+              {loading ? <div className="text-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
                   <p className="text-muted-foreground">Loading data...</p>
-                </div>
-              ) : employees.length === 0 ? (
-                <div className="text-center py-8">
+                </div> : employees.length === 0 ? <div className="text-center py-8">
                   <p className="text-muted-foreground mb-4">No employees added yet</p>
                   <Button onClick={() => setActiveTab('employees')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Employee
                   </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {employees.slice(0, 5).map((employee) => (
-                    <div key={employee.id} className="flex items-center justify-between p-3 border rounded-lg">
+                </div> : <div className="space-y-3">
+                  {employees.slice(0, 5).map(employee => <div key={employee.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">
                           {employee.first_name} {employee.last_name}
@@ -317,10 +284,8 @@ const Payroll: React.FC = () => {
                         </p>
                       </div>
                       <Badge variant="secondary">{employee.employment_type}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -331,60 +296,36 @@ const Payroll: React.FC = () => {
               <h2 className="text-2xl font-bold">Employee Management</h2>
               <p className="text-muted-foreground">Add and manage employee information</p>
             </div>
-            <Button 
-              onClick={() => {
-                setEditingEmployee(null);
-                setShowEmployeeForm(true);
-              }} 
-              disabled={loading || showEmployeeForm}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
+            <Button onClick={() => {
+            setEditingEmployee(null);
+            setShowEmployeeForm(true);
+          }} disabled={loading || showEmployeeForm}>
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
               Add Employee
             </Button>
           </div>
 
-          {showEmployeeForm ? (
-            <EmployeeForm
-              onSubmit={editingEmployee ? handleEditEmployee : handleAddEmployee}
-              onCancel={cancelForm}
-              initialData={editingEmployee || undefined}
-              loading={loading}
-            />
-          ) : (
-            <Card>
+          {showEmployeeForm ? <EmployeeForm onSubmit={editingEmployee ? handleEditEmployee : handleAddEmployee} onCancel={cancelForm} initialData={editingEmployee || undefined} loading={loading} /> : <Card>
               <CardHeader>
                 <CardTitle>
                   {editingEmployee ? 'Edit Employee' : 'Employee List'}
                 </CardTitle>
                 <CardDescription>
-                  {editingEmployee 
-                    ? `Editing: ${editingEmployee.first_name} ${editingEmployee.last_name}`
-                    : `${employees.length} active employees`
-                  }
+                  {editingEmployee ? `Editing: ${editingEmployee.first_name} ${editingEmployee.last_name}` : `${employees.length} active employees`}
                 </CardDescription>
               </CardHeader>
                 <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">
+                {loading ? <div className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
                     <p className="text-muted-foreground">Loading employees...</p>
-                  </div>
-                ) : employees.length === 0 ? (
-                  <div className="text-center py-8">
+                  </div> : employees.length === 0 ? <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">No employees added yet</p>
                     <Button onClick={() => setShowEmployeeForm(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add First Employee
                     </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {employees.map((employee) => (
-                      <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  </div> : <div className="space-y-3">
+                    {employees.map(employee => <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <h3 className="font-medium">
@@ -398,42 +339,24 @@ const Payroll: React.FC = () => {
                             </Badge>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Rate: {
-                              employee.employment_type === 'hourly' ? `${formatTTCurrency(employee.hourly_rate || 0)}/hr` :
-                              employee.employment_type === 'daily' ? `${formatTTCurrency(employee.daily_rate || 0)}/day` :
-                              `${formatTTCurrency(employee.monthly_salary || 0)}/month`
-                            }
+                            Rate: {employee.employment_type === 'hourly' ? `${formatTTCurrency(employee.hourly_rate || 0)}/hr` : employee.employment_type === 'daily' ? `${formatTTCurrency(employee.daily_rate || 0)}/day` : `${formatTTCurrency(employee.monthly_salary || 0)}/month`}
                             {employee.email && ` • ${employee.email}`}
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => startEditEmployee(employee)}
-                            disabled={loading || showEmployeeForm}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => startEditEmployee(employee)} disabled={loading || showEmployeeForm}>
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteEmployee(employee)}
-                            disabled={loading}
-                            className="text-destructive hover:text-destructive"
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteEmployee(employee)} disabled={loading} className="text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4 mr-1" />
                             Delete
                           </Button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      </div>)}
+                  </div>}
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </TabsContent>
 
         <TabsContent value="calculator" className="space-y-6">
@@ -444,8 +367,7 @@ const Payroll: React.FC = () => {
             </p>
           </div>
 
-          {employees.length === 0 ? (
-            <Card>
+          {employees.length === 0 ? <Card>
               <CardContent className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
                   You need to add employees before calculating payroll
@@ -455,29 +377,20 @@ const Payroll: React.FC = () => {
                   Add Employees First
                 </Button>
               </CardContent>
-            </Card>
-          ) : (
-            <Tabs defaultValue="enhanced" className="space-y-4">
+            </Card> : <Tabs defaultValue="enhanced" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="enhanced">Enhanced Calculator</TabsTrigger>
-                <TabsTrigger value="simple">Simple Calculator</TabsTrigger>
+                
               </TabsList>
               
               <TabsContent value="enhanced">
-                <EnhancedPayrollCalculator 
-                  employees={employees}
-                  onCalculationComplete={handleCalculationComplete}
-                />
+                <EnhancedPayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
               </TabsContent>
               
               <TabsContent value="simple">
-                <PayrollCalculator 
-                  employees={employees}
-                  onCalculationComplete={handleCalculationComplete}
-                />
+                <PayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
               </TabsContent>
-            </Tabs>
-          )}
+            </Tabs>}
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -497,21 +410,12 @@ const Payroll: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  onClick={exportEmployeeData} 
-                  variant="outline" 
-                  disabled={employees.length === 0}
-                  className="h-20 flex-col gap-2"
-                >
+                <Button onClick={exportEmployeeData} variant="outline" disabled={employees.length === 0} className="h-20 flex-col gap-2">
                   <Download className="h-6 w-6" />
                   Employee Data (CSV)
                 </Button>
                 
-                <Button 
-                  variant="outline" 
-                  disabled={true}
-                  className="h-20 flex-col gap-2"
-                >
+                <Button variant="outline" disabled={true} className="h-20 flex-col gap-2">
                   <FileText className="h-6 w-6" />
                   Payroll Summary (Coming Soon)
                 </Button>
@@ -525,8 +429,6 @@ const Payroll: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 export default Payroll;
