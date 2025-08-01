@@ -92,11 +92,11 @@ export const AuthDemoSteps = () => {
             title="Step 2: Try Login"
             description="After verifying your email, log in using your new credentials."
             ctaLabel="Try Login"
-            to="/login"
+            to={AuthDemoService.getLoginUrl()}
             disabled={demoStep < AuthDemoStep.SignedUp || user !== null}
             done={user !== null || demoStep > AuthDemoStep.LoggedIn}
             highlight={demoStep === AuthDemoStep.SignedUp && !user}
-            onClick={() => handleStep("/login")}
+            onClick={() => handleStep(AuthDemoService.getLoginUrl())}
             showSignOut={user !== null && (demoStep === AuthDemoStep.SignedUp || demoStep === AuthDemoStep.LoggedIn)}
           />
           
@@ -106,7 +106,7 @@ export const AuthDemoSteps = () => {
             description="Try resetting your password to see the full experience."
             ctaLabel="Try Password Reset"
             to={AuthDemoService.getResetPasswordUrl()}
-            disabled={!user || demoStep < AuthDemoStep.LoggedIn}
+            disabled={demoStep < AuthDemoStep.LoggedIn}
             done={demoStep >= AuthDemoStep.Completed}
             highlight={user !== null && demoStep === AuthDemoStep.LoggedIn}
             onClick={() => handleStep(AuthDemoService.getResetPasswordUrl())}

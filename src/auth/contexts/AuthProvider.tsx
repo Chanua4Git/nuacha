@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (isAuthDemoActive()) {
           safeNavigate('/auth-demo', { replace: true });
         } else {
-          safeNavigate('/login', { replace: true });
+          safeNavigate('/app', { replace: true });
         }
       }, 50);
     }
