@@ -82,7 +82,7 @@ export function useLogin() {
         }
 
         // Normal user redirect
-        const intendedPath = localStorage.getItem("intendedPath") || "/app";
+        const intendedPath = localStorage.getItem("intendedPath") || "/";
         localStorage.removeItem("intendedPath");
         navigate(intendedPath);
       }

@@ -64,7 +64,7 @@ const Signup = () => {
       // Use our demo service to get the redirect URL if in demo mode
       const redirectTo = isAuthDemo 
         ? AuthDemoService.getVerificationRedirectUrl()
-        : `${window.location.origin}/dashboard`;
+        : `${window.location.origin}/`;
 
       console.log("Signup redirectTo:", redirectTo);
 
