@@ -18,29 +18,28 @@ const employeeSchema = z.object({
   phone: z.string().optional(),
   national_id: z.string().optional(),
   employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly']),
-  hourly_rate: z.number().positive('Must be positive').optional(),
-  monthly_salary: z.number().positive('Must be positive').optional(),
-  daily_rate: z.number().positive('Must be positive').optional(),
-  weekly_rate: z.number().positive('Must be positive').optional(),
+  hourly_rate: z.coerce.number().positive('Must be positive').optional(),
+  monthly_salary: z.coerce.number().positive('Must be positive').optional(),
+  daily_rate: z.coerce.number().positive('Must be positive').optional(),
+  weekly_rate: z.coerce.number().positive('Must be positive').optional(),
   nis_number: z.string().optional(),
   date_hired: z.string().optional(),
 }).refine((data) => {
   // Validate that the appropriate rate field is provided based on employment type
-  if (data.employment_type === 'hourly' && (!data.hourly_rate || data.hourly_rate <= 0)) {
-    return false;
+  switch (data.employment_type) {
+    case 'hourly':
+      return data.hourly_rate && data.hourly_rate > 0;
+    case 'monthly':
+      return data.monthly_salary && data.monthly_salary > 0;
+    case 'daily':
+      return data.daily_rate && data.daily_rate > 0;
+    case 'weekly':
+      return data.weekly_rate && data.weekly_rate > 0;
+    default:
+      return false;
   }
-  if (data.employment_type === 'monthly' && (!data.monthly_salary || data.monthly_salary <= 0)) {
-    return false;
-  }
-  if (data.employment_type === 'daily' && (!data.daily_rate || data.daily_rate <= 0)) {
-    return false;
-  }
-  if (data.employment_type === 'weekly' && (!data.weekly_rate || data.weekly_rate <= 0)) {
-    return false;
-  }
-  return true;
 }, {
-  message: "Rate field is required for the selected employment type",
+  message: "Rate field is required and must be greater than 0 for the selected employment type",
   path: ["employment_type"],
 });
 
@@ -65,7 +64,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isValid },
+    formState: { errors, isValid, isDirty },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: initialData,
@@ -321,7 +320,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             <Button 
               type="submit" 
               className="flex-1"
-              disabled={isSubmitting || loading || !isValid}
+              disabled={isSubmitting || loading || !isValid || (isEditMode && !isDirty)}
             >
               {(isSubmitting || loading) ? (
                 <>
