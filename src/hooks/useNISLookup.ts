@@ -29,16 +29,15 @@ export const useNISLookup = () => {
   const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch active NIS earnings classes
+  // Fetch active NIS earnings classes using RPC
   const fetchNISClasses = async (effectiveDate?: string) => {
     setLoading(true);
     try {
       const targetDate = effectiveDate || new Date().toISOString().split('T')[0];
       
-      const { data, error } = await supabase
-        .rpc('get_nis_earnings_classes', {
-          target_date: targetDate
-        });
+      const { data, error } = await (supabase as any).rpc('get_nis_earnings_classes', {
+        target_date: targetDate
+      });
 
       if (error) {
         console.error('Error fetching NIS classes:', error);

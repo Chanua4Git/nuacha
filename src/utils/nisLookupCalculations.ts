@@ -37,36 +37,25 @@ export interface PayrollCalculationHistory {
   notes?: string;
 }
 
-// Fetch active NIS earnings classes for a specific date
+// Fetch active NIS earnings classes using RPC function
 export const fetchNISEarningsClasses = async (effectiveDate?: string): Promise<NISEarningsClass[]> => {
-  const targetDate = effectiveDate || new Date().toISOString().split('T')[0];
-  
-  const { data, error } = await supabase
-    .from('nis_earnings_classes')
-    .select('*')
-    .eq('is_active', true)
-    .lte('effective_date', targetDate)
-    .order('effective_date', { ascending: false })
-    .order('min_weekly_earnings', { ascending: true });
+  try {
+    const targetDate = effectiveDate || new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await (supabase as any).rpc('get_nis_earnings_classes', {
+      target_date: targetDate
+    });
 
-  if (error) {
-    console.error('Error fetching NIS earnings classes:', error);
+    if (error) {
+      console.error('Error fetching NIS earnings classes:', error);
+      return [];
+    }
+
+    return (data || []) as NISEarningsClass[];
+  } catch (error) {
+    console.error('Error in fetchNISEarningsClasses:', error);
     return [];
   }
-
-  // Group by earnings class and take the most recent effective date for each
-  const latestClasses = new Map<string, NISEarningsClass>();
-  
-  data?.forEach(cls => {
-    const existing = latestClasses.get(cls.earnings_class);
-    if (!existing || cls.effective_date > existing.effective_date) {
-      latestClasses.set(cls.earnings_class, cls);
-    }
-  });
-
-  return Array.from(latestClasses.values()).sort((a, b) => 
-    a.min_weekly_earnings - b.min_weekly_earnings
-  );
 };
 
 // Find the appropriate NIS class for weekly earnings
@@ -135,67 +124,58 @@ export const calculatePayrollWithLookup = async (
   };
 };
 
-// Save payroll calculation to history
+// Save payroll calculation using RPC function
 export const savePayrollCalculation = async (
   employeeId: string,
   calculation: PayrollCalculationResult,
   calculationDate: string,
   notes?: string
 ): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { error } = await supabase
-    .from('payroll_calculations')
-    .insert({
-      user_id: user.id,
-      employee_id: employeeId,
-      calculation_date: calculationDate,
-      weekly_earnings: calculation.weekly_earnings,
-      nis_class: calculation.nis_class,
-      employee_contribution: calculation.nis_employee_contribution,
-      employer_contribution: calculation.nis_employer_contribution,
-      calculation_method: calculation.calculation_method,
-      notes,
+  try {
+    const { error } = await (supabase as any).rpc('save_payroll_calculation', {
+      p_employee_id: employeeId,
+      p_calculation_date: calculationDate,
+      p_weekly_earnings: calculation.weekly_earnings,
+      p_nis_class: calculation.nis_class,
+      p_employee_contribution: calculation.nis_employee_contribution,
+      p_employer_contribution: calculation.nis_employer_contribution,
+      p_calculation_method: calculation.calculation_method,
+      p_notes: notes || null
     });
 
-  if (error) {
-    console.error('Error saving payroll calculation:', error);
+    if (error) {
+      console.error('Error saving payroll calculation:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in savePayrollCalculation:', error);
     throw error;
   }
 };
 
-// Fetch payroll calculation history for an employee
+// Fetch payroll calculation history using RPC function
 export const fetchPayrollHistory = async (
   employeeId: string,
   startDate?: string,
   endDate?: string
 ): Promise<PayrollCalculationHistory[]> => {
-  let query = supabase
-    .from('payroll_calculations')
-    .select('*')
-    .eq('employee_id', employeeId)
-    .order('calculation_date', { ascending: false });
+  try {
+    const { data, error } = await (supabase as any).rpc('get_payroll_history', {
+      p_employee_id: employeeId,
+      p_start_date: startDate || null,
+      p_end_date: endDate || null
+    });
 
-  if (startDate) {
-    query = query.gte('calculation_date', startDate);
-  }
-  
-  if (endDate) {
-    query = query.lte('calculation_date', endDate);
-  }
+    if (error) {
+      console.error('Error fetching payroll history:', error);
+      return [];
+    }
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching payroll history:', error);
+    return (data || []) as PayrollCalculationHistory[];
+  } catch (error) {
+    console.error('Error in fetchPayrollHistory:', error);
     return [];
   }
-
-  return data || [];
 };
 
 // Calculate weekly earnings from different pay structures
