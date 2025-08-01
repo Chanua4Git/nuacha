@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Calculator, FileText, Download } from 'lucide-react';
+import { Plus, Users, Calculator, FileText, Download, Loader2 } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { PayrollCalculator } from '@/components/payroll/PayrollCalculator';
-import { useSimplePayroll } from '@/hooks/useSimplePayroll';
+import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import { Employee, PayrollEntry } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 
@@ -15,21 +15,24 @@ const Payroll: React.FC = () => {
     employees,
     payrollPeriods,
     payrollEntries,
+    loading,
     addEmployee,
     addPayrollPeriod,
     addPayrollEntry,
     getEntriesForPeriod,
-  } = useSimplePayroll();
+  } = useSupabasePayroll();
 
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const handleAddEmployee = (data: any) => {
-    addEmployee({
+  const handleAddEmployee = async (data: any) => {
+    const result = await addEmployee({
       ...data,
       is_active: true,
     });
-    setShowEmployeeForm(false);
+    if (result) {
+      setShowEmployeeForm(false);
+    }
   };
 
   const handleCalculationComplete = (employee: Employee, calculation: any, input: any) => {
@@ -137,7 +140,12 @@ const Payroll: React.FC = () => {
               <CardDescription>Latest payroll activities and updates</CardDescription>
             </CardHeader>
             <CardContent>
-              {employees.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading data...</p>
+                </div>
+              ) : employees.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground mb-4">No employees added yet</p>
                   <Button onClick={() => setActiveTab('employees')}>
@@ -172,8 +180,12 @@ const Payroll: React.FC = () => {
               <h2 className="text-2xl font-bold">Employee Management</h2>
               <p className="text-muted-foreground">Add and manage employee information</p>
             </div>
-            <Button onClick={() => setShowEmployeeForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={() => setShowEmployeeForm(true)} disabled={loading}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
               Add Employee
             </Button>
           </div>
@@ -191,8 +203,13 @@ const Payroll: React.FC = () => {
                   {employees.length} active employees
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {employees.length === 0 ? (
+                <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading employees...</p>
+                  </div>
+                ) : employees.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">No employees added yet</p>
                     <Button onClick={() => setShowEmployeeForm(true)}>

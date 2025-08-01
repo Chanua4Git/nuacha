@@ -107,7 +107,11 @@ const App = () => {
                         <Options />
                       </ProtectedRoute>
                     } />
-                    <Route path="/payroll" element={<Payroll />} />
+                    <Route path="/payroll" element={
+                      <ProtectedRoute>
+                        <Payroll />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
