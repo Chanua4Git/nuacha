@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Calculator, FileText, Download, Loader2 } from 'lucide-react';
+import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2 } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { PayrollCalculator } from '@/components/payroll/PayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
@@ -18,12 +18,15 @@ const Payroll: React.FC = () => {
     payrollEntries,
     loading,
     addEmployee,
+    updateEmployee,
+    removeEmployee,
     addPayrollPeriod,
     addPayrollEntry,
     getEntriesForPeriod,
   } = useSupabasePayroll();
 
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
 
   const handleAddEmployee = async (data: any) => {
@@ -34,6 +37,34 @@ const Payroll: React.FC = () => {
     if (result) {
       setShowEmployeeForm(false);
     }
+  };
+
+  const handleEditEmployee = async (data: any) => {
+    if (!editingEmployee) return;
+    try {
+      await updateEmployee(editingEmployee.id, data);
+      setEditingEmployee(null);
+      setShowEmployeeForm(false);
+    } catch (error) {
+      // Error is handled by the hook with toast
+      console.error('Failed to update employee:', error);
+    }
+  };
+
+  const handleDeleteEmployee = async (employee: Employee) => {
+    if (confirm(`Are you sure you want to remove ${employee.first_name} ${employee.last_name}? This will mark them as inactive.`)) {
+      await removeEmployee(employee.id);
+    }
+  };
+
+  const startEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setShowEmployeeForm(true);
+  };
+
+  const cancelForm = () => {
+    setShowEmployeeForm(false);
+    setEditingEmployee(null);
   };
 
   const handleCalculationComplete = (employee: Employee, calculation: any, input: any) => {
@@ -304,7 +335,13 @@ const Payroll: React.FC = () => {
               <h2 className="text-2xl font-bold">Employee Management</h2>
               <p className="text-muted-foreground">Add and manage employee information</p>
             </div>
-            <Button onClick={() => setShowEmployeeForm(true)} disabled={loading}>
+            <Button 
+              onClick={() => {
+                setEditingEmployee(null);
+                setShowEmployeeForm(true);
+              }} 
+              disabled={loading || showEmployeeForm}
+            >
               {loading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -316,15 +353,21 @@ const Payroll: React.FC = () => {
 
           {showEmployeeForm ? (
             <EmployeeForm
-              onSubmit={handleAddEmployee}
-              onCancel={() => setShowEmployeeForm(false)}
+              onSubmit={editingEmployee ? handleEditEmployee : handleAddEmployee}
+              onCancel={cancelForm}
+              initialData={editingEmployee || undefined}
             />
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Employee List</CardTitle>
+                <CardTitle>
+                  {editingEmployee ? 'Edit Employee' : 'Employee List'}
+                </CardTitle>
                 <CardDescription>
-                  {employees.length} active employees
+                  {editingEmployee 
+                    ? `Editing: ${editingEmployee.first_name} ${editingEmployee.last_name}`
+                    : `${employees.length} active employees`
+                  }
                 </CardDescription>
               </CardHeader>
                 <CardContent>
@@ -365,6 +408,27 @@ const Payroll: React.FC = () => {
                             }
                             {employee.email && ` • ${employee.email}`}
                           </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditEmployee(employee)}
+                            disabled={loading || showEmployeeForm}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteEmployee(employee)}
+                            disabled={loading}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     ))}
