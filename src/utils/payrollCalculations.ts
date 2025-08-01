@@ -40,6 +40,28 @@ export interface PayrollInput {
   other_allowances?: number;
 }
 
+// Calculate NIS Employee Contribution using IFS formula based on days worked
+export const calculateNISEmployeeByDays = (daysWorked: number): number => {
+  // Excel IFS formula: =IFS(K2=3, 37.2, K2=3.5, 45.1, K2=4, 53.2, K2=4.5, 53.2, K2=5, 61.4)
+  if (daysWorked === 3) return 37.2;
+  if (daysWorked === 3.5) return 45.1;
+  if (daysWorked === 4) return 53.2;
+  if (daysWorked === 4.5) return 53.2;
+  if (daysWorked === 5) return 61.4;
+  return 0; // Default for days not covered by the formula
+};
+
+// Calculate NIS Employer Contribution using IFS formula based on days worked
+export const calculateNISEmployerByDays = (daysWorked: number): number => {
+  // Excel IFS formula: =IFS(K2=3,74.4,K2=3.5,90.2,K2=4,106.4,K2=4.5,106.4,K2=5,122.8)
+  if (daysWorked === 3) return 74.4;
+  if (daysWorked === 3.5) return 90.2;
+  if (daysWorked === 4) return 106.4;
+  if (daysWorked === 4.5) return 106.4;
+  if (daysWorked === 5) return 122.8;
+  return 0; // Default for days not covered by the formula
+};
+
 // Calculate NIS contributions using Excel IFS formula logic based on daily rate multipliers
 export const calculateNISContributions = (
   weeklyWage: number,
@@ -131,7 +153,7 @@ export const calculateWeeklyWage = (
   }
 };
 
-// Perform complete payroll calculation
+// Perform complete payroll calculation using IFS-based NIS calculations
 export const calculatePayroll = (
   employee: EmployeeData,
   input: PayrollInput,
@@ -140,7 +162,19 @@ export const calculatePayroll = (
   const gross_pay = calculateGrossPay(employee, input);
   const weekly_wage = calculateWeeklyWage(employee, input, gross_pay);
   
-  const { employee_contribution, employer_contribution } = calculateNISContributions(weekly_wage, rates);
+  // Use IFS-based NIS calculations if days_worked is provided
+  let employee_contribution: number;
+  let employer_contribution: number;
+  
+  if (input.days_worked !== undefined) {
+    employee_contribution = calculateNISEmployeeByDays(input.days_worked);
+    employer_contribution = calculateNISEmployerByDays(input.days_worked);
+  } else {
+    // Fallback to the old method if days_worked is not provided
+    const nisContributions = calculateNISContributions(weekly_wage, rates);
+    employee_contribution = nisContributions.employee_contribution;
+    employer_contribution = nisContributions.employer_contribution;
+  }
   
   const other_deductions = input.other_deductions || 0;
   const other_allowances = input.other_allowances || 0;

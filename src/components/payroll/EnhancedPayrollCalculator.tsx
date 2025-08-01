@@ -181,7 +181,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     if (!payrollPeriod || !selectedEmployee) return;
 
     const csvData = [
-      ['Week #', 'Week Start', 'Week End', 'Pay Day', 'Pay/(8hr)dy', 'Recorded Days', 'Calculated Pay', 'Calc Pay less NIS', 'Recorded Pay', 'NIS Employee Contribution', 'Total NIS Cont.', 'Net Pay'],
+      ['Week #', 'Week Start', 'Week End', 'Pay Day', 'Pay/(8hr)dy', 'Recorded Days', 'Calculated Pay', 'NIS Employee Contribution', 'Calc Pay less NIS', 'Recorded Pay', 'NIS Employer Contribution', 'Total NIS Cont.', 'Net Pay'],
       ...payrollPeriod.weeks.map(week => [
         week.weekNumber,
         format(week.weekStart, 'dd/MM/yyyy'),
@@ -190,9 +190,10 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         formatTTCurrency(week.dailyRate8Hr),
         week.recordedDaysWorked,
         formatTTCurrency(week.calculatedPay),
+        formatTTCurrency(week.nisEmployee),
         formatTTCurrency(week.calcPayLessNIS),
         formatTTCurrency(week.recordedPay),
-        formatTTCurrency(week.nisEmployee),
+        formatTTCurrency(week.nisEmployer),
         formatTTCurrency(week.totalNISContribution),
         formatTTCurrency(week.netPay),
       ])
@@ -384,7 +385,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
                   <div className="overflow-x-auto">
                     <Table>
-                       <TableHeader>
+                        <TableHeader>
                          <TableRow>
                            <TableHead>Week #</TableHead>
                            <TableHead>Week Start</TableHead>
@@ -393,9 +394,10 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                            <TableHead>Pay/(8hr)dy</TableHead>
                            <TableHead>Days Worked</TableHead>
                            <TableHead>Calculated Pay</TableHead>
+                           <TableHead>NIS Employee Contribution</TableHead>
                            <TableHead>Calc Pay less NIS</TableHead>
                            <TableHead>Recorded Pay</TableHead>
-                           <TableHead>NIS Employee Contribution</TableHead>
+                           <TableHead>NIS Employer Contribution</TableHead>
                            <TableHead>Total NIS Cont.</TableHead>
                            <TableHead>Actions</TableHead>
                          </TableRow>
@@ -416,18 +418,19 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                                 className="w-20"
                               />
                             </TableCell>
-                            <TableCell className="font-medium">{formatTTCurrency(week.calculatedPay)}</TableCell>
-                            <TableCell>{formatTTCurrency(week.calcPayLessNIS)}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={weeklyInputs[index]?.recordedPay || 0}
-                                onChange={(e) => updateWeeklyInput(index, 'recordedPay', Number(e.target.value))}
-                                className="w-24"
-                              />
-                            </TableCell>
+                             <TableCell className="font-medium">{formatTTCurrency(week.calculatedPay)}</TableCell>
                              <TableCell>{formatTTCurrency(week.nisEmployee)}</TableCell>
+                             <TableCell>{formatTTCurrency(week.calcPayLessNIS)}</TableCell>
+                             <TableCell>
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 value={weeklyInputs[index]?.recordedPay || 0}
+                                 onChange={(e) => updateWeeklyInput(index, 'recordedPay', Number(e.target.value))}
+                                 className="w-24"
+                               />
+                             </TableCell>
+                             <TableCell>{formatTTCurrency(week.nisEmployer)}</TableCell>
                              <TableCell>{formatTTCurrency(week.totalNISContribution)}</TableCell>
                              <TableCell>
                                <Button
