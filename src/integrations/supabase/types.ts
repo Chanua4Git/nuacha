@@ -211,6 +211,7 @@ export type Database = {
           updated_at: string
           user_id: string
           weekly_pay_schedule: string | null
+          weekly_rate: number | null
         }
         Insert: {
           created_at?: string
@@ -232,6 +233,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           weekly_pay_schedule?: string | null
+          weekly_rate?: number | null
         }
         Update: {
           created_at?: string
@@ -253,6 +255,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weekly_pay_schedule?: string | null
+          weekly_rate?: number | null
         }
         Relationships: []
       }
