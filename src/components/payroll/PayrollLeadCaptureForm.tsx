@@ -29,11 +29,30 @@ export default function PayrollLeadCaptureForm({ onSubmit, isLoading = false }: 
   
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
     if (!email || !name || !businessType || !employeeCount) {
       return;
+    }
+    
+    // Submit the lead to Supabase before redirecting
+    const leadData = {
+      email,
+      name,
+      business_type: businessType,
+      employee_count: employeeCount,
+      current_payroll_method: currentPayrollMethod,
+      additional_info: additionalInfo,
+      interest_type: 'payroll_demo'
+    };
+
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      await supabase.from('demo_leads').insert(leadData);
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      // Continue with redirect even if save fails
     }
     
     onSubmit({

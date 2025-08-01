@@ -160,8 +160,11 @@ export type Database = {
       demo_leads: {
         Row: {
           additional_info: string | null
+          business_type: string | null
           created_at: string | null
+          current_payroll_method: string | null
           email: string
+          employee_count: string | null
           id: string
           interest_type: string | null
           last_contact: string | null
@@ -170,8 +173,11 @@ export type Database = {
         }
         Insert: {
           additional_info?: string | null
+          business_type?: string | null
           created_at?: string | null
+          current_payroll_method?: string | null
           email: string
+          employee_count?: string | null
           id?: string
           interest_type?: string | null
           last_contact?: string | null
@@ -180,8 +186,11 @@ export type Database = {
         }
         Update: {
           additional_info?: string | null
+          business_type?: string | null
           created_at?: string | null
+          current_payroll_method?: string | null
           email?: string
+          employee_count?: string | null
           id?: string
           interest_type?: string | null
           last_contact?: string | null
