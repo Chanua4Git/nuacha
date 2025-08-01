@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 import { EmployeeFormData } from '@/types/payroll';
 
 const employeeSchema = z.object({
@@ -23,32 +24,80 @@ const employeeSchema = z.object({
   weekly_rate: z.number().positive('Must be positive').optional(),
   nis_number: z.string().optional(),
   date_hired: z.string().optional(),
+}).refine((data) => {
+  // Validate that the appropriate rate field is provided based on employment type
+  if (data.employment_type === 'hourly' && (!data.hourly_rate || data.hourly_rate <= 0)) {
+    return false;
+  }
+  if (data.employment_type === 'monthly' && (!data.monthly_salary || data.monthly_salary <= 0)) {
+    return false;
+  }
+  if (data.employment_type === 'daily' && (!data.daily_rate || data.daily_rate <= 0)) {
+    return false;
+  }
+  if (data.employment_type === 'weekly' && (!data.weekly_rate || data.weekly_rate <= 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Rate field is required for the selected employment type",
+  path: ["employment_type"],
 });
 
 interface EmployeeFormProps {
-  onSubmit: (data: EmployeeFormData) => void;
+  onSubmit: (data: EmployeeFormData) => Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<EmployeeFormData>;
+  loading?: boolean;
 }
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   onSubmit,
   onCancel,
   initialData,
+  loading = false,
 }) => {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    setError,
+    clearErrors,
+    formState: { errors, isValid },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: initialData,
+    mode: 'onChange',
   });
 
   const employmentType = watch('employment_type');
   const isEditMode = Boolean(initialData);
+
+  const handleFormSubmit = async (data: EmployeeFormData) => {
+    setIsSubmitting(true);
+    clearErrors();
+    
+    try {
+      // Ensure numeric fields are properly converted
+      const processedData = {
+        ...data,
+        hourly_rate: data.hourly_rate ? Number(data.hourly_rate) : null,
+        monthly_salary: data.monthly_salary ? Number(data.monthly_salary) : null,
+        daily_rate: data.daily_rate ? Number(data.daily_rate) : null,
+        weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : null,
+      };
+
+      await onSubmit(processedData);
+    } catch (error) {
+      setError('root', { 
+        message: error instanceof Error ? error.message : 'Failed to save employee' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -62,7 +111,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="employee_number">Employee Number *</Label>
@@ -262,12 +311,35 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             />
           </div>
 
+          {errors.root && (
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+              {errors.root.message}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">
-              {isEditMode ? 'Update Employee' : 'Add Employee'}
+            <Button 
+              type="submit" 
+              className="flex-1"
+              disabled={isSubmitting || loading || !isValid}
+            >
+              {(isSubmitting || loading) ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isEditMode ? 'Updating...' : 'Adding...'}
+                </>
+              ) : (
+                isEditMode ? 'Update Employee' : 'Add Employee'
+              )}
             </Button>
             {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel} 
+                className="flex-1"
+                disabled={isSubmitting || loading}
+              >
                 Cancel
               </Button>
             )}

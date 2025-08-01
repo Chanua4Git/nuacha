@@ -41,14 +41,10 @@ const Payroll: React.FC = () => {
 
   const handleEditEmployee = async (data: any) => {
     if (!editingEmployee) return;
-    try {
-      await updateEmployee(editingEmployee.id, data);
-      setEditingEmployee(null);
-      setShowEmployeeForm(false);
-    } catch (error) {
-      // Error is handled by the hook with toast
-      console.error('Failed to update employee:', error);
-    }
+    
+    await updateEmployee(editingEmployee.id, data);
+    setEditingEmployee(null);
+    setShowEmployeeForm(false);
   };
 
   const handleDeleteEmployee = async (employee: Employee) => {
@@ -356,6 +352,7 @@ const Payroll: React.FC = () => {
               onSubmit={editingEmployee ? handleEditEmployee : handleAddEmployee}
               onCancel={cancelForm}
               initialData={editingEmployee || undefined}
+              loading={loading}
             />
           ) : (
             <Card>
