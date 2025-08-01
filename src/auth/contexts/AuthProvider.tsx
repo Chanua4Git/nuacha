@@ -32,7 +32,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // List of app routes that should be preserved when user is authenticated
-const APP_ROUTES = ['/app', '/dashboard', '/options', '/reports', '/reminders'];
+const APP_ROUTES = ['/app', '/dashboard', '/options', '/reports', '/reminders', '/payroll'];
 
 function safeGetIntendedPath(): string {
   try {
