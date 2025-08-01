@@ -48,13 +48,17 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   });
 
   const employmentType = watch('employment_type');
+  const isEditMode = Boolean(initialData);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Add Employee</CardTitle>
+        <CardTitle>{isEditMode ? 'Edit Employee' : 'Add Employee'}</CardTitle>
         <CardDescription>
-          Enter employee details for payroll processing
+          {isEditMode 
+            ? 'Update employee details for payroll processing'
+            : 'Enter employee details for payroll processing'
+          }
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -260,7 +264,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1">
-              Add Employee
+              {isEditMode ? 'Update Employee' : 'Add Employee'}
             </Button>
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
