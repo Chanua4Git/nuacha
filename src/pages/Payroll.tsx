@@ -5,11 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2 } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
-import { PayrollCalculator } from '@/components/payroll/PayrollCalculator';
+import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
-import { DemoPayrollCalculator } from '@/components/payroll/DemoPayrollCalculator';
-import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
-import { useSupabasePayrollDemo } from '@/hooks/useSupabasePayrollDemo';
+import { useUnifiedPayroll } from '@/hooks/useUnifiedPayroll';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import PayrollLeadCaptureModal from '@/components/payroll/PayrollLeadCaptureModal';
 import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
@@ -22,12 +20,6 @@ const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Use appropriate hook based on authentication status
-  const realPayroll = useSupabasePayroll();
-  const demoPayroll = useSupabasePayrollDemo();
-  
-  const payrollHook = user ? realPayroll : demoPayroll;
-  
   const {
     employees,
     payrollPeriods,
@@ -38,11 +30,9 @@ const Payroll: React.FC = () => {
     removeEmployee,
     addPayrollPeriod,
     addPayrollEntry,
-    getEntriesForPeriod
-  } = payrollHook;
-  
-  // Lead capture state - only available in demo mode
-  const demoLeadCapture = !user ? demoPayroll : null;
+    getEntriesForPeriod,
+    isDemo,
+  } = useUnifiedPayroll();
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
@@ -83,8 +73,15 @@ const Payroll: React.FC = () => {
       input
     });
   };
+
   const exportEmployeeData = () => {
     if (employees.length === 0) return;
+    
+    if (isDemo) {
+      setShowLeadCapture(true);
+      return;
+    }
+    
     const csvHeader = 'Employee Number,First Name,Last Name,Employment Type,Rate,Email,Phone,NIS Number\n';
     const csvData = employees.map(emp => [emp.employee_number, emp.first_name, emp.last_name, emp.employment_type, emp.employment_type === 'hourly' ? emp.hourly_rate : emp.employment_type === 'daily' ? emp.daily_rate : emp.monthly_salary, emp.email || '', emp.phone || '', emp.nis_number || ''].join(',')).join('\n');
     const csvContent = csvHeader + csvData;
@@ -127,16 +124,16 @@ const Payroll: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Demo breadcrumbs for non-authenticated users */}
-      {!user && <DemoBreadcrumbs currentPage="demo" />}
+      {isDemo && <DemoBreadcrumbs currentPage="demo" />}
       
       {/* Demo notification banner */}
-      {!user && (
+      {isDemo && (
         <div className="bg-accent/10 border-b border-accent/20 px-4 py-3">
           <div className="container mx-auto">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
                 <p className="text-sm font-medium">You're exploring our payroll system</p>
-                <p className="text-xs text-muted-foreground">Sign up to save your data and access all features</p>
+                <p className="text-xs text-muted-foreground">Your data is temporarily stored. Sign up to save permanently and access all features.</p>
               </div>
               <Button onClick={handleSignUpClick} size="sm" className="whitespace-nowrap">
                 Sign up to get started
@@ -442,48 +439,21 @@ const Payroll: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="calculator" className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Payroll Calculator</h2>
-            <p className="text-muted-foreground">
-              Calculate individual employee payroll with TT NIS contributions
-            </p>
-          </div>
-
-          {user ? (
-            employees.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    You need to add employees before calculating payroll
-                  </p>
-                  <Button onClick={() => setActiveTab('employees')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Employees First
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Tabs defaultValue="enhanced" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="enhanced">Enhanced Calculator</TabsTrigger>
-                  <TabsTrigger value="simple">Simple Calculator</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="enhanced">
-                  <EnhancedPayrollCalculator onCalculationComplete={handleCalculationComplete} />
-                </TabsContent>
-                
-                <TabsContent value="simple">
-                  <PayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
-                </TabsContent>
-              </Tabs>
-            )
-          ) : (
-            <DemoPayrollCalculator
+          <div className="space-y-6">
+            {/* Enhanced Calculator for authenticated users */}
+            {user && (
+              <EnhancedPayrollCalculator
+                onCalculationComplete={handleCalculationComplete}
+              />
+            )}
+            
+            {/* Unified Calculator for all users */}
+            <UnifiedPayrollCalculator
               employees={employees}
-              onSignUpPrompt={handleSignUpClick}
+              onCalculationComplete={handleCalculationComplete}
+              isDemo={isDemo}
             />
-          )}
+          </div>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -544,14 +514,6 @@ const Payroll: React.FC = () => {
         </div>
       )}
       
-      {/* Payroll Lead Capture Modal */}
-      {!user && demoLeadCapture && (
-        <PayrollLeadCaptureModal
-          open={demoLeadCapture.leadCaptureOpen}
-          onOpenChange={demoLeadCapture.setLeadCaptureOpen}
-          actionType={demoLeadCapture.leadCaptureAction}
-        />
-      )}
     </div>
   );
 };
