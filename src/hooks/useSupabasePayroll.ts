@@ -15,7 +15,10 @@ export const useSupabasePayroll = () => {
 
   // Fetch employees
   const fetchEmployees = async () => {
-    if (!user) return;
+    if (!user) {
+      setEmployees([]);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -42,7 +45,10 @@ export const useSupabasePayroll = () => {
 
   // Fetch payroll periods
   const fetchPayrollPeriods = async () => {
-    if (!user) return;
+    if (!user) {
+      setPayrollPeriods([]);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -68,7 +74,10 @@ export const useSupabasePayroll = () => {
 
   // Fetch payroll entries
   const fetchPayrollEntries = async () => {
-    if (!user) return;
+    if (!user) {
+      setPayrollEntries([]);
+      return;
+    }
     
     setLoading(true);
     try {

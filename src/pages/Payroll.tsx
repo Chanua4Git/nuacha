@@ -7,10 +7,26 @@ import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2 } fr
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { PayrollCalculator } from '@/components/payroll/PayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
+import { DemoPayrollCalculator } from '@/components/payroll/DemoPayrollCalculator';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
+import { useSupabasePayrollDemo } from '@/hooks/useSupabasePayrollDemo';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
+import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
+import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { Employee, PayrollEntry } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 const Payroll: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Use appropriate hook based on authentication status
+  const realPayroll = useSupabasePayroll();
+  const demoPayroll = useSupabasePayrollDemo();
+  
+  const payrollHook = user ? realPayroll : demoPayroll;
+  
   const {
     employees,
     payrollPeriods,
@@ -22,10 +38,11 @@ const Payroll: React.FC = () => {
     addPayrollPeriod,
     addPayrollEntry,
     getEntriesForPeriod
-  } = useSupabasePayroll();
+  } = payrollHook;
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
   const handleAddEmployee = async (data: any) => {
     const result = await addEmployee({
       ...data,
@@ -77,7 +94,55 @@ const Payroll: React.FC = () => {
     link.click();
     window.URL.revokeObjectURL(url);
   };
-  return <div className="container mx-auto px-4 py-8">
+
+  const handleLeadCapture = async (data: { email: string; name: string; interestType: string; additionalInfo: string }) => {
+    try {
+      await supabase.from('demo_leads').insert({
+        email: data.email,
+        name: data.name,
+        interest_type: data.interestType,
+        additional_info: data.additionalInfo
+      });
+      
+      setShowLeadCapture(false);
+      navigate('/signup');
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      navigate('/signup');
+    }
+  };
+
+  const handleSignUpClick = () => {
+    if (user) {
+      // Already logged in, no need to capture lead
+      return;
+    }
+    setShowLeadCapture(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Demo breadcrumbs for non-authenticated users */}
+      {!user && <DemoBreadcrumbs currentPage="demo" />}
+      
+      {/* Demo notification banner */}
+      {!user && (
+        <div className="bg-accent/10 border-b border-accent/20 px-4 py-3">
+          <div className="container mx-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <p className="text-sm font-medium">You're exploring our payroll system</p>
+                <p className="text-xs text-muted-foreground">Sign up to save your data and access all features</p>
+              </div>
+              <Button onClick={handleSignUpClick} size="sm" className="whitespace-nowrap">
+                Sign up to get started
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Trinidad & Tobago Payroll System</h1>
@@ -176,12 +241,25 @@ const Payroll: React.FC = () => {
                 Join hundreds of TT business owners who trust our system for accurate, compliant payroll processing.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" onClick={() => window.open('https://wa.me/18687773737?text=Hi! I\'m interested in learning more about your payroll system for my Trinidad & Tobago business.', '_blank')} className="bg-[#25D366] hover:bg-[#128C7E] text-white">
-                  Get Started on WhatsApp
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => setActiveTab('dashboard')}>
-                  Explore the System
-                </Button>
+                {user ? (
+                  <>
+                    <Button size="lg" onClick={() => window.open('https://wa.me/18687773737?text=Hi! I\'m interested in learning more about your payroll system for my Trinidad & Tobago business.', '_blank')} className="bg-[#25D366] hover:bg-[#128C7E] text-white">
+                      Get Started on WhatsApp
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => setActiveTab('dashboard')}>
+                      Explore the System
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="lg" onClick={handleSignUpClick}>
+                      Sign up to get started
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => setActiveTab('dashboard')}>
+                      Try the Demo
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -367,30 +445,41 @@ const Payroll: React.FC = () => {
             </p>
           </div>
 
-          {employees.length === 0 ? <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  You need to add employees before calculating payroll
-                </p>
-                <Button onClick={() => setActiveTab('employees')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Employees First
-                </Button>
-              </CardContent>
-            </Card> : <Tabs defaultValue="enhanced" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="enhanced">Enhanced Calculator</TabsTrigger>
+          {user ? (
+            employees.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    You need to add employees before calculating payroll
+                  </p>
+                  <Button onClick={() => setActiveTab('employees')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Employees First
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Tabs defaultValue="enhanced" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="enhanced">Enhanced Calculator</TabsTrigger>
+                  <TabsTrigger value="simple">Simple Calculator</TabsTrigger>
+                </TabsList>
                 
-              </TabsList>
-              
-              <TabsContent value="enhanced">
-                <EnhancedPayrollCalculator onCalculationComplete={handleCalculationComplete} />
-              </TabsContent>
-              
-              <TabsContent value="simple">
-                <PayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
-              </TabsContent>
-            </Tabs>}
+                <TabsContent value="enhanced">
+                  <EnhancedPayrollCalculator onCalculationComplete={handleCalculationComplete} />
+                </TabsContent>
+                
+                <TabsContent value="simple">
+                  <PayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
+                </TabsContent>
+              </Tabs>
+            )
+          ) : (
+            <DemoPayrollCalculator
+              employees={employees}
+              onSignUpPrompt={handleSignUpClick}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -429,6 +518,29 @@ const Payroll: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>;
+      </div>
+
+      {/* Lead capture modal */}
+      {showLeadCapture && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Get Started with Payroll</h2>
+            <LeadCaptureForm 
+              onSubmit={handleLeadCapture}
+              isLoading={false}
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLeadCapture(false)}
+              className="w-full mt-4"
+            >
+              Maybe later
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default Payroll;
