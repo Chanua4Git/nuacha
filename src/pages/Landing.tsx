@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Shield, Scan, Users2 } from "lucide-react";
+import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
@@ -19,16 +19,22 @@ const Landing = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center space-y-6">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-playfair tracking-tight">
-                Find Peace in Your Finances with Nuacha
+                Complete Financial Management for Families & Businesses
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                Effortlessly manage expenses for all your families, gaining clarity and control that nurtures your well-being.
+                From household expense tracking to Trinidad & Tobago payroll compliance — find peace in comprehensive financial management.
               </p>
-              <div className="pt-4">
+              <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/demo">
                   <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
-                    Discover our receipt scanning solution
+                    Try Expense Tracking
                     <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/payroll">
+                  <Button size="lg" variant="outline" className="rounded-full px-8 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white transition-all duration-300">
+                    Explore Payroll System
+                    <Calculator className="ml-2" />
                   </Button>
                 </Link>
               </div>
@@ -44,14 +50,14 @@ const Landing = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-playfair mb-4">
-                Feeling Overwhelmed? Find Calm in Clarity
+                Comprehensive Financial Solutions for Every Need
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Transform the stress of managing multiple family finances into a peaceful journey of organization and clarity.
+                Whether managing family expenses or running a business in Trinidad & Tobago, discover tools that bring peace and clarity to your financial world.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map(feature => <Card key={feature.title} className="border-none shadow-sm bg-card/50 backdrop-blur">
                   <CardContent className="pt-6">
                     <feature.icon className="w-10 h-10 text-[#5A7684] mb-4" />
@@ -63,23 +69,77 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Try It Out Section */}
+        {/* Demo Sections */}
+        <section className="py-16 px-4 md:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-playfair mb-4">
+                Experience Nuacha in Action
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Try our interactive demos to see how Nuacha can transform your financial management.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="border-none shadow-lg bg-gradient-to-br from-[#F4E8D3]/20 to-white backdrop-blur">
+                <CardContent className="p-8">
+                  <Scan className="w-12 h-12 text-[#5A7684] mb-4" />
+                  <h3 className="text-2xl font-playfair mb-4">Expense Management Demo</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Upload receipts and see how our intelligent scanning captures your expenses automatically. Perfect for families and multi-household management.
+                  </p>
+                  <Link to="/demo">
+                    <Button className="w-full bg-[#5A7684] hover:bg-[#5A7684]/90">
+                      Try Receipt Scanning
+                      <ArrowRight className="ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-lg bg-gradient-to-br from-[#C3DCD1]/20 to-white backdrop-blur">
+                <CardContent className="p-8">
+                  <Calculator className="w-12 h-12 text-[#5A7684] mb-4" />
+                  <h3 className="text-2xl font-playfair mb-4">Trinidad & Tobago Payroll</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Calculate compliant payroll with automated NIS contributions. Designed specifically for Trinidad & Tobago businesses of all sizes.
+                  </p>
+                  <Link to="/payroll">
+                    <Button variant="outline" className="w-full border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white">
+                      Explore Payroll System
+                      <Calculator className="ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
 
         {/* Call to Action Section */}
         <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-playfair mb-6">
-              Give Yourself the Gift of Financial Peace
+              Ready to Transform Your Financial Management?
             </h2>
             <p className="text-lg mb-8 text-white/90">
-              Start your journey to mindful financial management today.
+              Join families and businesses across Trinidad & Tobago who trust Nuacha for their financial peace of mind.
             </p>
-            <Link to="/demo">
-              <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90">
-                Try a Quick Demo
-                <ArrowRight className="ml-2" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/demo">
+                <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90">
+                  Start with Expense Tracking
+                  <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
+              <Link to="/payroll">
+                <Button size="lg" variant="outline" className="rounded-full px-8 border-white text-white hover:bg-white hover:text-[#5A7684]">
+                  Try Payroll System
+                  <Calculator className="ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -90,7 +150,7 @@ const Landing = () => {
               <div>
                 <h3 className="font-playfair text-lg mb-4">About Nuacha</h3>
                 <p className="text-sm text-muted-foreground">
-                  A softer way to track spending and manage family finances.
+                  Complete financial management for families and Trinidad & Tobago businesses.
                 </p>
               </div>
               <div>
@@ -148,16 +208,28 @@ const Landing = () => {
 };
 
 const features = [{
-  title: "Cultivate Calm with Organized Finances",
-  description: "Effortlessly manage each family's expenses in one serene space, maintaining clarity and peace of mind.",
+  title: "Multi-Family Expense Management",
+  description: "Effortlessly track expenses across multiple households with intelligent receipt scanning and organized categorization.",
   icon: Users2
 }, {
-  title: "Release the Stress of Manual Entry",
-  description: "Gently capture and organize receipts with our intelligent scanning technology, freeing your time and mind.",
+  title: "Smart Receipt Processing",
+  description: "Upload receipts and let our AI extract expense details automatically, saving time and reducing manual entry errors.",
   icon: Scan
 }, {
-  title: "Nurture Future Security",
-  description: "Rest easy knowing your financial information is secure and protected while planning for future needs.",
+  title: "Trinidad & Tobago Payroll Compliance",
+  description: "Calculate accurate payroll with automated NIS contributions, ensuring your business stays compliant with local regulations.",
+  icon: Calculator
+}, {
+  title: "Comprehensive Reporting",
+  description: "Generate detailed financial reports for expense analysis and payroll summaries to support informed decision-making.",
+  icon: FileSpreadsheet
+}, {
+  title: "Business Growth Insights",
+  description: "Track spending patterns and payroll trends to identify opportunities for optimization and growth.",
+  icon: TrendingUp
+}, {
+  title: "Enterprise-Grade Security",
+  description: "Your financial data is protected with bank-level security, ensuring privacy and peace of mind for families and businesses.",
   icon: Shield
 }];
 

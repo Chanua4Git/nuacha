@@ -1,5 +1,5 @@
 
-import { UsersRound, BriefcaseBusiness, ListTodo } from "lucide-react";
+import { UsersRound, BriefcaseBusiness, ListTodo, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const targetGroups = [
@@ -7,6 +7,11 @@ const targetGroups = [
     icon: UsersRound,
     title: "Multi-Family Managers",
     description: "Perfect for those managing finances across multiple households, whether caring for elderly parents or handling shared living arrangements."
+  },
+  {
+    icon: Building2,
+    title: "Small Business Owners",
+    description: "Essential for Trinidad & Tobago businesses needing compliant payroll management with automated NIS calculations and employee record keeping."
   },
   {
     icon: BriefcaseBusiness,
@@ -33,7 +38,7 @@ const WhoIsNuachaFor = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {targetGroups.map((group) => (
             <Card key={group.title} className="border-none shadow-sm bg-white/50 backdrop-blur transition-all duration-300 hover:shadow-md">
               <CardContent className="pt-6">
