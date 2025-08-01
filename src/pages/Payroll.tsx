@@ -384,7 +384,7 @@ const Payroll: React.FC = () => {
               </TabsList>
               
               <TabsContent value="enhanced">
-                <EnhancedPayrollCalculator employees={employees} onCalculationComplete={handleCalculationComplete} />
+                <EnhancedPayrollCalculator onCalculationComplete={handleCalculationComplete} />
               </TabsContent>
               
               <TabsContent value="simple">

@@ -10,11 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, Clock, Save, Edit, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, addWeeks, eachWeekOfInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Employee } from '@/types/payroll';
 import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
+import { useEnhancedPayroll } from '@/hooks/useEnhancedPayroll';
 
 interface WeeklyCalculation {
   weekNumber: number;
@@ -42,14 +44,23 @@ interface PayrollPeriodData {
 }
 
 interface EnhancedPayrollCalculatorProps {
-  employees: Employee[];
   onCalculationComplete?: (employee: Employee, calculation: any, input: PayrollInput) => void;
 }
 
 export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps> = ({
-  employees,
   onCalculationComplete,
 }) => {
+  const { 
+    employees, 
+    payrollPeriods, 
+    loading, 
+    saving, 
+    savePayrollPeriod, 
+    loadPayrollPeriod,
+    deletePayrollPeriod,
+    markAsPaid 
+  } = useEnhancedPayroll();
+  
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [periodStart, setPeriodStart] = useState<Date>();
   const [periodEnd, setPeriodEnd] = useState<Date>();
@@ -63,6 +74,15 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   }>>({});
   const [errors, setErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'setup' | 'calculator' | 'summary'>('setup');
+  
+  // Save form state
+  const [saveFormData, setSaveFormData] = useState({
+    notes: '',
+    transactionId: '',
+    enteredDate: format(new Date(), 'yyyy-MM-dd'),
+    paidDate: '',
+    status: 'calculated' as 'draft' | 'calculated' | 'processed' | 'paid'
+  });
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
@@ -225,6 +245,70 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       totalNetPay: 0,
       totalDaysWorked: 0,
     });
+  };
+
+  const handleSavePayrollPeriod = async () => {
+    if (!payrollPeriod || !selectedEmployee) return;
+
+    const totals = getTotalSummary();
+    if (!totals) return;
+
+    const payrollData = {
+      weeks: payrollPeriod.weeks.map(week => ({
+        ...week,
+        weekStart: week.weekStart.toISOString(),
+        weekEnd: week.weekEnd.toISOString(),
+        payDay: week.payDay.toISOString(),
+      })),
+      employee: selectedEmployee,
+      totals
+    };
+
+    await savePayrollPeriod({
+      name: payrollPeriod.periodName,
+      start_date: payrollPeriod.startDate.toISOString().split('T')[0],
+      end_date: payrollPeriod.endDate.toISOString().split('T')[0],
+      pay_date: payrollPeriod.weeks[payrollPeriod.weeks.length - 1]?.payDay.toISOString().split('T')[0] || '',
+      payroll_data: payrollData,
+      notes: saveFormData.notes,
+      transaction_id: saveFormData.transactionId,
+      entered_date: saveFormData.enteredDate,
+      status: saveFormData.status
+    });
+  };
+
+  const loadExistingPeriod = async (periodId: string) => {
+    const period = await loadPayrollPeriod(periodId);
+    if (!period || !period.payroll_data) return;
+
+    const data = period.payroll_data;
+    
+    // Reconstruct the payroll period from saved data
+    const reconstructedPeriod: PayrollPeriodData = {
+      periodName: period.name,
+      startDate: new Date(period.start_date),
+      endDate: new Date(period.end_date),
+      totalWeeks: data.weeks.length,
+      weeks: data.weeks.map((week: any) => ({
+        ...week,
+        weekStart: new Date(week.weekStart),
+        weekEnd: new Date(week.weekEnd),
+        payDay: new Date(week.payDay),
+      }))
+    };
+
+    setPayrollPeriod(reconstructedPeriod);
+    setSelectedEmployeeId(data.employee.id);
+    setPeriodStart(new Date(period.start_date));
+    setPeriodEnd(new Date(period.end_date));
+    setSaveFormData({
+      notes: period.notes || '',
+      transactionId: period.transaction_id || '',
+      enteredDate: period.entered_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'),
+      paidDate: period.paid_date?.split('T')[0] || '',
+      status: period.status
+    });
+    setActiveTab('summary');
   };
 
   return (
@@ -481,10 +565,86 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                     </Card>
                   </div>
 
-                  <div className="flex gap-3">
-                    <Button onClick={exportPayrollPeriod} className="flex-1">
+                  {/* Save Form */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Save className="h-4 w-4" />
+                        Save Payroll Period
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="enteredDate">Entered Date</Label>
+                          <Input
+                            id="enteredDate"
+                            type="date"
+                            value={saveFormData.enteredDate}
+                            onChange={(e) => setSaveFormData(prev => ({ ...prev, enteredDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="paidDate">Paid Date (Optional)</Label>
+                          <Input
+                            id="paidDate"
+                            type="date"
+                            value={saveFormData.paidDate}
+                            onChange={(e) => setSaveFormData(prev => ({ ...prev, paidDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
+                          <Input
+                            id="transactionId"
+                            placeholder="Enter transaction/reference ID"
+                            value={saveFormData.transactionId}
+                            onChange={(e) => setSaveFormData(prev => ({ ...prev, transactionId: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="status">Status</Label>
+                          <Select 
+                            value={saveFormData.status} 
+                            onValueChange={(value) => setSaveFormData(prev => ({ ...prev, status: value as any }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="calculated">Calculated</SelectItem>
+                              <SelectItem value="processed">Processed</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="notes">Notes (Optional)</Label>
+                        <Textarea
+                          id="notes"
+                          placeholder="Add any additional notes..."
+                          value={saveFormData.notes}
+                          onChange={(e) => setSaveFormData(prev => ({ ...prev, notes: e.target.value }))}
+                          rows={3}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Button 
+                      onClick={handleSavePayrollPeriod} 
+                      disabled={saving}
+                      className="flex items-center gap-2"
+                    >
+                      {saving ? <AlertCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {saving ? 'Saving...' : 'Save Payroll Period'}
+                    </Button>
+                    <Button onClick={exportPayrollPeriod} variant="outline">
                       <Download className="h-4 w-4 mr-2" />
-                      Export Payroll Period
+                      Export CSV
                     </Button>
                     <Button 
                       variant="outline" 
@@ -494,6 +654,60 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                       New Period
                     </Button>
                   </div>
+
+                  {/* Load Existing Periods */}
+                  {payrollPeriods.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Recent Payroll Periods
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {payrollPeriods.slice(0, 5).map((period) => (
+                            <div key={period.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                              <div className="flex-1">
+                                <div className="font-medium">{period.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {format(new Date(period.start_date), 'MMM dd')} - {format(new Date(period.end_date), 'MMM dd, yyyy')}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge 
+                                    variant={
+                                      period.status === 'paid' ? 'default' : 
+                                      period.status === 'processed' ? 'secondary' : 
+                                      'outline'
+                                    }
+                                  >
+                                    {period.status}
+                                  </Badge>
+                                  {period.status === 'paid' && <CheckCircle className="h-3 w-3 text-green-600" />}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => loadExistingPeriod(period.id)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deletePayrollPeriod(period.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               )}
             </TabsContent>
