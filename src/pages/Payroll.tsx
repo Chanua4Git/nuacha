@@ -11,6 +11,7 @@ import { DemoPayrollCalculator } from '@/components/payroll/DemoPayrollCalculato
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import { useSupabasePayrollDemo } from '@/hooks/useSupabasePayrollDemo';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import PayrollLeadCaptureModal from '@/components/payroll/PayrollLeadCaptureModal';
 import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
 import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
 import { supabase } from '@/lib/supabase';
@@ -39,6 +40,9 @@ const Payroll: React.FC = () => {
     addPayrollEntry,
     getEntriesForPeriod
   } = payrollHook;
+  
+  // Lead capture state - only available in demo mode
+  const demoLeadCapture = !user ? demoPayroll : null;
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
@@ -538,6 +542,15 @@ const Payroll: React.FC = () => {
             </Button>
           </div>
         </div>
+      )}
+      
+      {/* Payroll Lead Capture Modal */}
+      {!user && demoLeadCapture && (
+        <PayrollLeadCaptureModal
+          open={demoLeadCapture.leadCaptureOpen}
+          onOpenChange={demoLeadCapture.setLeadCaptureOpen}
+          actionType={demoLeadCapture.leadCaptureAction}
+        />
       )}
     </div>
   );

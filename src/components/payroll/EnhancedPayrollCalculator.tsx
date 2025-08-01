@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { Employee } from '@/types/payroll';
 import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
 import { useEnhancedPayroll } from '@/hooks/useEnhancedPayroll';
+import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 interface WeeklyCalculation {
   weekNumber: number;
@@ -50,6 +52,7 @@ interface EnhancedPayrollCalculatorProps {
 export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps> = ({
   onCalculationComplete,
 }) => {
+  const { user } = useAuth();
   const { 
     employees, 
     payrollPeriods, 
@@ -60,6 +63,9 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     deletePayrollPeriod,
     markAsPaid 
   } = useEnhancedPayroll();
+  
+  const [leadCaptureOpen, setLeadCaptureOpen] = useState(false);
+  const [leadCaptureAction, setLeadCaptureAction] = useState<'save' | 'load' | 'export' | 'create_period' | 'advanced_features'>('save');
   
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [periodStart, setPeriodStart] = useState<Date>();
@@ -198,6 +204,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   };
 
   const exportPayrollPeriod = () => {
+    if (!user) {
+      setLeadCaptureAction('export');
+      setLeadCaptureOpen(true);
+      return;
+    }
+
     if (!payrollPeriod || !selectedEmployee) return;
 
     const csvData = [
@@ -248,6 +260,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   };
 
   const handleSavePayrollPeriod = async () => {
+    if (!user) {
+      setLeadCaptureAction('save');
+      setLeadCaptureOpen(true);
+      return;
+    }
+
     if (!payrollPeriod || !selectedEmployee) return;
 
     const totals = getTotalSummary();
@@ -278,6 +296,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   };
 
   const loadExistingPeriod = async (periodId: string) => {
+    if (!user) {
+      setLeadCaptureAction('load');
+      setLeadCaptureOpen(true);
+      return;
+    }
+
     const period = await loadPayrollPeriod(periodId);
     if (!period || !period.payroll_data) return;
 
@@ -714,6 +738,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
           </Tabs>
         </CardContent>
       </Card>
+      
+      <PayrollLeadCaptureModal
+        open={leadCaptureOpen}
+        onOpenChange={setLeadCaptureOpen}
+        actionType={leadCaptureAction}
+      />
     </div>
   );
 };

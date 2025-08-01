@@ -92,6 +92,8 @@ export const useSupabasePayrollDemo = () => {
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
   const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [leadCaptureOpen, setLeadCaptureOpen] = useState(false);
+  const [leadCaptureAction, setLeadCaptureAction] = useState<'save' | 'load' | 'export' | 'create_period' | 'advanced_features'>('save');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -108,11 +110,8 @@ export const useSupabasePayrollDemo = () => {
   // Demo-safe functions that show notifications but don't save data
   const addEmployee = async (employeeData: Omit<Employee, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) {
-      toast({
-        title: "Demo Mode",
-        description: "Sign up to save employee data permanently. This is just a preview.",
-        variant: "default",
-      });
+      setLeadCaptureAction('advanced_features');
+      setLeadCaptureOpen(true);
       return null;
     }
     
@@ -127,11 +126,8 @@ export const useSupabasePayrollDemo = () => {
 
   const addPayrollPeriod = async (periodData: Omit<PayrollPeriod, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'entered_date'>) => {
     if (!user) {
-      toast({
-        title: "Demo Mode",
-        description: "Sign up to create payroll periods. This is just a preview.",
-        variant: "default",
-      });
+      setLeadCaptureAction('create_period');
+      setLeadCaptureOpen(true);
       return null;
     }
     
@@ -188,11 +184,8 @@ export const useSupabasePayrollDemo = () => {
 
   const removeEmployee = async (employeeId: string) => {
     if (!user) {
-      toast({
-        title: "Demo Mode",
-        description: "Sign up to manage employees. This is just a preview.",
-        variant: "default",
-      });
+      setLeadCaptureAction('advanced_features');
+      setLeadCaptureOpen(true);
       return;
     }
 
@@ -205,11 +198,8 @@ export const useSupabasePayrollDemo = () => {
 
   const updateEmployee = async (employeeId: string, updates: Partial<Employee>) => {
     if (!user) {
-      toast({
-        title: "Demo Mode",
-        description: "Sign up to update employee data. This is just a preview.",
-        variant: "default",
-      });
+      setLeadCaptureAction('advanced_features');
+      setLeadCaptureOpen(true);
       return;
     }
 
@@ -232,6 +222,12 @@ export const useSupabasePayrollDemo = () => {
     addPayrollEntry,
     calculateEmployeePayroll,
     updatePayrollPeriodTotals,
-    getEntriesForPeriod
+    getEntriesForPeriod,
+    
+    // Lead capture modal state
+    leadCaptureOpen,
+    setLeadCaptureOpen,
+    leadCaptureAction,
+    setLeadCaptureAction
   };
 };
