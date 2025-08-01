@@ -72,17 +72,14 @@ export const AuthDemoStepCard = ({
             {description}
           </p>
         )}
-        <button
-          type="button"
-          className="mt-3 w-full max-w-xs text-base rounded-xl inline-flex justify-center items-center px-6 py-3 font-medium shadow focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 transition disabled:opacity-60 disabled:cursor-not-allowed bg-primary text-primary-foreground hover:bg-primary/90"
+        <Button
+          className="mt-3 w-full max-w-xs text-base rounded-xl"
           disabled={disabled}
-          aria-disabled={disabled}
-          tabIndex={disabled ? -1 : 0}
           onClick={onClick}
           style={{ display: highlight || !disabled ? "" : "none" }}
         >
           {ctaLabel}
-        </button>
+        </Button>
         {/* Fallback link for non-interactive cards */}
         {!highlight && disabled && (
           <a
