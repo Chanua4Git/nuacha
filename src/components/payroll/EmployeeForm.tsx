@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { EmployeeFormData } from '@/types/payroll';
 
-const employeeSchema = z.object({
+// Form schema that accepts strings for numeric fields
+const employeeFormSchema = z.object({
   employee_number: z.string().min(1, 'Employee number is required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
@@ -18,23 +19,29 @@ const employeeSchema = z.object({
   phone: z.string().optional(),
   national_id: z.string().optional(),
   employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly']),
-  hourly_rate: z.coerce.number().positive('Must be positive').optional(),
-  monthly_salary: z.coerce.number().positive('Must be positive').optional(),
-  daily_rate: z.coerce.number().positive('Must be positive').optional(),
-  weekly_rate: z.coerce.number().positive('Must be positive').optional(),
+  hourly_rate: z.string().optional(),
+  monthly_salary: z.string().optional(),
+  daily_rate: z.string().optional(),
+  weekly_rate: z.string().optional(),
   nis_number: z.string().optional(),
   date_hired: z.string().optional(),
 }).refine((data) => {
   // Validate that the appropriate rate field is provided based on employment type
+  const validateRate = (rateStr: string | undefined) => {
+    if (!rateStr || rateStr.trim() === '') return false;
+    const rate = Number(rateStr);
+    return !isNaN(rate) && rate > 0;
+  };
+
   switch (data.employment_type) {
     case 'hourly':
-      return data.hourly_rate && data.hourly_rate > 0;
+      return validateRate(data.hourly_rate);
     case 'monthly':
-      return data.monthly_salary && data.monthly_salary > 0;
+      return validateRate(data.monthly_salary);
     case 'daily':
-      return data.daily_rate && data.daily_rate > 0;
+      return validateRate(data.daily_rate);
     case 'weekly':
-      return data.weekly_rate && data.weekly_rate > 0;
+      return validateRate(data.weekly_rate);
     default:
       return false;
   }
@@ -42,6 +49,8 @@ const employeeSchema = z.object({
   message: "Rate field is required and must be greater than 0 for the selected employment type",
   path: ["employment_type"],
 });
+
+type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 interface EmployeeFormProps {
   onSubmit: (data: EmployeeFormData) => Promise<void>;
@@ -65,27 +74,45 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     setError,
     clearErrors,
     formState: { errors, isValid, isDirty },
-  } = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeSchema),
-    defaultValues: initialData,
+  } = useForm<EmployeeFormValues>({
+    resolver: zodResolver(employeeFormSchema),
+    defaultValues: initialData ? {
+      ...initialData,
+      // Convert numeric fields to strings for consistent form handling
+      hourly_rate: initialData.hourly_rate?.toString() || '',
+      monthly_salary: initialData.monthly_salary?.toString() || '',
+      daily_rate: initialData.daily_rate?.toString() || '',
+      weekly_rate: initialData.weekly_rate?.toString() || '',
+    } : {},
     mode: 'onChange',
   });
 
   const employmentType = watch('employment_type');
   const isEditMode = Boolean(initialData);
 
-  const handleFormSubmit = async (data: EmployeeFormData) => {
+  // Debug logging for form state (temporary)
+  console.log('Form State Debug:', { isValid, isDirty, isEditMode });
+
+  const handleFormSubmit = async (data: EmployeeFormValues) => {
     setIsSubmitting(true);
     clearErrors();
     
     try {
       // Ensure numeric fields are properly converted
-      const processedData = {
-        ...data,
-        hourly_rate: data.hourly_rate ? Number(data.hourly_rate) : null,
-        monthly_salary: data.monthly_salary ? Number(data.monthly_salary) : null,
-        daily_rate: data.daily_rate ? Number(data.daily_rate) : null,
-        weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : null,
+      const processedData: EmployeeFormData = {
+        employee_number: data.employee_number,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        national_id: data.national_id || undefined,
+        employment_type: data.employment_type,
+        hourly_rate: data.hourly_rate ? Number(data.hourly_rate) : undefined,
+        monthly_salary: data.monthly_salary ? Number(data.monthly_salary) : undefined,
+        daily_rate: data.daily_rate ? Number(data.daily_rate) : undefined,
+        weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : undefined,
+        nis_number: data.nis_number || undefined,
+        date_hired: data.date_hired || undefined,
       };
 
       await onSubmit(processedData);
@@ -236,7 +263,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 id="hourly_rate"
                 type="number"
                 step="0.01"
-                {...register('hourly_rate', { valueAsNumber: true })}
+                {...register('hourly_rate')}
                 placeholder="25.00"
               />
               {errors.hourly_rate && (
@@ -254,7 +281,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 id="daily_rate"
                 type="number"
                 step="0.01"
-                {...register('daily_rate', { valueAsNumber: true })}
+                {...register('daily_rate')}
                 placeholder="200.00"
               />
               {errors.daily_rate && (
@@ -272,7 +299,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 id="weekly_rate"
                 type="number"
                 step="0.01"
-                {...register('weekly_rate', { valueAsNumber: true })}
+                {...register('weekly_rate')}
                 placeholder="1000.00"
               />
               {errors.weekly_rate && (
@@ -290,7 +317,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 id="monthly_salary"
                 type="number"
                 step="0.01"
-                {...register('monthly_salary', { valueAsNumber: true })}
+                {...register('monthly_salary')}
                 placeholder="5000.00"
               />
               {errors.monthly_salary && (
@@ -320,7 +347,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             <Button 
               type="submit" 
               className="flex-1"
-              disabled={isSubmitting || loading || !isValid || (isEditMode && !isDirty)}
+              disabled={isSubmitting || loading || !isValid}
             >
               {(isSubmitting || loading) ? (
                 <>
