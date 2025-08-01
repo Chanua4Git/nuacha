@@ -9,10 +9,11 @@ export interface Employee {
   email?: string;
   phone?: string;
   national_id?: string; // TT National ID
-  employment_type: 'hourly' | 'monthly' | 'daily';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
+  weekly_rate?: number;
   nis_number?: string; // National Insurance Scheme number
   is_active: boolean;
   date_hired?: string;
@@ -99,10 +100,11 @@ export interface EmployeeFormData {
   email?: string;
   phone?: string;
   national_id?: string;
-  employment_type: 'hourly' | 'monthly' | 'daily';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
+  weekly_rate?: number;
   nis_number?: string;
   date_hired?: string;
 }

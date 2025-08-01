@@ -16,10 +16,11 @@ const employeeSchema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
   national_id: z.string().optional(),
-  employment_type: z.enum(['hourly', 'monthly', 'daily']),
+  employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly']),
   hourly_rate: z.number().positive('Must be positive').optional(),
   monthly_salary: z.number().positive('Must be positive').optional(),
   daily_rate: z.number().positive('Must be positive').optional(),
+  weekly_rate: z.number().positive('Must be positive').optional(),
   nis_number: z.string().optional(),
   date_hired: z.string().optional(),
 });
@@ -78,16 +79,17 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Select
                 value={employmentType}
                 onValueChange={(value) => 
-                  setValue('employment_type', value as 'hourly' | 'monthly' | 'daily')
+                  setValue('employment_type', value as 'hourly' | 'monthly' | 'daily' | 'weekly')
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="hourly">Hourly</SelectItem>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
               {errors.employment_type && (
@@ -206,6 +208,24 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               {errors.daily_rate && (
                 <p className="text-sm text-destructive">
                   {errors.daily_rate.message}
+                </p>
+              )}
+            </div>
+          )}
+
+          {employmentType === 'weekly' && (
+            <div className="space-y-2">
+              <Label htmlFor="weekly_rate">Weekly Rate (TTD) *</Label>
+              <Input
+                id="weekly_rate"
+                type="number"
+                step="0.01"
+                {...register('weekly_rate', { valueAsNumber: true })}
+                placeholder="1000.00"
+              />
+              {errors.weekly_rate && (
+                <p className="text-sm text-destructive">
+                  {errors.weekly_rate.message}
                 </p>
               )}
             </div>

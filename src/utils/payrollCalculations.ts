@@ -26,10 +26,11 @@ export interface PayrollCalculationResult {
 }
 
 export interface EmployeeData {
-  employment_type: 'hourly' | 'monthly' | 'daily';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
+  weekly_rate?: number;
 }
 
 export interface PayrollInput {
@@ -76,6 +77,9 @@ export const calculateGrossPay = (
     case 'daily':
       basePay = (employee.daily_rate || 0) * (input.days_worked || 0);
       break;
+    case 'weekly':
+      basePay = employee.weekly_rate || 0;
+      break;
     case 'monthly':
       basePay = employee.monthly_salary || 0;
       break;
@@ -101,6 +105,10 @@ export const calculateWeeklyWage = (
       // Convert daily pay to weekly (5-day work week)
       const dailyRate = employee.daily_rate || 0;
       return dailyRate * 5;
+    
+    case 'weekly':
+      // For weekly employees, return the weekly rate directly
+      return employee.weekly_rate || 0;
     
     case 'monthly':
       // Convert monthly to weekly (4.33 weeks per month average)
@@ -169,6 +177,12 @@ export const validatePayrollInput = (
     }
     if (!input.days_worked || input.days_worked <= 0) {
       errors.push('Days worked must be greater than 0');
+    }
+  }
+
+  if (employee.employment_type === 'weekly') {
+    if (!employee.weekly_rate || employee.weekly_rate <= 0) {
+      errors.push('Weekly rate must be greater than 0');
     }
   }
 
