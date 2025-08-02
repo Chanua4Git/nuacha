@@ -5,10 +5,8 @@ import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
 import { AuthDemoSteps } from "@/components/landing/AuthDemoSteps";
-
 const Landing = () => {
-  return (
-    <>
+  return <>
       <DemoBreadcrumbs currentPage="home" />
       <div className="min-h-screen bg-background py-12 px-4">
         {/* Auth Demo Steps - Moved above hero */}
@@ -118,30 +116,7 @@ const Landing = () => {
         </section>
 
         {/* Call to Action Section */}
-        <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-playfair mb-6">
-              Ready to Transform Your Financial Management?
-            </h2>
-            <p className="text-lg mb-8 text-white/90">
-              Join families and businesses across Trinidad & Tobago who trust Nuacha for their financial peace of mind.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/demo">
-                <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-[#5A7684] hover:bg-white/90">
-                  Start with Expense Tracking
-                  <ArrowRight className="ml-2" />
-                </Button>
-              </Link>
-              <Link to="/payroll">
-                <Button size="lg" variant="outline" className="rounded-full px-8 border-white text-white hover:bg-white hover:text-[#5A7684]">
-                  Try Payroll System
-                  <Calculator className="ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        
 
         {/* Footer */}
         <footer className="py-12 px-4 md:px-6 lg:px-8 bg-background">
@@ -203,10 +178,8 @@ const Landing = () => {
           </div>
         </footer>
       </div>
-    </>
-  );
+    </>;
 };
-
 const features = [{
   title: "Multi-Family Expense Management",
   description: "Effortlessly track expenses across multiple households with intelligent receipt scanning and organized categorization.",
@@ -232,5 +205,4 @@ const features = [{
   description: "Your financial data is protected with bank-level security, ensuring privacy and peace of mind for families and businesses.",
   icon: Shield
 }];
-
 export default Landing;
