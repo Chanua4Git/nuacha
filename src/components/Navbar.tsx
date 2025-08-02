@@ -51,9 +51,6 @@ const Navbar = () => {
   // Payroll dropdown items
   const payrollItems = [
     { name: 'Payroll Dashboard', icon: <FileBarChart className="h-4 w-4" />, path: '/payroll' },
-    { name: 'Employee Management', icon: <Users className="h-4 w-4" />, path: '/payroll/employees' },
-    { name: 'Payroll Calculator', icon: <Calculator className="h-4 w-4" />, path: '/payroll/calculator' },
-    { name: 'Payroll Reports', icon: <BarChart3 className="h-4 w-4" />, path: '/payroll/reports' },
   ];
 
   // Mobile navigation items (flattened for mobile)
