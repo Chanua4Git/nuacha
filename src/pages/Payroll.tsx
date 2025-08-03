@@ -16,9 +16,16 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Employee, PayrollEntry } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
+import { PayPalPaymentButton } from "@/components/payroll/PayPalPaymentButton";
+import { usePayPalPayment } from "@/hooks/usePayPalPayment";
+import { useSearchParams } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { captureOrder } = usePayPalPayment();
+  const { toast } = useToast();
   
   const {
     employees,
@@ -37,6 +44,34 @@ const Payroll: React.FC = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState('about');
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+
+  // Handle PayPal return
+  React.useEffect(() => {
+    const handlePayPalReturn = async () => {
+      const token = searchParams.get('token');
+      const success = searchParams.get('success');
+      const cancelled = searchParams.get('cancelled');
+
+      if (success === 'true' && token) {
+        // PayPal payment was approved, now capture it
+        const captured = await captureOrder(token);
+        if (captured) {
+          // Remove the URL parameters after successful capture
+          window.history.replaceState({}, '', '/payroll');
+        }
+      } else if (cancelled === 'true') {
+        toast({
+          title: "Payment Cancelled",
+          description: "Your PayPal payment was cancelled.",
+          variant: "destructive",
+        });
+        // Remove the URL parameters
+        window.history.replaceState({}, '', '/payroll');
+      }
+    };
+
+    handlePayPalReturn();
+  }, [searchParams, captureOrder, toast]);
   const handleAddEmployee = async (data: any) => {
     const result = await addEmployee({
       ...data,
