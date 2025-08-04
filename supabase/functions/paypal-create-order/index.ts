@@ -14,8 +14,8 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get auth token from request
     const authHeader = req.headers.get('Authorization')
@@ -23,14 +23,9 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Set auth for supabase client
-    supabase.auth.setSession({
-      access_token: authHeader.replace('Bearer ', ''),
-      refresh_token: ''
-    })
-
-    // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    // Get user from JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
     if (userError || !user) {
       throw new Error('Unauthorized')
     }
@@ -92,7 +87,7 @@ serve(async (req) => {
         intent: 'CAPTURE',
         purchase_units: [{
           amount: {
-            currency_code: 'USD',
+            currency_code: 'TTD',
             value: amount.toString()
           },
           description: `Payroll processing for period ${payrollPeriod.name}`,
@@ -123,7 +118,7 @@ serve(async (req) => {
         amount: amount,
         status: 'created',
         paypal_order_id: orderData.id,
-        currency: 'USD'
+        currency: 'TTD'
       })
 
     if (paymentError) {

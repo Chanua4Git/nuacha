@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, Clock, Save, Edit, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, Clock, Save, Edit, Trash2, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, addWeeks, eachWeekOfInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Employee } from '@/types/payroll';
@@ -19,6 +19,8 @@ import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validat
 import { useEnhancedPayroll } from '@/hooks/useEnhancedPayroll';
 import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { PayrollPeriodManager } from './PayrollPeriodManager';
+import { PayPalPaymentButton } from './PayPalPaymentButton';
 
 interface WeeklyCalculation {
   weekNumber: number;
@@ -349,11 +351,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="setup">Setup Period</TabsTrigger>
-              <TabsTrigger value="calculator" disabled={!payrollPeriod}>Weekly Calculator</TabsTrigger>
-              <TabsTrigger value="summary" disabled={!payrollPeriod}>Summary & Export</TabsTrigger>
-            </TabsList>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="setup">Setup Period</TabsTrigger>
+                <TabsTrigger value="calculator" disabled={!payrollPeriod}>Weekly Calculator</TabsTrigger>
+                <TabsTrigger value="summary" disabled={!payrollPeriod}>Summary & Export</TabsTrigger>
+                <TabsTrigger value="manage">Saved Periods</TabsTrigger>
+              </TabsList>
 
             {/* Setup Tab */}
             <TabsContent value="setup" className="space-y-6">
@@ -734,6 +737,11 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                   )}
                 </>
               )}
+            </TabsContent>
+
+            {/* Manage Tab */}
+            <TabsContent value="manage" className="space-y-6">
+              <PayrollPeriodManager onLoadPeriod={loadExistingPeriod} />
             </TabsContent>
           </Tabs>
         </CardContent>
