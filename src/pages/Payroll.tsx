@@ -9,6 +9,7 @@ import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCal
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
 import { useUnifiedPayroll } from '@/hooks/useUnifiedPayroll';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import PayrollLeadCaptureModal from '@/components/payroll/PayrollLeadCaptureModal';
 import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
 import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
@@ -20,6 +21,8 @@ import { PayPalPaymentButton } from "@/components/payroll/PayPalPaymentButton";
 import { usePayPalPayment } from "@/hooks/usePayPalPayment";
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { SubscriptionManager } from "@/components/payroll/SubscriptionManager";
+import { Crown } from "lucide-react";
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -211,6 +214,12 @@ const Payroll: React.FC = () => {
           <TabsTrigger value="reports" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
             Reports
           </TabsTrigger>
+          {user && (
+            <TabsTrigger value="subscription" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+              <Crown className="h-4 w-4 mr-2" />
+              Subscription
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="about" className="space-y-8">
@@ -526,6 +535,18 @@ const Payroll: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {user && (
+          <TabsContent value="subscription" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Subscription Management</h2>
+              <p className="text-muted-foreground">
+                Manage your subscription plans and billing
+              </p>
+            </div>
+            <SubscriptionManager />
+          </TabsContent>
+        )}
       </Tabs>
       </div>
 
