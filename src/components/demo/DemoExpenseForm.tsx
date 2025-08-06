@@ -38,6 +38,14 @@ const DemoExpenseForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDetailedView, setShowDetailedView] = useState(false);
 
+  const handleDataExtracted = (data: OCRResult) => {
+    // Auto-show detailed view if line items are detected (matching authenticated version behavior)
+    if (data.lineItems && data.lineItems.length > 0) {
+      setShowDetailedView(true);
+    }
+    onDataExtracted(data);
+  };
+
   const handleRetry = () => {
     if (imagePreview) {
       // Re-process the current image - this would require accessing the current file
@@ -97,7 +105,7 @@ const DemoExpenseForm = ({
             <ReceiptUpload
               onImageUpload={onImageUpload}
               onImageRemove={onImageRemove}
-              onDataExtracted={onDataExtracted}
+              onDataExtracted={handleDataExtracted}
               imagePreview={imagePreview}
             />
           </div>
