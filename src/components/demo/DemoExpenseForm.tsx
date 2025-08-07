@@ -39,10 +39,18 @@ const DemoExpenseForm = ({
   const [showDetailedView, setShowDetailedView] = useState(false);
 
   const handleDataExtracted = (data: OCRResult) => {
-    // Auto-show detailed view if line items are detected (matching authenticated version behavior)
+    console.log('🎯 Demo mode: Data extracted, checking for line items:', data);
+    
+    // Auto-show detailed view if line items are detected (be generous for demo mode)
     if (data.lineItems && data.lineItems.length > 0) {
+      console.log('🎯 Demo mode: Line items found, showing detailed view:', data.lineItems.length);
+      setShowDetailedView(true);
+    } else if (data.storeDetails || data.total || data.tax) {
+      // For demo mode, also show detailed view if we have structured data even without line items
+      console.log('🎯 Demo mode: Structured data found, showing detailed view');
       setShowDetailedView(true);
     }
+    
     onDataExtracted(data);
   };
 

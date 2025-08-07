@@ -17,18 +17,20 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
     // For demo users (unauthenticated), we need to send the file directly
     if (isLocalFileUrl) {
       try {
+        console.log('🎯 Demo mode: Converting blob to base64 for OCR processing');
         const response = await fetch(receiptUrl);
         const blob = await response.blob();
         
         // Convert blob to base64
         const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
+        const base64Promise = new Promise<string>((resolve, reject) => {
           reader.onloadend = () => {
             const base64data = reader.result as string;
             // Remove the data URL prefix
             const base64Content = base64data.split(',')[1];
             resolve(base64Content);
           };
+          reader.onerror = () => reject(new Error('Failed to read file'));
         });
         reader.readAsDataURL(blob);
         
@@ -39,8 +41,10 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
           isDemo: true
         };
         
+        console.log('🎯 Demo mode: Base64 conversion complete, content type:', blob.type);
+        
       } catch (error) {
-        console.error('Error processing local file:', error);
+        console.error('❌ Error processing local file:', error);
         throw new Error('Failed to process local receipt file');
       }
     }
@@ -177,8 +181,20 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
 }
 
 export function validateOCRResult(result: OCRResult): boolean {
+  console.log('🎯 Validating OCR result:', {
+    confidence: result.confidence,
+    hasAmount: !!result.amount,
+    hasDate: !!result.date,
+    hasLineItems: result.lineItems?.length || 0,
+    hasStoreDetails: !!result.storeDetails,
+    confidenceSummary: result.confidence_summary
+  });
+  
   // Enhanced validation that takes into account more than just overall confidence
-  if (!result.confidence) return false;
+  if (!result.confidence) {
+    console.log('❌ Validation failed: No confidence score');
+    return false;
+  }
   
   // Check for minimum viable data
   const hasBasicData = Boolean(result.amount && result.date);
@@ -188,16 +204,36 @@ export function validateOCRResult(result: OCRResult): boolean {
     const summary = result.confidence_summary;
     // Check if critical fields have reasonable confidence
     if (summary.total > 0.6 && summary.date > 0.5) {
+      console.log('✅ Validation passed: Good total and date confidence');
       return true;
     }
     // If line items have good confidence, allow the result even if other fields are weaker
     if (summary.line_items > 0.7 && hasBasicData) {
+      console.log('✅ Validation passed: Good line items confidence');
+      return true;
+    }
+    // For demo mode, be more lenient - if we have line items at all, show them
+    if (summary.line_items > 0.3 && result.lineItems && result.lineItems.length > 0) {
+      console.log('✅ Validation passed: Demo mode - lenient line items check');
       return true;
     }
   }
   
+  // Be more lenient for demo mode - if we have structured data, allow it
+  if (result.lineItems && result.lineItems.length > 0) {
+    console.log('✅ Validation passed: Demo mode - has line items');
+    return true;
+  }
+  
+  if (result.storeDetails || result.total || result.tax) {
+    console.log('✅ Validation passed: Demo mode - has structured data');
+    return true;
+  }
+  
   // Fall back to overall confidence check
-  return result.confidence > 0.3 && hasBasicData;
+  const isValid = result.confidence > 0.2 && hasBasicData; // Lowered threshold for demo
+  console.log(isValid ? '✅ Validation passed: Basic confidence check' : '❌ Validation failed: Low confidence and missing basic data');
+  return isValid;
 }
 
 // Fix: Update the saveReceiptDetailsAndLineItems function

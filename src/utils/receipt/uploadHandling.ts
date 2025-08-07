@@ -17,19 +17,18 @@ export async function handleReceiptUpload(file: File): Promise<string | null> {
       console.log('📄 Processing receipt:', receiptUrl);
       return receiptUrl;
     } 
-    // For unauthenticated users (demo mode), return a temporary object URL
+    // For unauthenticated users (demo mode), create a blob URL for direct processing
     else {
-      // Check if the receipts bucket exists, if not create it
-      await ensureReceiptsBucketExists();
+      console.log('🎯 Demo mode: Creating blob URL for direct OCR processing');
       
-      // Use a generic user ID for demo purposes
-      const receiptUrl = await uploadReceiptToStorage(file, 'demo-user');
-      if (!receiptUrl) {
-        return null;
-      }
+      // Convert HEIC to JPEG if needed
+      const processedFile = await convertHeicToJpeg(file);
       
-      console.log('📄 Processing receipt:', receiptUrl);
-      return receiptUrl;
+      // Create a blob URL that can be processed directly
+      const blobUrl = URL.createObjectURL(processedFile);
+      
+      console.log('📄 Demo mode processing receipt:', blobUrl);
+      return blobUrl;
     }
   } catch (error) {
     console.error('Error in handleReceiptUpload:', error);
