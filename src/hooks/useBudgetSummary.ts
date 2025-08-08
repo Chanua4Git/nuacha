@@ -41,13 +41,24 @@ export function useBudgetSummary(selectedMonth: Date) {
 
       if (categoriesError) throw categoriesError;
 
-      // Fetch expenses for the selected month
+      // Fetch user's families first
+      const { data: userFamilies, error: familiesError } = await supabase
+        .from('families')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (familiesError) throw familiesError;
+
+      // Fetch expenses for the selected month, filtered by user's families
       const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
       const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+      
+      const familyIds = (userFamilies || []).map(f => f.id);
       
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
         .select('*')
+        .in('family_id', familyIds)
         .gte('date', startOfMonth.toISOString().split('T')[0])
         .lte('date', endOfMonth.toISOString().split('T')[0]);
 
