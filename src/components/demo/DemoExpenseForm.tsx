@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import DetailedReceiptView from '@/components/DetailedReceiptView';
 import { format } from 'date-fns';
+import { categorizeFromReceipt } from '@/utils/budgetUtils';
 
 interface DemoExpenseFormProps {
   onComplete: (data: any) => void;
@@ -37,9 +38,26 @@ const DemoExpenseForm = ({
   const [place, setPlace] = useState(extractedData?.place || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDetailedView, setShowDetailedView] = useState(false);
+  const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
+
+  // Mock budget categories for demo
+  const demoBudgetCategories = [
+    { id: '1', name: 'Groceries', group_type: 'needs' },
+    { id: '2', name: 'Gas/Fuel', group_type: 'needs' },
+    { id: '3', name: 'Dining Out', group_type: 'wants' },
+    { id: '4', name: 'Entertainment', group_type: 'wants' }
+  ];
 
   const handleDataExtracted = (data: OCRResult) => {
     console.log('🎯 Demo mode: Data extracted, checking for line items:', data);
+    
+    // Auto-categorize for budget demo
+    if (data.place && data.description) {
+      const suggestedCategoryId = categorizeFromReceipt(data.place, data.description, demoBudgetCategories);
+      if (suggestedCategoryId) {
+        setBudgetCategoryId(suggestedCategoryId);
+      }
+    }
     
     // Auto-show detailed view if line items are detected (be generous for demo mode)
     if (data.lineItems && data.lineItems.length > 0) {
@@ -86,7 +104,8 @@ const DemoExpenseForm = ({
         category,
         date: formattedDate,
         place,
-        receiptUrl: imagePreview || undefined
+        receiptUrl: imagePreview || undefined,
+        budgetCategoryId
       };
       
       // Send the demo expense data to the parent component

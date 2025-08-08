@@ -18,9 +18,12 @@ import FamilySelector from './FamilySelector';
 import MultipleMemberSelector from './MultipleMemberSelector';
 import { useExpenseMembers } from '@/hooks/useExpenseMembers';
 import { supabase } from '@/lib/supabase';
+import { useBudgetCategories } from '@/hooks/useBudgetCategories';
+import { categorizeFromReceipt } from '@/utils/budgetUtils';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense, families } = useExpense();
+  const { categories: budgetCategories } = useBudgetCategories();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -34,6 +37,7 @@ const ExpenseForm = () => {
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
@@ -61,6 +65,14 @@ const ExpenseForm = () => {
     if (data.description) setDescription(data.description);
     if (data.place) setPlace(data.place);
     if (data.date) setDate(data.date);
+    
+    // Auto-categorize for budget if we have merchant/description data
+    if (data.place && data.description && budgetCategories.length > 0) {
+      const suggestedCategoryId = categorizeFromReceipt(data.place, data.description, budgetCategories);
+      if (suggestedCategoryId) {
+        setBudgetCategoryId(suggestedCategoryId);
+      }
+    }
     
     // Display detailed view automatically if we have line items
     if (data.lineItems && data.lineItems.length > 0) {
@@ -123,7 +135,8 @@ const ExpenseForm = () => {
         needsReplacement,
         replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
         nextReplacementDate,
-        receiptUrl
+        receiptUrl,
+        budgetCategoryId
       });
       
       // If we have family members selected, add them to the expense
@@ -176,6 +189,7 @@ const ExpenseForm = () => {
       setOcrResult(null);
       setShowDetailedView(false);
       setSelectedMemberIds([]);
+      setBudgetCategoryId(null);
       handleImageRemove();
       
       toast.success("All set. You're doing beautifully.");

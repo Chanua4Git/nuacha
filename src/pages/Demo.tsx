@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { Button as UIButton } from "@/components/ui/button";
 import { useState } from "react";
 import { OCRResult } from "@/types/expense";
 import LeadCaptureForm from "@/components/demo/LeadCaptureForm";
@@ -176,6 +177,9 @@ const Demo = () => {
                 <Button onClick={handleTryAnother} variant="outline">
                   Try Another Receipt
                 </Button>
+                <UIButton variant="outline" asChild>
+                  <Link to="/demo/budget">Try Budget Planning</Link>
+                </UIButton>
                 <Button size="lg" asChild>
                   <Link to="/options">Explore Nuacha Solutions</Link>
                 </Button>

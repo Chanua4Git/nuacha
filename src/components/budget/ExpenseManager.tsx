@@ -44,8 +44,8 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    if (expense.budget_category_id) {
-      acc[expense.budget_category_id] = (acc[expense.budget_category_id] || 0) + expense.amount;
+    if (expense.budgetCategoryId) {
+      acc[expense.budgetCategoryId] = (acc[expense.budgetCategoryId] || 0) + expense.amount;
     }
     return acc;
   }, {} as Record<string, number>);
@@ -157,7 +157,7 @@ export default function ExpenseManager() {
                 <TableBody>
                   {categories.map((category) => {
                     const categoryExpenses = monthlyExpenses.filter(
-                      expense => expense.budget_category_id === category.id
+                      expense => expense.budgetCategoryId === category.id
                     );
                     const totalSpent = expensesByCategory[category.id] || 0;
                     

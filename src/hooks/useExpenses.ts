@@ -92,7 +92,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           isTaxDeductible: item.is_tax_deductible,
           paymentMethod: item.payment_method,
           tags: item.tags,
-          transactionId: item.transaction_id
+          transactionId: item.transaction_id,
+          budgetCategoryId: item.budget_category_id
         }));
         
         setExpenses(mappedExpenses);
@@ -138,7 +139,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         is_tax_deductible: expenseData.isTaxDeductible,
         payment_method: expenseData.paymentMethod,
         tags: expenseData.tags,
-        transaction_id: expenseData.transactionId
+        transaction_id: expenseData.transactionId,
+        budget_category_id: expenseData.budgetCategoryId
       };
       
       const { data, error } = await supabase
@@ -165,7 +167,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         isTaxDeductible: data[0].is_tax_deductible,
         paymentMethod: data[0].payment_method,
         tags: data[0].tags,
-        transactionId: data[0].transaction_id
+        transactionId: data[0].transaction_id,
+        budgetCategoryId: data[0].budget_category_id
       };
       
       setExpenses(prev => [newExpense, ...prev]);

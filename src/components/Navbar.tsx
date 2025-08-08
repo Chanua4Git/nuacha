@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart } from 'lucide-react';
+import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart, PieChart } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -44,6 +44,7 @@ const Navbar = () => {
   const expenseItems = [
     { name: 'Dashboard', icon: <Home className="h-4 w-4" />, path: '/dashboard' },
     { name: 'Add Expense', icon: <PlusCircle className="h-4 w-4" />, path: '/app' },
+    { name: 'Budget & Planning', icon: <PieChart className="h-4 w-4" />, path: '/budget' },
     { name: 'Reports', icon: <BarChart3 className="h-4 w-4" />, path: '/reports' },
     { name: 'Settings', icon: <Settings className="h-4 w-4" />, path: '/options' },
   ];
