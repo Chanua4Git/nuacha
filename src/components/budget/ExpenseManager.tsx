@@ -4,16 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useBudgetCategories } from '@/hooks/useBudgetCategories';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useFamilies } from '@/hooks/useFamilies';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ExpenseManager() {
   const { categoriesByGroup, loading: categoriesLoading, initializeDefaultCategories } = useBudgetCategories();
-  const { expenses, isLoading: expensesLoading } = useExpenses();
-
-  const [selectedMonth] = useState(new Date());
+  const { families } = useFamilies();
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  
+  // Get the first family ID for filtering expenses
+  const familyId = families?.[0]?.id;
+  
+  const { expenses, isLoading: expensesLoading } = useExpenses({
+    familyId: familyId
+  });
 
   useEffect(() => {
     // Initialize default categories if none exist
@@ -50,6 +57,25 @@ export default function ExpenseManager() {
     return acc;
   }, {} as Record<string, number>);
 
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setSelectedMonth(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const getMonthDisplay = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
+
   if (categoriesLoading || expensesLoading) {
     return (
       <div className="space-y-6">
@@ -73,12 +99,39 @@ export default function ExpenseManager() {
 
   return (
     <div className="space-y-6">
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Expense Categories</h2>
+          <p className="text-muted-foreground">Organize your spending into Needs, Wants, and Savings</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('prev')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-lg font-medium min-w-[140px] text-center">
+            {getMonthDisplay(selectedMonth)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('next')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       {/* Overview Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Expense Categories Overview</CardTitle>
+          <CardTitle>Monthly Overview</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Organize your spending into Needs, Wants, and Savings for better budget control
+            Total spending by category for {getMonthDisplay(selectedMonth)}
           </p>
         </CardHeader>
         <CardContent>
