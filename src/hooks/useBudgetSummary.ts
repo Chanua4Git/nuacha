@@ -5,13 +5,13 @@ import { Expense } from '@/types/expense';
 import { toMonthly, getFirstDayOfMonth } from '@/utils/budgetUtils';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 
-export function useBudgetSummary(selectedMonth: Date) {
+export function useBudgetSummary(startDate: Date, endDate?: Date) {
   const { user } = useAuth();
   const [summary, setSummary] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const monthKey = useMemo(() => getFirstDayOfMonth(selectedMonth), [selectedMonth]);
+  const dateKey = useMemo(() => `${startDate.toISOString()}-${endDate?.toISOString() || startDate.toISOString()}`, [startDate, endDate]);
 
   const calculateSummary = async () => {
     if (!user) {
@@ -49,9 +49,9 @@ export function useBudgetSummary(selectedMonth: Date) {
 
       if (familiesError) throw familiesError;
 
-      // Fetch expenses for the selected month, filtered by user's families
-      const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
-      const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+      // Fetch expenses for the selected period, filtered by user's families
+      const periodStart = startDate;
+      const periodEnd = endDate || new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
       
       const familyIds = (userFamilies || []).map(f => f.id);
       
@@ -59,8 +59,8 @@ export function useBudgetSummary(selectedMonth: Date) {
         .from('expenses')
         .select('*')
         .in('family_id', familyIds)
-        .gte('date', startOfMonth.toISOString().split('T')[0])
-        .lte('date', endOfMonth.toISOString().split('T')[0]);
+        .gte('date', periodStart.toISOString().split('T')[0])
+        .lte('date', periodEnd.toISOString().split('T')[0]);
 
       if (expensesError) throw expensesError;
 
@@ -161,7 +161,7 @@ export function useBudgetSummary(selectedMonth: Date) {
 
   useEffect(() => {
     calculateSummary();
-  }, [user, monthKey]);
+  }, [user, dateKey]);
 
   return { summary, loading, error, refetch: calculateSummary };
 }

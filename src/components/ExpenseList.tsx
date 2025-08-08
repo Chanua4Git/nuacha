@@ -6,20 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Filter, X } from 'lucide-react';
+import { CalendarIcon, Filter, X, Trash2, Copy, Search } from 'lucide-react';
 import CategorySelector from './CategorySelector';
 import { Badge } from '@/components/ui/badge';
+import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
+import { useExpenses } from '@/hooks/useExpenses';
+import { toast } from 'sonner';
 
 const ExpenseList = () => {
   const { filteredExpenses } = useExpense();
+  const { expenses: allExpenses, deleteExpense } = useExpenses();
   
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates'>('all');
+  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
+  const [showBulkSelect, setShowBulkSelect] = useState(false);
   
   const updateFilter = (key: keyof ExpenseFilters, value: any) => {
     setFilters(prev => ({
@@ -63,22 +73,59 @@ const ExpenseList = () => {
   }, [searchTerm]);
   
   const expenses = filteredExpenses(filters);
+  const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
+  const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const displayExpenses = selectedTab === 'duplicates' 
+    ? expenses.filter(e => duplicateExpenseIds.has(e.id))
+    : expenses;
   
+  const totalAmount = displayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const activeFilterCount = Object.keys(filters).length;
+
+  const handleExpenseSelection = (expenseId: string, selected: boolean) => {
+    const newSelected = new Set(selectedExpenses);
+    if (selected) {
+      newSelected.add(expenseId);
+    } else {
+      newSelected.delete(expenseId);
+    }
+    setSelectedExpenses(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedExpenses.size === 0) return;
+    
+    try {
+      await Promise.all(Array.from(selectedExpenses).map(id => deleteExpense(id)));
+      setSelectedExpenses(new Set());
+      setShowBulkSelect(false);
+      toast.success(`Deleted ${selectedExpenses.size} expense${selectedExpenses.size > 1 ? 's' : ''}`);
+    } catch (error) {
+      toast.error('Failed to delete expenses');
+    }
+  };
+
+  const handleDeleteSingle = async (expenseId: string) => {
+    try {
+      await deleteExpense(expenseId);
+      toast.success('Expense deleted');
+    } catch (error) {
+      toast.error('Failed to delete expense');
+    }
+  };
   
   return (
     <div>
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Expenses</h2>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Input
               placeholder="Search expenses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-[200px] mr-2"
+              className="max-w-[200px]"
             />
             <Button 
               variant="outline" 
@@ -96,8 +143,89 @@ const ExpenseList = () => {
                 </Badge>
               )}
             </Button>
+            <Button
+              variant={showBulkSelect ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowBulkSelect(!showBulkSelect)}
+            >
+              {showBulkSelect ? 'Cancel' : 'Select'}
+            </Button>
+            {showBulkSelect && selectedExpenses.size > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete ({selectedExpenses.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Selected Expenses</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedExpenses.size} expense{selectedExpenses.size > 1 ? 's' : ''}? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
+
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'duplicates')}>
+          <TabsList>
+            <TabsTrigger value="all">All Expenses</TabsTrigger>
+            <TabsTrigger value="duplicates" className="relative">
+              Duplicates
+              {duplicateGroups.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {duplicateGroups.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="duplicates" className="mt-4">
+            {duplicateGroups.length > 0 && (
+              <div className="space-y-4 mb-6">
+                {duplicateGroups.map((group) => (
+                  <Card key={group.id} className="border-orange-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Badge variant="destructive" className={getConfidenceColor(group.confidence)}>
+                          {getConfidenceLabel(group.confidence)} Confidence
+                        </Badge>
+                        <span className="text-muted-foreground text-xs">
+                          {getReasonLabel(group.reason)}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {group.expenses.map((expense) => {
+                        const category = expenses.find(e => e.id === expense.id);
+                        return category ? (
+                          <ExpenseCard
+                            key={expense.id}
+                            expense={category}
+                            onDelete={handleDeleteSingle}
+                            isDuplicate={true}
+                            duplicateConfidence={group.confidence}
+                            isSelected={selectedExpenses.has(expense.id)}
+                            onSelectionChange={handleExpenseSelection}
+                            showBulkSelect={showBulkSelect}
+                          />
+                        ) : null;
+                      })}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
         
         {showFilters && (
           <div className="bg-muted p-4 rounded-lg mb-4 space-y-4">
@@ -185,21 +313,31 @@ const ExpenseList = () => {
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Number of Expenses</span>
-              <p className="text-2xl font-bold text-right">{expenses.length}</p>
+              <p className="text-2xl font-bold text-right">{displayExpenses.length}</p>
             </div>
           </div>
         </div>
       </div>
       
-      {expenses.length > 0 ? (
+      {displayExpenses.length > 0 ? (
         <div className="space-y-4">
-          {expenses.map((expense) => (
-            <ExpenseCard key={expense.id} expense={expense} />
+          {displayExpenses.map((expense) => (
+            <ExpenseCard 
+              key={expense.id} 
+              expense={expense}
+              onDelete={handleDeleteSingle}
+              isDuplicate={duplicateExpenseIds.has(expense.id)}
+              isSelected={selectedExpenses.has(expense.id)}
+              onSelectionChange={handleExpenseSelection}
+              showBulkSelect={showBulkSelect}
+            />
           ))}
         </div>
       ) : (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">No expenses found</p>
+          <p className="text-muted-foreground">
+            {selectedTab === 'duplicates' ? 'No duplicate expenses found' : 'No expenses found'}
+          </p>
         </div>
       )}
     </div>

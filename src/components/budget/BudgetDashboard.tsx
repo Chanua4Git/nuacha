@@ -5,22 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
-import { formatTTD, getVarianceStatus, getMonthDisplay } from '@/utils/budgetUtils';
+import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
+import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 
 export default function BudgetDashboard() {
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const { summary, loading, error } = useBudgetSummary(selectedMonth);
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(selectedMonth);
-    if (direction === 'prev') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
-    }
-    setSelectedMonth(newDate);
-  };
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>({
+    type: 'monthly',
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+    displayName: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  });
+  
+  const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate);
 
   if (loading) {
     return (
@@ -77,17 +74,15 @@ export default function BudgetDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Month Navigation */}
+      {/* Period Selection */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-xl font-semibold">{getMonthDisplay(selectedMonth)}</h2>
-            <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <h2 className="text-xl font-semibold">Budget Dashboard</h2>
+            <PeriodSelector
+              value={selectedPeriod}
+              onChange={setSelectedPeriod}
+            />
           </div>
         </CardContent>
       </Card>
