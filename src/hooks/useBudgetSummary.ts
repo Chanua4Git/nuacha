@@ -60,7 +60,7 @@ export function useBudgetSummary(selectedMonth: Date) {
           .select('*')
           .eq('user_id', user.id)
           .eq('is_default', true)
-          .single();
+          .maybeSingle();
 
         if (allocationsError && allocationsError.code !== 'PGRST116') throw allocationsError;
 

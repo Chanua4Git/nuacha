@@ -75,9 +75,10 @@ export function categorizeFromReceipt(
   const merchantLower = merchant.toLowerCase();
   const descriptionLower = description.toLowerCase();
   
-  // Grocery stores
+  // Grocery stores - including JTA Supermarkets
   if (merchantLower.includes('grocery') || merchantLower.includes('market') || 
-      merchantLower.includes('supermarket') || merchantLower.includes('foodstop')) {
+      merchantLower.includes('supermarket') || merchantLower.includes('foodstop') ||
+      merchantLower.includes('jta') || merchantLower.includes('supermarkets')) {
     return categories.find(c => c.name === 'Groceries' && c.group_type === 'needs')?.id || null;
   }
   

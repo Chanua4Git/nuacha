@@ -251,7 +251,11 @@ export async function saveReceiptDetailsAndLineItems(
       vendorPhone: ocrResult.storeDetails?.phone,
       vendorWebsite: ocrResult.storeDetails?.website,
       receiptNumber: ocrResult.receiptNumber?.value,
-      transactionTime: ocrResult.transactionTime?.value.toISOString(),
+      transactionTime: ocrResult.transactionTime?.value instanceof Date 
+        ? ocrResult.transactionTime.value.toISOString() 
+        : typeof ocrResult.transactionTime?.value === 'string' 
+        ? ocrResult.transactionTime.value 
+        : undefined,
       subtotal: ocrResult.subtotal?.amount ? parseFloat(ocrResult.subtotal.amount) : undefined,
       taxAmount: ocrResult.tax?.amount ? parseFloat(ocrResult.tax.amount) : undefined,
       paymentMethod: ocrResult.paymentMethod?.type,
