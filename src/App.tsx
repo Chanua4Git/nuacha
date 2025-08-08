@@ -25,6 +25,7 @@ import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
 import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
 import Reports from "./pages/Reports";
+import Budget from "./pages/Budget";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,6 +101,11 @@ const App = () => {
                     <Route path="/reports" element={
                       <ProtectedRoute>
                         <Reports />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/budget" element={
+                      <ProtectedRoute>
+                        <Budget />
                       </ProtectedRoute>
                     } />
                     <Route path="/options" element={

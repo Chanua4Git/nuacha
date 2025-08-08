@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_allocations: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          needs_pct: number
+          rule_name: string
+          savings_pct: number
+          updated_at: string
+          user_id: string
+          wants_pct: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          needs_pct?: number
+          rule_name: string
+          savings_pct?: number
+          updated_at?: string
+          user_id: string
+          wants_pct?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          needs_pct?: number
+          rule_name?: string
+          savings_pct?: number
+          updated_at?: string
+          user_id?: string
+          wants_pct?: number
+        }
+        Relationships: []
+      }
+      budget_categories: {
+        Row: {
+          created_at: string
+          group_type: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_type: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_periods: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          rule_applied: string | null
+          snapshot_json: Json | null
+          surplus: number
+          total_expenses: number
+          total_income: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          rule_applied?: string | null
+          snapshot_json?: Json | null
+          surplus?: number
+          total_expenses?: number
+          total_income?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          rule_applied?: string | null
+          snapshot_json?: Json | null
+          surplus?: number
+          total_expenses?: number
+          total_income?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_scenarios: {
+        Row: {
+          created_at: string
+          delta_json: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta_json?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta_json?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           amount: number
@@ -310,6 +445,7 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          budget_category_id: string | null
           category: string
           created_at: string | null
           date: string
@@ -330,6 +466,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          budget_category_id?: string | null
           category: string
           created_at?: string | null
           date: string
@@ -350,6 +487,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          budget_category_id?: string | null
           category?: string
           created_at?: string | null
           date?: string
@@ -439,6 +577,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      income_sources: {
+        Row: {
+          amount_ttd: number
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_ttd?: number
+          created_at?: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_ttd?: number
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       nis_earnings_classes: {
         Row: {
@@ -1115,6 +1289,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_default_budget_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
       update_payroll_period_totals: {
         Args: { period_id: string }
         Returns: undefined

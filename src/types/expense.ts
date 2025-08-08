@@ -69,6 +69,7 @@ export interface Expense {
   paymentMethod?: string;
   tags?: string[];
   transactionId?: string;
+  budget_category_id?: string;
   members?: FamilyMember[]; // Array of family members associated with this expense
 }
 
