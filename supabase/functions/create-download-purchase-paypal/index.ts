@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
@@ -51,9 +52,9 @@ serve(async (req) => {
     console.log('PayPal Client Secret exists:', !!paypalClientSecret);
     
     if (!paypalClientId || !paypalClientSecret) {
-      console.error('Missing PayPal credentials');
-      return new Response(JSON.stringify({ error: 'PayPal credentials not configured' }), {
-        status: 500,
+      console.error('Missing PayPal client credentials');
+      return new Response(JSON.stringify({ error: 'paypal_credentials_missing' }), {
+        status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -69,15 +70,17 @@ serve(async (req) => {
       body: 'grant_type=client_credentials',
     });
     console.log('PayPal Token Response Status:', tokenResponse.status);
-    const tokenJson = await tokenResponse.json();
-    console.log('PayPal Token Response Body:', JSON.stringify(tokenJson, null, 2));
+    
     if (!tokenResponse.ok) {
-      console.error('Failed to obtain PayPal access token');
-      return new Response(JSON.stringify({ error: 'Failed to obtain PayPal access token', details: tokenJson }), {
-        status: 500,
+      const tokenBody = await tokenResponse.text();
+      console.error('PayPal token error', tokenResponse.status, tokenBody);
+      return new Response(JSON.stringify({ error: 'paypal_oauth_failed' }), {
+        status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    const tokenJson = await tokenResponse.json();
     const accessToken = tokenJson.access_token;
     
     // 2) Create order with Bearer token
@@ -113,16 +116,10 @@ serve(async (req) => {
     console.log('PayPal API Response Body:', JSON.stringify(paypalOrder, null, 2));
     
     if (!paypalOrderResponse.ok) {
-      console.error('PayPal order creation failed. Status:', paypalOrderResponse.status);
-      console.error('PayPal error details:', JSON.stringify(paypalOrder, null, 2));
-      
-      // Return more detailed error information
-      return new Response(JSON.stringify({ 
-        error: 'PayPal order creation failed',
-        details: paypalOrder,
-        status: paypalOrderResponse.status
-      }), {
-        status: 500,
+      const orderBody = await paypalOrderResponse.text();
+      console.error('PayPal order error', paypalOrderResponse.status, orderBody);
+      return new Response(JSON.stringify({ error: 'paypal_order_failed' }), {
+        status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
