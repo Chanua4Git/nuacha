@@ -162,7 +162,16 @@ const Navbar = () => {
                         </Link>
                       </Button>
                     ))}
-                    
+                    <Button
+                      variant="ghost"
+                      className="justify-start h-12 text-base w-full"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/authentication-demo');
+                      }}
+                    >
+                      Authentication Demo
+                    </Button>
                     {authDemoActive && (
                       <Button
                         variant="ghost"
@@ -224,6 +233,12 @@ const Navbar = () => {
                 <NavigationDropdown title="Payroll" items={payrollItems} />
               </>
             )}
+            <Button 
+              variant={isActive('/authentication-demo') ? "secondary" : "ghost"}
+              asChild
+            >
+              <Link to="/authentication-demo">Auth Demo</Link>
+            </Button>
             <AuthButton />
           </nav>
         )}

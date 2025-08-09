@@ -37,9 +37,10 @@ export const AuthDemoSteps = () => {
     }
   }, [user, demoStep, setDemoStep]);
 
-  // Always show the demo on the landing page, or when demo conditions are met
+  // Always show the demo on the landing page, on the dedicated page, or when demo conditions are met
   const isLandingPage = location.pathname === '/';
-  const shouldShow = isLandingPage || demoStep > AuthDemoStep.Initial || isFromAuthDemo || isVerified;
+  const isAuthDemoPage = location.pathname === '/authentication-demo';
+  const shouldShow = isLandingPage || isAuthDemoPage || demoStep > AuthDemoStep.Initial || isFromAuthDemo || isVerified;
   
   if (!shouldShow) {
     return null;
