@@ -45,248 +45,251 @@ jobs:
       - name: Add missing hooks (or shims)
         run: |
           mkdir -p auth-package/src/hooks
+
+          # use-toast
           if [ -f src/hooks/use-toast.ts ]; then
             cp src/hooks/use-toast.ts auth-package/src/hooks/
           else
             cat > auth-package/src/hooks/use-toast.ts <<'EOF'
-            export { useToast, toast } from "@/components/ui/use-toast";
-            EOF
+export { useToast, toast } from "@/components/ui/use-toast";
+EOF
           fi
 
+          # use-mobile
           if [ -f src/hooks/use-mobile.tsx ]; then
             cp src/hooks/use-mobile.tsx auth-package/src/hooks/
           else
             cat > auth-package/src/hooks/use-mobile.tsx <<'EOF'
-            import { useEffect, useState } from "react";
-            export default function useMobile(breakpoint = 768) {
-              const [isMobile, setIsMobile] = useState(false);
-              useEffect(() => {
-                if (typeof window === "undefined") return;
-                const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
-                const update = () => setIsMobile(mq.matches);
-                update();
-                mq.addEventListener?.("change", update);
-                // @ts-ignore
-                mq.addListener?.(update);
-                return () => {
-                  mq.removeEventListener?.("change", update);
-                  // @ts-ignore
-                  mq.removeListener?.(update);
-                };
-              }, [breakpoint]);
-              return isMobile;
-            }
-            EOF
+import { useEffect, useState } from "react";
+export default function useMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    // @ts-ignore
+    mq.addListener?.(update);
+    return () => {
+      mq.removeEventListener?.("change", update);
+      // @ts-ignore
+      mq.removeListener?.(update);
+    };
+  }, [breakpoint]);
+  return isMobile;
+}
+EOF
           fi
 
       - name: Write example app
         run: |
           cat > auth-package/examples/main.tsx <<'EOF'
-          import React from "react";
-          import ReactDOM from "react-dom/client";
-          import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-          import { AuthProvider } from "../src/auth/contexts/AuthProvider";
-          import Login from "../src/auth/components/Login";
-          import Signup from "../src/auth/components/Signup";
-          import ResetPassword from "../src/auth/components/ResetPassword";
-          import ProtectedRoute from "../src/auth/components/ProtectedRoute";
-          import { Toaster } from "../src/components/ui/sonner";
-          import "../src/index.css";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "../src/auth/contexts/AuthProvider";
+import Login from "../src/auth/components/Login";
+import Signup from "../src/auth/components/Signup";
+import ResetPassword from "../src/auth/components/ResetPassword";
+import ProtectedRoute from "../src/auth/components/ProtectedRoute";
+import { Toaster } from "../src/components/ui/sonner";
+import "../src/index.css";
 
-          function Dashboard() {
-            const C = React.lazy(() => import("./Dashboard"));
-            return (
-              <React.Suspense fallback={<div>Loading…</div>}>
-                <C />
-              </React.Suspense>
-            );
-          }
+function Dashboard() {
+  const C = React.lazy(() => import("./Dashboard"));
+  return (
+    <React.Suspense fallback={<div>Loading…</div>}>
+      <C />
+    </React.Suspense>
+  );
+}
 
-          function App() {
-            return (
-              <BrowserRouter>
-                <AuthProvider>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute>
-                          <Dashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  </Routes>
-                  <Toaster />
-                </AuthProvider>
-              </BrowserRouter>
-            );
-          }
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+        <Toaster />
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
 
-          ReactDOM.createRoot(document.getElementById("root")!).render(
-            <React.StrictMode>
-              <App />
-            </React.StrictMode>
-          );
-          EOF
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+EOF
 
           cat > auth-package/examples/Dashboard.tsx <<'EOF'
-          import { useAuth } from "../src/auth/contexts/AuthProvider";
-          import { Button } from "../src/components/ui/button";
-          import { Card, CardContent, CardHeader, CardTitle } from "../src/components/ui/card";
+import { useAuth } from "../src/auth/contexts/AuthProvider";
+import { Button } from "../src/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../src/components/ui/card";
 
-          export default function Dashboard() {
-            const { user, signOut } = useAuth();
-            return (
-              <div className="min-h-screen bg-background p-8">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Welcome to your Dashboard</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-muted-foreground">
-                        You're successfully authenticated with Nuacha Auth!
-                      </p>
-                      <div className="space-y-2">
-                        <p><strong>Email:</strong> {user?.email}</p>
-                        <p><strong>User ID:</strong> {user?.id}</p>
-                      </div>
-                      <Button onClick={signOut} variant="outline">Sign Out</Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            );
-          }
-          EOF
+export default function Dashboard() {
+  const { user, signOut } = useAuth();
+  return (
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome to your Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              You're successfully authenticated with Nuacha Auth!
+            </p>
+            <div className="space-y-2">
+              <p><strong>Email:</strong> {user?.email}</p>
+              <p><strong>User ID:</strong> {user?.id}</p>
+            </div>
+            <Button onClick={signOut} variant="outline">Sign Out</Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+EOF
 
       - name: Write safe index.html
         run: |
           cat > auth-package/index.html <<'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>Nuacha Auth Demo</title>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="module" src="/examples/main.tsx"></script>
-            </body>
-          </html>
-          EOF
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nuacha Auth Demo</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/examples/main.tsx"></script>
+  </body>
+</html>
+EOF
 
       - name: Create env types
         run: |
           mkdir -p auth-package/src
           cat > auth-package/src/env.d.ts <<'EOF'
-          /// <reference types="vite/client" />
-          interface ImportMetaEnv {
-            readonly VITE_SUPABASE_URL: string;
-            readonly VITE_SUPABASE_ANON_KEY: string;
-          }
-          interface ImportMeta {
-            readonly env: ImportMetaEnv;
-          }
-          EOF
+/// <reference types="vite/client" />
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string;
+  readonly VITE_SUPABASE_ANON_KEY: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+EOF
 
       - name: Write clean tsconfig
         run: |
           cat > auth-package/tsconfig.json <<'EOF'
-          {
-            "compilerOptions": {
-              "target": "ES2020",
-              "lib": ["ES2020", "DOM"],
-              "jsx": "react-jsx",
-              "module": "ESNext",
-              "moduleResolution": "Bundler",
-              "strict": true,
-              "skipLibCheck": true,
-              "baseUrl": ".",
-              "paths": { "@/*": ["src/*"] },
-              "types": ["vite/client"],
-              "composite": true
-            },
-            "include": ["src", "examples", "src/env.d.ts"]
-          }
-          EOF
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
+    "types": ["vite/client"],
+    "composite": true
+  },
+  "include": ["src", "examples", "src/env.d.ts"]
+}
+EOF
 
       - name: Write safe Vite config
         run: |
           cat > auth-package/vite.config.ts <<'EOF'
-          import { defineConfig } from "vite";
-          import react from "@vitejs/plugin-react-swc";
-          import path from "path";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
 
-          export default defineConfig({
-            plugins: [react()],
-            resolve: { alias: { "@": path.resolve(__dirname, "src") } }
-          });
-          EOF
+export default defineConfig({
+  plugins: [react()],
+  resolve: { alias: { "@": path.resolve(__dirname, "src") } }
+});
+EOF
 
       - name: Create minimal package.json
         run: |
-          cat > auth-package/package.json << 'EOF'
-          {
-            "name": "nuacha-auth-complete",
-            "version": "1.0.0",
-            "description": "Complete authentication system extracted from Nuacha",
-            "type": "module",
-            "scripts": {
-              "dev": "vite",
-              "build": "tsc -b && vite build",
-              "lint": "eslint .",
-              "preview": "vite preview"
-            },
-            "dependencies": {
-              "@hookform/resolvers": "^3.9.0",
-              "@radix-ui/react-alert-dialog": "^1.1.1",
-              "@radix-ui/react-dialog": "^1.1.2",
-              "@radix-ui/react-label": "^2.1.0",
-              "@radix-ui/react-slot": "^1.1.0",
-              "@radix-ui/react-toast": "^1.2.1",
-              "@supabase/supabase-js": "^2.49.4",
-              "class-variance-authority": "^0.7.1",
-              "clsx": "^2.1.1",
-              "lucide-react": "^0.462.0",
-              "react": "^18.3.1",
-              "react-dom": "^18.3.1",
-              "react-hook-form": "^7.53.0",
-              "react-router-dom": "^6.26.2",
-              "sonner": "^1.5.0",
-              "tailwind-merge": "^2.5.2",
-              "tailwindcss-animate": "^1.0.7",
-              "zod": "^3.23.8"
-            },
-            "devDependencies": {
-              "@types/react": "^18.3.3",
-              "@types/react-dom": "^18.3.0",
-              "@typescript-eslint/eslint-plugin": "^8.15.0",
-              "@typescript-eslint/parser": "^8.15.0",
-              "@vitejs/plugin-react-swc": "^3.5.0",
-              "autoprefixer": "^10.4.20",
-              "eslint": "^9.15.0",
-              "eslint-plugin-react-hooks": "^5.0.0",
-              "eslint-plugin-react-refresh": "^0.4.14",
-              "postcss": "^8.4.49",
-              "tailwindcss": "^3.4.14",
-              "typescript": "~5.6.2",
-              "vite": "^5.4.10"
-            }
-          }
-          EOF
+          cat > auth-package/package.json <<'EOF'
+{
+  "name": "nuacha-auth-complete",
+  "version": "1.0.0",
+  "description": "Complete authentication system extracted from Nuacha",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.462.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "react-router-dom": "^6.26.2",
+    "sonner": "^1.5.0",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10"
+  }
+}
+EOF
 
       - name: Create environment template
         run: |
-          cat > auth-package/.env.example << 'EOF'
-          VITE_SUPABASE_URL=your_supabase_project_url
-          VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-          EOF
+          cat > auth-package/.env.example <<'EOF'
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+EOF
 
       - name: Build the package
         run: |
@@ -301,12 +304,12 @@ jobs:
           cd auth-package
           zip -r ../nuacha-auth-complete.zip .
 
-      - name: "Upload to Supabase Storage (bucket: packages)"
+      - name: "Upload to Supabase Storage (bucket: downloads)"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          BUCKET="packages"
+          BUCKET="downloads" # change if your bucket is named differently
           curl -X POST \
             "$SUPABASE_URL/storage/v1/object/$BUCKET/nuacha-auth-complete.zip" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
@@ -314,12 +317,12 @@ jobs:
             -H "x-upsert: true" \
             --data-binary @nuacha-auth-complete.zip
 
-      - name: "Verify upload (bucket: packages)"
+      - name: "Verify upload (bucket: downloads)"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          BUCKET="packages"
+          BUCKET="downloads"
           code=$(curl -s -o /dev/null -w "%{http_code}" \
             "$SUPABASE_URL/storage/v1/object/$BUCKET/nuacha-auth-complete.zip" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY")
