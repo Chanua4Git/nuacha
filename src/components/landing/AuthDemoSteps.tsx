@@ -51,7 +51,7 @@ export const AuthDemoSteps = () => {
   };
 
   return (
-    <section className="py-16 px-4 md:px-6 lg:px-8">
+    <section id="auth-demo-steps" className="py-16 px-4 md:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-playfair mb-4">
@@ -65,12 +65,8 @@ export const AuthDemoSteps = () => {
               : "Experience our secure and user-friendly authentication system"}
           </p>
           {demoStep >= AuthDemoStep.Completed && (
-            <Button 
-              onClick={() => navigate("/auth-demo/plans")}
-              className="mt-6"
-              size="lg"
-            >
-              View Our Solutions
+            <Button asChild className="mt-6" size="lg">
+              <a href="#auth-demo-plans">Complete Auth Setup</a>
             </Button>
           )}
         </div>

@@ -14,7 +14,7 @@ const plans = [
       "User dashboard & admin tools",
     ],
     cta: "Start Your Free Auth Trial",
-    ctaLink: "/login",
+    ctaLink: "/authentication-demo#auth-demo-steps",
     icon: <Shield className="h-8 w-8 text-[#5A7684]" />,
     variant: "primary" as const,
   },

@@ -9,7 +9,7 @@ const AuthDemoCTASection = () => (
       Experience the full authentication system — sign up, sign in, reset a password, or explore admin tools.
     </p>
     <Button size="lg" asChild>
-      <Link to="/auth-demo/plans">Explore Subscription Options</Link>
+      <Link to="#auth-demo-plans">Complete Auth Setup</Link>
     </Button>
   </section>
 );
