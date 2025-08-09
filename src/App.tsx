@@ -20,9 +20,6 @@ import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
 import { ExpenseProvider } from "./context/ExpenseContext";
-import AuthDemoLanding from "./pages/auth-demo/AuthDemoLanding";
-import AuthDemoPlans from "./pages/auth-demo/AuthDemoPlans";
-import AuthDemoFeatures from "./pages/auth-demo/AuthDemoFeatures";
 import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
 import Reports from "./pages/Reports";
 import Budget from "./pages/Budget";
@@ -65,9 +62,9 @@ const App = () => {
       'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
     );
     
-    // Clear auth demo mode when not on an auth-demo page
+    // Clear auth demo mode when not on an authentication-demo page
     const pathname = window.location.pathname;
-    if (!pathname.startsWith('/auth-demo')) {
+    if (!pathname.startsWith('/authentication-demo')) {
       clearAuthDemoMode();
     }
   }, []);
@@ -126,9 +123,6 @@ const App = () => {
                         <Dashboard />
                       </ProtectedRoute>
                     } />
-                    <Route path="/auth-demo" element={<AuthDemoLanding />} />
-                    <Route path="/auth-demo/plans" element={<AuthDemoPlans />} />
-                    <Route path="/auth-demo/features" element={<AuthDemoFeatures />} />
                     <Route path="/authentication-demo" element={<AuthenticationDemo />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

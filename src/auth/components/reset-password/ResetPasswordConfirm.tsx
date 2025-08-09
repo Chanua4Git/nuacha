@@ -100,7 +100,7 @@ const ResetPasswordConfirm = () => {
         });
         
         await supabase.auth.signOut();
-        navigate('/auth-demo/plans', { replace: true });
+        navigate('/authentication-demo', { replace: true });
       } else {
         toast.success('Password updated successfully');
         await supabase.auth.signOut();

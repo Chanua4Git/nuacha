@@ -43,7 +43,7 @@ const AuthDemoPlansSection = () => (
             <li>• Extend and customize as you grow</li>
           </ul>
           <Button asChild className="w-full mt-2" size="lg">
-            <Link to="/auth-demo/plans?plan=self-host">Purchase</Link>
+            <Link to="/authentication-demo">Purchase</Link>
           </Button>
         </div>
 

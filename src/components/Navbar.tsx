@@ -113,7 +113,7 @@ const Navbar = () => {
               variant="ghost"
               size="sm"
               className="mr-2"
-              onClick={() => navigate('/auth-demo')}
+              onClick={() => navigate('/authentication-demo')}
             >
               <ArrowRight className="h-4 w-4 mr-2" />
               Back to Demo Guide
@@ -178,7 +178,7 @@ const Navbar = () => {
                         className="justify-start h-12 text-base w-full"
                         onClick={() => {
                           setIsMenuOpen(false);
-                          navigate('/auth-demo');
+                          navigate('/authentication-demo');
                         }}
                       >
                         <ArrowRight className="h-5 w-5 mr-3" />

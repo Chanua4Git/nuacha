@@ -110,9 +110,9 @@ export class AuthDemoService {
 
   /**
    * Get the redirect URL for after email verification
-   * Make sure to redirect to /auth-demo with hash
+   * Make sure to redirect to /authentication-demo with hash
    */
   static getVerificationRedirectUrl(): string {
-    return `${window.location.origin}/auth-demo?from=auth-demo&verified=true#verified`;
+    return `${window.location.origin}/authentication-demo?from=auth-demo&verified=true#verified`;
   }
 }

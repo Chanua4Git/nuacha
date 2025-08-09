@@ -77,7 +77,7 @@ export function useLogin() {
         
         // Only check for auth demo mode if we're already in it
         if (getAuthDemoActive()) {
-          navigate('/auth-demo', { replace: true });
+          navigate('/authentication-demo', { replace: true });
           return;
         }
 

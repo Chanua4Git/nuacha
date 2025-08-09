@@ -29,7 +29,7 @@ const AuthDemoBreadcrumbs = ({ currentPage }: AuthDemoBreadcrumbsProps) => {
           <>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/auth-demo">Authentication Demo</Link>
+                <Link to="/authentication-demo">Authentication Demo</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -44,7 +44,7 @@ const AuthDemoBreadcrumbs = ({ currentPage }: AuthDemoBreadcrumbsProps) => {
           <>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/auth-demo">Authentication Demo</Link>
+                <Link to="/authentication-demo">Authentication Demo</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />

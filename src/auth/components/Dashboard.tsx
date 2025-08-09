@@ -64,7 +64,7 @@ const Dashboard = () => {
               <Button 
                 variant="outline" 
                 className="border-soft-green text-primary hover:bg-soft-green/20"
-                onClick={() => window.location.href = "/auth-demo"}
+                onClick={() => window.location.href = "/authentication-demo"}
               >
                 Return to Demo Guide
               </Button>

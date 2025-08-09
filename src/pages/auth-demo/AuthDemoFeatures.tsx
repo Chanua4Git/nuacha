@@ -51,7 +51,7 @@ const AuthDemoFeatures = () => (
       </div>
       <div className="mt-12">
         <Button size="lg" asChild>
-          <Link to="/auth-demo">Back to Auth Demo Home</Link>
+          <Link to="/authentication-demo">Back to Auth Demo Home</Link>
         </Button>
       </div>
     </div>

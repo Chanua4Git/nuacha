@@ -83,7 +83,7 @@ export const AuthDemoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Check if the demo is active based on URL or localStorage
   const isDemoActive = () => {
     return demoStep > AuthDemoStep.Initial || 
-           location.pathname.startsWith('/auth-demo') || 
+           location.pathname.startsWith('/authentication-demo') || 
            location.search.includes('from=auth-demo');
   };
 

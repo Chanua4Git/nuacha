@@ -127,11 +127,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
-          if (isAuthDemoActive()) {
-            if (!location.pathname.startsWith('/auth-demo')) {
-              safeNavigate('/', { replace: true });
-            }
-          } else {
+            if (isAuthDemoActive()) {
+              if (!location.pathname.startsWith('/authentication-demo')) {
+                safeNavigate('/', { replace: true });
+              }
+            } else {
             // Check for intended path first, prioritizing user's intended destination
             const intendedPath = safeGetIntendedPath();
             
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setTimeout(() => {
         if (isAuthDemoActive()) {
-          safeNavigate('/auth-demo', { replace: true });
+          safeNavigate('/authentication-demo', { replace: true });
         } else {
           safeNavigate('/app', { replace: true });
         }

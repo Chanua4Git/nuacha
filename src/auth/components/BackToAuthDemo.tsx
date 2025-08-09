@@ -10,7 +10,7 @@ const BackToAuthDemo = () => {
   return (
     <div className="w-full flex items-center mb-6 mt-2">
       <Link
-        to="/auth-demo"
+        to="/authentication-demo"
         className="flex items-center gap-2 text-primary hover:underline text-sm transition-colors ml-2"
         aria-label="Back to Auth Demo"
       >

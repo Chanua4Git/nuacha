@@ -12,7 +12,7 @@ export const isAuthDemoActive = () => localStorage.getItem(AUTH_DEMO_KEY) === "t
 /** Detect if current route is in demo mode (route or search) */
 export const shouldEnableAuthDemo = (location: { pathname: string; search: string }) => {
   return (
-    location.pathname.startsWith("/auth-demo") ||
+    location.pathname.startsWith("/authentication-demo") ||
     new URLSearchParams(location.search).get("from") === "auth-demo"
   );
 };
