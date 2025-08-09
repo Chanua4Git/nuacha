@@ -37,7 +37,42 @@ serve(async (req) => {
     }
 
     // Create PayPal order
-    const paypalAuth = btoa(`${Deno.env.get("PAYPAL_CLIENT_ID")}:${Deno.env.get("PAYPAL_CLIENT_SECRET")}`);
+    const paypalClientId = Deno.env.get("PAYPAL_CLIENT_ID");
+    const paypalClientSecret = Deno.env.get("PAYPAL_CLIENT_SECRET");
+    
+    // Debug logging
+    console.log('PayPal Client ID length:', paypalClientId?.length || 0);
+    console.log('PayPal Client Secret length:', paypalClientSecret?.length || 0);
+    console.log('PayPal Client ID exists:', !!paypalClientId);
+    console.log('PayPal Client Secret exists:', !!paypalClientSecret);
+    
+    if (!paypalClientId || !paypalClientSecret) {
+      console.error('Missing PayPal credentials');
+      return new Response(JSON.stringify({ error: 'PayPal credentials not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const paypalAuth = btoa(`${paypalClientId}:${paypalClientSecret}`);
+    console.log('PayPal Auth string length:', paypalAuth.length);
+    
+    const paypalRequestBody = {
+      intent: 'CAPTURE',
+      purchase_units: [{
+        amount: {
+          currency_code: 'USD',
+          value: product.price_usd.toString(),
+        },
+        description: product.name,
+      }],
+      application_context: {
+        return_url: `${req.headers.get("origin")}/download-purchase-success`,
+        cancel_url: `${req.headers.get("origin")}/authentication-demo`,
+      },
+    };
+    
+    console.log('PayPal request body:', JSON.stringify(paypalRequestBody, null, 2));
     
     const paypalOrderResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders`, {
       method: 'POST',
@@ -45,27 +80,25 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${paypalAuth}`,
       },
-      body: JSON.stringify({
-        intent: 'CAPTURE',
-        purchase_units: [{
-          amount: {
-            currency_code: 'USD',
-            value: product.price_usd.toString(),
-          },
-          description: product.name,
-        }],
-        application_context: {
-          return_url: `${req.headers.get("origin")}/download-purchase-success`,
-          cancel_url: `${req.headers.get("origin")}/authentication-demo`,
-        },
-      }),
+      body: JSON.stringify(paypalRequestBody),
     });
 
+    console.log('PayPal API Response Status:', paypalOrderResponse.status);
+    console.log('PayPal API Response Headers:', Object.fromEntries(paypalOrderResponse.headers));
+
     const paypalOrder = await paypalOrderResponse.json();
+    console.log('PayPal API Response Body:', JSON.stringify(paypalOrder, null, 2));
 
     if (!paypalOrderResponse.ok) {
-      console.error('PayPal order creation failed:', paypalOrder);
-      return new Response(JSON.stringify({ error: 'PayPal order creation failed' }), {
+      console.error('PayPal order creation failed. Status:', paypalOrderResponse.status);
+      console.error('PayPal error details:', JSON.stringify(paypalOrder, null, 2));
+      
+      // Return more detailed error information
+      return new Response(JSON.stringify({ 
+        error: 'PayPal order creation failed',
+        details: paypalOrder,
+        status: paypalOrderResponse.status
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
