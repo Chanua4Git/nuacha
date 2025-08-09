@@ -1,7 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
-import ExpenseForm from '@/components/ExpenseForm';
+import ExpenseForm from '@/components/expense-form/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
 import RemindersList from '@/components/RemindersList';
 import { PlusCircle, ListFilter, Tag } from 'lucide-react';
