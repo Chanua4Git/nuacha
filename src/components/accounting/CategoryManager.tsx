@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryFormData, CategoryWithChildren } from '@/types/accounting';
 import { Loader2, Plus, Trash2, Edit, ChevronRight, ChevronDown, RefreshCw, Link as LinkIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { ensureBudgetDefaults, seedRecommendedExpenseCategories, syncExpenseToBudgetCategories } from '@/utils/categorySync';
@@ -118,6 +118,26 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     }));
   };
   
+  const countDescendants = (rootId: string) => {
+    const byParent = new Map<string, string[]>();
+    categories.forEach((c) => {
+      if (c.parentId) {
+        const arr = byParent.get(c.parentId) || [];
+        arr.push(c.id);
+        byParent.set(c.parentId, arr);
+      }
+    });
+    let count = 0;
+    const stack: string[] = [...(byParent.get(rootId) || [])];
+    while (stack.length) {
+      const current = stack.pop()!;
+      count++;
+      const children = byParent.get(current) || [];
+      children.forEach((id) => stack.push(id));
+    }
+    return count;
+  };
+  
   const renderCategoryTree = (categories: CategoryWithChildren[], depth = 0) => {
     return categories.map(category => (
       <div key={category.id} className="mb-1">
@@ -182,27 +202,33 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
                   <DialogTitle>Delete Category</DialogTitle>
                 </DialogHeader>
                 <p>
-                  Are you sure you want to delete the category "{category.name}"? 
+                  Are you sure you want to delete the category "{category.name}"?
                   This action cannot be undone.
                 </p>
-                {category.children && category.children.length > 0 && (
-                  <p className="text-destructive">
-                    Warning: This will also delete all subcategories!
-                  </p>
-                )}
+                {(() => {
+                  const subCount = countDescendants(category.id);
+                  return subCount > 0 ? (
+                    <p className="text-destructive">
+                      This will also delete {subCount} subcategor{subCount === 1 ? 'y' : 'ies'}.
+                    </p>
+                  ) : null;
+                })()}
                 <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => {}}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDeleteCategory(category.id)}
-                  >
-                    Delete
-                  </Button>
+                  <DialogClose asChild>
+                    <Button
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleDeleteCategory(category.id)}
+                    >
+                      Delete
+                    </Button>
+                  </DialogClose>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

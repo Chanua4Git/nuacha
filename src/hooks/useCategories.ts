@@ -234,39 +234,88 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   const deleteCategory = async (id: string) => {
     try {
-      // First check if the category is in use by any expenses
-      const { data: expensesWithCategory, error: checkError } = await supabase
+      // Build a set of this category and all its descendants
+      const buildDescendants = (rootId: string) => {
+        const ids = new Set<string>();
+        const names = new Set<string>();
+        const byParent = new Map<string, CategoryWithCamelCase[]>();
+        categories.forEach((c) => {
+          if (c.parentId) {
+            const arr = byParent.get(c.parentId) || [];
+            arr.push(c);
+            byParent.set(c.parentId, arr);
+          }
+        });
+        const byId = new Map(categories.map((c) => [c.id, c] as const));
+        const stack: string[] = [rootId];
+        while (stack.length) {
+          const current = stack.pop()!;
+          if (ids.has(current)) continue;
+          ids.add(current);
+          const node = byId.get(current);
+          if (node) names.add(node.name);
+          const children = byParent.get(current) || [];
+          children.forEach((child) => stack.push(child.id));
+        }
+        return { ids: Array.from(ids), names: Array.from(names) };
+      };
+
+      const { ids: idsToDelete, names: namesToCheck } = buildDescendants(id);
+
+      // Guard: block deletion if any related expenses or receipt line items exist
+      // 1) Expenses use category by NAME in this app schema
+      const expenseQuery = supabase
         .from('expenses')
         .select('id')
-        .eq('category', id)
+        .in('category', namesToCheck)
         .limit(1);
-      
-      if (checkError) throw checkError;
-      
-      if (expensesWithCategory && expensesWithCategory.length > 0) {
-        throw new Error('This category is being used by expenses and cannot be deleted.');
+
+      const rliQuery = supabase
+        .from('receipt_line_items')
+        .select('id')
+        .in('category_id', idsToDelete)
+        .limit(1);
+
+      const [{ data: expensesWithCategory, error: expErr }, { data: rliWithCategory, error: rliErr }] = await Promise.all([
+        expenseQuery,
+        rliQuery,
+      ]);
+
+      if (expErr) throw expErr;
+      if (rliErr) throw rliErr;
+
+      if ((expensesWithCategory && expensesWithCategory.length > 0) || (rliWithCategory && rliWithCategory.length > 0)) {
+        const reason = expensesWithCategory && expensesWithCategory.length > 0
+          ? 'Some expenses are using this category or its subcategories.'
+          : 'Some receipt line items are using this category or its subcategories.';
+        throw new Error(`${reason} Please reassign them before deleting.`);
       }
-      
+
+      // Delete the category and all its descendants in a single statement
       const { error } = await supabase
         .from('categories')
         .delete()
-        .eq('id', id);
-      
+        .in('id', idsToDelete);
+
       if (error) throw error;
-      
-      setCategories(prev => {
-        const updated = prev.filter(category => category.id !== id);
+
+      setCategories((prev) => {
+        const remove = new Set(idsToDelete);
+        const updated = prev.filter((c) => !remove.has(c.id));
         setHierarchicalCategories(buildHierarchy(updated));
         return updated;
       });
-      
-      toast("Category deleted successfully", {
-        description: "The category has been removed."
+
+      const deletedCount = idsToDelete.length - 1;
+      toast('Category deleted', {
+        description: deletedCount > 0
+          ? `The category and ${deletedCount} subcategor${deletedCount === 1 ? 'y' : 'ies'} were removed.`
+          : 'The category has been removed.',
       });
     } catch (err: any) {
       console.error('Error deleting category:', err);
       toast("We couldn't delete this category", {
-        description: err.message || "Please try again."
+        description: err.message || 'Please try again.'
       });
       throw err;
     }
