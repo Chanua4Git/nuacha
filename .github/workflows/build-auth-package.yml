@@ -1,0 +1,413 @@
+name: Build Nuacha Auth Package
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build-auth-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Create auth package directory
+        run: mkdir -p auth-package
+        
+      - name: Copy auth-related files
+        run: |
+          # Create directory structure
+          mkdir -p auth-package/src/{auth,components/ui,lib,integrations}
+          mkdir -p auth-package/docs
+          mkdir -p auth-package/examples
+          
+          # Copy core auth files
+          cp -r src/auth/* auth-package/src/auth/
+          cp -r src/components/ui/* auth-package/src/components/ui/
+          cp src/lib/utils.ts auth-package/src/lib/
+          cp -r src/integrations/* auth-package/src/integrations/
+          cp src/index.css auth-package/src/
+          
+          # Copy configuration files
+          cp tailwind.config.ts auth-package/
+          cp vite.config.ts auth-package/
+          cp tsconfig.json auth-package/
+          cp tsconfig.app.json auth-package/
+          cp tsconfig.node.json auth-package/
+          cp postcss.config.js auth-package/
+          cp components.json auth-package/
+          cp index.html auth-package/
+          
+      - name: Create minimal package.json
+        run: |
+          cat > auth-package/package.json << 'EOF'
+          {
+            "name": "nuacha-auth-complete",
+            "version": "1.0.0",
+            "description": "Complete authentication system extracted from Nuacha - a calm, mindful expense tracking app",
+            "type": "module",
+            "scripts": {
+              "dev": "vite",
+              "build": "tsc -b && vite build",
+              "lint": "eslint .",
+              "preview": "vite preview"
+            },
+            "dependencies": {
+              "@hookform/resolvers": "^3.9.0",
+              "@radix-ui/react-alert-dialog": "^1.1.1",
+              "@radix-ui/react-dialog": "^1.1.2",
+              "@radix-ui/react-label": "^2.1.0",
+              "@radix-ui/react-slot": "^1.1.0",
+              "@radix-ui/react-toast": "^1.2.1",
+              "@supabase/supabase-js": "^2.49.4",
+              "class-variance-authority": "^0.7.1",
+              "clsx": "^2.1.1",
+              "lucide-react": "^0.462.0",
+              "react": "^18.3.1",
+              "react-dom": "^18.3.1",
+              "react-hook-form": "^7.53.0",
+              "react-router-dom": "^6.26.2",
+              "sonner": "^1.5.0",
+              "tailwind-merge": "^2.5.2",
+              "tailwindcss-animate": "^1.0.7",
+              "zod": "^3.23.8"
+            },
+            "devDependencies": {
+              "@types/react": "^18.3.3",
+              "@types/react-dom": "^18.3.0",
+              "@typescript-eslint/eslint-plugin": "^8.15.0",
+              "@typescript-eslint/parser": "^8.15.0",
+              "@vitejs/plugin-react-swc": "^3.5.0",
+              "autoprefixer": "^10.4.20",
+              "eslint": "^9.15.0",
+              "eslint-plugin-react-hooks": "^5.0.0",
+              "eslint-plugin-react-refresh": "^0.4.14",
+              "postcss": "^8.4.49",
+              "tailwindcss": "^3.4.14",
+              "typescript": "~5.6.2",
+              "vite": "^5.4.10"
+            }
+          }
+          EOF
+          
+      - name: Create authentication README
+        run: |
+          cat > auth-package/README.md << 'EOF'
+          # Nuacha Authentication System
+          
+          A complete, production-ready authentication system extracted from Nuacha - a calm, mindful expense tracking application. This package provides a beautiful, accessible auth flow with email/password authentication, password reset, and user management.
+          
+          ## Features
+          
+          ✅ **Complete Auth Flow**
+          - User registration with email verification
+          - Secure login/logout
+          - Password reset functionality
+          - Protected route handling
+          
+          ✅ **Beautiful UI**
+          - Calm, mindful design following Nuacha's design system
+          - Fully responsive and accessible
+          - Built with shadcn/ui components
+          - Tailwind CSS for styling
+          
+          ✅ **Production Ready**
+          - TypeScript for type safety
+          - Form validation with proper error handling
+          - Loading states and user feedback
+          - Security best practices
+          
+          ✅ **Supabase Integration**
+          - Ready-to-use Supabase auth setup
+          - Row Level Security (RLS) ready
+          - Session management
+          
+          ## Quick Start
+          
+          1. **Install dependencies**
+          ```bash
+          npm install
+          ```
+          
+          2. **Configure Supabase**
+          Create a `.env.local` file:
+          ```env
+          VITE_SUPABASE_URL=your_supabase_url
+          VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+          ```
+          
+          3. **Update Supabase configuration**
+          Edit `src/lib/supabase.ts` with your project details.
+          
+          4. **Start development**
+          ```bash
+          npm run dev
+          ```
+          
+          ## Integration Guide
+          
+          ### 1. Basic Setup
+          
+          Wrap your app with the AuthProvider:
+          
+          ```tsx
+          import { AuthProvider } from './src/auth/contexts/AuthProvider'
+          import { BrowserRouter } from 'react-router-dom'
+          
+          function App() {
+            return (
+              <BrowserRouter>
+                <AuthProvider>
+                  {/* Your app components */}
+                </AuthProvider>
+              </BrowserRouter>
+            )
+          }
+          ```
+          
+          ### 2. Protected Routes
+          
+          Use the ProtectedRoute component:
+          
+          ```tsx
+          import ProtectedRoute from './src/auth/components/ProtectedRoute'
+          
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          ```
+          
+          ### 3. Auth Components
+          
+          Use the pre-built auth components:
+          
+          ```tsx
+          import Login from './src/auth/components/Login'
+          import Signup from './src/auth/components/Signup'
+          import ResetPassword from './src/auth/components/ResetPassword'
+          
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          ```
+          
+          ### 4. Using Auth Context
+          
+          Access user data and auth functions:
+          
+          ```tsx
+          import { useAuth } from './src/auth/contexts/AuthProvider'
+          
+          function MyComponent() {
+            const { user, signOut, isLoading } = useAuth()
+            
+            if (isLoading) return <div>Loading...</div>
+            if (!user) return <div>Please log in</div>
+            
+            return (
+              <div>
+                <p>Welcome, {user.email}!</p>
+                <button onClick={signOut}>Sign Out</button>
+              </div>
+            )
+          }
+          ```
+          
+          ## File Structure
+          
+          ```
+          src/
+          ├── auth/
+          │   ├── components/          # Auth UI components
+          │   ├── contexts/           # Auth context and provider
+          │   ├── hooks/              # Auth-related hooks
+          │   ├── services/           # Auth services and utilities
+          │   └── utils/              # Auth utility functions
+          ├── components/ui/          # Reusable UI components
+          ├── lib/                   # Core utilities
+          └── integrations/          # Supabase integration
+          ```
+          
+          ## Customization
+          
+          ### Styling
+          The system uses Tailwind CSS with a custom design system. Modify `tailwind.config.ts` and `src/index.css` to match your brand.
+          
+          ### Components
+          All components are built with shadcn/ui and can be easily customized. Check `components.json` for configuration.
+          
+          ### Validation
+          Password validation rules can be modified in `src/auth/utils/passwordValidation.ts`.
+          
+          ## Supabase Setup
+          
+          1. Create a new Supabase project
+          2. Enable email authentication in Auth settings
+          3. Configure email templates (optional)
+          4. Set up RLS policies as needed
+          
+          ## Support
+          
+          This authentication system is extracted from Nuacha, a mindful expense tracking application. 
+          
+          For questions or support, please refer to the Nuacha documentation or create an issue in the repository.
+          
+          ## License
+          
+          MIT License - feel free to use in your projects!
+          EOF
+          
+      - name: Create environment template
+        run: |
+          cat > auth-package/.env.example << 'EOF'
+          # Supabase Configuration
+          # Get these values from your Supabase project settings
+          VITE_SUPABASE_URL=your_supabase_project_url
+          VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+          EOF
+          
+      - name: Create example main.tsx
+        run: |
+          mkdir -p auth-package/examples
+          cat > auth-package/examples/main.tsx << 'EOF'
+          import React from 'react'
+          import ReactDOM from 'react-dom/client'
+          import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+          import { AuthProvider } from '../src/auth/contexts/AuthProvider'
+          import Login from '../src/auth/components/Login'
+          import Signup from '../src/auth/components/Signup'
+          import ResetPassword from '../src/auth/components/ResetPassword'
+          import Dashboard from './Dashboard'
+          import ProtectedRoute from '../src/auth/components/ProtectedRoute'
+          import { Toaster } from '../src/components/ui/sonner'
+          import '../src/index.css'
+          
+          function App() {
+            return (
+              <BrowserRouter>
+                <AuthProvider>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route 
+                      path="/dashboard" 
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                  <Toaster />
+                </AuthProvider>
+              </BrowserRouter>
+            )
+          }
+          
+          ReactDOM.createRoot(document.getElementById('root')!).render(
+            <React.StrictMode>
+              <App />
+            </React.StrictMode>,
+          )
+          EOF
+          
+      - name: Create example Dashboard
+        run: |
+          cat > auth-package/examples/Dashboard.tsx << 'EOF'
+          import { useAuth } from '../src/auth/contexts/AuthProvider'
+          import { Button } from '../src/components/ui/button'
+          import { Card, CardContent, CardHeader, CardTitle } from '../src/components/ui/card'
+          
+          export default function Dashboard() {
+            const { user, signOut } = useAuth()
+            
+            return (
+              <div className="min-h-screen bg-background p-8">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Welcome to your Dashboard</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-muted-foreground">
+                        You're successfully authenticated with Nuacha Auth!
+                      </p>
+                      <div className="space-y-2">
+                        <p><strong>Email:</strong> {user?.email}</p>
+                        <p><strong>User ID:</strong> {user?.id}</p>
+                        <p><strong>Created:</strong> {new Date(user?.created_at || '').toLocaleDateString()}</p>
+                      </div>
+                      <Button onClick={signOut} variant="outline">
+                        Sign Out
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )
+          }
+          EOF
+          
+      - name: Build the package
+        run: |
+          cd auth-package
+          npm install --legacy-peer-deps
+          npm run build
+          
+      - name: Create final package
+        run: |
+          # Remove node_modules and build artifacts from package
+          rm -rf auth-package/node_modules
+          rm -rf auth-package/dist
+          
+          # Create the final zip
+          cd auth-package
+          zip -r ../nuacha-auth-complete.zip .
+          
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Install Supabase CLI
+          npm install -g @supabase/supabase-js
+          
+          # Upload file using curl to Supabase Storage API
+          curl -X POST \
+            "$SUPABASE_URL/storage/v1/object/downloads/nuacha-auth-complete.zip" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/zip" \
+            -H "x-upsert: true" \
+            --data-binary @nuacha-auth-complete.zip
+            
+      - name: Verify upload
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Check if file exists
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/storage/v1/object/downloads/nuacha-auth-complete.zip" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY")
+          
+          if [ $response -eq 200 ]; then
+            echo "✅ Package successfully uploaded to Supabase Storage"
+          else
+            echo "❌ Upload failed with status code: $response"
+            exit 1
+          fi
