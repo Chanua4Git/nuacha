@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryFormData, CategoryWithChildren } from '@/types/accounting';
-import { Loader2, Plus, Trash2, Edit, ChevronRight, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, ChevronRight, ChevronDown, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { ensureBudgetDefaults, seedRecommendedExpenseCategories, syncExpenseToBudgetCategories } from '@/utils/categorySync';
 
 interface CategoryManagerProps {
   familyId: string;
@@ -30,7 +31,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryWithChildren | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  
+  const [seeding, setSeeding] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
   const defaultFormData: CategoryFormData = {
     name: '',
     color: '#5A7684',
@@ -240,10 +243,63 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
             Create and manage your expense categories
           </CardDescription>
         </div>
-        <Button onClick={() => { resetForm(); setFormOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Category
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              if (!user) return;
+              try {
+                setSyncing(true);
+                await ensureBudgetDefaults(user.id);
+                await syncExpenseToBudgetCategories(user.id, familyId);
+                toast.success('Synced with Budget categories');
+              } catch (e) {
+                console.error(e);
+                toast.error('Sync failed');
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            aria-label="Sync with Budget categories"
+          >
+            {syncing ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LinkIcon className="mr-2 h-4 w-4" />
+            )}
+            Sync with Budget
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={async () => {
+              try {
+                setSeeding(true);
+                await seedRecommendedExpenseCategories(familyId);
+                toast.success('Added recommended categories');
+              } catch (e) {
+                console.error(e);
+                toast.error('Could not add recommended categories');
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            disabled={seeding}
+          >
+            {seeding ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Add recommended
+          </Button>
+          <Button onClick={() => { resetForm(); setFormOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Category
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
