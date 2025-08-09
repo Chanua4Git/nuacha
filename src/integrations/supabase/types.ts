@@ -455,7 +455,10 @@ export type Database = {
           is_tax_deductible: boolean | null
           needs_replacement: boolean | null
           next_replacement_date: string | null
+          paid_on_date: string | null
           payment_method: string | null
+          payroll_entry_id: string | null
+          payroll_period_id: string | null
           place: string
           receipt_url: string | null
           replacement_frequency: number | null
@@ -476,7 +479,10 @@ export type Database = {
           is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          paid_on_date?: string | null
           payment_method?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id?: string | null
           place: string
           receipt_url?: string | null
           replacement_frequency?: number | null
@@ -497,7 +503,10 @@ export type Database = {
           is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          paid_on_date?: string | null
           payment_method?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id?: string | null
           place?: string
           receipt_url?: string | null
           replacement_frequency?: number | null
@@ -512,6 +521,20 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
             referencedColumns: ["id"]
           },
         ]

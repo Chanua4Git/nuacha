@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Expense } from '@/types/expense';
@@ -76,7 +77,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         
         if (error) throw error;
         
-        const mappedExpenses = data.map(item => ({
+        const mappedExpenses = data.map((item: any) => ({
           id: item.id,
           familyId: item.family_id,
           amount: item.amount,
@@ -93,8 +94,12 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           paymentMethod: item.payment_method,
           tags: item.tags,
           transactionId: item.transaction_id,
-          budgetCategoryId: item.budget_category_id
-        }));
+          budgetCategoryId: item.budget_category_id,
+          // New fields
+          paidOnDate: item.paid_on_date,
+          payrollPeriodId: item.payroll_period_id,
+          payrollEntryId: item.payroll_entry_id,
+        })) as Expense[];
         
         setExpenses(mappedExpenses);
       } catch (err: any) {
@@ -124,7 +129,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
   const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
     try {
       // Convert the Expense type to the database schema
-      const expenseToInsert = {
+      const expenseToInsert: any = {
         family_id: expenseData.familyId,
         amount: expenseData.amount,
         description: expenseData.description,
@@ -135,12 +140,16 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         replacement_frequency: expenseData.replacementFrequency,
         next_replacement_date: expenseData.nextReplacementDate,
         receipt_url: expenseData.receiptUrl,
-        tax_amount: expenseData.taxAmount,
-        is_tax_deductible: expenseData.isTaxDeductible,
-        payment_method: expenseData.paymentMethod,
-        tags: expenseData.tags,
-        transaction_id: expenseData.transactionId,
-        budget_category_id: expenseData.budgetCategoryId
+        tax_amount: (expenseData as any).taxAmount,
+        is_tax_deductible: (expenseData as any).isTaxDeductible,
+        payment_method: (expenseData as any).paymentMethod,
+        tags: (expenseData as any).tags,
+        transaction_id: (expenseData as any).transactionId,
+        budget_category_id: (expenseData as any).budgetCategoryId,
+        // New fields aligned to DB
+        paid_on_date: (expenseData as any).paidOnDate,
+        payroll_period_id: (expenseData as any).payrollPeriodId,
+        payroll_entry_id: (expenseData as any).payrollEntryId,
       };
       
       const { data, error } = await supabase
@@ -151,7 +160,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       if (error) throw error;
       
       // Map the returned data back to our Expense type
-      const newExpense: Expense = {
+      const newExpense = {
         id: data[0].id,
         familyId: data[0].family_id,
         amount: data[0].amount,
@@ -168,8 +177,12 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         paymentMethod: data[0].payment_method,
         tags: data[0].tags,
         transactionId: data[0].transaction_id,
-        budgetCategoryId: data[0].budget_category_id
-      };
+        budgetCategoryId: data[0].budget_category_id,
+        // New fields
+        paidOnDate: data[0].paid_on_date,
+        payrollPeriodId: data[0].payroll_period_id,
+        payrollEntryId: data[0].payroll_entry_id,
+      } as Expense;
       
       setExpenses(prev => [newExpense, ...prev]);
       
@@ -177,7 +190,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         description: "Your expense has been added successfully."
       });
       
-      return newExpense;
+      return newExpense as any;
     } catch (err: any) {
       console.error('Error creating expense:', err);
       toast("We couldn't save your expense", {
@@ -202,11 +215,17 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       if (updates.replacementFrequency !== undefined) updatesToApply.replacement_frequency = updates.replacementFrequency;
       if (updates.nextReplacementDate !== undefined) updatesToApply.next_replacement_date = updates.nextReplacementDate;
       if (updates.receiptUrl !== undefined) updatesToApply.receipt_url = updates.receiptUrl;
-      if (updates.taxAmount !== undefined) updatesToApply.tax_amount = updates.taxAmount;
-      if (updates.isTaxDeductible !== undefined) updatesToApply.is_tax_deductible = updates.isTaxDeductible;
-      if (updates.paymentMethod !== undefined) updatesToApply.payment_method = updates.paymentMethod;
-      if (updates.tags !== undefined) updatesToApply.tags = updates.tags;
-      if (updates.transactionId !== undefined) updatesToApply.transaction_id = updates.transactionId;
+      if ((updates as any).taxAmount !== undefined) updatesToApply.tax_amount = (updates as any).taxAmount;
+      if ((updates as any).isTaxDeductible !== undefined) updatesToApply.is_tax_deductible = (updates as any).isTaxDeductible;
+      if ((updates as any).paymentMethod !== undefined) updatesToApply.payment_method = (updates as any).paymentMethod;
+      if ((updates as any).tags !== undefined) updatesToApply.tags = (updates as any).tags;
+      if ((updates as any).transactionId !== undefined) updatesToApply.transaction_id = (updates as any).transactionId;
+      if ((updates as any).budgetCategoryId !== undefined) updatesToApply.budget_category_id = (updates as any).budgetCategoryId;
+
+      // New fields
+      if ((updates as any).paidOnDate !== undefined) updatesToApply.paid_on_date = (updates as any).paidOnDate;
+      if ((updates as any).payrollPeriodId !== undefined) updatesToApply.payroll_period_id = (updates as any).payrollPeriodId;
+      if ((updates as any).payrollEntryId !== undefined) updatesToApply.payroll_entry_id = (updates as any).payrollEntryId;
       
       const { data, error } = await supabase
         .from('expenses')
@@ -219,7 +238,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       // Update the local state
       setExpenses(prev => prev.map(expense => {
         if (expense.id === id) {
-          return { ...expense, ...updates };
+          return { ...expense, ...updates } as Expense;
         }
         return expense;
       }));
