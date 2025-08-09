@@ -2,6 +2,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Shield, Star } from "lucide-react";
+import { useState } from "react";
+import DownloadPurchaseModal from "./DownloadPurchaseModal";
 
 type Plan = {
   title: string;
@@ -21,7 +23,20 @@ export const PlanCard = ({
   ctaLink,
   icon,
   variant = "primary",
-}: Plan) => (
+}: Plan) => {
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  
+  const isDownloadPlan = title.includes("Download & Self-Host");
+  
+  const handleCtaClick = () => {
+    if (isDownloadPlan) {
+      setShowPurchaseModal(true);
+    } else {
+      window.location.href = ctaLink;
+    }
+  };
+
+  return (
   <Card className={variant === "primary" ? "border-2 hover:border-primary/50 transition-colors" : "border-2 hover:border-accent/50"}>
     <CardContent className="p-8 space-y-6">
       <div className="flex items-center gap-4">
@@ -37,9 +52,17 @@ export const PlanCard = ({
           </li>
         ))}
       </ul>
-      <Button className="w-full" size="lg" asChild>
-        <a href={ctaLink}>{cta}</a>
+      <Button className="w-full" size="lg" onClick={handleCtaClick}>
+        {cta}
       </Button>
+      
+      {isDownloadPlan && (
+        <DownloadPurchaseModal 
+          open={showPurchaseModal} 
+          onOpenChange={setShowPurchaseModal} 
+        />
+      )}
     </CardContent>
   </Card>
-);
+  );
+};

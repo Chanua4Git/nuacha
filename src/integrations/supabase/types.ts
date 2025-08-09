@@ -334,6 +334,68 @@ export type Database = {
         }
         Relationships: []
       }
+      download_purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          download_expires_at: string | null
+          downloaded_at: string | null
+          id: string
+          order_reference: string | null
+          payment_method: string
+          paypal_order_id: string | null
+          paypal_payment_id: string | null
+          product_id: string
+          status: string
+          updated_at: string
+          user_email: string
+          user_name: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          download_expires_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          order_reference?: string | null
+          payment_method: string
+          paypal_order_id?: string | null
+          paypal_payment_id?: string | null
+          product_id: string
+          status?: string
+          updated_at?: string
+          user_email: string
+          user_name?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          download_expires_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          order_reference?: string | null
+          payment_method?: string
+          paypal_order_id?: string | null
+          paypal_payment_id?: string | null
+          product_id?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_purchases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string
@@ -989,6 +1051,45 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_file_path: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          price_ttd: number
+          price_usd: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_file_path?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_ttd: number
+          price_usd: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_file_path?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_ttd?: number
+          price_usd?: number
+          updated_at?: string
         }
         Relationships: []
       }

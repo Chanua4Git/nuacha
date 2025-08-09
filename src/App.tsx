@@ -6,6 +6,7 @@ import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import DownloadPurchaseSuccess from "./pages/DownloadPurchaseSuccess";
 import Payroll from "./pages/Payroll";
 import { AuthProvider } from "./auth/contexts/AuthProvider";
 import { AuthDemoProvider } from "./auth/contexts/AuthDemoProvider";
@@ -124,6 +125,7 @@ const App = () => {
                       </ProtectedRoute>
                     } />
                     <Route path="/authentication-demo" element={<AuthenticationDemo />} />
+                    <Route path="/download-purchase-success" element={<DownloadPurchaseSuccess />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
