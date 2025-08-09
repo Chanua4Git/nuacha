@@ -4,7 +4,7 @@ const AuthDemoCTASection = () => <section className="text-center space-y-4 py-8 
     
     
     <Button size="lg" asChild>
-      <Link to="#auth-demo-plans">Complete Auth Setup</Link>
+      
     </Button>
   </section>;
 export default AuthDemoCTASection;
