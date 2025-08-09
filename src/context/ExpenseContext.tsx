@@ -1,145 +1,152 @@
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Family, Category, Expense, Reminder, families, categories, expenses, reminders } from '../data/mockData';
-import { v4 as uuidv4 } from 'uuid';
-import { toast } from "@/components/ui/sonner";
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useRef } from 'react';
+import { Family, Expense, CategoryWithCamelCase, Reminder } from '@/types/expense';
+import { useFamilies } from '@/hooks/useFamilies';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useCategories } from '@/hooks/useCategories';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useReminders } from '@/hooks/useReminders';
 
-interface ExpenseContextType {
+// Modified context type to ensure user data persistence
+export const ExpenseContext = createContext<{
   families: Family[];
-  categories: Category[];
   expenses: Expense[];
-  reminders: Reminder[];
+  categories: CategoryWithCamelCase[];
   selectedFamily: Family | null;
   setSelectedFamily: (family: Family | null) => void;
-  addExpense: (expense: Omit<Expense, 'id'>) => void;
-  addReminder: (reminder: Omit<Reminder, 'id'>) => void;
-  updateExpense: (expense: Expense) => void;
-  deleteExpense: (id: string) => void;
-  updateReminder: (reminder: Reminder) => void;
-  deleteReminder: (id: string) => void;
-  filteredExpenses: (filters: ExpenseFilters) => Expense[];
-  upcomingReminders: () => Reminder[];
-}
+  isLoading: boolean;
+  filteredExpenses: (filters?: ExpenseFilters) => Expense[];
+  createExpense: (expenseData: Omit<Expense, 'id'>) => Promise<Expense>;
+  updateExpense: (id: string, updates: Partial<Expense>) => Promise<any>;
+  deleteExpense: (id: string) => Promise<void>;
+  createFamily: (familyData: Omit<Family, 'id'>) => Promise<Family>;
+  updateFamily: (id: string, updates: Partial<Family>) => Promise<any>;
+  deleteFamily: (id: string) => Promise<void>;
+  addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<Expense>; // Added for backward compatibility
+  upcomingReminders: () => Reminder[]; // Added for RemindersList
+}>({
+  families: [],
+  expenses: [],
+  categories: [],
+  selectedFamily: null,
+  setSelectedFamily: () => {},
+  isLoading: false,
+  filteredExpenses: () => [],
+  createExpense: async () => ({ id: '', familyId: '', amount: 0, description: '', category: '', date: '', place: '' }),
+  updateExpense: async () => ({}),
+  deleteExpense: async () => {},
+  createFamily: async () => ({ id: '', name: '', color: '' }),
+  updateFamily: async () => ({}),
+  deleteFamily: async () => {},
+  addExpense: async () => ({ id: '', familyId: '', amount: 0, description: '', category: '', date: '', place: '' }),
+  upcomingReminders: () => [],
+});
+
+export const useExpense = () => useContext(ExpenseContext);
 
 export interface ExpenseFilters {
   categoryId?: string;
   startDate?: string;
   endDate?: string;
-  place?: string;
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
 }
 
-const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
-
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedFamily, setSelectedFamily] = useState<Family | null>(families[0]);
-  const [expensesList, setExpensesList] = useState<Expense[]>(expenses);
-  const [remindersList, setRemindersList] = useState<Reminder[]>(reminders);
+  const [selectedFamilyState, setSelectedFamilyState] = useState<Family | null>(null);
+  const selectedFamilyRef = useRef<Family | null>(null);
+  const selectedFamily = selectedFamilyState;
 
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
-    const newExpense = { ...expense, id: uuidv4() };
-    
-    // If expense needs replacement, add a reminder automatically
-    if (expense.needsReplacement && expense.replacementFrequency && expense.nextReplacementDate) {
-      addReminder({
-        familyId: expense.familyId,
-        title: `${expense.description} replacement`,
-        dueDate: expense.nextReplacementDate,
-        isRecurring: true,
-        frequency: expense.replacementFrequency,
-        type: 'replacement',
-        relatedExpenseId: newExpense.id,
-      });
-    }
-    
-    setExpensesList(prev => [...prev, newExpense]);
-    toast.success('Expense added successfully');
-    return newExpense;
-  };
+  const { user } = useAuth();
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(
+    localStorage.getItem('selectedFamilyId')
+  );
 
-  const updateExpense = (expense: Expense) => {
-    setExpensesList(prev => prev.map(item => item.id === expense.id ? expense : item));
-    
-    // Update related reminder if exists
-    if (expense.needsReplacement && expense.nextReplacementDate) {
-      const relatedReminder = remindersList.find(r => r.relatedExpenseId === expense.id);
-      if (relatedReminder) {
-        updateReminder({
-          ...relatedReminder,
-          title: `${expense.description} replacement`,
-          dueDate: expense.nextReplacementDate,
-          frequency: expense.replacementFrequency,
-        });
+  // Get families with the current user filter
+  const { 
+    families, 
+    isLoading: familiesLoading,
+    createFamily,
+    updateFamily,
+    deleteFamily 
+  } = useFamilies();
+
+  // Get reminders based on the selected family
+  const { reminders, isLoading: remindersLoading } = useReminders(selectedFamily?.id);
+
+  // Set the selected family based on ID or first available
+  useEffect(() => {
+    if (!selectedFamily && families.length > 0) {
+      // If we have a stored family ID, try to use it
+      const storedFamilyId = localStorage.getItem('selectedFamilyId');
+      if (storedFamilyId) {
+        const storedFamily = families.find(f => f.id === storedFamilyId);
+        if (storedFamily) {
+          setSelectedFamily(storedFamily);
+          return;
+        }
       }
+      // Otherwise use the first family
+      setSelectedFamily(families[0]);
     }
-    
-    toast.success('Expense updated successfully');
+  }, [families, selectedFamily]);
+
+  // Persist selected family ID to localStorage
+  useEffect(() => {
+    if (selectedFamily) {
+      localStorage.setItem('selectedFamilyId', selectedFamily.id);
+    }
+  }, [selectedFamily]);
+
+  // Get categories based on the selected family
+  const { 
+    categories,
+    isLoading: categoriesLoading 
+  } = useCategories(selectedFamily?.id);
+
+  // Get expenses based on the selected family
+  const { 
+    expenses,
+    isLoading: expensesLoading,
+    createExpense,
+    updateExpense,
+    deleteExpense 
+  } = useExpenses({ 
+    familyId: selectedFamily?.id 
+  });
+
+  const setSelectedFamily = (family: Family | null) => {
+    selectedFamilyRef.current = family;
+    setSelectedFamilyState(family);
   };
 
-  const deleteExpense = (id: string) => {
-    setExpensesList(prev => prev.filter(item => item.id !== id));
-    
-    // Delete related reminders
-    setRemindersList(prev => prev.filter(item => item.relatedExpenseId !== id));
-    
-    toast.success('Expense deleted successfully');
-  };
+  const filteredExpenses = (filters?: ExpenseFilters) => {
+    if (!filters) {
+      return expenses;
+    }
 
-  const addReminder = (reminder: Omit<Reminder, 'id'>) => {
-    const newReminder = { ...reminder, id: uuidv4() };
-    setRemindersList(prev => [...prev, newReminder]);
-    toast.success('Reminder added successfully');
-    return newReminder;
-  };
-
-  const updateReminder = (reminder: Reminder) => {
-    setRemindersList(prev => prev.map(item => item.id === reminder.id ? reminder : item));
-    toast.success('Reminder updated successfully');
-  };
-
-  const deleteReminder = (id: string) => {
-    setRemindersList(prev => prev.filter(item => item.id !== id));
-    toast.success('Reminder deleted successfully');
-  };
-
-  const filteredExpenses = (filters: ExpenseFilters): Expense[] => {
-    return expensesList.filter(expense => {
-      // Always filter by selected family
-      if (selectedFamily && expense.familyId !== selectedFamily.id) {
-        return false;
-      }
-      
-      // Filter by category
+    return expenses.filter(expense => {
       if (filters.categoryId && expense.category !== filters.categoryId) {
         return false;
       }
-      
-      // Filter by date range
-      if (filters.startDate && new Date(expense.date) < new Date(filters.startDate)) {
+
+      if (filters.startDate && expense.date < filters.startDate) {
         return false;
       }
-      
-      if (filters.endDate && new Date(expense.date) > new Date(filters.endDate)) {
+
+      if (filters.endDate && expense.date > filters.endDate) {
         return false;
       }
-      
-      // Filter by place
-      if (filters.place && !expense.place.toLowerCase().includes(filters.place.toLowerCase())) {
-        return false;
-      }
-      
-      // Filter by amount range
+
       if (filters.minAmount !== undefined && expense.amount < filters.minAmount) {
         return false;
       }
-      
+
       if (filters.maxAmount !== undefined && expense.amount > filters.maxAmount) {
         return false;
       }
-      
-      // Filter by search term (searches in description and place)
+
       if (filters.searchTerm) {
         const term = filters.searchTerm.toLowerCase();
         const descriptionMatch = expense.description.toLowerCase().includes(term);
@@ -149,57 +156,64 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
           return false;
         }
       }
-      
+
       return true;
     });
   };
 
-  const upcomingReminders = (): Reminder[] => {
-    const today = new Date();
-    const twoWeeksFromNow = new Date();
-    twoWeeksFromNow.setDate(today.getDate() + 14);
-    
-    return remindersList.filter(reminder => {
-      // Only show reminders for the selected family
-      if (selectedFamily && reminder.familyId !== selectedFamily.id) {
-        return false;
-      }
-      
+  // For backward compatibility with existing code
+  const addExpense = createExpense;
+
+  // Function to get upcoming reminders for RemindersList
+  const upcomingReminders = () => {
+    if (!selectedFamily) return [];
+    return reminders.filter(reminder => {
       const dueDate = new Date(reminder.dueDate);
-      return dueDate >= today && dueDate <= twoWeeksFromNow;
-    }).sort((a, b) => {
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      const today = new Date();
+      // Show reminders that are due within the next 14 days or are overdue
+      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntilDue <= 14;
     });
   };
 
+  const isLoading = familiesLoading || categoriesLoading || expensesLoading || remindersLoading;
+
+  const value = useMemo(() => ({
+    families,
+    expenses,
+    categories,
+    selectedFamily,
+    setSelectedFamily,
+    isLoading,
+    filteredExpenses,
+    // Also expose these functions to components
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    createFamily,
+    updateFamily,
+    deleteFamily,
+    // Additional functions for backward compatibility
+    addExpense,
+    upcomingReminders
+  }), [
+    families, 
+    expenses,
+    categories,
+    selectedFamily,
+    isLoading,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    createFamily,
+    updateFamily,
+    deleteFamily,
+    reminders
+  ]);
+
   return (
-    <ExpenseContext.Provider
-      value={{
-        families,
-        categories,
-        expenses: expensesList,
-        reminders: remindersList,
-        selectedFamily,
-        setSelectedFamily,
-        addExpense,
-        addReminder,
-        updateExpense,
-        deleteExpense,
-        updateReminder,
-        deleteReminder,
-        filteredExpenses,
-        upcomingReminders,
-      }}
-    >
+    <ExpenseContext.Provider value={value}>
       {children}
     </ExpenseContext.Provider>
   );
-};
-
-export const useExpense = () => {
-  const context = useContext(ExpenseContext);
-  if (context === undefined) {
-    throw new Error('useExpense must be used within an ExpenseProvider');
-  }
-  return context;
 };

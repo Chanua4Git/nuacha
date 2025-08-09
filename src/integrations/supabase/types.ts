@@ -7,29 +7,226 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  }
   public: {
     Tables: {
-      categories: {
+      budget_allocations: {
         Row: {
-          color: string
-          created_at: string | null
-          family_id: string | null
+          created_at: string
           id: string
-          name: string
+          is_default: boolean
+          needs_pct: number
+          rule_name: string
+          savings_pct: number
+          updated_at: string
+          user_id: string
+          wants_pct: number
         }
         Insert: {
-          color: string
-          created_at?: string | null
-          family_id?: string | null
+          created_at?: string
           id?: string
-          name: string
+          is_default?: boolean
+          needs_pct?: number
+          rule_name: string
+          savings_pct?: number
+          updated_at?: string
+          user_id: string
+          wants_pct?: number
         }
         Update: {
-          color?: string
-          created_at?: string | null
-          family_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          needs_pct?: number
+          rule_name?: string
+          savings_pct?: number
+          updated_at?: string
+          user_id?: string
+          wants_pct?: number
+        }
+        Relationships: []
+      }
+      budget_categories: {
+        Row: {
+          created_at: string
+          group_type: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_type: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_periods: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          rule_applied: string | null
+          snapshot_json: Json | null
+          surplus: number
+          total_expenses: number
+          total_income: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          rule_applied?: string | null
+          snapshot_json?: Json | null
+          surplus?: number
+          total_expenses?: number
+          total_income?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          rule_applied?: string | null
+          snapshot_json?: Json | null
+          surplus?: number
+          total_expenses?: number
+          total_income?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_scenarios: {
+        Row: {
+          created_at: string
+          delta_json: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta_json?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta_json?: Json
           id?: string
           name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string | null
+          family_id: string
+          id: string
+          month: string
+          year: number
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string | null
+          family_id: string
+          id?: string
+          month: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string | null
+          family_id?: string
+          id?: string
+          month?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          budget: number | null
+          color: string
+          created_at: string | null
+          description: string | null
+          family_id: string | null
+          icon: string | null
+          id: string
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          color: string
+          created_at?: string | null
+          description?: string | null
+          family_id?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          budget?: number | null
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          family_id?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
         }
         Relationships: [
           {
@@ -39,50 +236,346 @@ export type Database = {
             referencedRelation: "families"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categorization_rules: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          pattern: string
+          pattern_type: string
+          priority: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          pattern: string
+          pattern_type: string
+          priority?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          pattern?: string
+          pattern_type?: string
+          priority?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorization_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_leads: {
+        Row: {
+          additional_info: string | null
+          business_type: string | null
+          created_at: string | null
+          current_payroll_method: string | null
+          email: string
+          employee_count: string | null
+          id: string
+          interest_type: string | null
+          last_contact: string | null
+          name: string
+          receipt_data: Json | null
+        }
+        Insert: {
+          additional_info?: string | null
+          business_type?: string | null
+          created_at?: string | null
+          current_payroll_method?: string | null
+          email: string
+          employee_count?: string | null
+          id?: string
+          interest_type?: string | null
+          last_contact?: string | null
+          name: string
+          receipt_data?: Json | null
+        }
+        Update: {
+          additional_info?: string | null
+          business_type?: string | null
+          created_at?: string | null
+          current_payroll_method?: string | null
+          email?: string
+          employee_count?: string | null
+          id?: string
+          interest_type?: string | null
+          last_contact?: string | null
+          name?: string
+          receipt_data?: Json | null
+        }
+        Relationships: []
+      }
+      download_purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          download_expires_at: string | null
+          downloaded_at: string | null
+          id: string
+          order_reference: string | null
+          payment_method: string
+          paypal_order_id: string | null
+          paypal_payment_id: string | null
+          product_id: string
+          status: string
+          updated_at: string
+          user_email: string
+          user_name: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          download_expires_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          order_reference?: string | null
+          payment_method: string
+          paypal_order_id?: string | null
+          paypal_payment_id?: string | null
+          product_id: string
+          status?: string
+          updated_at?: string
+          user_email: string
+          user_name?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          download_expires_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          order_reference?: string | null
+          payment_method?: string
+          paypal_order_id?: string | null
+          paypal_payment_id?: string | null
+          product_id?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_purchases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          created_at: string
+          daily_rate: number | null
+          date_hired: string | null
+          date_terminated: string | null
+          email: string | null
+          employee_number: string
+          employment_type: string
+          first_name: string
+          hourly_rate: number | null
+          id: string
+          is_active: boolean
+          last_name: string
+          monthly_salary: number | null
+          national_id: string | null
+          nis_number: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+          weekly_pay_schedule: string | null
+          weekly_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          daily_rate?: number | null
+          date_hired?: string | null
+          date_terminated?: string | null
+          email?: string | null
+          employee_number: string
+          employment_type: string
+          first_name: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          last_name: string
+          monthly_salary?: number | null
+          national_id?: string | null
+          nis_number?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          weekly_pay_schedule?: string | null
+          weekly_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number | null
+          date_hired?: string | null
+          date_terminated?: string | null
+          email?: string | null
+          employee_number?: string
+          employment_type?: string
+          first_name?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          last_name?: string
+          monthly_salary?: number | null
+          national_id?: string | null
+          nis_number?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          weekly_pay_schedule?: string | null
+          weekly_rate?: number | null
+        }
+        Relationships: []
+      }
+      expense_members: {
+        Row: {
+          allocation_percentage: number | null
+          created_at: string
+          expense_id: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          created_at?: string
+          expense_id: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          created_at?: string
+          expense_id?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_members_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
         ]
       }
       expenses: {
         Row: {
           amount: number
+          budget_category_id: string | null
           category: string
           created_at: string | null
           date: string
           description: string
           family_id: string
           id: string
+          is_tax_deductible: boolean | null
           needs_replacement: boolean | null
           next_replacement_date: string | null
+          paid_on_date: string | null
+          payment_method: string | null
+          payroll_entry_id: string | null
+          payroll_period_id: string | null
           place: string
           receipt_url: string | null
           replacement_frequency: number | null
+          tags: string[] | null
+          tax_amount: number | null
+          transaction_id: string | null
+          vendor_id: string | null
         }
         Insert: {
           amount: number
+          budget_category_id?: string | null
           category: string
           created_at?: string | null
           date: string
           description: string
           family_id: string
           id?: string
+          is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          paid_on_date?: string | null
+          payment_method?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id?: string | null
           place: string
           receipt_url?: string | null
           replacement_frequency?: number | null
+          tags?: string[] | null
+          tax_amount?: number | null
+          transaction_id?: string | null
+          vendor_id?: string | null
         }
         Update: {
           amount?: number
+          budget_category_id?: string | null
           category?: string
           created_at?: string | null
           date?: string
           description?: string
           family_id?: string
           id?: string
+          is_tax_deductible?: boolean | null
           needs_replacement?: boolean | null
           next_replacement_date?: string | null
+          paid_on_date?: string | null
+          payment_method?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id?: string | null
           place?: string
           receipt_url?: string | null
           replacement_frequency?: number | null
+          tags?: string[] | null
+          tax_amount?: number | null
+          transaction_id?: string | null
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -90,6 +583,20 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
             referencedColumns: ["id"]
           },
         ]
@@ -117,6 +624,616 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      family_members: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          family_id: string
+          id: string
+          name: string
+          notes: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          family_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          family_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      income_sources: {
+        Row: {
+          amount_ttd: number
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_ttd?: number
+          created_at?: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_ttd?: number
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nis_earnings_classes: {
+        Row: {
+          created_at: string
+          earnings_class: string
+          effective_date: string
+          employee_contribution: number
+          employer_contribution: number
+          id: string
+          is_active: boolean
+          max_weekly_earnings: number
+          min_weekly_earnings: number
+        }
+        Insert: {
+          created_at?: string
+          earnings_class: string
+          effective_date: string
+          employee_contribution: number
+          employer_contribution: number
+          id?: string
+          is_active?: boolean
+          max_weekly_earnings: number
+          min_weekly_earnings: number
+        }
+        Update: {
+          created_at?: string
+          earnings_class?: string
+          effective_date?: string
+          employee_contribution?: number
+          employer_contribution?: number
+          id?: string
+          is_active?: boolean
+          max_weekly_earnings?: number
+          min_weekly_earnings?: number
+        }
+        Relationships: []
+      }
+      nis_rates: {
+        Row: {
+          created_at: string
+          effective_date: string
+          employee_rate: number
+          employer_rate: number
+          id: string
+          is_active: boolean
+          max_weekly_wage: number
+          min_weekly_wage: number
+        }
+        Insert: {
+          created_at?: string
+          effective_date: string
+          employee_rate: number
+          employer_rate: number
+          id?: string
+          is_active?: boolean
+          max_weekly_wage: number
+          min_weekly_wage: number
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string
+          employee_rate?: number
+          employer_rate?: number
+          id?: string
+          is_active?: boolean
+          max_weekly_wage?: number
+          min_weekly_wage?: number
+        }
+        Relationships: []
+      }
+      paypal_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          payment_method: string
+          paypal_order_id: string
+          paypal_payment_id: string | null
+          payroll_period_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_method?: string
+          paypal_order_id: string
+          paypal_payment_id?: string | null
+          payroll_period_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_method?: string
+          paypal_order_id?: string
+          paypal_payment_id?: string | null
+          payroll_period_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paypal_payments_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_calculations: {
+        Row: {
+          calculation_date: string
+          calculation_method: string
+          created_at: string
+          employee_contribution: number
+          employee_id: string
+          employer_contribution: number
+          id: string
+          nis_class: string
+          notes: string | null
+          user_id: string
+          weekly_earnings: number
+        }
+        Insert: {
+          calculation_date: string
+          calculation_method?: string
+          created_at?: string
+          employee_contribution: number
+          employee_id: string
+          employer_contribution: number
+          id?: string
+          nis_class: string
+          notes?: string | null
+          user_id: string
+          weekly_earnings: number
+        }
+        Update: {
+          calculation_date?: string
+          calculation_method?: string
+          created_at?: string
+          employee_contribution?: number
+          employee_id?: string
+          employer_contribution?: number
+          id?: string
+          nis_class?: string
+          notes?: string | null
+          user_id?: string
+          weekly_earnings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_calculations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_entries: {
+        Row: {
+          calculated_at: string | null
+          created_at: string
+          days_worked: number | null
+          employee_id: string
+          gross_pay: number
+          hours_worked: number | null
+          id: string
+          net_pay: number
+          nis_employee_contribution: number
+          nis_employer_contribution: number
+          other_allowances: number | null
+          other_deductions: number | null
+          payroll_period_id: string
+          recorded_pay: number | null
+          updated_at: string
+          variance_amount: number | null
+          variance_notes: string | null
+          week_end_date: string | null
+          week_number: number | null
+          week_start_date: string | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          created_at?: string
+          days_worked?: number | null
+          employee_id: string
+          gross_pay?: number
+          hours_worked?: number | null
+          id?: string
+          net_pay?: number
+          nis_employee_contribution?: number
+          nis_employer_contribution?: number
+          other_allowances?: number | null
+          other_deductions?: number | null
+          payroll_period_id: string
+          recorded_pay?: number | null
+          updated_at?: string
+          variance_amount?: number | null
+          variance_notes?: string | null
+          week_end_date?: string | null
+          week_number?: number | null
+          week_start_date?: string | null
+        }
+        Update: {
+          calculated_at?: string | null
+          created_at?: string
+          days_worked?: number | null
+          employee_id?: string
+          gross_pay?: number
+          hours_worked?: number | null
+          id?: string
+          net_pay?: number
+          nis_employee_contribution?: number
+          nis_employer_contribution?: number
+          other_allowances?: number | null
+          other_deductions?: number | null
+          payroll_period_id?: string
+          recorded_pay?: number | null
+          updated_at?: string
+          variance_amount?: number | null
+          variance_notes?: string | null
+          week_end_date?: string | null
+          week_number?: number | null
+          week_start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_payroll_entries_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_payroll_entries_payroll_period"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_imports: {
+        Row: {
+          created_at: string
+          error_log: Json | null
+          file_name: string
+          id: string
+          import_status: string
+          import_type: string
+          imported_data: Json | null
+          records_failed: number
+          records_imported: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_log?: Json | null
+          file_name: string
+          id?: string
+          import_status?: string
+          import_type: string
+          imported_data?: Json | null
+          records_failed?: number
+          records_imported?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_log?: Json | null
+          file_name?: string
+          id?: string
+          import_status?: string
+          import_type?: string
+          imported_data?: Json | null
+          records_failed?: number
+          records_imported?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payroll_periods: {
+        Row: {
+          created_at: string
+          end_date: string
+          entered_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          paid_date: string | null
+          pay_date: string
+          payroll_data: Json | null
+          start_date: string
+          status: string
+          total_gross_pay: number | null
+          total_net_pay: number | null
+          total_nis_employee: number | null
+          total_nis_employer: number | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          entered_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          paid_date?: string | null
+          pay_date: string
+          payroll_data?: Json | null
+          start_date: string
+          status?: string
+          total_gross_pay?: number | null
+          total_net_pay?: number | null
+          total_nis_employee?: number | null
+          total_nis_employer?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          entered_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          paid_date?: string | null
+          pay_date?: string
+          payroll_data?: Json | null
+          start_date?: string
+          status?: string
+          total_gross_pay?: number | null
+          total_net_pay?: number | null
+          total_nis_employee?: number | null
+          total_nis_employer?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_file_path: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          price_ttd: number
+          price_usd: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_file_path?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_ttd: number
+          price_usd: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_file_path?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_ttd?: number
+          price_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      receipt_details: {
+        Row: {
+          confidence_summary: Json | null
+          created_at: string | null
+          currency: string | null
+          discount_amount: number | null
+          expense_id: string
+          id: string
+          payment_method: string | null
+          raw_data: Json | null
+          receipt_number: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          transaction_time: string | null
+          vendor_address: string | null
+          vendor_name: string | null
+          vendor_phone: string | null
+          vendor_website: string | null
+        }
+        Insert: {
+          confidence_summary?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          expense_id: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          receipt_number?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          transaction_time?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_phone?: string | null
+          vendor_website?: string | null
+        }
+        Update: {
+          confidence_summary?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          expense_id?: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          receipt_number?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          transaction_time?: string | null
+          vendor_address?: string | null
+          vendor_name?: string | null
+          vendor_phone?: string | null
+          vendor_website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_details_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipt_line_items: {
+        Row: {
+          category_confidence: number | null
+          category_id: string | null
+          created_at: string | null
+          description: string
+          discount: boolean | null
+          expense_id: string
+          id: string
+          member_id: string | null
+          quantity: number | null
+          sku: string | null
+          suggested_category_id: string | null
+          total_price: number
+          unit_price: number | null
+        }
+        Insert: {
+          category_confidence?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description: string
+          discount?: boolean | null
+          expense_id: string
+          id?: string
+          member_id?: string | null
+          quantity?: number | null
+          sku?: string | null
+          suggested_category_id?: string | null
+          total_price: number
+          unit_price?: number | null
+        }
+        Update: {
+          category_confidence?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string
+          discount?: boolean | null
+          expense_id?: string
+          id?: string
+          member_id?: string | null
+          quantity?: number | null
+          sku?: string | null
+          suggested_category_id?: string | null
+          total_price?: number
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_line_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_line_items_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reminders: {
         Row: {
@@ -169,12 +1286,141 @@ export type Database = {
           },
         ]
       }
+      report_templates: {
+        Row: {
+          config: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          name: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          max_employees: number | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          max_employees?: number | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          max_employees?: number | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          paypal_subscription_id: string | null
+          status: string
+          subscription_plan_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          paypal_subscription_id?: string | null
+          status: string
+          subscription_plan_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          paypal_subscription_id?: string | null
+          status?: string
+          subscription_plan_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_default_budget_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
+      update_payroll_period_totals: {
+        Args: { period_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -185,21 +1431,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -217,14 +1467,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -240,14 +1492,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -263,14 +1517,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -278,14 +1534,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

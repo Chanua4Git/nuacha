@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
@@ -7,101 +6,91 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
+import { Loader2 } from 'lucide-react';
+import { useLogin } from "../hooks/useLogin";
+import BackToAuthDemo from "./BackToAuthDemo";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      const intendedPath = localStorage.getItem('intendedPath') || '/';
-      localStorage.removeItem('intendedPath');
-      navigate(intendedPath);
-    }
-  }, [user, navigate]);
+  const { login, loading } = useLogin();
+  const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // Redirect logic is handled by AuthProvider and useLogin hook
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast("Let's fill in all the fields", {
-        description: "Both email and password are needed to sign in."
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      
-      toast.success("Welcome back");
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast("Something didn't go as planned", {
-        description: error.message || "We couldn't sign you in. Please try again."
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    login(email, password);
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-semibold">Welcome back</CardTitle>
-        <CardDescription>Sign in to continue tracking your expenses</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLogin}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium">Password</label>
-              <Link to="/reset-password" className="text-sm text-primary hover:underline">
-                Forgot password?
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-accent/10">
+      <Card className="auth-card">
+        <CardHeader className="space-y-1 text-center">
+          <BackToAuthDemo />
+          <CardTitle className="text-2xl font-playfair">Welcome back</CardTitle>
+          <CardDescription>
+            Sign in to continue your mindful financial journey
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="auth-label">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="auth-input"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="auth-label">Password</label>
+                <Link to="/reset-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-input"
+                disabled={loading}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button 
+              type="submit" 
+              className="auth-button" 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+            <div className="text-center text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-primary hover:underline">
+                Sign up
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </Button>
-          <div className="text-center text-sm">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 };
 

@@ -1,5 +1,19 @@
-
 project_id = "fjrxqeyexlusjwzzecal"
 
 [functions.process-receipt]
 verify_jwt = true
+
+[functions.send-receipt-report]
+verify_jwt = false
+
+[functions.paypal-create-order]
+verify_jwt = true
+
+[functions.paypal-capture-order]
+verify_jwt = true
+
+[functions.create-download-purchase-paypal]
+verify_jwt = false
+
+[functions.capture-download-purchase-paypal]
+verify_jwt = false

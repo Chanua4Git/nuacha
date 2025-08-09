@@ -1,35 +1,26 @@
-
 import { useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { supabaseClient } from '../utils/supabaseClient';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { useLocation } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
+import { EmailSentCard } from './reset-password/EmailSentCard';
+import { RequestResetForm } from './reset-password/RequestResetForm';
+import BackToAuthDemo from "./BackToAuthDemo";
 
 const ResetPassword = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const token = searchParams.get('token');
-  const isSettingNewPassword = !!token;
-
+  const location = useLocation();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // In demo mode if query param is present
+  const isAuthDemo = location.search.includes('from=auth-demo');
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
-      toast("Let's fill in your email", {
-        description: 'Please enter the email address associated with your account.',
+      toast.error('Email required', {
+        description: 'Please enter your email address.',
       });
       return;
     }
@@ -37,126 +28,52 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Always redirect to confirm page first
+      const redirectTo = `${window.location.origin}/reset-password/confirm${isAuthDemo ? '?from=auth-demo' : ''}`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
       });
 
       if (error) throw error;
 
+      setEmailSent(true);
       toast.success('Reset link sent', {
-        description: 'Check your email for a link to reset your password.',
+        description: 'Please check your email for the password reset link.',
       });
     } catch (error: any) {
       console.error('Reset password error:', error);
-      toast("Something didn't go as planned", {
-        description: error.message || "We couldn't send a reset link. Please try again.",
+      
+      let errorMessage = "We couldn't send the reset link. Please try again.";
+      
+      if (error.message.includes("Email rate limit exceeded")) {
+        errorMessage = "Too many requests. Please wait a few minutes and try again.";
+      } else if (error.message.includes("User not found")) {
+        errorMessage = "No account found with this email address.";
+      }
+      
+      toast.error('Reset link failed', {
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!password) {
-      toast('Please enter a new password', {
-        description: 'Your new password should be at least 6 characters long.',
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast('Password is too short', {
-        description: 'For your security, please use at least 6 characters.',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabaseClient.auth.updateUser({ password });
-
-      if (error) throw error;
-
-      toast.success('Password updated', {
-        description: 'Your password has been updated successfully.',
-      });
-
-      navigate('/login');
-    } catch (error: any) {
-      console.error('Update password error:', error);
-      toast("Something didn't go as planned", {
-        description: error.message || "We couldn't update your password. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (emailSent) {
+    return <EmailSentCard email={email} onBack={() => setEmailSent(false)} />;
+  }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-semibold">
-          {isSettingNewPassword ? 'Create a new password' : 'Reset your password'}
-        </CardTitle>
-        <CardDescription>
-          {isSettingNewPassword
-            ? 'Enter a new password for your account'
-            : "We'll send you a link to reset your password"}
-        </CardDescription>
-      </CardHeader>
-
-      <form onSubmit={isSettingNewPassword ? handleUpdatePassword : handleSendResetLink}>
-        <CardContent className="space-y-4">
-          {isSettingNewPassword ? (
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                New Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 6 characters long
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full"
-              />
-            </div>
-          )}
-        </CardContent>
-
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading
-              ? (isSettingNewPassword ? 'Updating...' : 'Sending...')
-              : (isSettingNewPassword ? 'Update password' : 'Send reset link')}
-          </Button>
-          <div className="text-center text-sm">
-            <Link to="/login" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+    <div className="container max-w-md mx-auto p-4 mt-8">
+      <BackToAuthDemo />
+      <RequestResetForm
+        email={email}
+        isLoading={isLoading}
+        onEmailChange={setEmail}
+        onSubmit={handleSendResetLink}
+      />
+    </div>
   );
 };
 

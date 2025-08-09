@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -133,6 +132,53 @@ export interface Database {
           type?: 'bill' | 'replacement'
           related_expense_id?: string
           created_at?: string
+        }
+      }
+      receipt_line_items: {
+        Row: {
+          id: string
+          expense_id: string
+          description: string
+          quantity?: number
+          unit_price?: number
+          total_price: number
+          category_id?: string
+          suggested_category_id?: string
+          category_confidence?: number
+          sku?: string
+          discount?: boolean
+          created_at: string
+          member_id?: string  // Added member_id field here
+        }
+        Insert: {
+          id?: string
+          expense_id: string
+          description: string
+          quantity?: number
+          unit_price?: number
+          total_price: number
+          category_id?: string
+          suggested_category_id?: string
+          category_confidence?: number
+          sku?: string
+          discount?: boolean
+          created_at?: string
+          member_id?: string  // Added member_id field here
+        }
+        Update: {
+          id?: string
+          expense_id?: string
+          description?: string
+          quantity?: number
+          unit_price?: number
+          total_price?: number
+          category_id?: string
+          suggested_category_id?: string
+          category_confidence?: number
+          sku?: string
+          discount?: boolean
+          created_at?: string
+          member_id?: string  // Added member_id field here
         }
       }
     }
