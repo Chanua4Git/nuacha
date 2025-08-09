@@ -36,11 +36,15 @@ serve(async (req) => {
       });
     }
 
-    // Create PayPal order
+    // Create PayPal order using OAuth2 Bearer flow
     const paypalClientId = Deno.env.get("PAYPAL_CLIENT_ID");
     const paypalClientSecret = Deno.env.get("PAYPAL_CLIENT_SECRET");
+    const paypalEnv = (Deno.env.get("PAYPAL_ENV") || "sandbox").toLowerCase();
+    const baseUrl = paypalEnv === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
     
     // Debug logging
+    console.log('PayPal ENV:', paypalEnv);
+    console.log('PayPal Base URL:', baseUrl);
     console.log('PayPal Client ID length:', paypalClientId?.length || 0);
     console.log('PayPal Client Secret length:', paypalClientSecret?.length || 0);
     console.log('PayPal Client ID exists:', !!paypalClientId);
@@ -54,9 +58,29 @@ serve(async (req) => {
       });
     }
     
-    const paypalAuth = btoa(`${paypalClientId}:${paypalClientSecret}`);
-    console.log('PayPal Auth string length:', paypalAuth.length);
+    // 1) Obtain OAuth2 access token
+    const basicAuth = btoa(`${paypalClientId}:${paypalClientSecret}`);
+    const tokenResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
+    });
+    console.log('PayPal Token Response Status:', tokenResponse.status);
+    const tokenJson = await tokenResponse.json();
+    console.log('PayPal Token Response Body:', JSON.stringify(tokenJson, null, 2));
+    if (!tokenResponse.ok) {
+      console.error('Failed to obtain PayPal access token');
+      return new Response(JSON.stringify({ error: 'Failed to obtain PayPal access token', details: tokenJson }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const accessToken = tokenJson.access_token;
     
+    // 2) Create order with Bearer token
     const paypalRequestBody = {
       intent: 'CAPTURE',
       purchase_units: [{
@@ -73,22 +97,21 @@ serve(async (req) => {
     };
     
     console.log('PayPal request body:', JSON.stringify(paypalRequestBody, null, 2));
-    
-    const paypalOrderResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders`, {
+    const paypalOrderResponse = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${paypalAuth}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify(paypalRequestBody),
     });
-
+    
     console.log('PayPal API Response Status:', paypalOrderResponse.status);
     console.log('PayPal API Response Headers:', Object.fromEntries(paypalOrderResponse.headers));
-
+    
     const paypalOrder = await paypalOrderResponse.json();
     console.log('PayPal API Response Body:', JSON.stringify(paypalOrder, null, 2));
-
+    
     if (!paypalOrderResponse.ok) {
       console.error('PayPal order creation failed. Status:', paypalOrderResponse.status);
       console.error('PayPal error details:', JSON.stringify(paypalOrder, null, 2));
