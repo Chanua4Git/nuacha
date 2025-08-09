@@ -410,6 +410,4 @@ jobs:
           else
             echo "❌ Upload failed with status code: $response"
             exit 1
-
           fi
-
