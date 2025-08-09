@@ -46,56 +46,81 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     return rootCategories;
   };
 
+  // Fetch categories and build hierarchy
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    try {
+      let query = supabase.from('categories').select('*');
+      
+      if (familyId) {
+        if (includeGeneralCategories) {
+          // Get both family-specific and general categories
+          query = query.or(`family_id.eq.${familyId},family_id.is.null`);
+        } else {
+          // Only get family-specific categories
+          query = query.eq('family_id', familyId);
+        }
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      // Convert snake_case database fields to camelCase for application use
+      const mappedCategories: CategoryWithCamelCase[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        color: item.color,
+        familyId: item.family_id,
+        parentId: item.parent_id,
+        budget: item.budget,
+        description: item.description,
+        icon: item.icon,
+        createdAt: item.created_at
+      }));
+      
+      setCategories(mappedCategories);
+      setHierarchicalCategories(buildHierarchy(mappedCategories));
+    } catch (err: any) {
+      console.error('Error fetching categories:', err);
+      setError(err);
+      toast("We had trouble loading your categories", {
+        description: "Please try refreshing the page."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      setIsLoading(true);
-      try {
-        let query = supabase.from('categories').select('*');
-        
-        if (familyId) {
-          if (includeGeneralCategories) {
-            // Get both family-specific and general categories
-            query = query.or(`family_id.eq.${familyId},family_id.is.null`);
-          } else {
-            // Only get family-specific categories
-            query = query.eq('family_id', familyId);
+    // Initial load
+    fetchCategories();
+
+    // Realtime subscription for category changes
+    const channel = supabase
+      .channel(`categories-${familyId || 'all'}-${includeGeneralCategories ? 'incl-general' : 'family-only'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        (payload: any) => {
+          const row = payload.new ?? payload.old;
+          // If no family filter, or include general categories, refetch broadly
+          if (!familyId) {
+            fetchCategories();
+            return;
+          }
+          const familyMatches = row?.family_id === familyId;
+          const isGeneral = row?.family_id == null;
+          const relevant = includeGeneralCategories ? (familyMatches || isGeneral) : familyMatches;
+          if (relevant) {
+            fetchCategories();
           }
         }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        
-        // Convert snake_case database fields to camelCase for application use
-        const mappedCategories: CategoryWithCamelCase[] = data.map(item => ({
-          id: item.id,
-          name: item.name,
-          color: item.color,
-          familyId: item.family_id,
-          parentId: item.parent_id,
-          budget: item.budget,
-          description: item.description,
-          icon: item.icon,
-          createdAt: item.created_at
-        }));
-        
-        setCategories(mappedCategories);
-        
-        // Build and set hierarchical categories
-        const hierarchical = buildHierarchy(mappedCategories);
-        setHierarchicalCategories(hierarchical);
-      } catch (err: any) {
-        console.error('Error fetching categories:', err);
-        setError(err);
-        toast("We had trouble loading your categories", {
-          description: "Please try refreshing the page."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      )
+      .subscribe();
 
-    fetchCategories();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [familyId, includeGeneralCategories]);
 
   const createCategory = async (category: Omit<CategoryWithCamelCase, 'id'>) => {
@@ -254,6 +279,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     error,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    refetch: fetchCategories,
   };
 };

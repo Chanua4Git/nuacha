@@ -10,8 +10,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { useCategories } from '@/hooks/useCategories';
 import { Tag, RefreshCw } from 'lucide-react';
 import { CategoryWithCamelCase } from '@/types/expense';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CategorySelectorProps {
   value?: string;
@@ -25,7 +25,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   const { selectedFamily } = useExpense();
   
   // Use the categories hook directly to get fresh data
-  const { categories, isLoading: categoriesLoading } = useCategories(selectedFamily?.id);
+  const { categories, isLoading: categoriesLoading, refetch } = useCategories(selectedFamily?.id);
   
   // Filter categories to show general ones + those for the selected family
   const availableCategories = categories.filter(cat => 
@@ -139,9 +139,16 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
           <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
           <label className="text-sm font-medium">Category</label>
         </div>
-        {categoriesLoading && (
-          <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
-        )}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={refetch}
+            aria-label="Refresh categories"
+          >
+            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", categoriesLoading ? "animate-spin" : "")} />
+          </Button>
+        </div>
       </div>
       <Select
         value={value || undefined}
