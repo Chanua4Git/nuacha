@@ -27,22 +27,17 @@ jobs:
 
       - name: Copy auth-related files
         run: |
-          # Directory structure
           mkdir -p auth-package/src/{auth,components/ui,lib,integrations,hooks}
           mkdir -p auth-package/docs
           mkdir -p auth-package/examples
 
-          # Core feature code
           cp -r src/auth/* auth-package/src/auth/ || true
           cp -r src/components/ui/* auth-package/src/components/ui/ || true
           cp -r src/integrations/* auth-package/src/integrations/ || true
           mkdir -p auth-package/src/lib
           cp src/lib/utils.ts auth-package/src/lib/ || true
 
-          # Styles
           cp src/index.css auth-package/src/ || true
-
-          # Configs we’ll override later where needed
           cp components.json auth-package/ || true
           cp postcss.config.js auth-package/ || true
           cp tailwind.config.ts auth-package/ || true
@@ -50,7 +45,6 @@ jobs:
       - name: Add missing hooks (or shims)
         run: |
           mkdir -p auth-package/src/hooks
-          # use-toast (shim re-exports shadcn's component version if the hook doesn’t exist)
           if [ -f src/hooks/use-toast.ts ]; then
             cp src/hooks/use-toast.ts auth-package/src/hooks/
           else
@@ -59,7 +53,6 @@ jobs:
             EOF
           fi
 
-          # use-mobile (minimal, client-only)
           if [ -f src/hooks/use-mobile.tsx ]; then
             cp src/hooks/use-mobile.tsx auth-package/src/hooks/
           else
@@ -73,11 +66,11 @@ jobs:
                 const update = () => setIsMobile(mq.matches);
                 update();
                 mq.addEventListener?.("change", update);
-                // @ts-ignore – older Safari
+                // @ts-ignore
                 mq.addListener?.(update);
                 return () => {
                   mq.removeEventListener?.("change", update);
-                  // @ts-ignore – older Safari
+                  // @ts-ignore
                   mq.removeListener?.(update);
                 };
               }, [breakpoint]);
@@ -86,7 +79,7 @@ jobs:
             EOF
           fi
 
-      - name: Write example app (Demo shell)
+      - name: Write example app
         run: |
           cat > auth-package/examples/main.tsx <<'EOF'
           import React from "react";
@@ -171,7 +164,7 @@ jobs:
           }
           EOF
 
-      - name: Write safe index.html (points to example app)
+      - name: Write safe index.html
         run: |
           cat > auth-package/index.html <<'EOF'
           <!doctype html>
@@ -202,7 +195,7 @@ jobs:
           }
           EOF
 
-      - name: Write clean tsconfig for the package
+      - name: Write clean tsconfig
         run: |
           cat > auth-package/tsconfig.json <<'EOF'
           {
@@ -223,7 +216,7 @@ jobs:
           }
           EOF
 
-      - name: Write safe Vite config (avoids plugin typing issues)
+      - name: Write safe Vite config
         run: |
           cat > auth-package/vite.config.ts <<'EOF'
           import { defineConfig } from "vite";
@@ -236,13 +229,13 @@ jobs:
           });
           EOF
 
-      - name: Create minimal package.json for the package
+      - name: Create minimal package.json
         run: |
           cat > auth-package/package.json << 'EOF'
           {
             "name": "nuacha-auth-complete",
             "version": "1.0.0",
-            "description": "Complete authentication system extracted from Nuacha - a calm, mindful expense tracking app",
+            "description": "Complete authentication system extracted from Nuacha",
             "type": "module",
             "scripts": {
               "dev": "vite",
@@ -308,12 +301,12 @@ jobs:
           cd auth-package
           zip -r ../nuacha-auth-complete.zip .
 
-      - name: Upload to Supabase Storage (bucket: packages)
+      - name: "Upload to Supabase Storage (bucket: packages)"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          BUCKET="packages" # make sure this bucket exists
+          BUCKET="packages"
           curl -X POST \
             "$SUPABASE_URL/storage/v1/object/$BUCKET/nuacha-auth-complete.zip" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
@@ -321,7 +314,7 @@ jobs:
             -H "x-upsert: true" \
             --data-binary @nuacha-auth-complete.zip
 
-      - name: Verify upload
+      - name: "Verify upload (bucket: packages)"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
