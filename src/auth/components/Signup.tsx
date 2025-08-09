@@ -1,26 +1,45 @@
+
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthProvider';
+import { validatePassword, PasswordPolicy } from '../utils/passwordValidation';
+import { SignupForm } from './signup/SignupForm';
+import { EmailSentCard } from './signup/EmailSentCard';
+import BackToAuthDemo from "./BackToAuthDemo";
+import { useAuthDemo } from '../contexts/AuthDemoProvider';
+import { AuthDemoService } from '../services/AuthDemoService';
+
+const PASSWORD_POLICY: PasswordPolicy = {
+  minLength: 8,
+  requireNumber: true,
+  requireSpecialOrUpper: true
+};
 
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
+  const location = useLocation();
+  const isAuthDemo = location.search.includes('from=auth-demo');
+  const { setVerificationEmail } = useAuthDemo();
 
   useEffect(() => {
-    if (user) {
+    if (user && !isAuthDemo) {
       const intendedPath = localStorage.getItem('intendedPath') || '/';
       localStorage.removeItem('intendedPath');
       navigate(intendedPath);
     }
-  }, [user, navigate]);
+  }, [user, navigate, isAuthDemo]);
+
+  useEffect(() => {
+    setValidations(validatePassword(password, PASSWORD_POLICY));
+  }, [password]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,9 +51,9 @@ const Signup = () => {
       return;
     }
     
-    if (password.length < 6) {
-      toast("Your password needs to be a bit longer", {
-        description: "For your security, please use at least 6 characters."
+    if (!validations.length || !validations.number || !validations.special) {
+      toast("Your password needs to meet all requirements", {
+        description: "Please ensure your password meets the requirements below."
       });
       return;
     }
@@ -42,75 +61,71 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Use our demo service to get the redirect URL if in demo mode
+      const redirectTo = isAuthDemo 
+        ? AuthDemoService.getVerificationRedirectUrl()
+        : `${window.location.origin}/`;
+
+      console.log("Signup redirectTo:", redirectTo);
+
       const { error } = await supabaseClient.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectTo,
+        }
       });
       
       if (error) throw error;
       
-      toast.success("Account created", {
-        description: "Welcome to Nuacha. Your account has been created successfully."
+      setEmailSent(true);
+      
+      // Store the email for the demo flow if in demo mode
+      if (isAuthDemo) {
+        setVerificationEmail(email);
+      }
+      
+      toast.success("Verification email sent", {
+        description: "Please check your email to verify your account before continuing."
       });
       
-      // Keep user on signup page until email is verified
-      // They will be redirected once verified through the auth state change
     } catch (error: any) {
       console.error('Signup error:', error);
+      
+      let errorMessage = "We couldn't create your account. Please try again.";
+      
+      if (error.message.includes("already registered")) {
+        errorMessage = "This email is already registered. Try signing in instead.";
+      } else if (error.message.includes("valid email")) {
+        errorMessage = "Please enter a valid email address.";
+      }
+      
       toast("Something didn't go as planned", {
-        description: error.message || "We couldn't create your account. Please try again."
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (emailSent) {
+    return <EmailSentCard email={email} onBack={() => setEmailSent(false)} />;
+  }
+
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-semibold">Create an account</CardTitle>
-        <CardDescription>Sign up to start managing your expenses</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSignup}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Password must be at least 6 characters long
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Creating account...' : 'Sign up'}
-          </Button>
-          <div className="text-center text-sm">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+    <div>
+      {isAuthDemo && <BackToAuthDemo />}
+      <SignupForm
+        email={email}
+        password={password}
+        isLoading={isLoading}
+        validations={validations}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleSignup}
+        passwordPolicy={PASSWORD_POLICY}
+      />
+    </div>
   );
 };
 

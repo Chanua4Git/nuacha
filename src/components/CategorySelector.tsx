@@ -7,68 +7,192 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
-import { Tag } from 'lucide-react';
-import { Category } from '@/data/mockData';
+import { useCategories } from '@/hooks/useCategories';
+import { Tag, RefreshCw } from 'lucide-react';
+import { CategoryWithCamelCase } from '@/types/expense';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CategorySelectorProps {
   value?: string;
   onChange: (value: string) => void;
+  className?: string;
+  suggestedCategoryId?: string;
+  includeAllOption?: boolean; // Add this prop for Reports page
 }
 
-const CategorySelector = ({ value, onChange }: CategorySelectorProps) => {
-  const { categories, selectedFamily } = useExpense();
+const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption }: CategorySelectorProps) => {
+  const { selectedFamily } = useExpense();
+  
+  // Use the categories hook directly to get fresh data
+  const { categories, isLoading: categoriesLoading, refetch } = useCategories(selectedFamily?.id);
   
   // Filter categories to show general ones + those for the selected family
   const availableCategories = categories.filter(cat => 
-    !cat.familyId || (selectedFamily && cat.familyId === selectedFamily.id)
+    (cat.id && cat.id !== '') && (!cat.familyId || (selectedFamily && cat.familyId === selectedFamily.id))
   );
   
-  const getCategory = (id: string): Category | undefined => 
+  const getCategory = (id: string): CategoryWithCamelCase | undefined => 
     categories.find(c => c.id === id);
   
   const selectedCategory = value ? getCategory(value) : undefined;
+  const suggestedCategory = suggestedCategoryId ? getCategory(suggestedCategoryId) : undefined;
+
+  // Use suggested category if available and no category is selected
+  const handleSelect = (categoryId: string) => {
+    onChange(categoryId);
+  };
+
+  // Handle cases when we're in demo mode and might not have categories
+  const renderCategories = () => {
+    if (availableCategories.length === 0) {
+      // Demo categories for use when no categories are available
+      const demoCategories = [
+        { id: 'demo-groceries', name: 'Groceries', color: '#4CAF50' },
+        { id: 'demo-utilities', name: 'Utilities', color: '#2196F3' },
+        { id: 'demo-dining', name: 'Dining Out', color: '#FF9800' },
+        { id: 'demo-transport', name: 'Transportation', color: '#795548' },
+        { id: 'demo-shopping', name: 'Shopping', color: '#E91E63' },
+      ];
+      
+      return demoCategories.map((category) => (
+        <SelectItem 
+          key={category.id} 
+          value={category.id}
+          className="flex items-center"
+        >
+          <div className="flex items-center">
+            <span 
+              className="w-3 h-3 rounded-full mr-2" 
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+          </div>
+        </SelectItem>
+      ));
+    }
+    
+    // Use real categories if available
+    return availableCategories.map((category) => (
+      <SelectItem 
+        key={category.id} 
+        value={category.id}
+        className="flex items-center"
+      >
+        <div className="flex items-center">
+          <span 
+            className="w-3 h-3 rounded-full mr-2" 
+            style={{ backgroundColor: category.color }}
+          />
+          {category.name}
+        </div>
+      </SelectItem>
+    ));
+  };
+
+  // Handle selected category display for demo modes
+  const renderSelectedCategory = () => {
+    if (selectedCategory) {
+      return (
+        <div className="flex items-center">
+          <span 
+            className="w-3 h-3 rounded-full mr-2" 
+            style={{ backgroundColor: selectedCategory.color }}
+          />
+          {selectedCategory.name}
+        </div>
+      );
+    }
+    
+    // Demo mode - check if we have a value but no matching category
+    if (value && value.startsWith('demo-')) {
+      const demoCategories = {
+        'demo-groceries': { name: 'Groceries', color: '#4CAF50' },
+        'demo-utilities': { name: 'Utilities', color: '#2196F3' },
+        'demo-dining': { name: 'Dining Out', color: '#FF9800' },
+        'demo-transport': { name: 'Transportation', color: '#795548' },
+        'demo-shopping': { name: 'Shopping', color: '#E91E63' },
+      };
+      
+      const demoCategory = demoCategories[value as keyof typeof demoCategories];
+      
+      if (demoCategory) {
+        return (
+          <div className="flex items-center">
+            <span 
+              className="w-3 h-3 rounded-full mr-2" 
+              style={{ backgroundColor: demoCategory.color }}
+            />
+            {demoCategory.name}
+          </div>
+        );
+      }
+    }
+    
+    return null;
+  };
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center mb-2">
-        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-        <label className="text-sm font-medium">Category</label>
+    <div className={cn("mb-4", className)}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center">
+          <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+          <label className="text-sm font-medium">Category</label>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={refetch}
+            aria-label="Refresh categories"
+          >
+            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", categoriesLoading ? "animate-spin" : "")} />
+          </Button>
+        </div>
       </div>
       <Select
-        value={value}
-        onValueChange={onChange}
+        value={value || undefined}
+        onValueChange={handleSelect}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a category">
-            {selectedCategory && (
-              <div className="flex items-center">
-                <span 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: selectedCategory.color }}
-                />
-                {selectedCategory.name}
-              </div>
-            )}
+            {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
-          {availableCategories.map((category) => (
+        <SelectContent className="z-50">
+          {includeAllOption && (
+            <SelectItem value="all_categories">
+              <div className="flex items-center">
+                <span className="w-3 h-3 rounded-full mr-2 bg-gray-300" />
+                All Categories
+              </div>
+            </SelectItem>
+          )}
+          
+          {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && (
             <SelectItem 
-              key={category.id} 
-              value={category.id}
-              className="flex items-center"
+              value={suggestedCategory.id} 
+              className="font-medium border-b border-dashed border-gray-200 pb-1 mb-1"
             >
               <div className="flex items-center">
                 <span 
                   className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: category.color }}
+                  style={{ backgroundColor: suggestedCategory.color }}
                 />
-                {category.name}
+                {suggestedCategory.name} (Suggested)
               </div>
             </SelectItem>
-          ))}
+          )}
+          
+          {renderCategories()}
         </SelectContent>
       </Select>
+      
+      {suggestedCategory && !value && (
+        <div className="mt-1 text-xs text-muted-foreground">
+          <span className="font-medium text-primary">Suggestion:</span> {suggestedCategory.name}
+        </div>
+      )}
     </div>
   );
 };

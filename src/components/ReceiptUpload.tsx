@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Receipt, X, Loader2 } from 'lucide-react';
+import { Receipt, X, Loader2, Camera, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { processReceiptImage, validateOCRResult } from '@/utils/receiptProcessing';
+import { processReceiptImage, validateOCRResult } from '@/utils/receipt';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 
@@ -22,6 +22,8 @@ const ReceiptUpload = ({
 }: ReceiptUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -49,17 +51,46 @@ const ReceiptUpload = ({
     }
   };
 
-  const processReceipt = async (file: File) => {
+  const handleCameraClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('capture', 'environment');
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRetry = async () => {
+    if (currentFile) {
+      await processReceipt(currentFile, true);
+    } else if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const processReceipt = async (file: File, isRetry = false) => {
+    setCurrentFile(file);
     onImageUpload(file);
     
     setIsProcessing(true);
     try {
-      // Even without Supabase connection, this will return mock data
       const extractedData = await processReceiptImage(file);
       
       if (validateOCRResult(extractedData)) {
         onDataExtracted(extractedData);
-        toast.success('Receipt details gently applied');
+        if (isRetry) {
+          toast.success('Receipt details refreshed');
+        } else {
+          toast.success('Receipt details gently applied');
+        }
+      } else if (extractedData.error) {
+        // The error will be handled by the toast messages in processReceiptImage
+        onDataExtracted(extractedData); // Still provide any partial data for manual correction
       } else {
         toast("The receipt details weren't clear enough", {
           description: "Feel free to adjust the information as needed."
@@ -94,34 +125,69 @@ const ReceiptUpload = ({
             onChange={handleFileSelect}
             className="hidden"
             id="receipt-upload"
+            ref={fileInputRef}
           />
-          <label htmlFor="receipt-upload" className="cursor-pointer">
-            <div className="flex flex-col items-center gap-2">
-              <Receipt className="h-8 w-8 text-gray-400" />
-              <div className="text-sm text-gray-600">
-                <span className="font-medium text-primary">Add a receipt</span> or gently drop it here
-              </div>
-              <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
-              <p className="text-xs text-muted-foreground">We'll help fill in the details from your receipt</p>
+          
+          <div className="flex flex-col items-center gap-3">
+            <Receipt className="h-8 w-8 text-gray-400" />
+            <div className="text-sm text-gray-600">
+              <span className="font-medium text-primary">Add a receipt</span> or gently drop it here
             </div>
-          </label>
+            <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+            <p className="text-xs text-muted-foreground">We'll help fill in the details from your receipt</p>
+            
+            {/* Mobile-friendly option buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 mt-2 w-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full flex justify-center items-center gap-2" 
+                onClick={handleCameraClick}
+              >
+                <Camera className="h-4 w-4" />
+                Take Photo
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full flex justify-center items-center gap-2"
+                onClick={handleUploadClick}
+              >
+                <Receipt className="h-4 w-4" />
+                Upload
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="relative rounded-lg border border-gray-200 p-2">
+          <div className="flex justify-between items-start mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={handleRetry}
+              disabled={isProcessing}
+            >
+              <RefreshCw className="h-3 w-3" />
+              Re-scan
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onImageRemove}
+              disabled={isProcessing}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
           <img
             src={imagePreview}
             alt="Receipt preview"
             className="w-full rounded-lg object-cover"
           />
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute -top-2 -right-2 h-6 w-6"
-            onClick={onImageRemove}
-            disabled={isProcessing}
-          >
-            <X className="h-4 w-4" />
-          </Button>
           
           {isProcessing && (
             <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
