@@ -7,7 +7,7 @@ import CategorySelector from './CategorySelector';
 import ReceiptUpload from './ReceiptUpload';
 import AmountInput from './expense-form/AmountInput';
 import DescriptionInput from './expense-form/DescriptionInput';
-import DateSelector from './expense-form/DateSelector';
+import RecurringDateSelector, { DateMode, RecurrencePattern } from './expense-form/RecurringDateSelector';
 import PlaceInput from './expense-form/PlaceInput';
 import ReplacementSection from './expense-form/ReplacementSection';
 import { toast } from 'sonner';
@@ -38,6 +38,14 @@ const ExpenseForm = () => {
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
+
+  // Date selection modes
+  const [mode, setMode] = useState<DateMode>('single');
+  const [multipleDates, setMultipleDates] = useState<Date[]>([]);
+  const [generatedDates, setGeneratedDates] = useState<Date[]>([]);
+  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern | undefined>(undefined);
+  const [recurrenceStartDate, setRecurrenceStartDate] = useState<Date | undefined>(undefined);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
 
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
@@ -100,9 +108,31 @@ const ExpenseForm = () => {
       return;
     }
     
-    if (!amount || !description || !category || !date || !place) {
+    if (!amount || !description || !category || !place) {
       toast("Let's fill in all the details before we save this expense", {
         description: "Some information is still needed to help track this expense properly."
+      });
+      return;
+    }
+
+    // Validate dates based on mode
+    if (mode === 'single' && !date) {
+      toast("A date helps keep this tidy", {
+        description: "Please pick the day this expense belongs to."
+      });
+      return;
+    }
+
+    if (mode === 'multiple' && multipleDates.length === 0) {
+      toast("Let's pick the dates this applies to", {
+        description: "Select one or more dates for these entries."
+      });
+      return;
+    }
+
+    if (mode === 'recurring' && generatedDates.length === 0) {
+      toast("Almost there — generate the dates", {
+        description: "Choose a pattern, start/end, then tap Generate."
       });
       return;
     }
@@ -110,71 +140,74 @@ const ExpenseForm = () => {
     setIsSubmitting(true);
     
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      
+      const datesToCreate: Date[] =
+        mode === 'single' && date ? [date] :
+        mode === 'multiple' ? multipleDates :
+        generatedDates;
+
       let receiptUrl: string | undefined;
       if (receiptImage) {
         receiptUrl = imagePreview || undefined;
       }
-      
-      let nextReplacementDate: string | undefined;
-      if (needsReplacement && replacementFrequency) {
-        const nextDate = new Date(date);
-        nextDate.setDate(nextDate.getDate() + parseInt(replacementFrequency));
-        nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
-      }
-      
-      // Add expense first (use createExpense instead of addExpense)
-      const newExpense = await createExpense({
-        familyId: selectedFamily.id,
-        amount: parseFloat(amount),
-        description,
-        category,
-        date: formattedDate,
-        place,
-        needsReplacement,
-        replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
-        nextReplacementDate,
-        receiptUrl,
-        budgetCategoryId
-      });
-      
-      // If we have family members selected, add them to the expense
-      if (selectedMemberIds.length > 0 && newExpense && newExpense.id) {
-        try {
-          // Batch insert expense members
-          const expenseMembers = selectedMemberIds.map(memberId => ({
-            expense_id: newExpense.id,
-            member_id: memberId
-          }));
-          
-          const { error } = await supabase
-            .from('expense_members')
-            .insert(expenseMembers);
-          
-          if (error) throw error;
-          
-          console.log('✅ Family members associated with expense');
-        } catch (error) {
-          console.error('Error associating family members with expense:', error);
-          // Don't fail the whole submission if just the member assignments fail
-          toast("We saved your expense, but couldn't associate all family members", {
-            description: "The basic information is recorded correctly."
-          });
+
+      const createdExpenses: any[] = [];
+
+      for (let i = 0; i < datesToCreate.length; i++) {
+        const d = datesToCreate[i];
+        const formattedDate = format(d, 'yyyy-MM-dd');
+
+        let nextReplacementDate: string | undefined;
+        if (needsReplacement && replacementFrequency) {
+          const nextDate = new Date(d);
+          nextDate.setDate(nextDate.getDate() + parseInt(replacementFrequency));
+          nextReplacementDate = format(nextDate, 'yyyy-MM-dd');
         }
-      }
-      
-      // If we have OCR data and the expense was successfully created, save receipt details
-      if (ocrResult && newExpense && newExpense.id) {
-        try {
-          await saveReceiptDetailsAndLineItems(newExpense.id, ocrResult);
-          console.log('✅ Receipt details and line items saved');
-        } catch (error) {
-          console.error('Error saving receipt details:', error);
-          // We don't want to fail the whole submission if just the receipt details fail
-          toast("We saved your expense, but some receipt details couldn't be stored", {
-            description: "The basic information is recorded correctly."
-          });
+
+        const newExpense = await createExpense({
+          familyId: selectedFamily.id,
+          amount: parseFloat(amount),
+          description,
+          category,
+          date: formattedDate,
+          place,
+          needsReplacement,
+          replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
+          nextReplacementDate,
+          receiptUrl,
+          budgetCategoryId
+        });
+
+        createdExpenses.push(newExpense);
+
+        // Associate family members for each created expense
+        if (selectedMemberIds.length > 0 && newExpense && newExpense.id) {
+          try {
+            const expenseMembers = selectedMemberIds.map(memberId => ({
+              expense_id: newExpense.id,
+              member_id: memberId
+            }));
+            const { error } = await supabase
+              .from('expense_members')
+              .insert(expenseMembers);
+            if (error) throw error;
+          } catch (error) {
+            console.error('Error associating family members with expense:', error);
+            toast("Saved expense, but couldn't associate all family members", {
+              description: "The core details are recorded."
+            });
+          }
+        }
+
+        // Save receipt details for the first created expense only
+        if (i === 0 && ocrResult && newExpense && newExpense.id) {
+          try {
+            await saveReceiptDetailsAndLineItems(newExpense.id, ocrResult);
+          } catch (error) {
+            console.error('Error saving receipt details:', error);
+            toast("Saved expense, but some receipt details couldn't be stored", {
+              description: "The basic information is recorded correctly."
+            });
+          }
         }
       }
       
@@ -190,6 +223,12 @@ const ExpenseForm = () => {
       setShowDetailedView(false);
       setSelectedMemberIds([]);
       setBudgetCategoryId(null);
+      setMode('single');
+      setMultipleDates([]);
+      setGeneratedDates([]);
+      setRecurrencePattern(undefined);
+      setRecurrenceStartDate(undefined);
+      setRecurrenceEndDate(undefined);
       handleImageRemove();
       
       toast.success("All set. You're doing beautifully.");
@@ -263,9 +302,20 @@ const ExpenseForm = () => {
             onChange={setCategory}
           />
           
-          <DateSelector
-            date={date}
-            onSelect={setDate}
+          <RecurringDateSelector
+            mode={mode}
+            onModeChange={setMode}
+            singleDate={date}
+            onSingleDateChange={setDate}
+            multipleDates={multipleDates}
+            onMultipleDatesChange={setMultipleDates}
+            recurrencePattern={recurrencePattern}
+            onRecurrencePatternChange={setRecurrencePattern}
+            recurrenceStartDate={recurrenceStartDate}
+            onRecurrenceStartDateChange={setRecurrenceStartDate}
+            recurrenceEndDate={recurrenceEndDate}
+            onRecurrenceEndDateChange={setRecurrenceEndDate}
+            onGeneratedDatesChange={setGeneratedDates}
           />
           
           <PlaceInput
