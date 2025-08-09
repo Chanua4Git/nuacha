@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Download, Palette } from "lucide-react";
+import { ShieldCheck, Download, Palette, Users } from "lucide-react";
 
 const AuthDemoPlansSection = () => (
   <section id="auth-demo-plans" className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
