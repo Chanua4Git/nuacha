@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, Building2, ExternalLink, Star } from "lucide-react";
 import { useDownloadPurchase, type DownloadProduct } from "@/hooks/useDownloadPurchase";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DownloadPurchaseModalProps {

@@ -2,8 +2,17 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Download, Palette, Users } from "lucide-react";
+import { useState } from "react";
+import DownloadPurchaseModal from "./DownloadPurchaseModal";
 
-const AuthDemoPlansSection = () => (
+const AuthDemoPlansSection = () => {
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+  const handleDownloadClick = () => {
+    setShowPurchaseModal(true);
+  };
+
+  return (
   <section id="auth-demo-plans" className="py-20 px-4 md:px-6 lg:px-8 bg-[#5A7684] text-white">
     <div className="max-w-6xl mx-auto text-center">
       <h2 className="text-3xl md:text-4xl font-playfair mb-6">
@@ -42,8 +51,8 @@ const AuthDemoPlansSection = () => (
             <li>• Deploy to your own infrastructure</li>
             <li>• Extend and customize as you grow</li>
           </ul>
-          <Button asChild className="w-full mt-2" size="lg">
-            <Link to="/authentication-demo">Purchase</Link>
+          <Button className="w-full mt-2" size="lg" onClick={handleDownloadClick}>
+            Purchase
           </Button>
         </div>
 
@@ -64,7 +73,13 @@ const AuthDemoPlansSection = () => (
         </div>
       </div>
     </div>
+    
+    <DownloadPurchaseModal 
+      open={showPurchaseModal} 
+      onOpenChange={setShowPurchaseModal} 
+    />
   </section>
-);
+  );
+};
 
 export default AuthDemoPlansSection;
