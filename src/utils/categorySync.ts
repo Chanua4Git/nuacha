@@ -9,119 +9,162 @@ type CategorySeed = {
   children?: CategorySeed[];
 };
 
-// Recommended hierarchical categories tailored to the scenarios described
+// Comprehensive category structure aligned with budget categories
 const recommendedCategorySeeds: CategorySeed[] = [
   {
-    name: 'Housing',
+    name: 'Housing & Utilities',
     group: 'needs',
     children: [
       { name: 'Rent / Mortgage', group: 'needs' },
-      { name: 'Home Insurance', group: 'needs' },
-      { name: 'Utilities', group: 'needs', children: [
-        { name: 'Electricity', group: 'needs' },
-        { name: 'Water', group: 'needs' },
-        { name: 'Gas', group: 'needs' },
-        { name: 'Internet', group: 'needs' },
-        { name: 'Phone', group: 'needs' },
-      ]},
-      { name: 'Maintenance & Repairs', group: 'needs' },
-      { name: 'Yard & Garden', group: 'needs' },
-      { name: 'Pest Control', group: 'needs' },
+      { name: 'Electricity', group: 'needs' },
+      { name: 'Water & Sewer', group: 'needs' },
+      { name: 'Gas', group: 'needs' },
+      { name: 'Internet / Wi-Fi', group: 'needs' },
+      { name: 'Cable / Streaming services', group: 'wants' },
+      { name: 'Garbage collection', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Caregiving & Medical',
+    group: 'needs',
+    children: [
+      { name: 'Day nurse', group: 'needs' },
+      { name: 'Night nurse', group: 'needs' },
+      { name: 'Doctor visits', group: 'needs' },
+      { name: 'Specialist visits', group: 'needs' },
+      { name: 'Medical tests', group: 'needs' },
+      { name: 'Medication', group: 'needs' },
+      { name: 'Medical supplies', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Household Operations',
+    group: 'needs',
+    children: [
+      { name: 'Housekeeper', group: 'wants' },
+      { name: 'Garden services', group: 'wants' },
+      { name: 'Pool maintenance', group: 'wants' },
+      { name: 'Pest control', group: 'needs' },
+      { name: 'Laundry', group: 'needs' },
+      { name: 'Household repairs', group: 'needs' },
+      { name: 'Appliance repairs', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Groceries & Household Supplies',
+    group: 'needs',
+    children: [
+      { name: 'Groceries', group: 'needs' },
+      { name: 'Pet food & supplies', group: 'needs' },
+      { name: 'Toiletries', group: 'needs' },
+      { name: 'Paper goods', group: 'needs' },
     ],
   },
   {
     name: 'Transportation',
     group: 'needs',
     children: [
-      { name: 'Fuel / Gas', group: 'needs' },
-      { name: 'Vehicle Insurance', group: 'needs' },
-      { name: 'Maintenance & Service', group: 'needs' },
-      { name: 'Registration & Inspection', group: 'needs' },
-      { name: 'Parking & Tolls', group: 'needs' },
-      { name: 'Public Transport', group: 'needs' },
+      { name: 'Fuel', group: 'needs' },
+      { name: 'Taxi / rideshare', group: 'needs' },
+      { name: 'Public transportation', group: 'needs' },
+      { name: 'Vehicle maintenance', group: 'needs' },
+      { name: 'Vehicle insurance', group: 'needs' },
+      { name: 'Vehicle loan payment', group: 'needs' },
     ],
   },
   {
-    name: 'Food & Household',
+    name: 'Insurance & Financial',
     group: 'needs',
     children: [
-      { name: 'Groceries', group: 'needs' },
-      { name: 'Market', group: 'needs' },
-      { name: 'Toiletries', group: 'needs' },
-      { name: 'Household Supplies', group: 'needs' },
+      { name: 'Health insurance', group: 'needs' },
+      { name: 'Life insurance', group: 'needs' },
+      { name: 'Home insurance', group: 'needs' },
+      { name: 'Other insurance', group: 'needs' },
+      { name: 'Loan repayments', group: 'needs' },
+      { name: 'Savings', group: 'savings' },
+      { name: 'Investments', group: 'savings' },
     ],
   },
   {
-    name: 'Health & Care',
-    group: 'needs',
-    children: [
-      { name: 'Nurses', group: 'needs', children: [
-        { name: 'Night Nurse', group: 'needs' },
-        { name: 'Day Nurse', group: 'needs' },
-        { name: 'Weekend Nurse', group: 'needs' },
-      ]},
-      { name: 'Doctor', group: 'needs' },
-      { name: 'Dental', group: 'needs' },
-      { name: 'Optical', group: 'needs' },
-      { name: 'Medications', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Child',
-    group: 'needs',
-    children: [
-      { name: 'School', group: 'needs', children: [
-        { name: 'Fees', group: 'needs' },
-        { name: 'Uniform', group: 'needs' },
-        { name: 'Books & Supplies', group: 'needs' },
-        { name: 'Transport', group: 'needs' },
-        { name: 'Lunch Money', group: 'needs' },
-        { name: 'Extra Tuition', group: 'needs' },
-      ]},
-      { name: 'Childcare', group: 'needs' },
-      { name: 'Activities & Well-being', group: 'wants', children: [
-        { name: 'Sports', group: 'wants' },
-        { name: 'Toys & Games', group: 'wants' },
-        { name: 'Outings', group: 'wants' },
-        { name: 'Holidays', group: 'wants' },
-      ]},
-      { name: 'Hairdressing', group: 'wants' },
-      { name: 'Gifts & Celebrations', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Personal & Lifestyle',
+    name: 'Personal Care & Wellness',
     group: 'wants',
     children: [
-      { name: 'Dining Out', group: 'wants' },
-      { name: 'Entertainment', group: 'wants' },
-      { name: 'Subscriptions', group: 'wants' },
-      { name: 'Personal Care', group: 'wants' },
-      { name: 'Gifts & Celebrations', group: 'wants' },
-      { name: 'Travel & Holidays', group: 'wants' },
+      { name: 'Haircuts & grooming', group: 'wants' },
+      { name: 'Spa & massage', group: 'wants' },
+      { name: 'Gym membership', group: 'wants' },
+      { name: 'Vitamins & supplements', group: 'wants' },
     ],
   },
   {
-    name: 'Financial Goals',
-    group: 'savings',
+    name: 'Education & Child Expenses',
+    group: 'needs',
     children: [
-      { name: 'Emergency Fund', group: 'savings' },
-      { name: 'Investments', group: 'savings' },
-      { name: 'Retirement', group: 'savings' },
-      { name: 'Extra Debt Payments', group: 'savings' },
+      { name: 'School fees', group: 'needs' },
+      { name: 'Books & stationery', group: 'needs' },
+      { name: 'Extracurricular activities', group: 'wants' },
+      { name: 'School uniforms', group: 'needs' },
+      { name: 'Childcare', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Entertainment & Leisure',
+    group: 'wants',
+    children: [
+      { name: 'Dining out', group: 'wants' },
+      { name: 'Subscriptions', group: 'wants' },
+      { name: 'Events & tickets', group: 'wants' },
+      { name: 'Hobbies & crafts', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Gifts & Special Occasions',
+    group: 'wants',
+    children: [
+      { name: 'Birthday gifts', group: 'wants' },
+      { name: 'Holiday gifts', group: 'wants' },
+      { name: 'Anniversaries', group: 'wants' },
+      { name: 'Weddings & celebrations', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Travel & Holidays',
+    group: 'wants',
+    children: [
+      { name: 'Flights & transportation', group: 'wants' },
+      { name: 'Accommodation', group: 'wants' },
+      { name: 'Travel insurance', group: 'wants' },
+      { name: 'Activities & tours', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Miscellaneous',
+    group: 'needs',
+    children: [
+      { name: 'Emergency expenses', group: 'needs' },
+      { name: 'Donations & charity', group: 'wants' },
+      { name: 'Legal fees', group: 'needs' },
+      { name: 'Bank fees', group: 'needs' },
+      { name: 'Unplanned purchases', group: 'wants' },
     ],
   },
 ];
 
 function determineGroupFromName(name: string): BudgetGroup {
   const n = name.toLowerCase();
+  
+  // Needs categories (Essential expenses)
   if (
-    /nurse|doctor|dental|optical|medication|medicine|insurance|mortgage|rent|utility|electric|water|gas|internet|phone|grocery|market|toiletr|school|fees|uniform|book|supply|transport|tuition|childcare|fuel|vehicle|maintenance|registration|inspection|parking|public/.test(
-      n
-    )
-  )
+    /rent|mortgage|electricity|water|sewer|gas|internet|wifi|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|life insurance|home insurance|loan repayments|emergency|legal fees|bank fees|school fees|books|stationery|school uniforms|childcare/.test(n)
+  ) {
     return 'needs';
-  if (/saving|investment|retire|debt|emergency/.test(n)) return 'savings';
+  }
+  
+  // Savings categories
+  if (/saving|investment|retire|debt/.test(n)) {
+    return 'savings';
+  }
+  
+  // Wants categories (Lifestyle expenses) - everything else defaults here
   return 'wants';
 }
 
