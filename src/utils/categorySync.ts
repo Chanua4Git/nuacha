@@ -173,37 +173,45 @@ async function getOrCreateCategory(
   name: string,
   parentId: string | null
 ): Promise<string> {
-  // Check for existing category by name + parent within family
-  let query = supabase
-    .from('categories')
-    .select('id')
-    .eq('family_id', familyId)
-    .eq('name', name);
+  try {
+    // Check for existing category by name + parent within family
+    let query = supabase
+      .from('categories')
+      .select('id')
+      .eq('family_id', familyId)
+      .eq('name', name);
 
-  if (parentId === null) {
-    query = query.filter('parent_id', 'is', null);
-  } else {
-    query = query.eq('parent_id', parentId);
+    if (parentId === null) {
+      query = query.filter('parent_id', 'is', null);
+    } else {
+      query = query.eq('parent_id', parentId);
+    }
+
+    const { data: existing, error: selectError } = await query.limit(1).maybeSingle();
+    if (selectError) throw selectError;
+
+    if (existing?.id) return existing.id as string;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('categories')
+      .insert({
+        family_id: familyId,
+        name,
+        color: '#5A7684',
+        parent_id: parentId,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting category:', insertError);
+      throw insertError;
+    }
+    return inserted!.id as string;
+  } catch (error) {
+    console.error('Error in getOrCreateCategory:', error);
+    throw error;
   }
-
-  const { data: existing, error: selectError } = await query.limit(1).maybeSingle();
-  if (selectError) throw selectError;
-
-  if (existing?.id) return existing.id as string;
-
-  const { data: inserted, error: insertError } = await supabase
-    .from('categories')
-    .insert({
-      family_id: familyId,
-      name,
-      color: '#5A7684',
-      parent_id: parentId,
-    })
-    .select('id')
-    .single();
-
-  if (insertError) throw insertError;
-  return inserted!.id as string;
 }
 
 async function seedTree(
@@ -220,7 +228,28 @@ async function seedTree(
 }
 
 export async function seedRecommendedExpenseCategories(familyId: string) {
-  await seedTree(familyId, recommendedCategorySeeds);
+  try {
+    // Verify family exists and user has access by checking family ownership
+    const { data: family, error: familyError } = await supabase
+      .from('families')
+      .select('id, user_id')
+      .eq('id', familyId)
+      .single();
+    
+    if (familyError) {
+      console.error('Family verification failed:', familyError);
+      throw new Error('Unable to verify family ownership');
+    }
+    
+    if (!family) {
+      throw new Error('Family not found');
+    }
+    
+    await seedTree(familyId, recommendedCategorySeeds);
+  } catch (error) {
+    console.error('Error seeding categories for family:', familyId, error);
+    throw error;
+  }
 }
 
 export async function ensureBudgetDefaults(userId: string) {
@@ -266,32 +295,50 @@ export async function syncExpenseToBudgetCategories(
   userId: string,
   familyId: string
 ) {
-  await ensureBudgetDefaults(userId);
+  try {
+    await ensureBudgetDefaults(userId);
 
-  // Fetch all categories for the family
-  const { data: cats, error } = await supabase
-    .from('categories')
-    .select('id, name, parent_id')
-    .eq('family_id', familyId);
-  if (error) throw error;
-
-  // Build a set of unique top-level and important subcategory names
-  const uniqueNames = new Set<string>();
-  cats?.forEach((c) => uniqueNames.add(c.name));
-
-  // Also include all seed names to guarantee presence
-  const collectSeedNames = (seeds: CategorySeed[]) => {
-    for (const s of seeds) {
-      uniqueNames.add(s.name);
-      if (s.children) collectSeedNames(s.children);
+    // Verify family ownership before syncing
+    const { data: family, error: familyError } = await supabase
+      .from('families')
+      .select('id, user_id')
+      .eq('id', familyId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (familyError || !family) {
+      console.error('Family ownership verification failed:', familyError);
+      throw new Error('You do not have permission to sync categories for this family');
     }
-  };
-  collectSeedNames(recommendedCategorySeeds);
 
-  // Create missing budget categories with group inference
-  let sort = 50;
-  for (const name of uniqueNames) {
-    const group = determineGroupFromName(name);
-    await ensureBudgetCategory(userId, name, group, sort++);
+    // Fetch all categories for the family
+    const { data: cats, error } = await supabase
+      .from('categories')
+      .select('id, name, parent_id')
+      .eq('family_id', familyId);
+    if (error) throw error;
+
+    // Build a set of unique top-level and important subcategory names
+    const uniqueNames = new Set<string>();
+    cats?.forEach((c) => uniqueNames.add(c.name));
+
+    // Also include all seed names to guarantee presence
+    const collectSeedNames = (seeds: CategorySeed[]) => {
+      for (const s of seeds) {
+        uniqueNames.add(s.name);
+        if (s.children) collectSeedNames(s.children);
+      }
+    };
+    collectSeedNames(recommendedCategorySeeds);
+
+    // Create missing budget categories with group inference
+    let sort = 50;
+    for (const name of uniqueNames) {
+      const group = determineGroupFromName(name);
+      await ensureBudgetCategory(userId, name, group, sort++);
+    }
+  } catch (error) {
+    console.error('Error syncing expense to budget categories:', error);
+    throw error;
   }
 }
