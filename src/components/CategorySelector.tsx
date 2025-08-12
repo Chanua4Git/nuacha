@@ -46,14 +46,9 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   // Handle cases when we're in demo mode and might not have categories
   const renderCategories = () => {
     if (availableCategories.length === 0) {
-      // Demo categories for use when no categories are available
-      const demoCategories = [
-        { id: 'demo-groceries', name: 'Groceries', color: '#4CAF50' },
-        { id: 'demo-utilities', name: 'Utilities', color: '#2196F3' },
-        { id: 'demo-dining', name: 'Dining Out', color: '#FF9800' },
-        { id: 'demo-transport', name: 'Transportation', color: '#795548' },
-        { id: 'demo-shopping', name: 'Shopping', color: '#E91E63' },
-      ];
+      // Use comprehensive demo categories when no categories are available
+      const { getAllDemoCategories } = require('@/data/comprehensiveCategories');
+      const demoCategories = getAllDemoCategories();
       
       return demoCategories.map((category) => (
         <SelectItem 
@@ -105,16 +100,9 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     }
     
     // Demo mode - check if we have a value but no matching category
-    if (value && value.startsWith('demo-')) {
-      const demoCategories = {
-        'demo-groceries': { name: 'Groceries', color: '#4CAF50' },
-        'demo-utilities': { name: 'Utilities', color: '#2196F3' },
-        'demo-dining': { name: 'Dining Out', color: '#FF9800' },
-        'demo-transport': { name: 'Transportation', color: '#795548' },
-        'demo-shopping': { name: 'Shopping', color: '#E91E63' },
-      };
-      
-      const demoCategory = demoCategories[value as keyof typeof demoCategories];
+    if (value && (value.startsWith('demo-') || value.includes('-'))) {
+      const { findDemoCategory } = require('@/data/comprehensiveCategories');
+      const demoCategory = findDemoCategory(value);
       
       if (demoCategory) {
         return (
