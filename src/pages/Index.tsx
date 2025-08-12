@@ -1,4 +1,5 @@
 
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
 import ExpenseForm from '@/components/expense-form/ExpenseForm';
@@ -8,8 +9,23 @@ import { CategorySyncBanner } from '@/components/CategorySyncBanner';
 import { PlusCircle, ListFilter, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useFamilies } from '@/hooks/useFamilies';
+import { useCategorySync } from '@/hooks/useCategorySync';
 
 const Index = () => {
+  const { user } = useAuth();
+  const { families } = useFamilies();
+  const { syncCategoriesForAllFamilies } = useCategorySync();
+
+  // Auto-sync categories for existing users with families but no comprehensive categories
+  useEffect(() => {
+    if (user && families && families.length > 0) {
+      const familyIds = families.map(f => f.id);
+      // Run sync for all families (this will be idempotent)
+      syncCategoriesForAllFamilies(familyIds);
+    }
+  }, [user, families, syncCategoriesForAllFamilies]);
   const navigate = useNavigate();
 
   return (
