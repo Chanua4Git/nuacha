@@ -2,32 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useBudgetCategories } from '@/hooks/useBudgetCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ExpenseManager() {
-  const { categoriesByGroup, loading: categoriesLoading, initializeDefaultCategories } = useBudgetCategories();
+  const { user } = useAuth();
+  const { categories, isLoading: categoriesLoading } = useCategories();
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
   // Get the first family ID for filtering expenses
   const familyId = families?.[0]?.id;
+
+  // Filter categories to only show budget categories (user-level categories with group_type)
+  const budgetCategories = categories.filter(cat => 
+    // Check if category has groupType property (from migrated budget_categories)
+    'groupType' in cat && cat.groupType && 'userId' in cat && cat.userId === user?.id
+  );
+
+  // Group budget categories by type
+  const categoriesByGroup = budgetCategories.reduce((acc, category) => {
+    const groupType = (category as any).groupType;
+    if (!acc[groupType]) {
+      acc[groupType] = [];
+    }
+    acc[groupType].push(category);
+    return acc;
+  }, {} as Record<string, typeof categories>);
   
   const { expenses, isLoading: expensesLoading } = useExpenses({
     familyId: familyId
   });
 
   useEffect(() => {
-    // Initialize default categories if none exist
-    if (!categoriesLoading && Object.keys(categoriesByGroup).length === 0) {
-      initializeDefaultCategories();
-    }
-  }, [categoriesLoading, categoriesByGroup, initializeDefaultCategories]);
+    // Note: Budget categories are now managed through the unified category system
+    // Default budget categories should be created when user first accesses budget
+  }, []);
 
   const groupColors = {
     needs: 'bg-red-100 text-red-800 border-red-200',
@@ -51,8 +67,10 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    if (expense.budgetCategoryId) {
-      acc[expense.budgetCategoryId] = (acc[expense.budgetCategoryId] || 0) + expense.amount;
+    // Find the category by name and get its ID
+    const category = budgetCategories.find(cat => cat.name === expense.category);
+    if (category) {
+      acc[category.id] = (acc[category.id] || 0) + expense.amount;
     }
     return acc;
   }, {} as Record<string, number>);
@@ -210,7 +228,7 @@ export default function ExpenseManager() {
                 <TableBody>
                   {categories.map((category) => {
                     const categoryExpenses = monthlyExpenses.filter(
-                      expense => expense.budgetCategoryId === category.id
+                      expense => expense.category === category.name
                     );
                     const totalSpent = expensesByCategory[category.id] || 0;
                     

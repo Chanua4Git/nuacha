@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
-import { useBudgetCategories } from '@/hooks/useBudgetCategories';
+import { useCategories } from '@/hooks/useCategories';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 import { formatTTD } from '@/utils/budgetUtils';
+import { CategoryWithCamelCase } from '@/types/expense';
 import { Play, RotateCcw, Save } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 
@@ -19,10 +21,34 @@ interface ScenarioChange {
   change: number;
 }
 
+// Extended category interface for budget categories
+interface BudgetCategory extends CategoryWithCamelCase {
+  groupType: string;
+  userId: string;
+}
+
 export default function ScenarioPlanner() {
+  const { user } = useAuth();
+  const { categories, isLoading: loading } = useCategories();
   const [selectedMonth] = useState(new Date());
-  const { summary, loading } = useBudgetSummary(selectedMonth);
-  const { categoriesByGroup } = useBudgetCategories();
+  const { summary } = useBudgetSummary(selectedMonth);
+  
+  // Filter categories to only show budget categories
+  const budgetCategories = categories.filter(cat => 
+    // Check for budget categories (have groupType and no familyId)
+    (cat as any).groupType && cat.familyId === null && (cat as any).userId === user?.id
+  ) as BudgetCategory[];
+
+  // Group budget categories by type
+  const categoriesByGroup = budgetCategories.reduce((acc, category) => {
+    const groupType = category.groupType;
+    if (!acc[groupType]) {
+      acc[groupType] = [];
+    }
+    acc[groupType].push(category);
+    return acc;
+  }, {} as Record<string, BudgetCategory[]>);
+
   const [scenarioChanges, setScenarioChanges] = useState<Record<string, number>>({});
   const [scenarioName, setScenarioName] = useState('');
 
@@ -47,7 +73,20 @@ export default function ScenarioPlanner() {
     console.log('Saving scenario:', { name: scenarioName, changes: scenarioChanges });
   };
 
-  if (loading || !summary) {
+  // Calculate scenario impact first
+  const scenarioSummary = summary ? { ...summary } : null;
+  if (scenarioSummary) {
+    Object.entries(scenarioChanges).forEach(([categoryId, change]) => {
+      const category = Object.values(categoriesByGroup).flat().find(c => c.id === categoryId);
+      if (category && category.groupType) {
+        scenarioSummary.byGroup[category.groupType].total += change;
+        scenarioSummary.totalExpenses += change;
+        scenarioSummary.surplus -= change;
+      }
+    });
+  }
+
+  if (loading || !summary || !scenarioSummary) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -75,18 +114,8 @@ export default function ScenarioPlanner() {
   }
 
   // Calculate scenario impact
-  const scenarioSummary = { ...summary };
-  Object.entries(scenarioChanges).forEach(([categoryId, change]) => {
-    const category = Object.values(categoriesByGroup).flat().find(c => c.id === categoryId);
-    if (category) {
-      scenarioSummary.byGroup[category.group_type].total += change;
-      scenarioSummary.totalExpenses += change;
-      scenarioSummary.surplus -= change;
-    }
-  });
-
   // Recalculate percentages for scenario
-  if (scenarioSummary.totalIncome > 0) {
+  if (scenarioSummary && scenarioSummary.totalIncome > 0) {
     Object.keys(scenarioSummary.byGroup).forEach(group => {
       scenarioSummary.byGroup[group].percentage = 
         (scenarioSummary.byGroup[group].total / scenarioSummary.totalIncome) * 100;
@@ -97,13 +126,13 @@ export default function ScenarioPlanner() {
     });
   }
 
-  const pieData = [
+  const pieData = scenarioSummary ? [
     { name: 'Needs', value: scenarioSummary.byGroup.needs.total, color: '#ef4444' },
     { name: 'Wants', value: scenarioSummary.byGroup.wants.total, color: '#f59e0b' },
     { name: 'Savings', value: scenarioSummary.byGroup.savings.total, color: '#10b981' }
-  ];
+  ] : [];
 
-  const comparisonData = [
+  const comparisonData = (scenarioSummary && summary) ? [
     {
       name: 'Current',
       needs: summary.byGroup.needs.total,
@@ -116,7 +145,7 @@ export default function ScenarioPlanner() {
       wants: scenarioSummary.byGroup.wants.total,
       savings: scenarioSummary.byGroup.savings.total
     }
-  ];
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -166,7 +195,8 @@ export default function ScenarioPlanner() {
                 <h3 className="font-medium mb-3 capitalize">{groupType}</h3>
                 <div className="space-y-4">
                   {categories.slice(0, 3).map((category) => {
-                    const currentSpent = summary.byGroup[category.group_type].total / categories.length; // Simplified
+                    const currentSpent = summary ? 
+                      summary.byGroup[category.groupType].total / categories.length : 0; // Simplified
                     const change = scenarioChanges[category.id] || 0;
                     const newAmount = currentSpent + change;
                     

@@ -201,10 +201,13 @@ export type Database = {
           created_at: string | null
           description: string | null
           family_id: string | null
+          group_type: string | null
           icon: string | null
           id: string
           name: string
           parent_id: string | null
+          sort_order: number | null
+          user_id: string | null
         }
         Insert: {
           budget?: number | null
@@ -212,10 +215,13 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          group_type?: string | null
           icon?: string | null
           id?: string
           name: string
           parent_id?: string | null
+          sort_order?: number | null
+          user_id?: string | null
         }
         Update: {
           budget?: number | null
@@ -223,10 +229,13 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          group_type?: string | null
           icon?: string | null
           id?: string
           name?: string
           parent_id?: string | null
+          sort_order?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
