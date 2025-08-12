@@ -1417,6 +1417,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: undefined
       }
+      sync_comprehensive_budget_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_payroll_period_totals: {
         Args: { period_id: string }
         Returns: undefined
