@@ -12,6 +12,7 @@ import { Tag, RefreshCw } from 'lucide-react';
 import { CategoryWithCamelCase } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getAllDemoCategories, findDemoCategory } from '@/data/comprehensiveCategories';
 
 interface CategorySelectorProps {
   value?: string;
@@ -47,7 +48,6 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   const renderCategories = () => {
     if (availableCategories.length === 0) {
       // Use comprehensive demo categories when no categories are available
-      const { getAllDemoCategories } = require('@/data/comprehensiveCategories');
       const demoCategories = getAllDemoCategories();
       
       return demoCategories.map((category) => (
@@ -101,7 +101,6 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     
     // Demo mode - check if we have a value but no matching category
     if (value && (value.startsWith('demo-') || value.includes('-'))) {
-      const { findDemoCategory } = require('@/data/comprehensiveCategories');
       const demoCategory = findDemoCategory(value);
       
       if (demoCategory) {

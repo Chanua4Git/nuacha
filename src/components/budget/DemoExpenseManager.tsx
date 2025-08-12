@@ -6,9 +6,9 @@ import { Plus, Edit } from 'lucide-react';
 import { formatTTD } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { toast } from 'sonner';
+import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 
 // Mock budget categories and expenses for demo using comprehensive categories
-const { getCategoriesByGroup } = require('@/data/comprehensiveCategories');
 
 const createMockExpenses = (categoryName: string, group: string) => {
   const expenseData = {

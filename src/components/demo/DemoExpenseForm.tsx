@@ -13,6 +13,7 @@ import { OCRResult } from '@/types/expense';
 import DetailedReceiptView from '@/components/DetailedReceiptView';
 import { format } from 'date-fns';
 import { categorizeFromReceipt } from '@/utils/budgetUtils';
+import { getAllDemoCategories } from '@/data/comprehensiveCategories';
 
 interface DemoExpenseFormProps {
   onComplete: (data: any) => void;
@@ -41,7 +42,6 @@ const DemoExpenseForm = ({
   const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
 
   // Use comprehensive demo categories
-  const { getAllDemoCategories } = require('@/data/comprehensiveCategories');
   const allDemoCategories = getAllDemoCategories();
   const demoBudgetCategories = allDemoCategories.map(cat => ({
     id: cat.id,
