@@ -50,39 +50,6 @@ export type Database = {
         }
         Relationships: []
       }
-      budget_categories: {
-        Row: {
-          created_at: string
-          group_type: string
-          id: string
-          is_active: boolean
-          name: string
-          sort_order: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          group_type: string
-          id?: string
-          is_active?: boolean
-          name: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          group_type?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       budget_periods: {
         Row: {
           created_at: string
