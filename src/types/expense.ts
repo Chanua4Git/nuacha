@@ -84,6 +84,11 @@ export interface CategoryWithCamelCase {
   description?: string;
   icon?: string;
   createdAt?: string;
+  // Budget category fields for unified system
+  groupType?: 'needs' | 'wants' | 'savings';
+  userId?: string;
+  sortOrder?: number;
+  isBudgetCategory?: boolean;
 }
 
 // OCR result type
