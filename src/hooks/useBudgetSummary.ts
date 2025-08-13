@@ -32,6 +32,15 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
 
       if (incomeError) throw incomeError;
 
+      // Fetch budget categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from('budget_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (categoriesError) throw categoriesError;
+
       // Fetch user's families first
       const { data: userFamilies, error: familiesError } = await supabase
         .from('families')
@@ -40,20 +49,11 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
 
       if (familiesError) throw familiesError;
 
-      const familyIds = (userFamilies || []).map(f => f.id);
-
-      // Fetch budget categories from unified categories table (both user-level and family-level)
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .is('is_budget_category', true)
-        .or(`user_id.eq.${user.id},family_id.in.(${familyIds.join(',')})`);
-
-      if (categoriesError) throw categoriesError;
-
       // Fetch expenses for the selected period, filtered by user's families
       const periodStart = startDate;
       const periodEnd = endDate || new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      
+      const familyIds = (userFamilies || []).map(f => f.id);
       
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
@@ -99,16 +99,11 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       };
 
       (expenses || []).forEach(expense => {
-        // Find category by UUID first (preferred), then fallback to name matching, then budgetCategoryId
-        let category = categories?.find(cat => cat.id === expense.category);
-        if (!category) {
-          category = categories?.find(cat => cat.name === expense.category);
-        }
-        if (!category && expense.budget_category_id) {
-          category = categories?.find(cat => cat.id === expense.budget_category_id);
-        }
-        if (category && category.group_type) {
-          expensesByGroup[category.group_type] += expense.amount;
+        if (expense.budget_category_id) {
+          const category = categoryMap.get(expense.budget_category_id);
+          if (category) {
+            expensesByGroup[category.group_type] += expense.amount;
+          }
         }
       });
 

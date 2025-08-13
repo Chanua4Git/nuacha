@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { ensureBudgetDefaults, seedRecommendedExpenseCategories, syncExpenseToBudgetCategories } from '@/utils/categorySync';
-import { useCategorySync } from '@/hooks/useCategorySync';
 
 interface CategoryManagerProps {
   familyId: string;
@@ -33,7 +32,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
   const [editingCategory, setEditingCategory] = useState<CategoryWithChildren | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [seeding, setSeeding] = useState(false);
-  const { syncCategoriesForFamily, isSyncing } = useCategorySync();
+  const [syncing, setSyncing] = useState(false);
 
   const defaultFormData: CategoryFormData = {
     name: '',
@@ -274,16 +273,29 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => syncCategoriesForFamily(familyId)}
-            disabled={isSyncing}
-            aria-label="Sync categories with new 12-category structure"
+            onClick={async () => {
+              if (!user) return;
+              try {
+                setSyncing(true);
+                await ensureBudgetDefaults(user.id);
+                await syncExpenseToBudgetCategories(user.id, familyId);
+                toast.success('Synced with Budget categories');
+              } catch (e) {
+                console.error(e);
+                toast.error('Sync failed');
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            aria-label="Sync with Budget categories"
           >
-            {isSyncing ? (
+            {syncing ? (
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <LinkIcon className="mr-2 h-4 w-4" />
             )}
-            Sync Categories
+            Sync with Budget
           </Button>
           <Button
             variant="secondary"

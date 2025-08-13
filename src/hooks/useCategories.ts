@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Category, CategoryWithCamelCase } from '@/types/expense';
 import { toast } from 'sonner';
-import { useAuth } from '@/auth/contexts/AuthProvider';
 
 // Interface for the hierarchical category structure
 export interface CategoryWithChildren extends CategoryWithCamelCase {
@@ -11,7 +10,6 @@ export interface CategoryWithChildren extends CategoryWithCamelCase {
 }
 
 export const useCategories = (familyId?: string, includeGeneralCategories: boolean = true) => {
-  const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryWithCamelCase[]>([]);
   const [hierarchicalCategories, setHierarchicalCategories] = useState<CategoryWithChildren[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,24 +48,18 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   // Fetch categories and build hierarchy
   const fetchCategories = async () => {
-    if (!user) {
-      console.log('User not available yet, skipping category fetch');
-      setIsLoading(false);
-      return;
-    }
-    
     setIsLoading(true);
     try {
       let query = supabase.from('categories').select('*');
       
       if (familyId) {
-        // Include family-specific, user-level budget categories, and general categories
-        query = query.or(`family_id.eq.${familyId},and(family_id.is.null,user_id.eq.${user.id})`);
-      } else if (includeGeneralCategories) {
-        // Include user-level categories (including budget categories) and general categories
-        query = query.or(`user_id.eq.${user.id},family_id.is.null`);
-      } else {
-        return; // No specific family and not including general - skip fetch
+        if (includeGeneralCategories) {
+          // Get both family-specific and general categories
+          query = query.or(`family_id.eq.${familyId},family_id.is.null`);
+        } else {
+          // Only get family-specific categories
+          query = query.eq('family_id', familyId);
+        }
       }
       
       const { data, error } = await query;
@@ -83,11 +75,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         budget: item.budget,
         description: item.description,
         icon: item.icon,
-        createdAt: item.created_at,
-        userId: item.user_id,
-        groupType: item.group_type,
-        sortOrder: item.sort_order,
-        isBudgetCategory: item.is_budget_category
+        createdAt: item.created_at
       }));
       
       setCategories(mappedCategories);
@@ -105,9 +93,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   useEffect(() => {
     // Initial load
-    if (user) {
-      fetchCategories();
-    }
+    fetchCategories();
 
     // Realtime subscription for category changes
     const channel = supabase
@@ -135,7 +121,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [familyId, includeGeneralCategories, user]);
+  }, [familyId, includeGeneralCategories]);
 
   const createCategory = async (category: Omit<CategoryWithCamelCase, 'id'>) => {
     try {

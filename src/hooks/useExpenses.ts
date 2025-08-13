@@ -24,7 +24,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
 
   useEffect(() => {
     const fetchExpenses = async () => {
-      if (!user) {
+      if (!user || !filters?.familyId) {
         setExpenses([]);
         setIsLoading(false);
         return;
@@ -37,28 +37,9 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           .from('expenses')
           .select('*');
         
-        // Apply family filter
+        // Apply filters if provided
         if (filters?.familyId) {
-          // Specific family selected
           query = query.eq('family_id', filters.familyId);
-        } else {
-          // No specific family or "all" families - fetch user's families first
-          const { data: families, error: familiesError } = await supabase
-            .from('families')
-            .select('id')
-            .eq('user_id', user.id);
-            
-          if (familiesError) throw familiesError;
-          
-          const familyIds = families.map(f => f.id);
-          if (familyIds.length > 0) {
-            query = query.in('family_id', familyIds);
-          } else {
-            // User has no families, return empty
-            setExpenses([]);
-            setIsLoading(false);
-            return;
-          }
         }
         
         if (filters?.categoryId) {

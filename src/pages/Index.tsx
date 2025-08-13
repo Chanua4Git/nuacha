@@ -1,16 +1,13 @@
 
-import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
 import ExpenseForm from '@/components/expense-form/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
 import RemindersList from '@/components/RemindersList';
-import { CategorySyncBanner } from '@/components/CategorySyncBanner';
 import { PlusCircle, ListFilter, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useFamilies } from '@/hooks/useFamilies';
+
 const Index = () => {
   const navigate = useNavigate();
 
@@ -23,8 +20,6 @@ const Index = () => {
             A softer way to track spending across families
           </p>
         </div>
-        
-        <CategorySyncBanner />
         
         <div className="flex flex-col md:flex-row md:items-start gap-4 mb-8">
           <div className="flex-1">
