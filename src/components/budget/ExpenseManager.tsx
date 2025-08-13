@@ -115,8 +115,15 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    // Use the budget_category_id field to match expenses to categories
-    const category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    // Match expenses to budget categories using same logic as useBudgetSummary
+    // Find category by UUID first (preferred), then fallback to name matching
+    let category = budgetCategories.find(cat => cat.id === expense.category);
+    if (!category) {
+      category = budgetCategories.find(cat => cat.name === expense.category);
+    }
+    if (!category && expense.budgetCategoryId) {
+      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    }
     
     if (category) {
       acc[category.id] = (acc[category.id] || 0) + expense.amount;
@@ -125,6 +132,7 @@ export default function ExpenseManager() {
       console.warn('No matching budget category found for expense:', {
         expenseId: expense.id,
         description: expense.description,
+        category: expense.category,
         budgetCategoryId: expense.budgetCategoryId,
         amount: expense.amount
       });
