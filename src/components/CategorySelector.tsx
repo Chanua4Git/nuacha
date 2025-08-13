@@ -12,7 +12,7 @@ import { Tag, RefreshCw } from 'lucide-react';
 import { CategoryWithCamelCase } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getAllDemoCategories, findDemoCategory } from '@/data/comprehensiveCategories';
+import { getAllDemoCategories, findDemoCategory, comprehensiveCategories } from '@/data/comprehensiveCategories';
 
 interface CategorySelectorProps {
   value?: string;
@@ -49,50 +49,202 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     onChange(categoryId);
   };
 
+  // Organize categories by group and parent for hierarchical display
+  const organizeCategories = (categories: CategoryWithCamelCase[]) => {
+    const groups = {
+      needs: categories.filter(cat => cat.groupType === 'needs'),
+      wants: categories.filter(cat => cat.groupType === 'wants'),
+      savings: categories.filter(cat => cat.groupType === 'savings')
+    };
+    return groups;
+  };
+
   // Handle cases when we're in demo mode and might not have categories
   const renderCategories = () => {
     if (availableCategories.length === 0) {
-      // Use comprehensive demo categories when no categories are available
-      const demoCategories = getAllDemoCategories();
-      
-      return demoCategories.map((category) => (
-        <SelectItem 
-          key={category.id} 
-          value={category.id}
-          className="flex items-center"
-        >
-          <div className="flex items-center">
-            <span 
-              className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-              style={{ backgroundColor: category.color }}
-            />
-            {category.name}
-          </div>
-        </SelectItem>
-      ));
+      // Use comprehensive demo categories with hierarchical structure
+      return renderHierarchicalDemoCategories();
     }
     
-    // Use real categories if available - ensure colors are displayed properly
-    return availableCategories.map((category) => (
-      <SelectItem 
-        key={category.id} 
-        value={category.id}
-        className="flex items-center"
-      >
-        <div className="flex items-center">
-          <span 
-            className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-            style={{ backgroundColor: category.color || '#64748B' }}
-          />
-          {category.name}
-          {category.groupType && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              {category.groupType}
-            </span>
-          )}
+    // Use real categories if available - organize hierarchically
+    const organizedCategories = organizeCategories(availableCategories);
+    
+    return (
+      <>
+        {/* NEEDS Section */}
+        {organizedCategories.needs.length > 0 && (
+          <>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b">
+              NEEDS (Essential)
+            </div>
+            {organizedCategories.needs.map((category) => (
+              <SelectItem 
+                key={category.id} 
+                value={category.id}
+                className="flex items-center pl-4"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: category.color || '#64748B' }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))}
+          </>
+        )}
+
+        {/* WANTS Section */}
+        {organizedCategories.wants.length > 0 && (
+          <>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+              WANTS (Discretionary)
+            </div>
+            {organizedCategories.wants.map((category) => (
+              <SelectItem 
+                key={category.id} 
+                value={category.id}
+                className="flex items-center pl-4"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: category.color || '#64748B' }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))}
+          </>
+        )}
+
+        {/* SAVINGS Section */}
+        {organizedCategories.savings.length > 0 && (
+          <>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+              SAVINGS & INVESTMENTS
+            </div>
+            {organizedCategories.savings.map((category) => (
+              <SelectItem 
+                key={category.id} 
+                value={category.id}
+                className="flex items-center pl-4"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: category.color || '#64748B' }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))}
+          </>
+        )}
+      </>
+    );
+  };
+
+  // Render hierarchical demo categories
+  const renderHierarchicalDemoCategories = () => {
+    const needsCategories = comprehensiveCategories.filter(cat => cat.group === 'needs');
+    const wantsCategories = comprehensiveCategories.filter(cat => cat.group === 'wants');
+    const savingsCategories = comprehensiveCategories.filter(cat => cat.group === 'savings');
+
+    return (
+      <>
+        {/* NEEDS Section */}
+        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b">
+          NEEDS (Essential)
         </div>
-      </SelectItem>
-    ));
+        {needsCategories.map(parentCategory => (
+          <div key={parentCategory.id}>
+            {/* Parent Category Header - Non-selectable */}
+            <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
+                 style={{ borderLeftColor: parentCategory.color }}>
+              {parentCategory.name}
+            </div>
+            {/* Child Categories */}
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+              <SelectItem 
+                key={child.id} 
+                value={child.id}
+                className="flex items-center pl-6"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: child.color }}
+                  />
+                  {child.name}
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+        ))}
+
+        {/* WANTS Section */}
+        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+          WANTS (Discretionary)
+        </div>
+        {wantsCategories.map(parentCategory => (
+          <div key={parentCategory.id}>
+            {/* Parent Category Header - Non-selectable */}
+            <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
+                 style={{ borderLeftColor: parentCategory.color }}>
+              {parentCategory.name}
+            </div>
+            {/* Child Categories */}
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+              <SelectItem 
+                key={child.id} 
+                value={child.id}
+                className="flex items-center pl-6"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: child.color }}
+                  />
+                  {child.name}
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+        ))}
+
+        {/* SAVINGS Section */}
+        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+          SAVINGS & INVESTMENTS
+        </div>
+        {savingsCategories.map(parentCategory => (
+          <div key={parentCategory.id}>
+            {/* Parent Category Header - Non-selectable */}
+            <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
+                 style={{ borderLeftColor: parentCategory.color }}>
+              {parentCategory.name}
+            </div>
+            {/* Child Categories */}
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+              <SelectItem 
+                key={child.id} 
+                value={child.id}
+                className="flex items-center pl-6"
+              >
+                <div className="flex items-center">
+                  <span 
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    style={{ backgroundColor: child.color }}
+                  />
+                  {child.name}
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+        ))}
+      </>
+    );
   };
 
   // Handle selected category display for demo modes
