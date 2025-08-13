@@ -1392,12 +1392,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_duplicate_budget_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_default_budget_categories: {
         Args: { user_uuid: string }
         Returns: undefined
       }
       ensure_user_budget_categories: {
         Args: { user_uuid: string }
+        Returns: undefined
+      }
+      map_expenses_to_budget_categories: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       sync_comprehensive_budget_categories: {
