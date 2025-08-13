@@ -18,6 +18,7 @@ import PayrollLinkSection, { PayrollLinkState } from './PayrollLinkSection';
 import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
+import DetailedReceiptView from '../DetailedReceiptView';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
@@ -33,6 +34,7 @@ const ExpenseForm = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
+  const [showDetailedReceiptView, setShowDetailedReceiptView] = useState(false);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -100,6 +102,13 @@ const ExpenseForm = () => {
     if (data.description) setDescription(data.description);
     if (data.place) setPlace(data.place);
     if (data.date) setSingleDate(data.date);
+
+    // Auto-show detailed view if line items are detected or structured data exists
+    if (data.lineItems && data.lineItems.length > 0) {
+      setShowDetailedReceiptView(true);
+    } else if (data.storeDetails || data.total || data.tax) {
+      setShowDetailedReceiptView(true);
+    }
 
     // Don't set category automatically as it needs user judgment
   };
@@ -258,6 +267,7 @@ const ExpenseForm = () => {
       setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
       setIsLongReceiptMode(false);
+      setShowDetailedReceiptView(false);
       handleImagesRemove();
 
       const expenseCount = createdExpenses.length;
@@ -314,6 +324,33 @@ const ExpenseForm = () => {
               onDataExtracted={handleOcrData}
               imagePreview={imagePreview}
             />
+          )}
+
+          {/* Detailed Receipt View */}
+          {ocrResult && imagePreview && (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDetailedReceiptView(!showDetailedReceiptView)}
+                className="w-full"
+              >
+                {showDetailedReceiptView ? "Hide receipt details" : "Show receipt details"}
+              </Button>
+              
+              {showDetailedReceiptView && (
+                <div className="border rounded-lg p-4 bg-background/50">
+                  <DetailedReceiptView
+                    receiptData={ocrResult}
+                    receiptImage={imagePreview}
+                    onRetry={() => {
+                      setOcrResult(null);
+                      setShowDetailedReceiptView(false);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           )}
 
           <AmountInput 
