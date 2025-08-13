@@ -99,10 +99,13 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       };
 
       (expenses || []).forEach(expense => {
-        // Find category by UUID first (preferred), then fallback to name matching
+        // Find category by UUID first (preferred), then fallback to name matching, then budgetCategoryId
         let category = categories?.find(cat => cat.id === expense.category);
         if (!category) {
           category = categories?.find(cat => cat.name === expense.category);
+        }
+        if (!category && expense.budget_category_id) {
+          category = categories?.find(cat => cat.id === expense.budget_category_id);
         }
         if (category && category.group_type) {
           expensesByGroup[category.group_type] += expense.amount;
