@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BudgetSummary, IncomeSource, BudgetCategory, BudgetAllocation } from '@/types/budget';
-import { Expense, CategoryWithCamelCase } from '@/types/expense';
+import { Expense } from '@/types/expense';
 import { toMonthly, getFirstDayOfMonth } from '@/utils/budgetUtils';
-import { matchExpenseToCategory } from '@/utils/expenseMatching';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 
 export function useBudgetSummary(startDate: Date, endDate?: Date) {
@@ -100,10 +99,13 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       };
 
       (expenses || []).forEach(expense => {
-        // Use the same matching logic as ExpenseManager
-        const category = matchExpenseToCategory(expense, categories || [] as CategoryWithCamelCase[]);
-        if (category && category.groupType) {
-          expensesByGroup[category.groupType] += expense.amount;
+        // Find category by UUID first (preferred), then fallback to name matching
+        let category = categories?.find(cat => cat.id === expense.category);
+        if (!category) {
+          category = categories?.find(cat => cat.name === expense.category);
+        }
+        if (category && category.group_type) {
+          expensesByGroup[category.group_type] += expense.amount;
         }
       });
 
