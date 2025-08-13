@@ -491,6 +491,7 @@ export type Database = {
           created_at: string | null
           date: string
           description: string
+          expense_type: string
           family_id: string
           id: string
           is_tax_deductible: boolean | null
@@ -515,6 +516,7 @@ export type Database = {
           created_at?: string | null
           date: string
           description: string
+          expense_type?: string
           family_id: string
           id?: string
           is_tax_deductible?: boolean | null
@@ -539,6 +541,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string
+          expense_type?: string
           family_id?: string
           id?: string
           is_tax_deductible?: boolean | null

@@ -8,9 +8,15 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { comprehensiveCategories } from '@/data/comprehensiveCategories';
+import QuickAddExpenseModal from './QuickAddExpenseModal';
 
 export const ExpenseCategoriesManager = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
+  const [selectedCategoryForAdd, setSelectedCategoryForAdd] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   
   const { selectedFamily, expenses, categories } = useExpense();
   
@@ -200,6 +206,11 @@ export const ExpenseCategoriesManager = () => {
       .slice(0, 2);
   };
 
+  const handleAddExpense = (categoryId: string, categoryName: string) => {
+    setSelectedCategoryForAdd({ id: categoryId, name: categoryName });
+    setQuickAddModalOpen(true);
+  };
+
 
   const renderCategorySection = (type: 'needs' | 'wants' | 'savings', title: string, badgeVariant: string) => {
     const parentGroups = categoriesByType[type];
@@ -280,7 +291,11 @@ export const ExpenseCategoriesManager = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleAddExpense(category.id, category.name)}
+                            >
                               <Plus className="w-4 h-4 mr-1" />
                               Add Expense
                             </Button>
@@ -378,6 +393,17 @@ export const ExpenseCategoriesManager = () => {
           </p>
         </CardContent>
       </Card>
+
+      {/* Quick Add Modal */}
+      <QuickAddExpenseModal
+        isOpen={quickAddModalOpen}
+        onClose={() => {
+          setQuickAddModalOpen(false);
+          setSelectedCategoryForAdd(null);
+        }}
+        categoryId={selectedCategoryForAdd?.id}
+        categoryName={selectedCategoryForAdd?.name}
+      />
     </div>
   );
 };

@@ -16,6 +16,7 @@ import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import PayrollLinkSection, { PayrollLinkState } from './PayrollLinkSection';
 import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
+import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
@@ -41,6 +42,9 @@ const ExpenseForm = () => {
 
   // New: Paid on date (optional)
   const [paidOnDate, setPaidOnDate] = useState<Date | undefined>();
+
+  // New: Expense type state
+  const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
 
   // New: Payroll linking state and data via existing payroll hook
   const {
@@ -196,6 +200,7 @@ const ExpenseForm = () => {
           replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
           nextReplacementDate,
           receiptUrl,
+          expenseType,
           // Extra fields supported by backend; types may not include them, so they are passed-through
           paidOnDate: paidOn,
           payrollPeriodId: payrollPeriodId,
@@ -232,6 +237,7 @@ const ExpenseForm = () => {
       setReplacementFrequency('');
       setOcrResult(null);
       setPaidOnDate(undefined);
+      setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
       handleImageRemove();
 
@@ -268,6 +274,12 @@ const ExpenseForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {/* Expense Type Selector */}
+          <ExpenseTypeSelector
+            value={expenseType}
+            onChange={setExpenseType}
+          />
+
           <ReceiptUpload
             onImageUpload={handleImageUpload}
             onImageRemove={handleImageRemove}
