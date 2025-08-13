@@ -13,16 +13,31 @@ export const ExpenseCategoriesManager = () => {
   
   const { selectedFamily, expenses, categories } = useExpense();
   
+  // DEBUG: Log all the data we're working with
+  console.log('🔍 ExpenseCategoriesManager Debug:');
+  console.log('Selected Family:', selectedFamily);
+  console.log('All Expenses from Context:', expenses);
+  console.log('All Categories from Context:', categories);
+  console.log('Selected Month:', selectedMonth);
+  
   // Filter expenses by selected month
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
+  
+  console.log('Date Range:', { monthStart, monthEnd });
+  
   const monthlyExpenses = expenses.filter(expense => {
     const expenseDate = new Date(expense.date);
-    return expenseDate >= monthStart && expenseDate <= monthEnd;
+    const isInRange = expenseDate >= monthStart && expenseDate <= monthEnd;
+    console.log(`Expense ${expense.id}: date=${expense.date}, parsed=${expenseDate}, inRange=${isInRange}`);
+    return isInRange;
   });
+  
+  console.log('Monthly Expenses after date filter:', monthlyExpenses);
   
   // Filter to only budget categories
   const budgetCategories = categories.filter(cat => cat.isBudgetCategory);
+  console.log('Budget Categories:', budgetCategories);
 
   // Group categories by type
   const categoriesByType = {
@@ -33,6 +48,8 @@ export const ExpenseCategoriesManager = () => {
 
   // Calculate expenses by category for the selected month
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
+    console.log(`Processing expense: ${expense.id}, category: ${expense.category}, budgetCategoryId: ${expense.budgetCategoryId}`);
+    
     let category = budgetCategories.find(cat => cat.id === expense.category);
     if (!category) {
       category = budgetCategories.find(cat => cat.name === expense.category);
@@ -41,16 +58,23 @@ export const ExpenseCategoriesManager = () => {
       category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
     }
     
+    console.log(`Found category:`, category);
+    
     if (category) {
       if (!acc[category.id]) {
         acc[category.id] = { total: 0, expenses: [] };
       }
       acc[category.id].total += expense.amount;
       acc[category.id].expenses.push(expense);
+      console.log(`Added ${expense.amount} to category ${category.name}, new total: ${acc[category.id].total}`);
+    } else {
+      console.log(`No category found for expense ${expense.id}`);
     }
     
     return acc;
   }, {} as Record<string, { total: number; expenses: any[] }>);
+
+  console.log('Final expensesByCategory:', expensesByCategory);
 
   // Calculate totals for each group
   const groupTotals = {
