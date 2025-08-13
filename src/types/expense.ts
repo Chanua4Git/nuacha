@@ -84,9 +84,6 @@ export interface CategoryWithCamelCase {
   description?: string;
   icon?: string;
   createdAt?: string;
-  userId?: string;
-  groupType?: string;
-  sortOrder?: number;
 }
 
 // OCR result type
