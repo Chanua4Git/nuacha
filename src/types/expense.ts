@@ -71,6 +71,7 @@ export interface Expense {
   transactionId?: string;
   budgetCategoryId?: string;
   members?: FamilyMember[]; // Array of family members associated with this expense
+  expenseType?: 'actual' | 'planned' | 'budgeted'; // New: expense type for planning vs real
 }
 
 // For backward compatibility and consistent casing in our application
@@ -84,6 +85,10 @@ export interface CategoryWithCamelCase {
   description?: string;
   icon?: string;
   createdAt?: string;
+  userId?: string;
+  groupType?: string;
+  sortOrder?: number;
+  isBudgetCategory?: boolean;
 }
 
 // OCR result type

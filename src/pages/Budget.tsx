@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BudgetDashboard from '@/components/budget/BudgetDashboard';
 import IncomeManager from '@/components/budget/IncomeManager';
-import ExpenseManager from '@/components/budget/ExpenseManager';
+import { ExpenseCategoriesManager } from '@/components/budget/ExpenseCategoriesManager';
 import RulesManager from '@/components/budget/RulesManager';
 import ScenarioPlanner from '@/components/budget/ScenarioPlanner';
 import HowToUse from '@/components/budget/HowToUse';
@@ -55,9 +55,9 @@ export default function Budget() {
           <IncomeManager />
         </TabsContent>
 
-        <TabsContent value="expenses" className="space-y-6">
-          <ExpenseManager />
-        </TabsContent>
+            <TabsContent value="expenses" className="space-y-6">
+              <ExpenseCategoriesManager />
+            </TabsContent>
 
         <TabsContent value="rules" className="space-y-6">
           <RulesManager />

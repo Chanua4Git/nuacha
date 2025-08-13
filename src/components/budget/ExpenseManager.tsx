@@ -2,32 +2,96 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useBudgetCategories } from '@/hooks/useBudgetCategories';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
-import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ExpenseManager() {
-  const { categoriesByGroup, loading: categoriesLoading, initializeDefaultCategories } = useBudgetCategories();
+  const { user } = useAuth();
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>('all');
   
-  // Get the first family ID for filtering expenses
-  const familyId = families?.[0]?.id;
+  // Initialize budget categories for the user if they don't exist
+  useBudgetCategoryInit();
   
+  // Set default family when families are loaded
+  useEffect(() => {
+    if (families.length > 0 && selectedFamilyId === 'all') {
+      // Keep 'all' as default to show all families
+    }
+  }, [families, selectedFamilyId]);
+  
+  // Fetch categories for all families to get comprehensive budget categories
+  const { categories, isLoading: categoriesLoading } = useCategories(undefined, true);
+
+  // Filter categories to include budget categories for the selected family or all families
+  const budgetCategories = categories.filter(cat => {
+    const isBudgetCategory = cat.isBudgetCategory === true && cat.groupType != null;
+    if (!isBudgetCategory) return false;
+    
+    // If "All Families" is selected, include user-level categories and all family-level categories
+    if (selectedFamilyId === 'all') {
+      return (cat.userId === user?.id && cat.familyId == null) || 
+             (cat.familyId != null && families.some(f => f.id === cat.familyId));
+    }
+    
+    // If specific family is selected, include user-level categories and that family's categories
+    return (cat.userId === user?.id && cat.familyId == null) || 
+           (cat.familyId === selectedFamilyId);
+  });
+
+  console.log('Budget categories found:', budgetCategories.length);
+  if (budgetCategories.length > 0) {
+    console.log('Sample categories:', budgetCategories.slice(0, 3).map(c => ({
+      id: c.id,
+      name: c.name,
+      groupType: c.groupType
+    })));
+  }
+  
+  // If no budget categories exist, create them automatically
+  useEffect(() => {
+    if (user && budgetCategories.length === 0 && !categoriesLoading) {
+      // Trigger creation of default budget categories
+      // This will be handled by the unified category system
+      console.log('No budget categories found for user, they should be created automatically');
+    }
+  }, [user, budgetCategories.length, categoriesLoading]);
+
+  // Group budget categories by type
+  const categoriesByGroup = budgetCategories.reduce((acc, category) => {
+    const groupType = category.groupType;
+    if (!groupType) {
+      console.warn('Category missing groupType:', category);
+      return acc;
+    }
+    if (!acc[groupType]) {
+      acc[groupType] = [];
+    }
+    acc[groupType].push(category);
+    return acc;
+  }, {} as Record<string, typeof categories>);
+  
+  console.log('Categories by group:', categoriesByGroup);
+  console.log('Budget categories found:', budgetCategories.length);
+  
+  // Fetch expenses based on selected family
   const { expenses, isLoading: expensesLoading } = useExpenses({
-    familyId: familyId
+    familyId: selectedFamilyId === 'all' ? undefined : selectedFamilyId
   });
 
   useEffect(() => {
-    // Initialize default categories if none exist
-    if (!categoriesLoading && Object.keys(categoriesByGroup).length === 0) {
-      initializeDefaultCategories();
-    }
-  }, [categoriesLoading, categoriesByGroup, initializeDefaultCategories]);
+    // Note: Budget categories are now managed through the unified category system
+    // Default budget categories should be created when user first accesses budget
+  }, []);
 
   const groupColors = {
     needs: 'bg-red-100 text-red-800 border-red-200',
@@ -51,11 +115,32 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    if (expense.budgetCategoryId) {
-      acc[expense.budgetCategoryId] = (acc[expense.budgetCategoryId] || 0) + expense.amount;
+    // Match expenses to budget categories using same logic as useBudgetSummary
+    // Find category by UUID first (preferred), then fallback to name matching
+    let category = budgetCategories.find(cat => cat.id === expense.category);
+    if (!category) {
+      category = budgetCategories.find(cat => cat.name === expense.category);
+    }
+    if (!category && expense.budgetCategoryId) {
+      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    }
+    
+    if (category) {
+      acc[category.id] = (acc[category.id] || 0) + expense.amount;
+      console.log(`Matched expense "${expense.description}" (${expense.amount}) to category "${category.name}"`);
+    } else {
+      console.warn('No matching budget category found for expense:', {
+        expenseId: expense.id,
+        description: expense.description,
+        category: expense.category,
+        budgetCategoryId: expense.budgetCategoryId,
+        amount: expense.amount
+      });
     }
     return acc;
   }, {} as Record<string, number>);
+  
+  console.log('Expenses by category totals:', expensesByCategory);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setSelectedMonth(prev => {
@@ -99,30 +184,57 @@ export default function ExpenseManager() {
 
   return (
     <div className="space-y-6">
-      {/* Month Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Header with Family Selection and Month Navigation */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Expense Categories</h2>
           <p className="text-muted-foreground">Organize your spending into Needs, Wants, and Savings</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('prev')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-lg font-medium min-w-[140px] text-center">
-            {getMonthDisplay(selectedMonth)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('next')}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Family Selector */}
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedFamilyId} onValueChange={setSelectedFamilyId}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select family" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Families</SelectItem>
+                {families.map((family) => (
+                  <SelectItem key={family.id} value={family.id}>
+                    <div className="flex items-center">
+                      <span 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: family.color }}
+                      />
+                      {family.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Month Navigation */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-medium min-w-[140px] text-center">
+              {getMonthDisplay(selectedMonth)}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -132,6 +244,7 @@ export default function ExpenseManager() {
           <CardTitle>Monthly Overview</CardTitle>
           <p className="text-sm text-muted-foreground">
             Total spending by category for {getMonthDisplay(selectedMonth)}
+            {selectedFamilyId === 'all' ? ' - All Families' : ` - ${families.find(f => f.id === selectedFamilyId)?.name}`}
           </p>
         </CardHeader>
         <CardContent>
@@ -172,7 +285,12 @@ export default function ExpenseManager() {
               <CardContent>
                 <div className="text-center p-8 text-muted-foreground">
                   <p>No categories in this group yet.</p>
-                  <Button variant="outline" size="sm" className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => console.log('Add category for group:', groupType)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Category
                   </Button>
@@ -191,7 +309,11 @@ export default function ExpenseManager() {
                     {title}
                   </Badge>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => console.log('Add category for group:', groupType)}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Category
                 </Button>
@@ -232,16 +354,25 @@ export default function ExpenseManager() {
                         <TableCell>
                           {categoryExpenses.length > 0 ? (
                             <div className="text-sm space-y-1">
-                              {categoryExpenses.slice(0, 2).map((expense) => (
-                                <div key={expense.id} className="flex justify-between">
-                                  <span className="truncate max-w-[120px]">
-                                    {expense.description}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {formatTTD(expense.amount)}
-                                  </span>
-                                </div>
-                              ))}
+                              {categoryExpenses.slice(0, 2).map((expense) => {
+                                const expenseFamily = families.find(f => f.id === expense.familyId);
+                                return (
+                                  <div key={expense.id} className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2 truncate max-w-[120px]">
+                                      {selectedFamilyId === 'all' && expenseFamily && (
+                                        <span 
+                                          className="w-2 h-2 rounded-full flex-shrink-0" 
+                                          style={{ backgroundColor: expenseFamily.color }}
+                                        />
+                                      )}
+                                      <span className="truncate">{expense.description}</span>
+                                    </div>
+                                    <span className="text-muted-foreground">
+                                      {formatTTD(expense.amount)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                               {categoryExpenses.length > 2 && (
                                 <div className="text-xs text-muted-foreground">
                                   +{categoryExpenses.length - 2} more
@@ -253,8 +384,13 @@ export default function ExpenseManager() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <TrendingUp className="h-4 w-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => console.log('Add expense for category:', category.name)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Expense
                           </Button>
                         </TableCell>
                       </TableRow>

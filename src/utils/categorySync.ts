@@ -9,119 +9,162 @@ type CategorySeed = {
   children?: CategorySeed[];
 };
 
-// Recommended hierarchical categories tailored to the scenarios described
+// Comprehensive category structure aligned with budget categories
 const recommendedCategorySeeds: CategorySeed[] = [
   {
-    name: 'Housing',
+    name: 'Housing & Utilities',
     group: 'needs',
     children: [
       { name: 'Rent / Mortgage', group: 'needs' },
-      { name: 'Home Insurance', group: 'needs' },
-      { name: 'Utilities', group: 'needs', children: [
-        { name: 'Electricity', group: 'needs' },
-        { name: 'Water', group: 'needs' },
-        { name: 'Gas', group: 'needs' },
-        { name: 'Internet', group: 'needs' },
-        { name: 'Phone', group: 'needs' },
-      ]},
-      { name: 'Maintenance & Repairs', group: 'needs' },
-      { name: 'Yard & Garden', group: 'needs' },
-      { name: 'Pest Control', group: 'needs' },
+      { name: 'Electricity', group: 'needs' },
+      { name: 'Water & Sewer', group: 'needs' },
+      { name: 'Gas', group: 'needs' },
+      { name: 'Internet / Wi-Fi', group: 'needs' },
+      { name: 'Cable / Streaming services', group: 'wants' },
+      { name: 'Garbage collection', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Caregiving & Medical',
+    group: 'needs',
+    children: [
+      { name: 'Day nurse', group: 'needs' },
+      { name: 'Night nurse', group: 'needs' },
+      { name: 'Doctor visits', group: 'needs' },
+      { name: 'Specialist visits', group: 'needs' },
+      { name: 'Medical tests', group: 'needs' },
+      { name: 'Medication', group: 'needs' },
+      { name: 'Medical supplies', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Household Operations',
+    group: 'needs',
+    children: [
+      { name: 'Housekeeper', group: 'wants' },
+      { name: 'Garden services', group: 'wants' },
+      { name: 'Pool maintenance', group: 'wants' },
+      { name: 'Pest control', group: 'needs' },
+      { name: 'Laundry', group: 'needs' },
+      { name: 'Household repairs', group: 'needs' },
+      { name: 'Appliance repairs', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Groceries & Household Supplies',
+    group: 'needs',
+    children: [
+      { name: 'Groceries', group: 'needs' },
+      { name: 'Pet food & supplies', group: 'needs' },
+      { name: 'Toiletries', group: 'needs' },
+      { name: 'Paper goods', group: 'needs' },
     ],
   },
   {
     name: 'Transportation',
     group: 'needs',
     children: [
-      { name: 'Fuel / Gas', group: 'needs' },
-      { name: 'Vehicle Insurance', group: 'needs' },
-      { name: 'Maintenance & Service', group: 'needs' },
-      { name: 'Registration & Inspection', group: 'needs' },
-      { name: 'Parking & Tolls', group: 'needs' },
-      { name: 'Public Transport', group: 'needs' },
+      { name: 'Fuel', group: 'needs' },
+      { name: 'Taxi / rideshare', group: 'needs' },
+      { name: 'Public transportation', group: 'needs' },
+      { name: 'Vehicle maintenance', group: 'needs' },
+      { name: 'Vehicle insurance', group: 'needs' },
+      { name: 'Vehicle loan payment', group: 'needs' },
     ],
   },
   {
-    name: 'Food & Household',
+    name: 'Insurance & Financial',
     group: 'needs',
     children: [
-      { name: 'Groceries', group: 'needs' },
-      { name: 'Market', group: 'needs' },
-      { name: 'Toiletries', group: 'needs' },
-      { name: 'Household Supplies', group: 'needs' },
+      { name: 'Health insurance', group: 'needs' },
+      { name: 'Life insurance', group: 'needs' },
+      { name: 'Home insurance', group: 'needs' },
+      { name: 'Other insurance', group: 'needs' },
+      { name: 'Loan repayments', group: 'needs' },
+      { name: 'Savings', group: 'savings' },
+      { name: 'Investments', group: 'savings' },
     ],
   },
   {
-    name: 'Health & Care',
-    group: 'needs',
-    children: [
-      { name: 'Nurses', group: 'needs', children: [
-        { name: 'Night Nurse', group: 'needs' },
-        { name: 'Day Nurse', group: 'needs' },
-        { name: 'Weekend Nurse', group: 'needs' },
-      ]},
-      { name: 'Doctor', group: 'needs' },
-      { name: 'Dental', group: 'needs' },
-      { name: 'Optical', group: 'needs' },
-      { name: 'Medications', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Child',
-    group: 'needs',
-    children: [
-      { name: 'School', group: 'needs', children: [
-        { name: 'Fees', group: 'needs' },
-        { name: 'Uniform', group: 'needs' },
-        { name: 'Books & Supplies', group: 'needs' },
-        { name: 'Transport', group: 'needs' },
-        { name: 'Lunch Money', group: 'needs' },
-        { name: 'Extra Tuition', group: 'needs' },
-      ]},
-      { name: 'Childcare', group: 'needs' },
-      { name: 'Activities & Well-being', group: 'wants', children: [
-        { name: 'Sports', group: 'wants' },
-        { name: 'Toys & Games', group: 'wants' },
-        { name: 'Outings', group: 'wants' },
-        { name: 'Holidays', group: 'wants' },
-      ]},
-      { name: 'Hairdressing', group: 'wants' },
-      { name: 'Gifts & Celebrations', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Personal & Lifestyle',
+    name: 'Personal Care & Wellness',
     group: 'wants',
     children: [
-      { name: 'Dining Out', group: 'wants' },
-      { name: 'Entertainment', group: 'wants' },
-      { name: 'Subscriptions', group: 'wants' },
-      { name: 'Personal Care', group: 'wants' },
-      { name: 'Gifts & Celebrations', group: 'wants' },
-      { name: 'Travel & Holidays', group: 'wants' },
+      { name: 'Haircuts & grooming', group: 'wants' },
+      { name: 'Spa & massage', group: 'wants' },
+      { name: 'Gym membership', group: 'wants' },
+      { name: 'Vitamins & supplements', group: 'wants' },
     ],
   },
   {
-    name: 'Financial Goals',
-    group: 'savings',
+    name: 'Education & Child Expenses',
+    group: 'needs',
     children: [
-      { name: 'Emergency Fund', group: 'savings' },
-      { name: 'Investments', group: 'savings' },
-      { name: 'Retirement', group: 'savings' },
-      { name: 'Extra Debt Payments', group: 'savings' },
+      { name: 'School fees', group: 'needs' },
+      { name: 'Books & stationery', group: 'needs' },
+      { name: 'Extracurricular activities', group: 'wants' },
+      { name: 'School uniforms', group: 'needs' },
+      { name: 'Childcare', group: 'needs' },
+    ],
+  },
+  {
+    name: 'Entertainment & Leisure',
+    group: 'wants',
+    children: [
+      { name: 'Dining out', group: 'wants' },
+      { name: 'Subscriptions', group: 'wants' },
+      { name: 'Events & tickets', group: 'wants' },
+      { name: 'Hobbies & crafts', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Gifts & Special Occasions',
+    group: 'wants',
+    children: [
+      { name: 'Birthday gifts', group: 'wants' },
+      { name: 'Holiday gifts', group: 'wants' },
+      { name: 'Anniversaries', group: 'wants' },
+      { name: 'Weddings & celebrations', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Travel & Holidays',
+    group: 'wants',
+    children: [
+      { name: 'Flights & transportation', group: 'wants' },
+      { name: 'Accommodation', group: 'wants' },
+      { name: 'Travel insurance', group: 'wants' },
+      { name: 'Activities & tours', group: 'wants' },
+    ],
+  },
+  {
+    name: 'Miscellaneous',
+    group: 'needs',
+    children: [
+      { name: 'Emergency expenses', group: 'needs' },
+      { name: 'Donations & charity', group: 'wants' },
+      { name: 'Legal fees', group: 'needs' },
+      { name: 'Bank fees', group: 'needs' },
+      { name: 'Unplanned purchases', group: 'wants' },
     ],
   },
 ];
 
 function determineGroupFromName(name: string): BudgetGroup {
   const n = name.toLowerCase();
+  
+  // Needs categories (Essential expenses)
   if (
-    /nurse|doctor|dental|optical|medication|medicine|insurance|mortgage|rent|utility|electric|water|gas|internet|phone|grocery|market|toiletr|school|fees|uniform|book|supply|transport|tuition|childcare|fuel|vehicle|maintenance|registration|inspection|parking|public/.test(
-      n
-    )
-  )
+    /rent|mortgage|electricity|water|sewer|gas|internet|wifi|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|life insurance|home insurance|loan repayments|emergency|legal fees|bank fees|school fees|books|stationery|school uniforms|childcare/.test(n)
+  ) {
     return 'needs';
-  if (/saving|investment|retire|debt|emergency/.test(n)) return 'savings';
+  }
+  
+  // Savings categories
+  if (/saving|investment|retire|debt/.test(n)) {
+    return 'savings';
+  }
+  
+  // Wants categories (Lifestyle expenses) - everything else defaults here
   return 'wants';
 }
 
@@ -130,37 +173,45 @@ async function getOrCreateCategory(
   name: string,
   parentId: string | null
 ): Promise<string> {
-  // Check for existing category by name + parent within family
-  let query = supabase
-    .from('categories')
-    .select('id')
-    .eq('family_id', familyId)
-    .eq('name', name);
+  try {
+    // Check for existing category by name + parent within family
+    let query = supabase
+      .from('categories')
+      .select('id')
+      .eq('family_id', familyId)
+      .eq('name', name);
 
-  if (parentId === null) {
-    query = query.filter('parent_id', 'is', null);
-  } else {
-    query = query.eq('parent_id', parentId);
+    if (parentId === null) {
+      query = query.filter('parent_id', 'is', null);
+    } else {
+      query = query.eq('parent_id', parentId);
+    }
+
+    const { data: existing, error: selectError } = await query.limit(1).maybeSingle();
+    if (selectError) throw selectError;
+
+    if (existing?.id) return existing.id as string;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('categories')
+      .insert({
+        family_id: familyId,
+        name,
+        color: '#5A7684',
+        parent_id: parentId,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting category:', insertError);
+      throw insertError;
+    }
+    return inserted!.id as string;
+  } catch (error) {
+    console.error('Error in getOrCreateCategory:', error);
+    throw error;
   }
-
-  const { data: existing, error: selectError } = await query.limit(1).maybeSingle();
-  if (selectError) throw selectError;
-
-  if (existing?.id) return existing.id as string;
-
-  const { data: inserted, error: insertError } = await supabase
-    .from('categories')
-    .insert({
-      family_id: familyId,
-      name,
-      color: '#5A7684',
-      parent_id: parentId,
-    })
-    .select('id')
-    .single();
-
-  if (insertError) throw insertError;
-  return inserted!.id as string;
 }
 
 async function seedTree(
@@ -177,20 +228,42 @@ async function seedTree(
 }
 
 export async function seedRecommendedExpenseCategories(familyId: string) {
-  await seedTree(familyId, recommendedCategorySeeds);
+  try {
+    // Verify family exists and user has access by checking family ownership
+    const { data: family, error: familyError } = await supabase
+      .from('families')
+      .select('id, user_id')
+      .eq('id', familyId)
+      .single();
+    
+    if (familyError) {
+      console.error('Family verification failed:', familyError);
+      throw new Error('Unable to verify family ownership');
+    }
+    
+    if (!family) {
+      throw new Error('Family not found');
+    }
+    
+    await seedTree(familyId, recommendedCategorySeeds);
+  } catch (error) {
+    console.error('Error seeding categories for family:', familyId, error);
+    throw error;
+  }
 }
 
 export async function ensureBudgetDefaults(userId: string) {
-  // If user has no budget categories, initialize defaults via RPC
+  // If user has no budget categories, initialize defaults using the unified system
   const { data: existing, error } = await supabase
-    .from('budget_categories')
+    .from('categories')
     .select('id')
     .eq('user_id', userId)
+    .is('is_budget_category', true)
     .limit(1);
   if (error) throw error;
 
   if (!existing || existing.length === 0) {
-    await supabase.rpc('create_default_budget_categories', { user_uuid: userId });
+    await supabase.rpc('ensure_user_budget_categories', { user_uuid: userId });
   }
 }
 
@@ -201,18 +274,26 @@ export async function ensureBudgetCategory(
   sortOrder = 100
 ) {
   const { data: existing, error: selectError } = await supabase
-    .from('budget_categories')
+    .from('categories')
     .select('id')
     .eq('user_id', userId)
     .eq('name', name)
     .eq('group_type', group)
+    .is('is_budget_category', true)
     .limit(1);
   if (selectError) throw selectError;
   if (existing && existing.length > 0) return existing[0].id;
 
   const { data: inserted, error: insertError } = await supabase
-    .from('budget_categories')
-    .insert({ user_id: userId, name, group_type: group, sort_order: sortOrder })
+    .from('categories')
+    .insert({ 
+      user_id: userId, 
+      name, 
+      group_type: group, 
+      sort_order: sortOrder,
+      is_budget_category: true,
+      color: '#5A7684' // Default color
+    })
     .select('id')
     .single();
   if (insertError) throw insertError;
@@ -223,32 +304,50 @@ export async function syncExpenseToBudgetCategories(
   userId: string,
   familyId: string
 ) {
-  await ensureBudgetDefaults(userId);
+  try {
+    await ensureBudgetDefaults(userId);
 
-  // Fetch all categories for the family
-  const { data: cats, error } = await supabase
-    .from('categories')
-    .select('id, name, parent_id')
-    .eq('family_id', familyId);
-  if (error) throw error;
-
-  // Build a set of unique top-level and important subcategory names
-  const uniqueNames = new Set<string>();
-  cats?.forEach((c) => uniqueNames.add(c.name));
-
-  // Also include all seed names to guarantee presence
-  const collectSeedNames = (seeds: CategorySeed[]) => {
-    for (const s of seeds) {
-      uniqueNames.add(s.name);
-      if (s.children) collectSeedNames(s.children);
+    // Verify family ownership before syncing
+    const { data: family, error: familyError } = await supabase
+      .from('families')
+      .select('id, user_id')
+      .eq('id', familyId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (familyError || !family) {
+      console.error('Family ownership verification failed:', familyError);
+      throw new Error('You do not have permission to sync categories for this family');
     }
-  };
-  collectSeedNames(recommendedCategorySeeds);
 
-  // Create missing budget categories with group inference
-  let sort = 50;
-  for (const name of uniqueNames) {
-    const group = determineGroupFromName(name);
-    await ensureBudgetCategory(userId, name, group, sort++);
+    // Fetch all categories for the family
+    const { data: cats, error } = await supabase
+      .from('categories')
+      .select('id, name, parent_id')
+      .eq('family_id', familyId);
+    if (error) throw error;
+
+    // Build a set of unique top-level and important subcategory names
+    const uniqueNames = new Set<string>();
+    cats?.forEach((c) => uniqueNames.add(c.name));
+
+    // Also include all seed names to guarantee presence
+    const collectSeedNames = (seeds: CategorySeed[]) => {
+      for (const s of seeds) {
+        uniqueNames.add(s.name);
+        if (s.children) collectSeedNames(s.children);
+      }
+    };
+    collectSeedNames(recommendedCategorySeeds);
+
+    // Create missing budget categories with group inference
+    let sort = 50;
+    for (const name of uniqueNames) {
+      const group = determineGroupFromName(name);
+      await ensureBudgetCategory(userId, name, group, sort++);
+    }
+  } catch (error) {
+    console.error('Error syncing expense to budget categories:', error);
+    throw error;
   }
 }

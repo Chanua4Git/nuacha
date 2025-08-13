@@ -50,39 +50,6 @@ export type Database = {
         }
         Relationships: []
       }
-      budget_categories: {
-        Row: {
-          created_at: string
-          group_type: string
-          id: string
-          is_active: boolean
-          name: string
-          sort_order: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          group_type: string
-          id?: string
-          is_active?: boolean
-          name: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          group_type?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       budget_periods: {
         Row: {
           created_at: string
@@ -201,10 +168,14 @@ export type Database = {
           created_at: string | null
           description: string | null
           family_id: string | null
+          group_type: string | null
           icon: string | null
           id: string
+          is_budget_category: boolean | null
           name: string
           parent_id: string | null
+          sort_order: number | null
+          user_id: string | null
         }
         Insert: {
           budget?: number | null
@@ -212,10 +183,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          group_type?: string | null
           icon?: string | null
           id?: string
+          is_budget_category?: boolean | null
           name: string
           parent_id?: string | null
+          sort_order?: number | null
+          user_id?: string | null
         }
         Update: {
           budget?: number | null
@@ -223,10 +198,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          group_type?: string | null
           icon?: string | null
           id?: string
+          is_budget_category?: boolean | null
           name?: string
           parent_id?: string | null
+          sort_order?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -512,6 +491,7 @@ export type Database = {
           created_at: string | null
           date: string
           description: string
+          expense_type: string
           family_id: string
           id: string
           is_tax_deductible: boolean | null
@@ -536,6 +516,7 @@ export type Database = {
           created_at?: string | null
           date: string
           description: string
+          expense_type?: string
           family_id: string
           id?: string
           is_tax_deductible?: boolean | null
@@ -560,6 +541,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string
+          expense_type?: string
           family_id?: string
           id?: string
           is_tax_deductible?: boolean | null
@@ -1413,8 +1395,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_duplicate_budget_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_default_budget_categories: {
         Args: { user_uuid: string }
+        Returns: undefined
+      }
+      ensure_user_budget_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
+      map_expenses_to_budget_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      sync_comprehensive_budget_categories: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       update_payroll_period_totals: {

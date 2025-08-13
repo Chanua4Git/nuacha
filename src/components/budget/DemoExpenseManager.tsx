@@ -6,24 +6,46 @@ import { Plus, Edit } from 'lucide-react';
 import { formatTTD } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { toast } from 'sonner';
+import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 
-// Mock budget categories and expenses for demo
+// Mock budget categories and expenses for demo using comprehensive categories
+
+const createMockExpenses = (categoryName: string, group: string) => {
+  const expenseData = {
+    'Childcare / babysitting': [{ amount: 800, description: 'Childcare (2 kids)', date: '2024-01-15' }],
+    'Groceries': [{ amount: 1200, description: 'Weekly shopping', date: '2024-01-10' }],
+    'Fuel': [{ amount: 600, description: 'Gas station', date: '2024-01-08' }],
+    'School fees': [{ amount: 400, description: 'School fees payment', date: '2024-01-01' }],
+    'Dining out': [{ amount: 450, description: 'Restaurant visits', date: '2024-01-12' }],
+    'Entertainment & Leisure': [{ amount: 350, description: 'Movies, games', date: '2024-01-20' }],
+    'Personal Care & Wellness': [{ amount: 200, description: 'Spa, salon', date: '2024-01-18' }],
+    'Savings': [{ amount: 500, description: 'Monthly transfer', date: '2024-01-01' }],
+    'Investments': [{ amount: 300, description: 'Stock purchase', date: '2024-01-15' }]
+  };
+  
+  const expenses = expenseData[categoryName as keyof typeof expenseData] || [{ amount: 100, description: `${categoryName} expense`, date: '2024-01-01' }];
+  return {
+    expenses,
+    monthlyTotal: expenses.reduce((sum, exp) => sum + exp.amount, 0)
+  };
+};
+
 const demoBudgetCategories = {
-  needs: [
-    { id: '1', name: 'Care', expenses: [{ amount: 800, description: 'Childcare', date: '2024-01-15' }], monthlyTotal: 800 },
-    { id: '2', name: 'Groceries', expenses: [{ amount: 1200, description: 'Weekly shopping', date: '2024-01-10' }], monthlyTotal: 1200 },
-    { id: '3', name: 'Gas/Fuel', expenses: [{ amount: 600, description: 'Gas station', date: '2024-01-08' }], monthlyTotal: 600 },
-    { id: '4', name: 'Transport', expenses: [{ amount: 400, description: 'Bus pass', date: '2024-01-01' }], monthlyTotal: 400 }
-  ],
-  wants: [
-    { id: '5', name: 'Dining Out', expenses: [{ amount: 450, description: 'Restaurant visits', date: '2024-01-12' }], monthlyTotal: 450 },
-    { id: '6', name: 'Entertainment', expenses: [{ amount: 350, description: 'Movies, games', date: '2024-01-20' }], monthlyTotal: 350 },
-    { id: '7', name: 'Personal Care', expenses: [{ amount: 200, description: 'Spa, salon', date: '2024-01-18' }], monthlyTotal: 200 }
-  ],
-  savings: [
-    { id: '8', name: 'Emergency Fund', expenses: [{ amount: 500, description: 'Monthly transfer', date: '2024-01-01' }], monthlyTotal: 500 },
-    { id: '9', name: 'Investments', expenses: [{ amount: 300, description: 'Stock purchase', date: '2024-01-15' }], monthlyTotal: 300 }
-  ]
+  needs: getCategoriesByGroup('needs').slice(0, 8).map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    ...createMockExpenses(cat.name, 'needs')
+  })),
+  wants: getCategoriesByGroup('wants').slice(0, 6).map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    ...createMockExpenses(cat.name, 'wants')
+  })),
+  savings: getCategoriesByGroup('savings').slice(0, 2).map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    ...createMockExpenses(cat.name, 'savings')
+  }))
 };
 
 const groupColors = {

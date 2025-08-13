@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, addDays, addWeeks, addMonths, addYears, startOfDay } from 'date-fns';
+import { format, addDays, addMonths, startOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ const RecurringDateSelector = ({
       switch (recurrencePattern) {
         case 'weekly':
           dates.push(new Date(currentDate));
-          currentDate = addWeeks(currentDate, 1);
+          currentDate = addDays(currentDate, 7);
           break;
         case 'weekdays':
           if (currentDate.getDay() >= 1 && currentDate.getDay() <= 5) {
@@ -77,7 +77,7 @@ const RecurringDateSelector = ({
           break;
         case 'yearly':
           dates.push(new Date(currentDate));
-          currentDate = addYears(currentDate, 1);
+          currentDate = new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), currentDate.getDate());
           break;
       }
     }

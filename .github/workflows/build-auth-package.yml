@@ -28,7 +28,7 @@ jobs:
       - name: Copy auth-related files
         run: |
           # Create directory structure
-          mkdir -p auth-package/src/{auth,components/ui,lib,integrations}
+          mkdir -p auth-package/src/{auth,components/ui,lib,integrations,hooks}
           mkdir -p auth-package/docs
           mkdir -p auth-package/examples
           
@@ -38,6 +38,39 @@ jobs:
           cp src/lib/utils.ts auth-package/src/lib/
           cp -r src/integrations/* auth-package/src/integrations/
           cp src/index.css auth-package/src/
+          
+          # Copy required hooks
+          cp src/hooks/use-toast.ts auth-package/src/hooks/
+          cp src/hooks/use-mobile.tsx auth-package/src/hooks/
+          
+          # Create lib directory and copy supabase setup
+          mkdir -p auth-package/src/lib
+          cp src/lib/supabase.ts auth-package/src/lib/
+          
+      - name: Create build-compatible Supabase client
+        run: |
+          cat > auth-package/src/lib/supabase.ts << 'EOF'
+          import { createClient } from '@supabase/supabase-js';
+          import type { Database } from '@/integrations/supabase/types';
+          
+          // These values should be replaced with your actual Supabase project details
+          // You can get these from your Supabase project settings
+          const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+          const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+          
+          if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
+            console.warn('⚠️  Supabase environment variables not found. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+          }
+          
+          // Create Supabase client with the provided URL and key
+          export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              storage: localStorage
+            }
+          });
+          EOF
           
           # Copy configuration files
           cp tailwind.config.ts auth-package/

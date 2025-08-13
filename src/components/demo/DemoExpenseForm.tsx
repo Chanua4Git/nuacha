@@ -13,6 +13,7 @@ import { OCRResult } from '@/types/expense';
 import DetailedReceiptView from '@/components/DetailedReceiptView';
 import { format } from 'date-fns';
 import { categorizeFromReceipt } from '@/utils/budgetUtils';
+import { getAllDemoCategories } from '@/data/comprehensiveCategories';
 
 interface DemoExpenseFormProps {
   onComplete: (data: any) => void;
@@ -40,13 +41,13 @@ const DemoExpenseForm = ({
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
 
-  // Mock budget categories for demo
-  const demoBudgetCategories = [
-    { id: '1', name: 'Groceries', group_type: 'needs' },
-    { id: '2', name: 'Gas/Fuel', group_type: 'needs' },
-    { id: '3', name: 'Dining Out', group_type: 'wants' },
-    { id: '4', name: 'Entertainment', group_type: 'wants' }
-  ];
+  // Use comprehensive demo categories
+  const allDemoCategories = getAllDemoCategories();
+  const demoBudgetCategories = allDemoCategories.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    group_type: cat.group
+  }));
 
   const handleDataExtracted = (data: OCRResult) => {
     console.log('🎯 Demo mode: Data extracted, checking for line items:', data);
