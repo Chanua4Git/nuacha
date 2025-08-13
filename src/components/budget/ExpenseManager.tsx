@@ -14,7 +14,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default function ExpenseManager() {
   const { user } = useAuth();
-  const { categories, isLoading: categoriesLoading } = useCategories(undefined, false);
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
@@ -23,6 +22,9 @@ export default function ExpenseManager() {
   
   // Get the first family ID for filtering expenses
   const familyId = families?.[0]?.id;
+  
+  // Fetch categories with proper family ID to get family-level budget categories
+  const { categories, isLoading: categoriesLoading } = useCategories(familyId, true);
 
   // Filter categories to include both user-level and family-level budget categories
   const budgetCategories = categories.filter(cat => {

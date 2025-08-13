@@ -50,6 +50,12 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   // Fetch categories and build hierarchy
   const fetchCategories = async () => {
+    if (!user) {
+      console.log('User not available yet, skipping category fetch');
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       let query = supabase.from('categories').select('*');
@@ -99,7 +105,9 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   useEffect(() => {
     // Initial load
-    fetchCategories();
+    if (user) {
+      fetchCategories();
+    }
 
     // Realtime subscription for category changes
     const channel = supabase
@@ -127,7 +135,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [familyId, includeGeneralCategories]);
+  }, [familyId, includeGeneralCategories, user]);
 
   const createCategory = async (category: Omit<CategoryWithCamelCase, 'id'>) => {
     try {
