@@ -25,12 +25,27 @@ export default function ExpenseManager() {
   const familyId = families?.[0]?.id;
 
   // Filter categories to include both user-level and family-level budget categories
-  const budgetCategories = categories.filter(cat => 
-    cat.isBudgetCategory && cat.groupType && (
-      cat.userId === user?.id || // User-level budget categories
-      cat.familyId === familyId   // Family-level budget categories
-    )
-  );
+  const budgetCategories = categories.filter(cat => {
+    const isBudget = cat.isBudgetCategory === true;
+    const hasGroupType = cat.groupType != null;
+    const isUserCategory = cat.userId === user?.id && cat.familyId == null;
+    const isFamilyCategory = cat.familyId === familyId;
+    
+    // Debug logging
+    console.log('Category filtering:', {
+      categoryName: cat.name,
+      categoryId: cat.id,
+      isBudgetCategory: cat.isBudgetCategory,
+      groupType: cat.groupType,
+      userId: cat.userId,
+      familyId: cat.familyId,
+      currentUserId: user?.id,
+      currentFamilyId: familyId,
+      passes: isBudget && hasGroupType && (isUserCategory || isFamilyCategory)
+    });
+    
+    return isBudget && hasGroupType && (isUserCategory || isFamilyCategory);
+  });
   
   // If no budget categories exist, create them automatically
   useEffect(() => {
@@ -43,13 +58,20 @@ export default function ExpenseManager() {
 
   // Group budget categories by type
   const categoriesByGroup = budgetCategories.reduce((acc, category) => {
-    const groupType = (category as any).groupType;
+    const groupType = category.groupType;
+    if (!groupType) {
+      console.warn('Category missing groupType:', category);
+      return acc;
+    }
     if (!acc[groupType]) {
       acc[groupType] = [];
     }
     acc[groupType].push(category);
     return acc;
   }, {} as Record<string, typeof categories>);
+  
+  console.log('Categories by group:', categoriesByGroup);
+  console.log('Budget categories found:', budgetCategories.length);
   
   const { expenses, isLoading: expensesLoading } = useExpenses({
     familyId: familyId
@@ -87,11 +109,25 @@ export default function ExpenseManager() {
     if (!category) {
       category = budgetCategories.find(cat => cat.name === expense.category);
     }
+    
+    // Debug logging for expense matching
+    console.log('Expense category matching:', {
+      expenseId: expense.id,
+      expenseCategory: expense.category,
+      expenseAmount: expense.amount,
+      foundCategory: category?.name,
+      foundCategoryId: category?.id
+    });
+    
     if (category) {
       acc[category.id] = (acc[category.id] || 0) + expense.amount;
+    } else {
+      console.warn('No matching category found for expense:', expense);
     }
     return acc;
   }, {} as Record<string, number>);
+  
+  console.log('Expenses by category totals:', expensesByCategory);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setSelectedMonth(prev => {
