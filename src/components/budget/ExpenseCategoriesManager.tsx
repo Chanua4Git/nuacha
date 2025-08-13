@@ -20,16 +20,15 @@ export const ExpenseCategoriesManager = () => {
   console.log('All Categories from Context:', categories);
   console.log('Selected Month:', selectedMonth);
   
-  // Filter expenses by selected month
-  const monthStart = startOfMonth(selectedMonth);
-  const monthEnd = endOfMonth(selectedMonth);
+  // Filter expenses by selected month using string comparison (avoids timezone issues)
+  const monthStartString = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
+  const monthEndString = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
   
-  console.log('Date Range:', { monthStart, monthEnd });
+  console.log('Date Range:', { monthStartString, monthEndString });
   
   const monthlyExpenses = expenses.filter(expense => {
-    const expenseDate = new Date(expense.date);
-    const isInRange = expenseDate >= monthStart && expenseDate <= monthEnd;
-    console.log(`Expense ${expense.id}: date=${expense.date}, parsed=${expenseDate}, inRange=${isInRange}`);
+    const isInRange = expense.date >= monthStartString && expense.date <= monthEndString;
+    console.log(`Expense ${expense.id}: date=${expense.date}, inRange=${isInRange}`);
     return isInRange;
   });
   
