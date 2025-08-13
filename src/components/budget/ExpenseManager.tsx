@@ -9,6 +9,7 @@ import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
+import { matchExpenseToCategory } from '@/utils/expenseMatching';
 import { BudgetGroupType } from '@/types/budget';
 import { Plus, TrendingUp, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -115,8 +116,8 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    // Use the budget_category_id field to match expenses to categories
-    const category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    // Use the same matching logic as BudgetDashboard (try expense.category first, then budgetCategoryId, then name)
+    const category = matchExpenseToCategory(expense, budgetCategories);
     
     if (category) {
       acc[category.id] = (acc[category.id] || 0) + expense.amount;
@@ -125,6 +126,7 @@ export default function ExpenseManager() {
       console.warn('No matching budget category found for expense:', {
         expenseId: expense.id,
         description: expense.description,
+        category: expense.category,
         budgetCategoryId: expense.budgetCategoryId,
         amount: expense.amount
       });
@@ -324,7 +326,7 @@ export default function ExpenseManager() {
                 <TableBody>
                   {categories.map((category) => {
                     const categoryExpenses = monthlyExpenses.filter(
-                      expense => expense.budgetCategoryId === category.id
+                      expense => matchExpenseToCategory(expense, [category])?.id === category.id
                     );
                     const totalSpent = expensesByCategory[category.id] || 0;
                     
