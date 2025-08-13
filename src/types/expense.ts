@@ -87,6 +87,7 @@ export interface CategoryWithCamelCase {
   userId?: string;
   groupType?: string;
   sortOrder?: number;
+  isBudgetCategory?: boolean;
 }
 
 // OCR result type
