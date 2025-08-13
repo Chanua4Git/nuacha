@@ -76,11 +76,9 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         description: item.description,
         icon: item.icon,
         createdAt: item.created_at,
-        // Budget category fields
-        groupType: item.group_type as 'needs' | 'wants' | 'savings' | undefined,
         userId: item.user_id,
-        sortOrder: item.sort_order,
-        isBudgetCategory: item.is_budget_category
+        groupType: item.group_type,
+        sortOrder: item.sort_order
       }));
       
       setCategories(mappedCategories);
@@ -140,11 +138,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
           parent_id: category.parentId,
           budget: category.budget,
           description: category.description,
-          icon: category.icon,
-          group_type: category.groupType,
-          user_id: category.userId,
-          sort_order: category.sortOrder,
-          is_budget_category: category.isBudgetCategory
+          icon: category.icon
         }])
         .select();
       
@@ -160,11 +154,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         budget: data[0].budget,
         description: data[0].description,
         icon: data[0].icon,
-        createdAt: data[0].created_at,
-        groupType: data[0].group_type as 'needs' | 'wants' | 'savings' | undefined,
-        userId: data[0].user_id,
-        sortOrder: data[0].sort_order,
-        isBudgetCategory: data[0].is_budget_category
+        createdAt: data[0].created_at
       };
       
       setCategories(prev => {
@@ -199,10 +189,6 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       if (updates.budget !== undefined) updatesToApply.budget = updates.budget;
       if (updates.description !== undefined) updatesToApply.description = updates.description;
       if (updates.icon !== undefined) updatesToApply.icon = updates.icon;
-      if (updates.groupType !== undefined) updatesToApply.group_type = updates.groupType;
-      if (updates.userId !== undefined) updatesToApply.user_id = updates.userId;
-      if (updates.sortOrder !== undefined) updatesToApply.sort_order = updates.sortOrder;
-      if (updates.isBudgetCategory !== undefined) updatesToApply.is_budget_category = updates.isBudgetCategory;
       
       const { data, error } = await supabase
         .from('categories')
@@ -238,11 +224,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         budget: data[0].budget,
         description: data[0].description,
         icon: data[0].icon,
-        createdAt: data[0].created_at,
-        groupType: data[0].group_type as 'needs' | 'wants' | 'savings' | undefined,
-        userId: data[0].user_id,
-        sortOrder: data[0].sort_order,
-        isBudgetCategory: data[0].is_budget_category
+        createdAt: data[0].created_at
       };
     } catch (err: any) {
       console.error('Error updating category:', err);

@@ -23,7 +23,7 @@ interface ScenarioChange {
 
 // Extended category interface for budget categories
 interface BudgetCategory extends CategoryWithCamelCase {
-  groupType: 'needs' | 'wants' | 'savings';
+  groupType: string;
   userId: string;
 }
 
@@ -35,7 +35,8 @@ export default function ScenarioPlanner() {
   
   // Filter categories to only show budget categories
   const budgetCategories = categories.filter(cat => 
-    cat.isBudgetCategory && cat.userId === user?.id
+    // Check for budget categories (have groupType and no familyId)
+    (cat as any).groupType && cat.familyId === null && (cat as any).userId === user?.id
   ) as BudgetCategory[];
 
   // Group budget categories by type

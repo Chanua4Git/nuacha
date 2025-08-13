@@ -6,18 +6,14 @@ import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useCategoryInit } from '@/hooks/useCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import CategoryFormDialog from '@/components/CategoryFormDialog';
-import ExpenseFormDialog from '@/components/budget/ExpenseFormDialog';
 
 export default function ExpenseManager() {
   const { user } = useAuth();
-  const { categories, isLoading: categoriesLoading } = useCategories();
-  useCategoryInit(); // Ensure user has budget categories
+  const { categories, isLoading: categoriesLoading } = useCategories(undefined, false);
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
@@ -26,17 +22,17 @@ export default function ExpenseManager() {
 
   // Filter categories to only show budget categories (user-level categories with group_type)
   const budgetCategories = categories.filter(cat => 
-    cat.isBudgetCategory && cat.userId === user?.id
+    // Check if category has groupType property and user_id matches
+    cat.groupType && cat.userId === user?.id
   );
 
   // Group budget categories by type
   const categoriesByGroup = budgetCategories.reduce((acc, category) => {
-    if (category.groupType) {
-      if (!acc[category.groupType]) {
-        acc[category.groupType] = [];
-      }
-      acc[category.groupType].push(category);
+    const groupType = (category as any).groupType;
+    if (!acc[groupType]) {
+      acc[groupType] = [];
     }
+    acc[groupType].push(category);
     return acc;
   }, {} as Record<string, typeof categories>);
   
@@ -194,16 +190,10 @@ export default function ExpenseManager() {
               <CardContent>
                 <div className="text-center p-8 text-muted-foreground">
                   <p>No categories in this group yet.</p>
-                  <CategoryFormDialog 
-                    budgetMode={true}
-                    groupType={groupType as any}
-                    trigger={
-                      <Button variant="outline" size="sm" className="mt-2">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Category
-                      </Button>
-                    }
-                  />
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -219,16 +209,10 @@ export default function ExpenseManager() {
                     {title}
                   </Badge>
                 </div>
-                <CategoryFormDialog 
-                  budgetMode={true}
-                  groupType={groupType as any}
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Category
-                    </Button>
-                  }
-                />
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -287,19 +271,9 @@ export default function ExpenseManager() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <ExpenseFormDialog 
-                              categoryName={category.name}
-                              trigger={
-                                <Button variant="ghost" size="sm" title="Add expense">
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              }
-                            />
-                            <Button variant="ghost" size="sm" title="View trends">
-                              <TrendingUp className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button variant="ghost" size="sm">
+                            <TrendingUp className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
