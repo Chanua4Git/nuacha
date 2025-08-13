@@ -29,8 +29,13 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   const { categories, isLoading: categoriesLoading, refetch } = useCategories(selectedFamily?.id);
   
   // Filter categories to show general ones + those for the selected family
+  // Include user-level budget categories when familyId is null
   const availableCategories = categories.filter(cat => 
-    (cat.id && cat.id !== '') && (!cat.familyId || (selectedFamily && cat.familyId === selectedFamily.id))
+    (cat.id && cat.id !== '') && (
+      !cat.familyId || 
+      (selectedFamily && cat.familyId === selectedFamily.id) ||
+      (cat.userId && !cat.familyId) // Include user-level budget categories
+    )
   );
   
   const getCategory = (id: string): CategoryWithCamelCase | undefined => 
@@ -58,7 +63,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
         >
           <div className="flex items-center">
             <span 
-              className="w-3 h-3 rounded-full mr-2" 
+              className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
               style={{ backgroundColor: category.color }}
             />
             {category.name}
@@ -67,7 +72,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       ));
     }
     
-    // Use real categories if available
+    // Use real categories if available - ensure colors are displayed properly
     return availableCategories.map((category) => (
       <SelectItem 
         key={category.id} 
@@ -76,10 +81,15 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       >
         <div className="flex items-center">
           <span 
-            className="w-3 h-3 rounded-full mr-2" 
-            style={{ backgroundColor: category.color }}
+            className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+            style={{ backgroundColor: category.color || '#64748B' }}
           />
           {category.name}
+          {category.groupType && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {category.groupType}
+            </span>
+          )}
         </div>
       </SelectItem>
     ));
@@ -91,8 +101,8 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       return (
         <div className="flex items-center">
           <span 
-            className="w-3 h-3 rounded-full mr-2" 
-            style={{ backgroundColor: selectedCategory.color }}
+            className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+            style={{ backgroundColor: selectedCategory.color || '#64748B' }}
           />
           {selectedCategory.name}
         </div>
@@ -107,7 +117,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
         return (
           <div className="flex items-center">
             <span 
-              className="w-3 h-3 rounded-full mr-2" 
+              className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
               style={{ backgroundColor: demoCategory.color }}
             />
             {demoCategory.name}
@@ -146,11 +156,11 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="z-50">
+        <SelectContent className="z-50 bg-background border shadow-md">
           {includeAllOption && (
             <SelectItem value="all_categories">
               <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2 bg-gray-300" />
+                <span className="w-3 h-3 rounded-full mr-2 flex-shrink-0 bg-muted" />
                 All Categories
               </div>
             </SelectItem>
@@ -163,8 +173,8 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             >
               <div className="flex items-center">
                 <span 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: suggestedCategory.color }}
+                  className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                  style={{ backgroundColor: suggestedCategory.color || '#64748B' }}
                 />
                 {suggestedCategory.name} (Suggested)
               </div>

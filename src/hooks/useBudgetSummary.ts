@@ -32,12 +32,12 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
 
       if (incomeError) throw incomeError;
 
-      // Fetch budget categories
+      // Fetch budget categories from unified categories table
       const { data: categories, error: categoriesError } = await supabase
-        .from('budget_categories')
+        .from('categories')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_active', true);
+        .is('is_budget_category', true);
 
       if (categoriesError) throw categoriesError;
 
@@ -99,11 +99,10 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       };
 
       (expenses || []).forEach(expense => {
-        if (expense.budget_category_id) {
-          const category = categoryMap.get(expense.budget_category_id);
-          if (category) {
-            expensesByGroup[category.group_type] += expense.amount;
-          }
+        // Find category by name matching since expenses use category names
+        const category = categories?.find(cat => cat.name === expense.category);
+        if (category && category.group_type) {
+          expensesByGroup[category.group_type] += expense.amount;
         }
       });
 

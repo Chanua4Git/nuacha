@@ -60,6 +60,9 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
           // Only get family-specific categories
           query = query.eq('family_id', familyId);
         }
+      } else {
+        // If no family filter, include user-level budget categories
+        query = query.or('family_id.is.null,user_id.not.is.null');
       }
       
       const { data, error } = await query;

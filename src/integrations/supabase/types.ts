@@ -50,39 +50,6 @@ export type Database = {
         }
         Relationships: []
       }
-      budget_categories: {
-        Row: {
-          created_at: string
-          group_type: string
-          id: string
-          is_active: boolean
-          name: string
-          sort_order: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          group_type: string
-          id?: string
-          is_active?: boolean
-          name: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          group_type?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          sort_order?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       budget_periods: {
         Row: {
           created_at: string
@@ -204,6 +171,7 @@ export type Database = {
           group_type: string | null
           icon: string | null
           id: string
+          is_budget_category: boolean | null
           name: string
           parent_id: string | null
           sort_order: number | null
@@ -218,6 +186,7 @@ export type Database = {
           group_type?: string | null
           icon?: string | null
           id?: string
+          is_budget_category?: boolean | null
           name: string
           parent_id?: string | null
           sort_order?: number | null
@@ -232,6 +201,7 @@ export type Database = {
           group_type?: string | null
           icon?: string | null
           id?: string
+          is_budget_category?: boolean | null
           name?: string
           parent_id?: string | null
           sort_order?: number | null
@@ -1423,6 +1393,10 @@ export type Database = {
     }
     Functions: {
       create_default_budget_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
+      ensure_user_budget_categories: {
         Args: { user_uuid: string }
         Returns: undefined
       }

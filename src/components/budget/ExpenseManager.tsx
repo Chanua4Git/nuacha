@@ -6,6 +6,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -17,6 +18,9 @@ export default function ExpenseManager() {
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
+  // Initialize budget categories for the user if they don't exist
+  useBudgetCategoryInit();
+  
   // Get the first family ID for filtering expenses
   const familyId = families?.[0]?.id;
 
@@ -25,6 +29,15 @@ export default function ExpenseManager() {
     // Check if category has groupType property and user_id matches
     cat.groupType && cat.userId === user?.id
   );
+  
+  // If no budget categories exist, create them automatically
+  useEffect(() => {
+    if (user && budgetCategories.length === 0 && !categoriesLoading) {
+      // Trigger creation of default budget categories
+      // This will be handled by the unified category system
+      console.log('No budget categories found for user, they should be created automatically');
+    }
+  }, [user, budgetCategories.length, categoriesLoading]);
 
   // Group budget categories by type
   const categoriesByGroup = budgetCategories.reduce((acc, category) => {
@@ -190,7 +203,12 @@ export default function ExpenseManager() {
               <CardContent>
                 <div className="text-center p-8 text-muted-foreground">
                   <p>No categories in this group yet.</p>
-                  <Button variant="outline" size="sm" className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => console.log('Add category for group:', groupType)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Category
                   </Button>
@@ -209,7 +227,11 @@ export default function ExpenseManager() {
                     {title}
                   </Badge>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => console.log('Add category for group:', groupType)}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Category
                 </Button>
@@ -271,8 +293,13 @@ export default function ExpenseManager() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <TrendingUp className="h-4 w-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => console.log('Add expense for category:', category.name)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Expense
                           </Button>
                         </TableCell>
                       </TableRow>

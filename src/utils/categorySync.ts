@@ -253,16 +253,17 @@ export async function seedRecommendedExpenseCategories(familyId: string) {
 }
 
 export async function ensureBudgetDefaults(userId: string) {
-  // If user has no budget categories, initialize defaults via RPC
+  // If user has no budget categories, initialize defaults using the unified system
   const { data: existing, error } = await supabase
-    .from('budget_categories')
+    .from('categories')
     .select('id')
     .eq('user_id', userId)
+    .is('is_budget_category', true)
     .limit(1);
   if (error) throw error;
 
   if (!existing || existing.length === 0) {
-    await supabase.rpc('create_default_budget_categories', { user_uuid: userId });
+    await supabase.rpc('ensure_user_budget_categories', { user_uuid: userId });
   }
 }
 
@@ -273,18 +274,26 @@ export async function ensureBudgetCategory(
   sortOrder = 100
 ) {
   const { data: existing, error: selectError } = await supabase
-    .from('budget_categories')
+    .from('categories')
     .select('id')
     .eq('user_id', userId)
     .eq('name', name)
     .eq('group_type', group)
+    .is('is_budget_category', true)
     .limit(1);
   if (selectError) throw selectError;
   if (existing && existing.length > 0) return existing[0].id;
 
   const { data: inserted, error: insertError } = await supabase
-    .from('budget_categories')
-    .insert({ user_id: userId, name, group_type: group, sort_order: sortOrder })
+    .from('categories')
+    .insert({ 
+      user_id: userId, 
+      name, 
+      group_type: group, 
+      sort_order: sortOrder,
+      is_budget_category: true,
+      color: '#5A7684' // Default color
+    })
     .select('id')
     .single();
   if (insertError) throw insertError;
