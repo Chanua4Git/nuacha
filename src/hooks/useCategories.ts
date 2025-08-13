@@ -75,7 +75,10 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         budget: item.budget,
         description: item.description,
         icon: item.icon,
-        createdAt: item.created_at
+        createdAt: item.created_at,
+        userId: item.user_id,
+        groupType: item.group_type,
+        sortOrder: item.sort_order
       }));
       
       setCategories(mappedCategories);

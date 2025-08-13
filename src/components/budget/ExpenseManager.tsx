@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default function ExpenseManager() {
   const { user } = useAuth();
-  const { categories, isLoading: categoriesLoading } = useCategories();
+  const { categories, isLoading: categoriesLoading } = useCategories(undefined, false);
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
@@ -22,8 +22,8 @@ export default function ExpenseManager() {
 
   // Filter categories to only show budget categories (user-level categories with group_type)
   const budgetCategories = categories.filter(cat => 
-    // Check if category has groupType property (from migrated budget_categories)
-    'groupType' in cat && cat.groupType && 'userId' in cat && cat.userId === user?.id
+    // Check if category has groupType property and user_id matches
+    cat.groupType && cat.userId === user?.id
   );
 
   // Group budget categories by type
