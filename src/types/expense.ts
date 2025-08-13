@@ -71,7 +71,6 @@ export interface Expense {
   transactionId?: string;
   budgetCategoryId?: string;
   members?: FamilyMember[]; // Array of family members associated with this expense
-  expenseType?: 'actual' | 'planned' | 'budgeted'; // New: expense type for planning vs real
 }
 
 // For backward compatibility and consistent casing in our application

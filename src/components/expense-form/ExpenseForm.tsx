@@ -5,7 +5,6 @@ import { useExpense } from '@/context/ExpenseContext';
 import { format } from 'date-fns';
 import CategorySelector from '../CategorySelector';
 import ReceiptUpload from '../ReceiptUpload';
-import MultiImageReceiptUpload from '../receipt/MultiImageReceiptUpload';
 import AmountInput from './AmountInput';
 import DescriptionInput from './DescriptionInput';
 import PlaceInput from './PlaceInput';
@@ -17,7 +16,6 @@ import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import PayrollLinkSection, { PayrollLinkState } from './PayrollLinkSection';
 import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
-import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
@@ -29,10 +27,8 @@ const ExpenseForm = () => {
   const [replacementFrequency, setReplacementFrequency] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
-  const [receiptImages, setReceiptImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
-  const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -45,9 +41,6 @@ const ExpenseForm = () => {
 
   // New: Paid on date (optional)
   const [paidOnDate, setPaidOnDate] = useState<Date | undefined>();
-
-  // New: Expense type state
-  const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
 
   // New: Payroll linking state and data via existing payroll hook
   const {
@@ -69,16 +62,6 @@ const ExpenseForm = () => {
     setImagePreview(previewUrl);
   };
 
-  const handleImagesUpload = (files: File[]) => {
-    setReceiptImages(files);
-    if (files.length === 1) {
-      // Single image mode - maintain compatibility
-      setReceiptImage(files[0]);
-      const previewUrl = URL.createObjectURL(files[0]);
-      setImagePreview(previewUrl);
-    }
-  };
-
   const handleImageRemove = () => {
     if (imagePreview) {
       URL.revokeObjectURL(imagePreview);
@@ -86,11 +69,6 @@ const ExpenseForm = () => {
     setReceiptImage(null);
     setImagePreview(null);
     setOcrResult(null);
-  };
-
-  const handleImagesRemove = () => {
-    setReceiptImages([]);
-    handleImageRemove();
   };
 
   const handleOcrData = (data: OCRResult) => {
@@ -218,7 +196,6 @@ const ExpenseForm = () => {
           replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
           nextReplacementDate,
           receiptUrl,
-          expenseType,
           // Extra fields supported by backend; types may not include them, so they are passed-through
           paidOnDate: paidOn,
           payrollPeriodId: payrollPeriodId,
@@ -255,10 +232,8 @@ const ExpenseForm = () => {
       setReplacementFrequency('');
       setOcrResult(null);
       setPaidOnDate(undefined);
-      setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
-      setIsLongReceiptMode(false);
-      handleImagesRemove();
+      handleImageRemove();
 
       const expenseCount = createdExpenses.length;
       toast.success(`${expenseCount} expense${expenseCount > 1 ? 's' : ''} added successfully${payrollLink.enabled ? ' and payroll logged' : ''}`);
@@ -293,28 +268,12 @@ const ExpenseForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {/* Expense Type Selector */}
-          <ExpenseTypeSelector
-            value={expenseType}
-            onChange={setExpenseType}
+          <ReceiptUpload
+            onImageUpload={handleImageUpload}
+            onImageRemove={handleImageRemove}
+            onDataExtracted={handleOcrData}
+            imagePreview={imagePreview}
           />
-
-          {isLongReceiptMode ? (
-            <MultiImageReceiptUpload
-              onImagesUpload={handleImagesUpload}
-              onImagesRemove={handleImagesRemove}
-              onDataExtracted={handleOcrData}
-              isLongReceiptMode={isLongReceiptMode}
-              onToggleLongReceiptMode={() => setIsLongReceiptMode(!isLongReceiptMode)}
-            />
-          ) : (
-            <ReceiptUpload
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              onDataExtracted={handleOcrData}
-              imagePreview={imagePreview}
-            />
-          )}
 
           <AmountInput 
             value={amount}

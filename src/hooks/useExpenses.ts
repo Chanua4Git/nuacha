@@ -114,7 +114,6 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           tags: item.tags,
           transactionId: item.transaction_id,
           budgetCategoryId: item.budget_category_id,
-          expenseType: item.expense_type || 'actual',
           // New fields
           paidOnDate: item.paid_on_date,
           payrollPeriodId: item.payroll_period_id,
@@ -166,7 +165,6 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         tags: (expenseData as any).tags,
         transaction_id: (expenseData as any).transactionId,
         budget_category_id: (expenseData as any).budgetCategoryId,
-        expense_type: (expenseData as any).expenseType || 'actual',
         // New fields aligned to DB
         paid_on_date: (expenseData as any).paidOnDate,
         payroll_period_id: (expenseData as any).payrollPeriodId,
@@ -199,7 +197,6 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         tags: data[0].tags,
         transactionId: data[0].transaction_id,
         budgetCategoryId: data[0].budget_category_id,
-        expenseType: data[0].expense_type || 'actual',
         // New fields
         paidOnDate: data[0].paid_on_date,
         payrollPeriodId: data[0].payroll_period_id,
@@ -243,7 +240,6 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       if ((updates as any).tags !== undefined) updatesToApply.tags = (updates as any).tags;
       if ((updates as any).transactionId !== undefined) updatesToApply.transaction_id = (updates as any).transactionId;
       if ((updates as any).budgetCategoryId !== undefined) updatesToApply.budget_category_id = (updates as any).budgetCategoryId;
-      if ((updates as any).expenseType !== undefined) updatesToApply.expense_type = (updates as any).expenseType;
 
       // New fields
       if ((updates as any).paidOnDate !== undefined) updatesToApply.paid_on_date = (updates as any).paidOnDate;

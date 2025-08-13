@@ -3,12 +3,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Expense } from '@/types/expense';
+import { Expense } from '@/data/mockData';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
 import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ExpenseTypeBadge from './ExpenseTypeBadge';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -99,7 +98,7 @@ const ExpenseCard = ({
           </div>
         </div>
         
-        <div className="flex items-center mt-3 gap-2 flex-wrap">
+        <div className="flex items-center mt-3">
           <div 
             className="inline-flex items-center px-2 py-1 rounded-full text-xs"
             style={{ 
@@ -111,13 +110,8 @@ const ExpenseCard = ({
             {category?.name || 'Uncategorized'}
           </div>
           
-          <ExpenseTypeBadge 
-            type={expense.expenseType || 'actual'} 
-            size="sm" 
-          />
-          
           {expense.needsReplacement && (
-            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+            <div className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
               <Calendar className="h-3 w-3 mr-1" />
               Next: {format(parseISO(expense.nextReplacementDate || ''), 'MMM d, yyyy')}
             </div>
