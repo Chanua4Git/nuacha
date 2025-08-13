@@ -12,7 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, Clock, Save, Edit, Trash2, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, addWeeks, eachWeekOfInterval } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachWeekOfInterval, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Employee } from '@/types/payroll';
 import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
@@ -107,7 +107,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
     const weeklyCalculations: WeeklyCalculation[] = weeks.map((weekStart, index) => {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      const payDay = addWeeks(weekEnd, 1); // Pay day is a week after week end
+      const payDay = addDays(weekEnd, 7); // Pay day is a week after week end
       
       // Calculate 8-hour daily rate
       let dailyRate8Hr = 0;

@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useFamilies } from '@/hooks/useFamilies';
-import { useCategories } from '@/hooks/useCategories';
-import { useExpenses } from '@/hooks/useExpenses';
+import { useExpense } from '@/context/ExpenseContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -12,40 +9,36 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns
 import { Badge } from '@/components/ui/badge';
 
 export const ExpenseCategoriesManager = () => {
-  const { user } = useAuth();
-  const [selectedFamily, setSelectedFamily] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
-  const { families } = useFamilies();
-  const { categories: budgetCategories } = useCategories(
-    selectedFamily === 'all' ? undefined : selectedFamily, 
-    true
-  );
+  const { selectedFamily, expenses, categories } = useExpense();
   
-  const { expenses } = useExpenses({
-    familyId: selectedFamily === 'all' ? undefined : selectedFamily,
-    startDate: startOfMonth(selectedMonth).toISOString(),
-    endDate: endOfMonth(selectedMonth).toISOString()
+  // Filter expenses by selected month
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
+  const monthlyExpenses = expenses.filter(expense => {
+    const expenseDate = new Date(expense.date);
+    return expenseDate >= monthStart && expenseDate <= monthEnd;
   });
-
+  
   // Filter to only budget categories
-  const filteredBudgetCategories = budgetCategories.filter(cat => cat.isBudgetCategory);
+  const budgetCategories = categories.filter(cat => cat.isBudgetCategory);
 
   // Group categories by type
   const categoriesByType = {
-    needs: filteredBudgetCategories.filter(cat => cat.groupType === 'needs'),
-    wants: filteredBudgetCategories.filter(cat => cat.groupType === 'wants'),
-    savings: filteredBudgetCategories.filter(cat => cat.groupType === 'savings')
+    needs: budgetCategories.filter(cat => cat.groupType === 'needs'),
+    wants: budgetCategories.filter(cat => cat.groupType === 'wants'),
+    savings: budgetCategories.filter(cat => cat.groupType === 'savings')
   };
 
-  // Calculate expenses by category
-  const expensesByCategory = expenses.reduce((acc, expense) => {
-    let category = filteredBudgetCategories.find(cat => cat.id === expense.category);
+  // Calculate expenses by category for the selected month
+  const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
+    let category = budgetCategories.find(cat => cat.id === expense.category);
     if (!category) {
-      category = filteredBudgetCategories.find(cat => cat.name === expense.category);
+      category = budgetCategories.find(cat => cat.name === expense.category);
     }
     if (!category && expense.budgetCategoryId) {
-      category = filteredBudgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
     }
     
     if (category) {
@@ -81,10 +74,6 @@ export const ExpenseCategoriesManager = () => {
       .slice(0, 2);
   };
 
-  const getFamilyColor = (familyId: string) => {
-    const family = families.find(f => f.id === familyId);
-    return family?.color || '#6B7280';
-  };
 
   const renderCategorySection = (type: 'needs' | 'wants' | 'savings', title: string, badgeVariant: string) => {
     const categories = categoriesByType[type];
@@ -120,13 +109,7 @@ export const ExpenseCategoriesManager = () => {
                       {recentExpenses ? (
                         <div className="space-y-1">
                           {recentExpenses.map(expense => (
-                            <div key={expense.id} className="flex items-center gap-2 text-sm">
-                              {selectedFamily === 'all' && (
-                                <div 
-                                  className="w-2 h-2 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: getFamilyColor(expense.familyId) }}
-                                />
-                              )}
+                            <div key={expense.id} className="text-sm">
                               <span className="text-muted-foreground">
                                 {expense.description} - ${expense.amount.toFixed(2)}
                               </span>
@@ -153,32 +136,27 @@ export const ExpenseCategoriesManager = () => {
     );
   };
 
-  if (!user) return null;
+  if (!selectedFamily) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Please select a family in the main app to view expense categories.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Select value={selectedFamily} onValueChange={setSelectedFamily}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Families</SelectItem>
-              {families.map(family => (
-                <SelectItem key={family.id} value={family.id}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: family.color }}
-                    />
-                    {family.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: selectedFamily.color }}
+            />
+            <span className="font-medium">{selectedFamily.name}</span>
+            <span className="text-sm text-muted-foreground">(synced with main app)</span>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
@@ -198,9 +176,7 @@ export const ExpenseCategoriesManager = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            Total spending by category for {format(selectedMonth, 'MMMM yyyy')} - {
-              selectedFamily === 'all' ? 'All Families' : families.find(f => f.id === selectedFamily)?.name
-            }
+            Total spending by category for {format(selectedMonth, 'MMMM yyyy')} - {selectedFamily.name}
           </CardTitle>
         </CardHeader>
         <CardContent>
