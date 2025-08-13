@@ -5,6 +5,7 @@ import { useExpense } from '@/context/ExpenseContext';
 import { format } from 'date-fns';
 import CategorySelector from '../CategorySelector';
 import ReceiptUpload from '../ReceiptUpload';
+import MultiImageReceiptUpload from '../receipt/MultiImageReceiptUpload';
 import AmountInput from './AmountInput';
 import DescriptionInput from './DescriptionInput';
 import PlaceInput from './PlaceInput';
@@ -28,8 +29,10 @@ const ExpenseForm = () => {
   const [replacementFrequency, setReplacementFrequency] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
+  const [receiptImages, setReceiptImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -66,6 +69,16 @@ const ExpenseForm = () => {
     setImagePreview(previewUrl);
   };
 
+  const handleImagesUpload = (files: File[]) => {
+    setReceiptImages(files);
+    if (files.length === 1) {
+      // Single image mode - maintain compatibility
+      setReceiptImage(files[0]);
+      const previewUrl = URL.createObjectURL(files[0]);
+      setImagePreview(previewUrl);
+    }
+  };
+
   const handleImageRemove = () => {
     if (imagePreview) {
       URL.revokeObjectURL(imagePreview);
@@ -73,6 +86,11 @@ const ExpenseForm = () => {
     setReceiptImage(null);
     setImagePreview(null);
     setOcrResult(null);
+  };
+
+  const handleImagesRemove = () => {
+    setReceiptImages([]);
+    handleImageRemove();
   };
 
   const handleOcrData = (data: OCRResult) => {
@@ -239,7 +257,8 @@ const ExpenseForm = () => {
       setPaidOnDate(undefined);
       setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
-      handleImageRemove();
+      setIsLongReceiptMode(false);
+      handleImagesRemove();
 
       const expenseCount = createdExpenses.length;
       toast.success(`${expenseCount} expense${expenseCount > 1 ? 's' : ''} added successfully${payrollLink.enabled ? ' and payroll logged' : ''}`);
@@ -280,12 +299,22 @@ const ExpenseForm = () => {
             onChange={setExpenseType}
           />
 
-          <ReceiptUpload
-            onImageUpload={handleImageUpload}
-            onImageRemove={handleImageRemove}
-            onDataExtracted={handleOcrData}
-            imagePreview={imagePreview}
-          />
+          {isLongReceiptMode ? (
+            <MultiImageReceiptUpload
+              onImagesUpload={handleImagesUpload}
+              onImagesRemove={handleImagesRemove}
+              onDataExtracted={handleOcrData}
+              isLongReceiptMode={isLongReceiptMode}
+              onToggleLongReceiptMode={() => setIsLongReceiptMode(!isLongReceiptMode)}
+            />
+          ) : (
+            <ReceiptUpload
+              onImageUpload={handleImageUpload}
+              onImageRemove={handleImageRemove}
+              onDataExtracted={handleOcrData}
+              imagePreview={imagePreview}
+            />
+          )}
 
           <AmountInput 
             value={amount}
