@@ -26,28 +26,22 @@ export default function ExpenseManager() {
   // Fetch categories with proper family ID to get family-level budget categories
   const { categories, isLoading: categoriesLoading } = useCategories(familyId, true);
 
-  // Filter categories to include both user-level and family-level budget categories
+  // Filter categories to include user-level budget categories only
   const budgetCategories = categories.filter(cat => {
-    const isBudget = cat.isBudgetCategory === true;
-    const hasGroupType = cat.groupType != null;
-    const isUserCategory = cat.userId === user?.id && cat.familyId == null;
-    const isFamilyCategory = cat.familyId === familyId;
-    
-    // Debug logging
-    console.log('Category filtering:', {
-      categoryName: cat.name,
-      categoryId: cat.id,
-      isBudgetCategory: cat.isBudgetCategory,
-      groupType: cat.groupType,
-      userId: cat.userId,
-      familyId: cat.familyId,
-      currentUserId: user?.id,
-      currentFamilyId: familyId,
-      passes: isBudget && hasGroupType && (isUserCategory || isFamilyCategory)
-    });
-    
-    return isBudget && hasGroupType && (isUserCategory || isFamilyCategory);
+    return cat.isBudgetCategory === true && 
+           cat.groupType != null && 
+           cat.userId === user?.id && 
+           cat.familyId == null;
   });
+
+  console.log('Budget categories found:', budgetCategories.length);
+  if (budgetCategories.length > 0) {
+    console.log('Sample categories:', budgetCategories.slice(0, 3).map(c => ({
+      id: c.id,
+      name: c.name,
+      groupType: c.groupType
+    })));
+  }
   
   // If no budget categories exist, create them automatically
   useEffect(() => {
@@ -106,25 +100,19 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    // Try to find category by UUID first (preferred), then fallback to name matching
-    let category = budgetCategories.find(cat => cat.id === expense.category);
-    if (!category) {
-      category = budgetCategories.find(cat => cat.name === expense.category);
-    }
-    
-    // Debug logging for expense matching
-    console.log('Expense category matching:', {
-      expenseId: expense.id,
-      expenseCategory: expense.category,
-      expenseAmount: expense.amount,
-      foundCategory: category?.name,
-      foundCategoryId: category?.id
-    });
+    // Use the budget_category_id field to match expenses to categories
+    const category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
     
     if (category) {
       acc[category.id] = (acc[category.id] || 0) + expense.amount;
+      console.log(`Matched expense "${expense.description}" (${expense.amount}) to category "${category.name}"`);
     } else {
-      console.warn('No matching category found for expense:', expense);
+      console.warn('No matching budget category found for expense:', {
+        expenseId: expense.id,
+        description: expense.description,
+        budgetCategoryId: expense.budgetCategoryId,
+        amount: expense.amount
+      });
     }
     return acc;
   }, {} as Record<string, number>);
@@ -293,7 +281,7 @@ export default function ExpenseManager() {
                 <TableBody>
                   {categories.map((category) => {
                     const categoryExpenses = monthlyExpenses.filter(
-                      expense => expense.category === category.id || expense.category === category.name
+                      expense => expense.budgetCategoryId === category.id
                     );
                     const totalSpent = expensesByCategory[category.id] || 0;
                     
