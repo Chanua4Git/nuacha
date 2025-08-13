@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
@@ -9,29 +10,42 @@ import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
-import { Plus, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ExpenseManager() {
   const { user } = useAuth();
   const { families } = useFamilies();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>('all');
   
   // Initialize budget categories for the user if they don't exist
   useBudgetCategoryInit();
   
-  // Get the first family ID for filtering expenses
-  const familyId = families?.[0]?.id;
+  // Set default family when families are loaded
+  useEffect(() => {
+    if (families.length > 0 && selectedFamilyId === 'all') {
+      // Keep 'all' as default to show all families
+    }
+  }, [families, selectedFamilyId]);
   
-  // Fetch categories with proper family ID to get family-level budget categories
-  const { categories, isLoading: categoriesLoading } = useCategories(familyId, true);
+  // Fetch categories for all families to get comprehensive budget categories
+  const { categories, isLoading: categoriesLoading } = useCategories(undefined, true);
 
-  // Filter categories to include user-level budget categories only
+  // Filter categories to include budget categories for the selected family or all families
   const budgetCategories = categories.filter(cat => {
-    return cat.isBudgetCategory === true && 
-           cat.groupType != null && 
-           cat.userId === user?.id && 
-           cat.familyId == null;
+    const isBudgetCategory = cat.isBudgetCategory === true && cat.groupType != null;
+    if (!isBudgetCategory) return false;
+    
+    // If "All Families" is selected, include user-level categories and all family-level categories
+    if (selectedFamilyId === 'all') {
+      return (cat.userId === user?.id && cat.familyId == null) || 
+             (cat.familyId != null && families.some(f => f.id === cat.familyId));
+    }
+    
+    // If specific family is selected, include user-level categories and that family's categories
+    return (cat.userId === user?.id && cat.familyId == null) || 
+           (cat.familyId === selectedFamilyId);
   });
 
   console.log('Budget categories found:', budgetCategories.length);
@@ -69,8 +83,9 @@ export default function ExpenseManager() {
   console.log('Categories by group:', categoriesByGroup);
   console.log('Budget categories found:', budgetCategories.length);
   
+  // Fetch expenses based on selected family
   const { expenses, isLoading: expensesLoading } = useExpenses({
-    familyId: familyId
+    familyId: selectedFamilyId === 'all' ? undefined : selectedFamilyId
   });
 
   useEffect(() => {
@@ -161,30 +176,57 @@ export default function ExpenseManager() {
 
   return (
     <div className="space-y-6">
-      {/* Month Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Header with Family Selection and Month Navigation */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Expense Categories</h2>
           <p className="text-muted-foreground">Organize your spending into Needs, Wants, and Savings</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('prev')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-lg font-medium min-w-[140px] text-center">
-            {getMonthDisplay(selectedMonth)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('next')}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Family Selector */}
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedFamilyId} onValueChange={setSelectedFamilyId}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select family" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Families</SelectItem>
+                {families.map((family) => (
+                  <SelectItem key={family.id} value={family.id}>
+                    <div className="flex items-center">
+                      <span 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: family.color }}
+                      />
+                      {family.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Month Navigation */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-medium min-w-[140px] text-center">
+              {getMonthDisplay(selectedMonth)}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -194,6 +236,7 @@ export default function ExpenseManager() {
           <CardTitle>Monthly Overview</CardTitle>
           <p className="text-sm text-muted-foreground">
             Total spending by category for {getMonthDisplay(selectedMonth)}
+            {selectedFamilyId === 'all' ? ' - All Families' : ` - ${families.find(f => f.id === selectedFamilyId)?.name}`}
           </p>
         </CardHeader>
         <CardContent>
@@ -303,16 +346,25 @@ export default function ExpenseManager() {
                         <TableCell>
                           {categoryExpenses.length > 0 ? (
                             <div className="text-sm space-y-1">
-                              {categoryExpenses.slice(0, 2).map((expense) => (
-                                <div key={expense.id} className="flex justify-between">
-                                  <span className="truncate max-w-[120px]">
-                                    {expense.description}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {formatTTD(expense.amount)}
-                                  </span>
-                                </div>
-                              ))}
+                              {categoryExpenses.slice(0, 2).map((expense) => {
+                                const expenseFamily = families.find(f => f.id === expense.familyId);
+                                return (
+                                  <div key={expense.id} className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2 truncate max-w-[120px]">
+                                      {selectedFamilyId === 'all' && expenseFamily && (
+                                        <span 
+                                          className="w-2 h-2 rounded-full flex-shrink-0" 
+                                          style={{ backgroundColor: expenseFamily.color }}
+                                        />
+                                      )}
+                                      <span className="truncate">{expense.description}</span>
+                                    </div>
+                                    <span className="text-muted-foreground">
+                                      {formatTTD(expense.amount)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                               {categoryExpenses.length > 2 && (
                                 <div className="text-xs text-muted-foreground">
                                   +{categoryExpenses.length - 2} more
