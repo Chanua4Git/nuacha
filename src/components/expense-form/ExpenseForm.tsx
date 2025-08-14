@@ -97,12 +97,29 @@ const ExpenseForm = () => {
   };
 
   const handleOcrData = (data: OCRResult) => {
+    console.log('🔄 handleOcrData called with:', data);
     setOcrResult(data);
 
-    if (data.amount) setAmount(data.amount);
-    if (data.description) setDescription(data.description);
-    if (data.place) setPlace(data.place);
-    if (data.date) setSingleDate(data.date);
+    // Set amount (OCRResult.amount is string type)
+    if (data.amount) {
+      console.log('💰 Setting amount:', data.amount);
+      setAmount(data.amount);
+    }
+    
+    if (data.description) {
+      console.log('📝 Setting description:', data.description);
+      setDescription(data.description);
+    }
+    
+    if (data.place) {
+      console.log('📍 Setting place:', data.place);
+      setPlace(data.place);
+    }
+    
+    if (data.date) {
+      console.log('📅 Setting date:', data.date);
+      setSingleDate(data.date);
+    }
 
     // Auto-show detailed view if line items are detected or structured data exists
     if (data.lineItems && data.lineItems.length > 0) {

@@ -221,24 +221,51 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
   };
 
   const mergeOCRResults = (results: OCRResult[]): OCRResult => {
+    console.log('🔀 Merging OCR results:', results);
+    
     // Take the first valid result for basic fields
     const baseResult = results.find(r => r.confidence && r.confidence > 0.3) || results[0];
+    console.log('📋 Base result selected:', baseResult);
     
     // Merge line items from all sections
     const allLineItems = results.flatMap(r => r.lineItems || []);
+    console.log('📦 Combined line items:', allLineItems.length);
     
     // Calculate average confidence
     const avgConfidence = results.reduce((sum, r) => sum + (r.confidence || 0), 0) / results.length;
-
-    // Extract amount properly - OCRResult.amount is string
-    const extractedAmount = baseResult.amount || '';
     
-    return {
+    // Find best amount from all results (highest confidence or first valid)
+    const bestAmountResult = results
+      .filter(r => r.amount)
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    
+    // Find best description from all results
+    const bestDescriptionResult = results
+      .filter(r => r.description)
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    
+    // Find best place from all results  
+    const bestPlaceResult = results
+      .filter(r => r.place)
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+
+    // Find best date from all results
+    const bestDateResult = results
+      .filter(r => r.date)
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    
+    const mergedResult: OCRResult = {
       ...baseResult,
       confidence: avgConfidence,
       lineItems: allLineItems,
-      amount: extractedAmount,
+      amount: bestAmountResult?.amount || baseResult.amount || '',
+      description: bestDescriptionResult?.description || baseResult.description || '',
+      place: bestPlaceResult?.place || baseResult.place || '',
+      date: bestDateResult?.date || baseResult.date,
     };
+    
+    console.log('✅ Final merged result:', mergedResult);
+    return mergedResult;
   };
 
   const clearAll = () => {
