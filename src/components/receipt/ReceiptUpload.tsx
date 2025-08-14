@@ -72,15 +72,52 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
     }
   };
 
+  const checkIfLongReceipt = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.height / img.width;
+        // Consider receipts with aspect ratio > 2.5 as "long"
+        const isLong = aspectRatio > 2.5;
+        console.log(`📏 Image dimensions: ${img.width}x${img.height}, aspect ratio: ${aspectRatio.toFixed(2)}, isLong: ${isLong}`);
+        resolve(isLong);
+      };
+      img.onerror = () => resolve(false);
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const processReceipt = async (file: File, isRetry = false) => {
     setCurrentFile(file);
     onImageUpload(file);
+    
+    // Check if this is a long receipt and warn user
+    if (!isRetry) {
+      const isLongReceipt = await checkIfLongReceipt(file);
+      if (isLongReceipt) {
+        toast('📏 Long receipt detected', {
+          description: 'For better results, consider using Long Receipt Mode to split into sections.',
+          duration: 5000,
+        });
+      }
+    }
     
     setIsProcessing(true);
     try {
       const extractedData = await processReceiptImage(file);
       
       if (extractedData) {
+        // Log quality indicators for long receipts
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.height / img.width;
+          if (aspectRatio > 2.5) {
+            console.log('⚠️ Long receipt processed in regular mode - OCR quality may be reduced');
+            console.log('💡 Suggestion: Use Long Receipt Mode for better accuracy');
+          }
+        };
+        img.src = URL.createObjectURL(file);
+        
         onDataExtracted(extractedData);
         if (isRetry) {
           toast.success('Receipt details refreshed');

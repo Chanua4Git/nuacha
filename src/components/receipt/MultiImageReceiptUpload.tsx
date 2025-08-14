@@ -74,7 +74,27 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
     setSections(prev => [...prev, ...newSections]);
     onImagesUpload(files);
 
-    if (isLongReceiptMode && files.length > 1) {
+    // Auto-process if single image in Long Receipt Mode or always for single files
+    if (files.length === 1) {
+      console.log('🚀 Auto-processing single image in Long Receipt Mode');
+      // Auto-process the single image after a brief delay to allow state to update
+      setTimeout(async () => {
+        const sectionId = newSections[0].id;
+        await processSection(sectionId, true); // Use enhanced processing
+        
+        // After processing, auto-extract the data if we have a valid result
+        setTimeout(() => {
+          const currentSections = sections.concat(newSections);
+          const processedSection = currentSections.find(s => s.id === sectionId && s.ocrResult);
+          
+          if (processedSection?.ocrResult) {
+            console.log('✅ Auto-extracting data from single processed section');
+            onDataExtracted(processedSection.ocrResult);
+            toast.success('Receipt processed automatically');
+          }
+        }, 1000);
+      }, 100);
+    } else if (isLongReceiptMode && files.length > 1) {
       toast('Multiple sections captured', {
         description: 'Review and process when ready.'
       });
