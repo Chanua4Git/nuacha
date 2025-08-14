@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
+import { Camera, Image, Images } from 'lucide-react';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
@@ -308,6 +309,33 @@ const ExpenseForm = () => {
             value={expenseType}
             onChange={setExpenseType}
           />
+
+          {/* Receipt Mode Toggle */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-2">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Receipt Upload Mode</span>
+            </div>
+            <Button
+              type="button"
+              variant={isLongReceiptMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsLongReceiptMode(!isLongReceiptMode)}
+              className="gap-2"
+            >
+              {isLongReceiptMode ? (
+                <>
+                  <Images className="h-4 w-4" />
+                  Long Receipt
+                </>
+              ) : (
+                <>
+                  <Image className="h-4 w-4" />
+                  Single Receipt
+                </>
+              )}
+            </Button>
+          </div>
 
           {isLongReceiptMode ? (
             <MultiImageReceiptUpload
