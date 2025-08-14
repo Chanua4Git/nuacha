@@ -155,24 +155,66 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
     setIsProcessingAll(true);
     
     try {
-      // Process all sections in parallel
-      await Promise.all(
-        sections.map(section => processSection(section.id, true))
-      );
+      console.log('Starting to process all sections:', sections.length);
+      
+      // Process all sections in parallel and collect results directly
+      const processingPromises = sections.map(async (section) => {
+        console.log('Processing section:', section.id);
+        
+        let fileToProcess = section.file;
 
-      // Merge results from all sections
-      const allResults = sections
-        .map(s => s.ocrResult)
-        .filter(Boolean) as OCRResult[];
+        // Apply background removal
+        try {
+          const img = await loadImage(section.file);
+          const processedBlob = await removeBackground(img);
+          fileToProcess = new File([processedBlob], 'processed-receipt.png', { type: 'image/png' });
+        } catch (error) {
+          console.error('Background removal failed for section:', section.id, error);
+        }
 
-      if (allResults.length > 0) {
-        const mergedResult = mergeOCRResults(allResults);
+        // Process the receipt
+        const extractedData = await processReceiptImage(fileToProcess);
+        console.log('Extracted data for section:', section.id, extractedData);
+        
+        // Update state with the result
+        setSections(prev => prev.map(s => 
+          s.id === section.id 
+            ? { 
+                ...s, 
+                isProcessing: false, 
+                ocrResult: extractedData,
+                processedWithBackground: true
+              } 
+            : s
+        ));
+
+        return extractedData;
+      });
+
+      // Wait for all processing to complete and collect results
+      const allResults = await Promise.all(processingPromises);
+      console.log('All processing complete. Results:', allResults);
+
+      // Filter out null/undefined results
+      const validResults = allResults.filter(Boolean) as OCRResult[];
+      console.log('Valid results:', validResults);
+
+      if (validResults.length > 0) {
+        const mergedResult = mergeOCRResults(validResults);
+        console.log('Merged result:', mergedResult);
+        
         onDataExtracted(mergedResult);
         toast.success('All sections processed', {
           description: 'Receipt data has been merged and extracted.'
         });
+      } else {
+        console.warn('No valid OCR results found');
+        toast.error('No valid data extracted from sections');
       }
 
+    } catch (error) {
+      console.error('Error processing all sections:', error);
+      toast.error('Failed to process sections');
     } finally {
       setIsProcessingAll(false);
     }
