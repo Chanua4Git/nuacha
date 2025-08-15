@@ -29,41 +29,27 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         setIsLoading(false);
         return;
       }
+
+      // CRITICAL FIX: Only fetch expenses when a specific family is selected
+      // This prevents the race condition where expenses from all families are loaded initially
+      if (!filters?.familyId) {
+        console.log('No family selected, not fetching expenses');
+        setExpenses([]);
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
-        console.log('Fetching expenses for user:', user.id, 'family:', filters?.familyId);
+        console.log('Fetching expenses for user:', user.id, 'family:', filters.familyId);
         
-        // Start with a basic query
+        // Start with a basic query and apply specific family filter
         let query = supabase
           .from('expenses')
-          .select('*');
+          .select('*')
+          .eq('family_id', filters.familyId);
         
-        // Apply family filter
-        if (filters?.familyId) {
-          // Specific family selected
-          console.log('Filtering by specific family:', filters.familyId);
-          query = query.eq('family_id', filters.familyId);
-        } else {
-          // No specific family or "all" families - fetch user's families first
-          const { data: families, error: familiesError } = await supabase
-            .from('families')
-            .select('id')
-            .eq('user_id', user.id);
-            
-          if (familiesError) throw familiesError;
-          
-          const familyIds = families.map(f => f.id);
-          console.log('User families:', familyIds);
-          if (familyIds.length > 0) {
-            query = query.in('family_id', familyIds);
-          } else {
-            // User has no families, return empty
-            setExpenses([]);
-            setIsLoading(false);
-            return;
-          }
-        }
+        console.log('Filtering by specific family:', filters.familyId);
         
         if (filters?.categoryId) {
           query = query.eq('category', filters.categoryId);

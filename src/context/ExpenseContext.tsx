@@ -113,7 +113,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     isLoading: categoriesLoading 
   } = useCategories(selectedFamily?.id);
 
-  // Get expenses based on the selected family
+  // Get expenses based on the selected family - only fetch when family is properly selected
   const { 
     expenses,
     isLoading: expensesLoading,
@@ -123,6 +123,15 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   } = useExpenses({ 
     familyId: selectedFamily?.id 
   });
+
+  // Add debug logging for family selection changes
+  useEffect(() => {
+    if (selectedFamily) {
+      console.log('ExpenseContext: Family selected:', selectedFamily.name, selectedFamily.id);
+    } else {
+      console.log('ExpenseContext: No family selected');
+    }
+  }, [selectedFamily]);
 
   const setSelectedFamily = (family: Family | null) => {
     selectedFamilyRef.current = family;
