@@ -103,7 +103,11 @@ const App = () => {
                         <Reports />
                       </ProtectedRoute>
                     } />
-                    <Route path="/budget" element={<Budget />} />
+                    <Route path="/budget" element={
+                      <ProtectedRoute>
+                        <Budget />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/demo/budget" element={<DemoBudget />} />
                     <Route path="/options" element={
                       <ProtectedRoute>
