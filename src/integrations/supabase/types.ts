@@ -1398,6 +1398,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_duplicate_families: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_duplicate_budget_categories: {
         Args: Record<PropertyKey, never>
         Returns: undefined
