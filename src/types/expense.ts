@@ -64,6 +64,7 @@ export interface Expense {
   replacementFrequency?: number; // in days
   nextReplacementDate?: string;
   receiptUrl?: string;
+  receiptImageUrl?: string; // Direct link to receipt image
   taxAmount?: number;
   isTaxDeductible?: boolean;
   paymentMethod?: string;

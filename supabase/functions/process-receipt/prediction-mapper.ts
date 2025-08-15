@@ -1,6 +1,7 @@
 
 import { MindeeOCRResult } from './types.ts';
 import { processLineItems } from './line-items.ts';
+import { validateAndCorrectOcrDate } from './date-validation.ts';
 
 export function mapPredictionToResult(prediction: any, document: any): MindeeOCRResult {
   // Calculate overall confidence
@@ -14,6 +15,24 @@ export function mapPredictionToResult(prediction: any, document: any): MindeeOCR
     ? confidenceScores.reduce((sum, val) => sum + val, 0) / confidenceScores.length 
     : 0.5;
 
+  // Enhanced date processing with validation
+  const rawDate = prediction.date?.value;
+  let processedDate = rawDate;
+  let dateConfidence = prediction.date?.confidence || 0;
+  
+  // Validate and correct common OCR date mistakes
+  if (rawDate) {
+    const correctedDate = validateAndCorrectOcrDate(rawDate);
+    if (correctedDate.correctedDate) {
+      processedDate = correctedDate.correctedDate;
+      dateConfidence = Math.min(dateConfidence, correctedDate.confidence);
+      
+      if (correctedDate.wasCorrected) {
+        console.log('📅 Date corrected:', { original: rawDate, corrected: processedDate });
+      }
+    }
+  }
+
   // Process line items from v5 format
   const lineItems = processLineItems(prediction.line_items || []);
   
@@ -24,8 +43,8 @@ export function mapPredictionToResult(prediction: any, document: any): MindeeOCR
       confidence: prediction.total_amount?.confidence
     },
     date: {
-      value: prediction.date?.value,
-      confidence: prediction.date?.confidence
+      value: processedDate,
+      confidence: dateConfidence
     },
     supplier: {
       value: prediction.supplier_name?.value || prediction.supplier?.value,
@@ -59,7 +78,7 @@ export function mapPredictionToResult(prediction: any, document: any): MindeeOCR
       confidence: prediction.receipt_number.confidence || 0
     } : undefined,
     transactionTime: prediction.time ? {
-      value: new Date(`${prediction.date?.value || ''} ${prediction.time.value}`),
+      value: new Date(`${processedDate || ''} ${prediction.time.value}`),
       confidence: prediction.time.confidence || 0
     } : undefined,
     currency: prediction.currency?.value,

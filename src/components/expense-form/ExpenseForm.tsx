@@ -14,15 +14,30 @@ import RecurringDateSelector, { DateMode, RecurrencePattern } from './RecurringD
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
+import { uploadReceiptToOrganizedStorage } from '@/utils/receipt/enhancedStorage';
 import PayrollLinkSection, { PayrollLinkState } from './PayrollLinkSection';
 import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import { Camera, Image, Images } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
+  
+  // Get current user for storage organization
+  const [user, setUser] = useState<any>(null);
+  
+  // Get user info on component mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -181,8 +196,21 @@ const ExpenseForm = () => {
 
     try {
       let receiptUrl: string | undefined;
-      if (receiptImage) {
-        receiptUrl = imagePreview || undefined;
+      if (receiptImage && user) {
+        // Use organized storage for better management
+        const storageMetadata = {
+          familyId: selectedFamily?.id || '',
+          categoryName: category || 'uncategorized',
+          description: description,
+          amount: parseFloat(amount),
+          date: datesToProcess[0]
+        };
+        
+        receiptUrl = await uploadReceiptToOrganizedStorage(
+          receiptImage, 
+          user.id, 
+          storageMetadata
+        );
       }
 
       const createdExpenses = [];
@@ -245,6 +273,7 @@ const ExpenseForm = () => {
           replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
           nextReplacementDate,
           receiptUrl,
+          receiptImageUrl: receiptUrl, // Store direct image URL for easy access
           expenseType,
           // Extra fields supported by backend; types may not include them, so they are passed-through
           paidOnDate: paidOn,
@@ -371,8 +400,22 @@ const ExpenseForm = () => {
             />
           )}
 
+          {/* Display receipt image preview */}
+          {imagePreview && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Receipt Image</label>
+              <div className="border rounded-lg overflow-hidden">
+                <img 
+                  src={imagePreview} 
+                  alt="Receipt preview"
+                  className="w-full max-h-[300px] object-contain bg-gray-50"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Detailed Receipt View */}
-          {ocrResult && imagePreview && (
+          {ocrResult && (
             <div className="space-y-2">
               <Button
                 type="button"

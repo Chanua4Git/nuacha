@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { MindeeResponse } from './types';
 import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 import { CategoryWithCamelCase } from '@/types/expense';
+import { validateAndCorrectDate, showDateValidationWarning } from './dateProcessing';
 
 export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
   try {
@@ -149,11 +150,26 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
     });
   }
 
+  // Enhanced date processing with validation
+  let processedDate: Date | undefined;
+  let dateConfidence = ocrResponse.date?.confidence || 0;
+  
+  if (ocrResponse.date?.value) {
+    const dateValidation = validateAndCorrectDate(ocrResponse.date.value);
+    if (dateValidation.isValid && dateValidation.correctedDate) {
+      processedDate = dateValidation.correctedDate;
+      dateConfidence = Math.min(dateConfidence, dateValidation.confidence);
+      
+      // Show validation warnings to user
+      showDateValidationWarning(dateValidation);
+    }
+  }
+
   // Enhanced mapping to include all available data
   return {
     // Basic fields - prioritize values from the store details if available
     amount: ocrResponse.amount?.value || (ocrResponse.total?.amount) || '',
-    date: ocrResponse.date?.value ? new Date(ocrResponse.date.value) : undefined,
+    date: processedDate,
     description: ocrResponse.storeDetails?.name || ocrResponse.supplier?.value || 
       (ocrResponse.lineItems && ocrResponse.lineItems.length > 0 ? ocrResponse.lineItems[0].description : 'Purchase'),
     place: ocrResponse.storeDetails?.address || ocrResponse.supplier?.value || '',
@@ -174,7 +190,7 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
       overall: ocrResponse.confidence_summary.overall,
       line_items: ocrResponse.confidence_summary.line_items,
       total: ocrResponse.confidence_summary.total,
-      date: ocrResponse.confidence_summary.date,
+      date: dateConfidence, // Use processed date confidence
       merchant: ocrResponse.confidence_summary.merchant
     } : undefined
   };
