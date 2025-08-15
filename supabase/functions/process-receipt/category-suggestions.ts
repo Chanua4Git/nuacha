@@ -130,11 +130,11 @@ function suggestCategoryForItem(
     vendorName.toLowerCase().includes(vendor)
   );
 
-  // Enhanced keyword mapping with brand recognition and fuzzy matching
+    // Enhanced keyword mapping with brand recognition and fuzzy matching
   const keywordMap: { [key: string]: string[] } = {
     // Food & Groceries - Enhanced with brand names and common terms
-    'grocery': ['groceries', 'food'],
-    'groceries': ['groceries', 'food'],
+    'grocery': ['groceries'],
+    'groceries': ['groceries'],
     'produce': ['fresh-produce', 'groceries'],
     'fruit': ['fresh-produce', 'groceries'],
     'fruits': ['fresh-produce', 'groceries'],
@@ -484,7 +484,6 @@ function suggestCategoryForItem(
   if (isGroceryVendor) {
     const groceryCategory = categories.find(cat => 
       cat.name.toLowerCase().includes('groceries') ||
-      cat.name.toLowerCase().includes('food') ||
       cat.id === 'groceries'
     );
     
