@@ -10,6 +10,11 @@ interface SAHMBudgetData {
     dependents: number;
     email: string;
   };
+  income: {
+    primaryIncome: { amount: number; frequency: string; source: string; };
+    secondaryIncome: { amount: number; frequency: string; source: string; };
+    otherIncome: { amount: number; frequency: string; source: string; };
+  };
   needs: Record<string, number>;
   wants: Record<string, number>;
   savings: Record<string, number>;
@@ -28,6 +33,20 @@ export const useSAHMBudgetSubmission = () => {
       const totalSavings = Object.values(budgetData.savings).reduce((sum, value) => sum + value, 0);
       const totalBudget = totalNeeds + totalWants + totalSavings;
 
+      // Calculate total monthly income (convert all to monthly)
+      const convertToMonthly = (amount: number, frequency: string): number => {
+        switch (frequency) {
+          case 'weekly': return amount * 4.33;
+          case 'yearly': return amount / 12;
+          default: return amount; // monthly
+        }
+      };
+
+      const totalMonthlyIncome = 
+        convertToMonthly(budgetData.income.primaryIncome.amount, budgetData.income.primaryIncome.frequency) +
+        convertToMonthly(budgetData.income.secondaryIncome.amount, budgetData.income.secondaryIncome.frequency) +
+        convertToMonthly(budgetData.income.otherIncome.amount, budgetData.income.otherIncome.frequency);
+
       const submission = {
         name: budgetData.aboutYou.name || null,
         email: budgetData.aboutYou.email,
@@ -43,6 +62,11 @@ export const useSAHMBudgetSubmission = () => {
         total_savings: totalSavings,
         total_budget: totalBudget,
         user_agent: navigator.userAgent,
+        // Store income data in additional_info for now
+        additional_info: JSON.stringify({
+          income: budgetData.income,
+          totalMonthlyIncome: totalMonthlyIncome
+        })
       };
 
       const { error } = await supabase
@@ -62,7 +86,14 @@ export const useSAHMBudgetSubmission = () => {
         email: budgetData.aboutYou.email,
         name: budgetData.aboutYou.name || 'SAHM Budget User',
         interest_type: 'sahm_budget_builder',
-        additional_info: `Location: ${budgetData.aboutYou.location || 'Not provided'}, Household: ${budgetData.aboutYou.householdSize}, Dependents: ${budgetData.aboutYou.dependents}, Total Budget: $${totalBudget}`,
+        additional_info: JSON.stringify({
+          location: budgetData.aboutYou.location || 'Not provided',
+          household: budgetData.aboutYou.householdSize,
+          dependents: budgetData.aboutYou.dependents,
+          totalBudget: totalBudget,
+          totalMonthlyIncome: totalMonthlyIncome,
+          income: budgetData.income
+        }),
       };
 
       await supabase

@@ -20,6 +20,11 @@ interface BudgetData {
     dependents: number;
     email: string;
   };
+  income: {
+    primaryIncome: { amount: number; frequency: string; source: string; };
+    secondaryIncome: { amount: number; frequency: string; source: string; };
+    otherIncome: { amount: number; frequency: string; source: string; };
+  };
   needs: Record<string, number>;
   wants: Record<string, number>;
   savings: Record<string, number>;
@@ -44,7 +49,14 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
       'Personal hygiene': 'basic toiletries for family',
       'Dining out': 'family meals, treats for the kids',
       'Emergency expenses': 'unexpected costs that always come up',
-      'Savings': 'emergency fund, kids\' future, family goals'
+      'Savings': 'emergency fund, kids\' future, family goals',
+      'Health insurance': 'medical coverage for the family',
+      'Home insurance': 'property and contents insurance',
+      'Pest control': 'monthly pest control service',
+      'Employee NIS Contributions': 'NIS for domestic employees (helper, nanny)',
+      'Medical supplies': 'medications, first aid, health items',
+      'Household repairs': 'fixing things around the house',
+      'Toiletries': 'soap, shampoo, toothpaste, etc.'
     };
     return examples[categoryName] || `monthly ${categoryName.toLowerCase()} expenses`;
   };
@@ -85,18 +97,34 @@ export default function SAHMBudgetBuilder() {
       dependents: 0,
       email: ''
     },
+    income: {
+      primaryIncome: { amount: 0, frequency: 'monthly', source: '' },
+      secondaryIncome: { amount: 0, frequency: 'monthly', source: '' },
+      otherIncome: { amount: 0, frequency: 'monthly', source: '' }
+    },
     needs: {},
     wants: {},
     savings: {},
     notes: ''
   });
 
-  const needsCategories = getCategoriesByGroup('needs').slice(0, 12); // Focus on most relevant
+  // SAHM priority needs with specific categories requested
+  const sahmPriorityNeeds = ['groceries', 'childcare', 'health-insurance', 'home-insurance', 
+    'pest-control', 'electricity', 'fuel', 'school-fees', 'medical-supplies', 
+    'household-repairs', 'emergency-expenses', 'toiletries'];
+  
+  const needsCategories = getCategoriesByGroup('needs').filter(cat => 
+    sahmPriorityNeeds.includes(cat.id)
+  ).concat([
+    // Add Employee NIS as a new category
+    { id: 'employee-nis', name: 'Employee NIS Contributions', color: '#EF4444', group: 'needs' as const }
+  ]);
   const wantsCategories = getCategoriesByGroup('wants').slice(0, 8);
   const savingsCategories = getCategoriesByGroup('savings').slice(0, 4);
 
   const steps = [
     { title: 'About You', description: 'Tell us about your household' },
+    { title: 'Income', description: 'Your household income sources' },
     { title: 'Needs', description: 'Essential monthly expenses' },
     { title: 'Wants', description: 'Lifestyle and discretionary spending' },
     { title: 'Savings', description: 'Future planning and goals' },
@@ -116,6 +144,16 @@ export default function SAHMBudgetBuilder() {
     setBudgetData(prev => ({
       ...prev,
       aboutYou: { ...prev.aboutYou, [field]: value }
+    }));
+  };
+
+  const updateIncome = (type: keyof BudgetData['income'], field: string, value: string | number) => {
+    setBudgetData(prev => ({
+      ...prev,
+      income: { 
+        ...prev.income, 
+        [type]: { ...prev.income[type], [field]: value }
+      }
     }));
   };
 
@@ -149,7 +187,7 @@ export default function SAHMBudgetBuilder() {
     const success = await submitBudget(budgetData);
     if (success) {
       // Could redirect to a thank you page or show success state
-      setCurrentStep(4); // Ensure we're on the review step
+      setCurrentStep(5); // Ensure we're on the review step (now step 5, not 4)
     }
   };
 
@@ -228,7 +266,144 @@ export default function SAHMBudgetBuilder() {
           </div>
         );
 
-      case 1: // Needs
+      case 1: // Income
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold">Household Income 💰</h3>
+              <p className="text-muted-foreground">
+                Tell us about your family's income sources. This helps create a realistic budget.
+              </p>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Primary Income */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Primary Household Income</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Amount</Label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={budgetData.income.primaryIncome.amount || ''}
+                        onChange={(e) => updateIncome('primaryIncome', 'amount', parseFloat(e.target.value) || 0)}
+                        placeholder="5000"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={budgetData.income.primaryIncome.frequency}
+                      onChange={(e) => updateIncome('primaryIncome', 'frequency', e.target.value)}
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Input
+                      placeholder="Main job, business, etc."
+                      value={budgetData.income.primaryIncome.source}
+                      onChange={(e) => updateIncome('primaryIncome', 'source', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary Income */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Partner/Secondary Income (optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Amount</Label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={budgetData.income.secondaryIncome.amount || ''}
+                        onChange={(e) => updateIncome('secondaryIncome', 'amount', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={budgetData.income.secondaryIncome.frequency}
+                      onChange={(e) => updateIncome('secondaryIncome', 'frequency', e.target.value)}
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Input
+                      placeholder="Partner job, side business"
+                      value={budgetData.income.secondaryIncome.source}
+                      onChange={(e) => updateIncome('secondaryIncome', 'source', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Other Income */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Other Income (optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Amount</Label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={budgetData.income.otherIncome.amount || ''}
+                        onChange={(e) => updateIncome('otherIncome', 'amount', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={budgetData.income.otherIncome.frequency}
+                      onChange={(e) => updateIncome('otherIncome', 'frequency', e.target.value)}
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Input
+                      placeholder="Child support, investments, freelance"
+                      value={budgetData.income.otherIncome.source}
+                      onChange={(e) => updateIncome('otherIncome', 'source', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2: // Needs
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -259,7 +434,7 @@ export default function SAHMBudgetBuilder() {
           </div>
         );
 
-      case 2: // Wants
+      case 3: // Wants
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -290,7 +465,7 @@ export default function SAHMBudgetBuilder() {
           </div>
         );
 
-      case 3: // Savings
+      case 4: // Savings
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -330,7 +505,7 @@ export default function SAHMBudgetBuilder() {
           </div>
         );
 
-      case 4: // Review
+      case 5: // Review
         const totalNeeds = getTotalByCategory('needs');
         const totalWants = getTotalByCategory('wants');
         const totalSavings = getTotalByCategory('savings');
