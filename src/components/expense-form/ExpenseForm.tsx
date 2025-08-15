@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import { uploadReceiptToOrganizedStorage } from '@/utils/receipt/enhancedStorage';
+import { supabase } from '@/lib/supabase';
 import PayrollLinkSection, { PayrollLinkState } from './PayrollLinkSection';
 import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
@@ -22,7 +23,6 @@ import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
 import { Camera, Image, Images } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useEffect } from 'react';
 
 const ExpenseForm = () => {
@@ -250,6 +250,25 @@ const ExpenseForm = () => {
         }
       }
 
+      // Get budget category mapping
+      let budgetCategoryId: string | null = null;
+      if (user) {
+        try {
+          const { data, error } = await supabase.rpc('get_or_create_budget_category', {
+            user_uuid: user.id,
+            family_uuid: selectedFamily.id,
+            category_name: category
+          });
+          
+          if (!error && data) {
+            budgetCategoryId = data;
+            console.log('✅ Budget category mapped:', { category, budgetCategoryId });
+          }
+        } catch (error) {
+          console.error('❌ Failed to map budget category:', error);
+        }
+      }
+
       // Create expenses for each date
       for (const date of datesToProcess) {
         const formattedDate = format(date, 'yyyy-MM-dd');
@@ -276,6 +295,7 @@ const ExpenseForm = () => {
           receiptUrl,
           receiptImageUrl: receiptUrl || undefined, // Store direct image URL for easy access
           expenseType,
+          budgetCategoryId, // Now properly mapped to budget categories
           // Extra fields supported by backend; types may not include them, so they are passed-through
           paidOnDate: paidOn,
           payrollPeriodId: payrollPeriodId,

@@ -154,12 +154,28 @@ export const ExpenseCategoriesManager = () => {
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
     console.log(`Processing expense: ${expense.id}, category: ${expense.category}, budgetCategoryId: ${expense.budgetCategoryId}`);
     
-    let category = budgetCategories.find(cat => cat.id === expense.category);
+    // First priority: use budget_category_id if available
+    let category = expense.budgetCategoryId ? 
+      budgetCategories.find(cat => cat.id === expense.budgetCategoryId) : null;
+    
+    // Second priority: match by category name (exact)
     if (!category) {
-      category = budgetCategories.find(cat => cat.name === expense.category);
+      category = budgetCategories.find(cat => cat.name.toLowerCase() === expense.category.toLowerCase());
     }
-    if (!category && expense.budgetCategoryId) {
-      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    
+    // Third priority: fuzzy match for common categories
+    if (!category) {
+      category = budgetCategories.find(cat => {
+        const catName = cat.name.toLowerCase();
+        const expenseCat = expense.category.toLowerCase();
+        return (
+          (catName.includes('groceries') && expenseCat.includes('groceries')) ||
+          (catName.includes('food') && expenseCat.includes('food')) ||
+          (catName.includes('household') && expenseCat.includes('household')) ||
+          (catName.includes('medical') && expenseCat.includes('medical')) ||
+          (catName.includes('transport') && expenseCat.includes('transport'))
+        );
+      });
     }
     
     console.log(`Found category:`, category);
