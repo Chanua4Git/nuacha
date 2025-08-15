@@ -116,9 +116,23 @@ function suggestCategoryForItem(
   // This is a very basic algorithm, could be improved with ML/AI
   const cleanItemDesc = item.description.toLowerCase();
 
-  // Comprehensive keyword mapping for enhanced categorization
+  // Enhanced vendor recognition for grocery stores
+  const groceryVendors = [
+    'supermarket', 'grocery', 'market', 'food', 'walmart', 'target', 'kroger', 
+    'safeway', 'whole foods', 'trader joe', 'costco', 'sam\'s club', 'publix',
+    'iga', 'foodland', 'stop & shop', 'giant', 'harris teeter', 'wegmans',
+    'aldi', 'lidl', 'fresh market', 'hi-lo', 'massey', 'penny savers',
+    'jta', 'supercentre', 'pricesmart', 'massy', 'xtra foods'
+  ];
+
+  // Check if this is a grocery store vendor - default unknown items to groceries
+  const isGroceryVendor = groceryVendors.some(vendor => 
+    vendorName.toLowerCase().includes(vendor)
+  );
+
+  // Enhanced keyword mapping with brand recognition and fuzzy matching
   const keywordMap: { [key: string]: string[] } = {
-    // Food & Groceries
+    // Food & Groceries - Enhanced with brand names and common terms
     'grocery': ['groceries', 'food'],
     'groceries': ['groceries', 'food'],
     'produce': ['fresh-produce', 'groceries'],
@@ -126,27 +140,100 @@ function suggestCategoryForItem(
     'fruits': ['fresh-produce', 'groceries'],
     'vegetable': ['fresh-produce', 'groceries'],
     'vegetables': ['fresh-produce', 'groceries'],
-    'meat': ['meat-seafood', 'groceries'],
-    'beef': ['meat-seafood', 'groceries'],
-    'chicken': ['meat-seafood', 'groceries'],
-    'fish': ['meat-seafood', 'groceries'],
-    'seafood': ['meat-seafood', 'groceries'],
+    'veggie': ['fresh-produce', 'groceries'],
+    'veggies': ['fresh-produce', 'groceries'],
+    'pineapple': ['fresh-produce', 'groceries'],
+    'grape': ['fresh-produce', 'groceries'],
+    'grapes': ['fresh-produce', 'groceries'],
+    'banana': ['fresh-produce', 'groceries'],
+    'apple': ['fresh-produce', 'groceries'],
+    'orange': ['fresh-produce', 'groceries'],
+    'lemon': ['fresh-produce', 'groceries'],
+    'lime': ['fresh-produce', 'groceries'],
+    'tomato': ['fresh-produce', 'groceries'],
+    'onion': ['fresh-produce', 'groceries'],
+    'potato': ['fresh-produce', 'groceries'],
+    'carrot': ['fresh-produce', 'groceries'],
+    'chunks': ['fresh-produce', 'groceries'],
+    'mixed': ['fresh-produce', 'groceries'],
+    
+    // Dairy & Eggs - Enhanced with brand names
     'dairy': ['dairy-eggs', 'groceries'],
     'milk': ['dairy-eggs', 'groceries'],
     'cheese': ['dairy-eggs', 'groceries'],
     'eggs': ['dairy-eggs', 'groceries'],
+    'egg': ['dairy-eggs', 'groceries'],
+    'butter': ['dairy-eggs', 'groceries'],
+    'cream': ['dairy-eggs', 'groceries'],
+    'yogurt': ['dairy-eggs', 'groceries'],
+    'yoghurt': ['dairy-eggs', 'groceries'],
+    'yog': ['dairy-eggs', 'groceries'],
+    'yoplait': ['dairy-eggs', 'groceries'],
+    'dannon': ['dairy-eggs', 'groceries'],
+    'chobani': ['dairy-eggs', 'groceries'],
+    
+    // Pantry & Condiments
     'bread': ['pantry-staples', 'groceries'],
     'rice': ['pantry-staples', 'groceries'],
     'pasta': ['pantry-staples', 'groceries'],
     'cereal': ['pantry-staples', 'groceries'],
+    'sauce': ['pantry-staples', 'groceries'],
+    'soy sauce': ['pantry-staples', 'groceries'],
+    'ketchup': ['pantry-staples', 'groceries'],
+    'mustard': ['pantry-staples', 'groceries'],
+    'mayo': ['pantry-staples', 'groceries'],
+    'oil': ['pantry-staples', 'groceries'],
+    'vinegar': ['pantry-staples', 'groceries'],
+    'salt': ['pantry-staples', 'groceries'],
+    'pepper': ['pantry-staples', 'groceries'],
+    'sugar': ['pantry-staples', 'groceries'],
+    'flour': ['pantry-staples', 'groceries'],
+    'condiment': ['pantry-staples', 'groceries'],
+    'seasoning': ['pantry-staples', 'groceries'],
+    'spice': ['pantry-staples', 'groceries'],
+    'tang': ['beverages', 'groceries'],
+    'dole': ['fresh-produce', 'groceries'],
+    
+    // Meat & Seafood
+    'meat': ['meat-seafood', 'groceries'],
+    'beef': ['meat-seafood', 'groceries'],
+    'chicken': ['meat-seafood', 'groceries'],
+    'pork': ['meat-seafood', 'groceries'],
+    'ham': ['meat-seafood', 'groceries'],
+    'bacon': ['meat-seafood', 'groceries'],
+    'sausage': ['meat-seafood', 'groceries'],
+    'fish': ['meat-seafood', 'groceries'],
+    'seafood': ['meat-seafood', 'groceries'],
+    'salmon': ['meat-seafood', 'groceries'],
+    'tuna': ['meat-seafood', 'groceries'],
+    'shrimp': ['meat-seafood', 'groceries'],
+    
+    // Frozen Foods
     'frozen': ['frozen-foods', 'groceries'],
+    'ice cream': ['frozen-foods', 'groceries'],
+    'ice pop': ['frozen-foods', 'groceries'],
+    'pop': ['frozen-foods', 'groceries'],
+    'popsicle': ['frozen-foods', 'groceries'],
+    'frozen food': ['frozen-foods', 'groceries'],
+    
+    // Beverages
     'beverage': ['beverages', 'groceries'],
     'drinks': ['beverages', 'groceries'],
     'juice': ['beverages', 'groceries'],
     'soda': ['beverages', 'groceries'],
+    'water': ['beverages', 'groceries'],
+    'coffee': ['beverages', 'groceries'],
+    'tea': ['beverages', 'groceries'],
+    'beer': ['beverages', 'groceries'],
+    'wine': ['beverages', 'groceries'],
+    
+    // Snacks & Treats
     'snack': ['snacks-treats', 'groceries'],
     'candy': ['snacks-treats', 'groceries'],
     'chips': ['snacks-treats', 'groceries'],
+    'cookies': ['snacks-treats', 'groceries'],
+    'crackers': ['snacks-treats', 'groceries'],
+    'nuts': ['snacks-treats', 'groceries'],
 
     // Personal Care & Toiletries
     'toiletries': ['toiletries', 'personal-hygiene'],
@@ -316,31 +403,96 @@ function suggestCategoryForItem(
     'investment': ['investments', 'financial']
   };
 
-  // Find if any keywords match the item description
+  // Enhanced fuzzy matching for grocery items
   let bestCategoryName = null;
   let bestConfidence = 0;
+  let matchedKeyword = null;
 
+  console.log(`Categorizing item: "${cleanItemDesc}" from vendor: "${vendorName}"`);
+
+  // Enhanced keyword matching with fuzzy logic
   for (const [keyword, categoryNames] of Object.entries(keywordMap)) {
+    let matchFound = false;
+    let matchConfidence = 0;
+
+    // Exact keyword match
     if (cleanItemDesc.includes(keyword)) {
-      // Simple confidence scoring based on how much of the item description matches the keyword
-      const confidence = keyword.length / cleanItemDesc.length;
-      if (confidence > bestConfidence) {
-        bestCategoryName = categoryNames[0]; // Just use the first category name
-        bestConfidence = confidence;
+      matchFound = true;
+      matchConfidence = keyword.length / cleanItemDesc.length;
+    }
+    // Fuzzy matching for common variations
+    else if (keyword.length >= 4) {
+      // Check for partial matches (at least 3 characters)
+      const keywordStart = keyword.substring(0, Math.min(keyword.length - 1, 4));
+      if (cleanItemDesc.includes(keywordStart)) {
+        matchFound = true;
+        matchConfidence = (keywordStart.length / cleanItemDesc.length) * 0.8; // Reduced confidence for partial match
       }
+    }
+
+    if (matchFound && matchConfidence > bestConfidence) {
+      bestCategoryName = categoryNames[0];
+      bestConfidence = matchConfidence;
+      matchedKeyword = keyword;
     }
   }
 
-  // If we found a category name match, find the category ID
+  console.log(`Best match: keyword="${matchedKeyword}", category="${bestCategoryName}", confidence=${bestConfidence}`);
+
+  // Enhanced category name matching
   if (bestCategoryName) {
-    const matchedCategory = categories.find(cat => 
-      cat.name.toLowerCase().includes(bestCategoryName!.toLowerCase())
-    );
+    let matchedCategory = null;
+    
+    // Try exact ID match first
+    matchedCategory = categories.find(cat => cat.id === bestCategoryName);
+    
+    // Try name match if no ID match
+    if (!matchedCategory) {
+      matchedCategory = categories.find(cat => {
+        const catName = cat.name.toLowerCase();
+        const searchName = bestCategoryName!.toLowerCase();
+        return catName.includes(searchName) || searchName.includes(catName);
+      });
+    }
+    
+    // Try parent category search for subcategories
+    if (!matchedCategory) {
+      matchedCategory = categories.find(cat => {
+        const catName = cat.name.toLowerCase();
+        // Look for broader category matches
+        return (
+          (bestCategoryName!.includes('groceries') && catName.includes('groceries')) ||
+          (bestCategoryName!.includes('produce') && catName.includes('produce')) ||
+          (bestCategoryName!.includes('dairy') && catName.includes('dairy')) ||
+          (bestCategoryName!.includes('meat') && catName.includes('meat')) ||
+          (bestCategoryName!.includes('frozen') && catName.includes('frozen')) ||
+          (bestCategoryName!.includes('snack') && catName.includes('snack'))
+        );
+      });
+    }
     
     if (matchedCategory) {
+      console.log(`Found category: ${matchedCategory.name} (${matchedCategory.id})`);
       return {
         categoryId: matchedCategory.id,
-        confidence: Math.min(bestConfidence + 0.3, 0.75) // Cap at 0.75 for keyword matches
+        confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
+      };
+    }
+  }
+
+  // Smart fallback for grocery stores - default to groceries instead of miscellaneous
+  if (isGroceryVendor) {
+    const groceryCategory = categories.find(cat => 
+      cat.name.toLowerCase().includes('groceries') ||
+      cat.name.toLowerCase().includes('food') ||
+      cat.id === 'groceries'
+    );
+    
+    if (groceryCategory) {
+      console.log(`Defaulting to groceries for vendor: ${vendorName}`);
+      return {
+        categoryId: groceryCategory.id,
+        confidence: 0.6 // Moderate confidence for vendor-based categorization
       };
     }
   }
@@ -352,6 +504,7 @@ function suggestCategoryForItem(
   );
 
   if (genericCategory) {
+    console.log(`Falling back to generic category: ${genericCategory.name}`);
     return {
       categoryId: genericCategory.id,
       confidence: 0.3 // Low confidence for generic category
@@ -360,12 +513,14 @@ function suggestCategoryForItem(
 
   // If all else fails, return the first category (better than nothing)
   if (categories.length > 0) {
+    console.log(`Using first available category: ${categories[0].name}`);
     return {
       categoryId: categories[0].id,
       confidence: 0.1 // Very low confidence
     };
   }
 
+  console.log('No category found');
   return null;
 }
 
