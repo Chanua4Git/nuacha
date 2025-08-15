@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
-import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useExpense } from '@/context/ExpenseContext';
 import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
@@ -83,10 +83,13 @@ export default function ExpenseManager() {
   console.log('Categories by group:', categoriesByGroup);
   console.log('Budget categories found:', budgetCategories.length);
   
-  // Fetch expenses based on selected family
-  const { expenses, isLoading: expensesLoading } = useExpenses({
-    familyId: selectedFamilyId === 'all' ? undefined : selectedFamilyId
-  });
+  // Get expenses from context - when 'all' is selected, we'll filter later
+  const { expenses: allExpenses, isLoading: expensesLoading } = useExpense();
+  
+  // Filter expenses based on selected family
+  const expenses = selectedFamilyId === 'all' 
+    ? allExpenses 
+    : allExpenses.filter(expense => expense.familyId === selectedFamilyId);
 
   useEffect(() => {
     // Note: Budget categories are now managed through the unified category system

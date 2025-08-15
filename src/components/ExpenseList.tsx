@@ -15,12 +15,10 @@ import { CalendarIcon, Filter, X, Trash2, Copy, Search } from 'lucide-react';
 import CategorySelector from './CategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
-import { useExpenses } from '@/hooks/useExpenses';
 import { toast } from 'sonner';
 
 const ExpenseList = () => {
-  const { filteredExpenses } = useExpense();
-  const { expenses: allExpenses, deleteExpense } = useExpenses();
+  const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [showFilters, setShowFilters] = useState(false);
