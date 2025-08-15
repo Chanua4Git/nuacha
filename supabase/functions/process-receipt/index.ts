@@ -120,7 +120,25 @@ serve(async (req) => {
       );
     }
     
+    console.log('📊 Starting OCR processing...');
     const result = await mindeeClient(mindeeApiKey, imageData);
+    
+    // Debug logging for date validation
+    console.log('🔍 Raw OCR result from Mindee:', {
+      date: result.date,
+      amount: result.amount,
+      description: result.description,
+      place: result.place,
+      supplier: result.supplier,
+      confidence: result.confidence
+    });
+    
+    // Implement fallback date handling if date is undefined
+    if (!result.date && imageData) {
+      console.log('⚠️ Date is undefined, using current timestamp as fallback');
+      result.date = new Date();
+      console.log('📅 Fallback date set to:', result.date);
+    }
     
     if ('error' in result) {
       console.error('🚨 Error processing receipt:', result.error);

@@ -3,6 +3,69 @@ import { MindeeOCRResult } from './types.ts';
 import { processLineItems } from './line-items.ts';
 import { validateAndCorrectOcrDate } from './date-validation.ts';
 
+// Enhanced date validation with fallback handling
+function validateAndCorrectDate(dateString: string | undefined, imageMetadata?: { fileName?: string; timestamp?: number }) {
+  console.log('📅 Processing date from OCR:', dateString);
+  
+  if (!dateString) {
+    console.log('⚠️ No date string provided, using current date as fallback');
+    return {
+      correctedDate: new Date(),
+      confidence: 0.2,
+      issues: ['No date detected in receipt']
+    };
+  }
+
+  try {
+    // Try to parse the date string
+    const parsedDate = new Date(dateString);
+    
+    if (isNaN(parsedDate.getTime())) {
+      console.log('⚠️ Invalid date format, using current date as fallback');
+      return {
+        correctedDate: new Date(),
+        confidence: 0.2,
+        issues: ['Invalid date format detected']
+      };
+    }
+
+    // Validate the date is reasonable
+    const now = new Date();
+    const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+    const oneMonthFromNow = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    
+    let confidence = 0.8;
+    const issues: string[] = [];
+
+    if (parsedDate < fiveYearsAgo) {
+      console.log('⚠️ Date seems too old, reducing confidence');
+      confidence = 0.4;
+      issues.push('Date seems very old');
+    }
+
+    if (parsedDate > oneMonthFromNow) {
+      console.log('⚠️ Date is in the future, reducing confidence');
+      confidence = 0.3;
+      issues.push('Date is in the future');
+    }
+
+    console.log(`✅ Date validated: ${parsedDate.toISOString()}, confidence: ${confidence}`);
+    
+    return {
+      correctedDate: parsedDate,
+      confidence,
+      issues
+    };
+  } catch (error) {
+    console.error('❌ Error processing date:', error);
+    return {
+      correctedDate: new Date(),
+      confidence: 0.1,
+      issues: ['Date processing error']
+    };
+  }
+}
+
 export function mapPredictionToResult(prediction: any, document: any): MindeeOCRResult {
   // Calculate overall confidence
   const confidenceScores = [
@@ -15,23 +78,18 @@ export function mapPredictionToResult(prediction: any, document: any): MindeeOCR
     ? confidenceScores.reduce((sum, val) => sum + val, 0) / confidenceScores.length 
     : 0.5;
 
-  // Enhanced date processing with validation
-  const rawDate = prediction.date?.value;
-  let processedDate = rawDate;
-  let dateConfidence = prediction.date?.confidence || 0;
+  // Enhanced date processing with validation and fallback
+  console.log('🔍 Processing date from prediction:', prediction.date?.value);
+  const dateValidation = validateAndCorrectDate(prediction.date?.value);
+  const processedDate = dateValidation.correctedDate;
+  const dateConfidence = dateValidation.confidence;
   
-  // Validate and correct common OCR date mistakes
-  if (rawDate) {
-    const correctedDate = validateAndCorrectOcrDate(rawDate);
-    if (correctedDate.correctedDate) {
-      processedDate = correctedDate.correctedDate;
-      dateConfidence = Math.min(dateConfidence, correctedDate.confidence);
-      
-      if (correctedDate.wasCorrected) {
-        console.log('📅 Date corrected:', { original: rawDate, corrected: processedDate });
-      }
-    }
-  }
+  console.log('📅 Date processing result:', {
+    original: prediction.date?.value,
+    processed: processedDate,
+    confidence: dateConfidence,
+    issues: dateValidation.issues
+  });
 
   // Process line items from v5 format
   const lineItems = processLineItems(prediction.line_items || []);

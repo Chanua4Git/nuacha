@@ -4,6 +4,7 @@ import { handleReceiptUpload } from './uploadHandling';
 import { handleOCRError, handleUnexpectedError } from './errorHandling';
 import { validateOCRResult } from './validation';
 import { processReceiptWithEdgeFunction } from './ocrProcessing';
+import { preprocessReceiptImage, checkImageQuality } from './imagePreprocessing';
 import { toast } from 'sonner';
 
 export async function processReceiptImage(file: File): Promise<OCRResult> {
@@ -13,7 +14,34 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
       description: "We're extracting the details with care."
     });
     
-    const receiptUrl = await handleReceiptUpload(file);
+    // Check image quality and preprocess if needed
+    let processedFile = file;
+    try {
+      const imageAnalysis = await checkImageQuality(file);
+      
+      if (imageAnalysis.recommendPreprocessing) {
+        console.log('🔄 Preprocessing image for better OCR...');
+        processedFile = await preprocessReceiptImage(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.92,
+          enableEnhancement: true
+        });
+      }
+      
+      if (imageAnalysis.isLongReceipt) {
+        console.log('📏 Long receipt detected, using enhanced processing');
+        toast.loading("Processing long receipt...", {
+          description: "This might take a moment for better accuracy.",
+          id: loadingToast
+        });
+      }
+    } catch (preprocessError) {
+      console.warn('⚠️ Image preprocessing failed, using original:', preprocessError);
+      // Continue with original file
+    }
+    
+    const receiptUrl = await handleReceiptUpload(processedFile);
     if (!receiptUrl) {
       toast.dismiss(loadingToast);
       return {

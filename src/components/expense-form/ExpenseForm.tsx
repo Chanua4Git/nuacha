@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
+import ReceiptImageDisplay from './ReceiptImageDisplay';
 import { Camera, Image, Images } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useEffect } from 'react';
@@ -273,7 +274,7 @@ const ExpenseForm = () => {
           replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
           nextReplacementDate,
           receiptUrl,
-          receiptImageUrl: receiptUrl, // Store direct image URL for easy access
+          receiptImageUrl: receiptUrl || undefined, // Store direct image URL for easy access
           expenseType,
           // Extra fields supported by backend; types may not include them, so they are passed-through
           paidOnDate: paidOn,
@@ -402,16 +403,13 @@ const ExpenseForm = () => {
 
           {/* Display receipt image preview */}
           {imagePreview && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Receipt Image</label>
-              <div className="border rounded-lg overflow-hidden">
-                <img 
-                  src={imagePreview} 
-                  alt="Receipt preview"
-                  className="w-full max-h-[300px] object-contain bg-gray-50"
-                />
-              </div>
-            </div>
+            <ReceiptImageDisplay
+              imageUrl={imagePreview}
+              imagePreview={imagePreview}
+              description="Receipt Preview"
+              confidence={ocrResult?.confidence}
+              onViewReceipt={() => setShowDetailedReceiptView(true)}
+            />
           )}
 
           {/* Detailed Receipt View */}
