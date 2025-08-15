@@ -74,9 +74,19 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'groceries', name: 'Groceries', color: '#22C55E', group: 'needs' },
-      { id: 'pet-food-supplies', name: 'Pet food & supplies', color: '#22C55E', group: 'needs' },
+      { id: 'fresh-produce', name: 'Fresh produce', color: '#22C55E', group: 'needs' },
+      { id: 'meat-seafood', name: 'Meat & seafood', color: '#22C55E', group: 'needs' },
+      { id: 'dairy-eggs', name: 'Dairy & eggs', color: '#22C55E', group: 'needs' },
+      { id: 'pantry-staples', name: 'Pantry staples', color: '#22C55E', group: 'needs' },
+      { id: 'frozen-foods', name: 'Frozen foods', color: '#22C55E', group: 'needs' },
+      { id: 'beverages', name: 'Beverages', color: '#22C55E', group: 'needs' },
+      { id: 'snacks-treats', name: 'Snacks & treats', color: '#22C55E', group: 'wants' },
+      { id: 'cleaning-supplies', name: 'Cleaning supplies', color: '#22C55E', group: 'needs' },
+      { id: 'kitchen-supplies', name: 'Kitchen supplies', color: '#22C55E', group: 'needs' },
+      { id: 'bathroom-supplies', name: 'Bathroom supplies', color: '#22C55E', group: 'needs' },
       { id: 'toiletries', name: 'Toiletries', color: '#22C55E', group: 'needs' },
-      { id: 'paper-goods', name: 'Paper goods', color: '#22C55E', group: 'needs' }
+      { id: 'paper-goods', name: 'Paper goods', color: '#22C55E', group: 'needs' },
+      { id: 'pet-food-supplies', name: 'Pet food & supplies', color: '#22C55E', group: 'needs' }
     ]
   },
 
@@ -115,17 +125,25 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 7. Personal Care & Wellness (Wants)
+  // 7. Personal Care & Wellness (Mixed)
   {
     id: 'personal-care',
     name: 'Personal Care & Wellness',
     color: '#EC4899',
-    group: 'wants',
+    group: 'needs',
     children: [
+      { id: 'personal-hygiene', name: 'Personal hygiene', color: '#EC4899', group: 'needs' },
+      { id: 'skincare', name: 'Skincare', color: '#EC4899', group: 'wants' },
+      { id: 'makeup-cosmetics', name: 'Makeup & cosmetics', color: '#EC4899', group: 'wants' },
       { id: 'haircuts-grooming', name: 'Haircuts & grooming', color: '#EC4899', group: 'wants' },
+      { id: 'nail-care', name: 'Nail care', color: '#EC4899', group: 'wants' },
       { id: 'spa-massage', name: 'Spa & massage', color: '#EC4899', group: 'wants' },
       { id: 'gym-membership', name: 'Gym membership', color: '#EC4899', group: 'wants' },
-      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' }
+      { id: 'fitness-equipment', name: 'Fitness equipment', color: '#EC4899', group: 'wants' },
+      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' },
+      { id: 'dental-care', name: 'Dental care products', color: '#EC4899', group: 'needs' },
+      { id: 'feminine-products', name: 'Feminine products', color: '#EC4899', group: 'needs' },
+      { id: 'men-grooming', name: 'Men\'s grooming', color: '#EC4899', group: 'needs' }
     ]
   },
 
@@ -192,7 +210,43 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 12. Miscellaneous (Various)
+  // 12. Clothing & Fashion (Mixed)
+  {
+    id: 'clothing-fashion',
+    name: 'Clothing & Fashion',
+    color: '#A855F7',
+    group: 'needs',
+    children: [
+      { id: 'everyday-clothing', name: 'Everyday clothing', color: '#A855F7', group: 'needs' },
+      { id: 'work-attire', name: 'Work attire', color: '#A855F7', group: 'needs' },
+      { id: 'undergarments-socks', name: 'Undergarments & socks', color: '#A855F7', group: 'needs' },
+      { id: 'shoes-footwear', name: 'Shoes & footwear', color: '#A855F7', group: 'needs' },
+      { id: 'outerwear-coats', name: 'Outerwear & coats', color: '#A855F7', group: 'needs' },
+      { id: 'formal-wear', name: 'Formal wear', color: '#A855F7', group: 'wants' },
+      { id: 'accessories', name: 'Accessories', color: '#A855F7', group: 'wants' },
+      { id: 'luxury-fashion', name: 'Luxury fashion', color: '#A855F7', group: 'wants' }
+    ]
+  },
+
+  // 13. Technology & Electronics (Mixed)
+  {
+    id: 'technology-electronics',
+    name: 'Technology & Electronics',
+    color: '#3B82F6',
+    group: 'wants',
+    children: [
+      { id: 'mobile-phone', name: 'Mobile phone & service', color: '#3B82F6', group: 'needs' },
+      { id: 'internet-service', name: 'Internet service', color: '#3B82F6', group: 'needs' },
+      { id: 'computer-laptop', name: 'Computer & laptop', color: '#3B82F6', group: 'wants' },
+      { id: 'software-apps', name: 'Software & apps', color: '#3B82F6', group: 'wants' },
+      { id: 'electronics-gadgets', name: 'Electronics & gadgets', color: '#3B82F6', group: 'wants' },
+      { id: 'home-appliances', name: 'Home appliances', color: '#3B82F6', group: 'needs' },
+      { id: 'tech-repairs', name: 'Tech repairs', color: '#3B82F6', group: 'needs' },
+      { id: 'gaming', name: 'Gaming', color: '#3B82F6', group: 'wants' }
+    ]
+  },
+
+  // 14. Miscellaneous (Various)
   {
     id: 'miscellaneous',
     name: 'Miscellaneous',
@@ -202,12 +256,14 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'emergency-expenses', name: 'Emergency expenses', color: '#64748B', group: 'needs' },
       { id: 'donations-charity', name: 'Donations & charity', color: '#64748B', group: 'wants' },
       { id: 'legal-fees', name: 'Legal fees', color: '#64748B', group: 'needs' },
+      { id: 'professional-services', name: 'Professional services', color: '#64748B', group: 'needs' },
       { id: 'unplanned-purchases', name: 'Unplanned purchases', color: '#64748B', group: 'wants' },
-      { id: 'pet-care', name: 'Pet Care', color: '#64748B', group: 'wants' }
+      { id: 'pet-care', name: 'Pet Care', color: '#64748B', group: 'wants' },
+      { id: 'other-expenses', name: 'Other expenses', color: '#64748B', group: 'wants' }
     ]
   },
 
-  // 13. Wants (Lifestyle) - Separate lifestyle category
+  // 15. Wants (Lifestyle) - Separate lifestyle category
   {
     id: 'wants-lifestyle',
     name: 'Wants (Lifestyle)',
@@ -215,17 +271,6 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'wants',
     children: [
       { id: 'lifestyle-general', name: 'General lifestyle wants', color: '#F97316', group: 'wants' }
-    ]
-  },
-
-  // 14. Travel (Main Category)
-  {
-    id: 'travel-main',
-    name: 'Travel',
-    color: '#06B6D4',
-    group: 'wants',
-    children: [
-      { id: 'travel-general', name: 'General travel expenses', color: '#06B6D4', group: 'wants' }
     ]
   }
 ];
