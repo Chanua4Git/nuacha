@@ -32,8 +32,8 @@ const demoIncomeSources = [
   }
 ];
 
-export default function DemoIncomeManager() {
-  const [incomeSources] = useState(demoIncomeSources);
+export default function DemoIncomeManager({ incomeSources }: { incomeSources?: typeof demoIncomeSources }) {
+  const [incomeSourcesState] = useState(incomeSources ?? demoIncomeSources);
 
   const handleAddIncome = () => {
     toast("Sign up to add your real income sources", {

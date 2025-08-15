@@ -6,8 +6,8 @@ import { TrendingUp, TrendingDown, DollarSign, Target, ChevronLeft, ChevronRight
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatTTD, getMonthDisplay, getVarianceStatus } from '@/utils/budgetUtils';
 
-// Mock data for demo
-const demoSummary = {
+// Mock data for demo (can be overridden)
+const defaultSummary = {
   totalIncome: 12000,
   totalExpenses: 9500,
   byGroup: {
@@ -23,17 +23,17 @@ const demoSummary = {
   }
 };
 
-const pieData = [
-  { name: 'Needs', value: demoSummary.byGroup.needs.total, fill: 'hsl(var(--chart-1))' },
-  { name: 'Wants', value: demoSummary.byGroup.wants.total, fill: 'hsl(var(--chart-2))' },
-  { name: 'Savings', value: demoSummary.byGroup.savings.total, fill: 'hsl(var(--chart-3))' }
+const makePieData = (summary: typeof defaultSummary) => [
+  { name: 'Needs', value: summary.byGroup.needs.total, fill: 'hsl(var(--chart-1))' },
+  { name: 'Wants', value: summary.byGroup.wants.total, fill: 'hsl(var(--chart-2))' },
+  { name: 'Savings', value: summary.byGroup.savings.total, fill: 'hsl(var(--chart-3))' }
 ];
 
-const barData = [
-  { name: 'Budget vs Actual', budget: 12000, actual: 9500 }
+const makeBarData = (summary: typeof defaultSummary) => [
+  { name: 'Budget vs Actual', budget: summary.totalIncome, actual: summary.totalExpenses }
 ];
 
-export default function DemoBudgetDashboard() {
+export default function DemoBudgetDashboard({ summary }: { summary?: typeof defaultSummary }) {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -70,7 +70,7 @@ export default function DemoBudgetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatTTD(demoSummary.totalIncome)}
+              {formatTTD((summary ?? defaultSummary).totalIncome)}
             </div>
           </CardContent>
         </Card>
@@ -82,7 +82,7 @@ export default function DemoBudgetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatTTD(demoSummary.totalExpenses)}
+              {formatTTD((summary ?? defaultSummary).totalExpenses)}
             </div>
           </CardContent>
         </Card>
@@ -94,7 +94,7 @@ export default function DemoBudgetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatTTD(demoSummary.surplus)}
+              {formatTTD((summary ?? defaultSummary).surplus)}
             </div>
           </CardContent>
         </Card>
@@ -122,7 +122,7 @@ export default function DemoBudgetDashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={pieData}
+                  data={makePieData(summary ?? defaultSummary)}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -131,7 +131,7 @@ export default function DemoBudgetDashboard() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {pieData.map((entry, index) => (
+                  {makePieData(summary ?? defaultSummary).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
@@ -147,7 +147,7 @@ export default function DemoBudgetDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData}>
+              <BarChart data={makeBarData(summary ?? defaultSummary)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(value) => formatTTD(value)} />

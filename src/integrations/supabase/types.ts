@@ -1309,6 +1309,7 @@ export type Database = {
       }
       sahm_budget_submissions: {
         Row: {
+          additional_info: Json | null
           created_at: string
           dependents: number | null
           email: string
@@ -1328,6 +1329,7 @@ export type Database = {
           wants_data: Json
         }
         Insert: {
+          additional_info?: Json | null
           created_at?: string
           dependents?: number | null
           email: string
@@ -1347,6 +1349,7 @@ export type Database = {
           wants_data?: Json
         }
         Update: {
+          additional_info?: Json | null
           created_at?: string
           dependents?: number | null
           email?: string

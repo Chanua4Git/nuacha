@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -6,6 +6,9 @@ import { Info, Eye, PenTool } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useBudgetPreview } from '@/context/BudgetPreviewContext';
+import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
+import { BudgetSummary, FrequencyType } from '@/types/budget';
 
 // Demo components with mock data
 import DemoBudgetDashboard from '@/components/budget/DemoBudgetDashboard';
@@ -19,6 +22,72 @@ import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
 export default function DemoBudget() {
   const [mode, setMode] = useState<'demo' | 'builder'>('demo');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { previewData } = useBudgetPreview();
+
+  const incomeSourcesOverride = useMemo(() => {
+    if (!previewData) return undefined;
+    const toMonthly = (amount: number, freq: string) => {
+      switch (freq) {
+        case 'weekly': return amount * 4.33;
+        case 'yearly': return amount / 12;
+        default: return amount;
+      }
+    };
+    const items = [
+      { id: 'primary', name: previewData.income.primaryIncome.source || 'Primary Income', frequency: 'monthly' as FrequencyType, amount_ttd: toMonthly(previewData.income.primaryIncome.amount, previewData.income.primaryIncome.frequency), notes: '' },
+      { id: 'secondary', name: previewData.income.secondaryIncome.source || 'Secondary Income', frequency: 'monthly' as FrequencyType, amount_ttd: toMonthly(previewData.income.secondaryIncome.amount, previewData.income.secondaryIncome.frequency), notes: '' },
+      { id: 'other', name: previewData.income.otherIncome.source || 'Other Income', frequency: 'monthly' as FrequencyType, amount_ttd: toMonthly(previewData.income.otherIncome.amount, previewData.income.otherIncome.frequency), notes: '' }
+    ];
+    return items.filter(i => i.amount_ttd > 0);
+  }, [previewData]);
+
+  const categoriesByGroupOverride = useMemo(() => {
+    if (!previewData) return undefined as any;
+    const today = new Date().toISOString().slice(0,10);
+    const mapGroup = (group: 'needs' | 'wants' | 'savings') => {
+      const groupCats = getCategoriesByGroup(group);
+      return Object.entries(previewData[group]).map(([id, amount]) => {
+        const found = groupCats.find(c => c.id === id);
+        const name = found?.name || id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return {
+          id,
+          name,
+          expenses: [{ amount, description: 'Planned monthly budget', date: today }],
+          monthlyTotal: amount
+        };
+      });
+    };
+    return { needs: mapGroup('needs'), wants: mapGroup('wants'), savings: mapGroup('savings') };
+  }, [previewData]);
+
+  const summaryOverride = useMemo(() => {
+    if (!previewData) return undefined as BudgetSummary | undefined;
+    const toMonthly = (amount: number, freq: string) => {
+      switch (freq) {
+        case 'weekly': return amount * 4.33;
+        case 'yearly': return amount / 12;
+        default: return amount;
+      }
+    };
+    const totalIncome = toMonthly(previewData.income.primaryIncome.amount, previewData.income.primaryIncome.frequency)
+      + toMonthly(previewData.income.secondaryIncome.amount, previewData.income.secondaryIncome.frequency)
+      + toMonthly(previewData.income.otherIncome.amount, previewData.income.otherIncome.frequency);
+    const needs = Object.values(previewData.needs).reduce((a,b)=>a+b,0);
+    const wants = Object.values(previewData.wants).reduce((a,b)=>a+b,0);
+    const savings = Object.values(previewData.savings).reduce((a,b)=>a+b,0);
+    const totalExpenses = needs + wants + savings;
+    const byGroup = {
+      needs: { total: needs, percentage: totalExpenses ? (needs/totalExpenses)*100 : 0 },
+      wants: { total: wants, percentage: totalExpenses ? (wants/totalExpenses)*100 : 0 },
+      savings: { total: savings, percentage: totalExpenses ? (savings/totalExpenses)*100 : 0 }
+    };
+    const ruleComparison = {
+      needs: { actual: byGroup.needs.percentage, target: 50, variance: byGroup.needs.percentage - 50 },
+      wants: { actual: byGroup.wants.percentage, target: 30, variance: byGroup.wants.percentage - 30 },
+      savings: { actual: byGroup.savings.percentage, target: 20, variance: byGroup.savings.percentage - 20 }
+    };
+    return { totalIncome, totalExpenses, surplus: totalIncome - totalExpenses, byGroup, ruleComparison } as BudgetSummary;
+  }, [previewData]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -68,7 +137,7 @@ export default function DemoBudget() {
           <Info className="h-4 w-4" />
           <AlertDescription>
             {mode === 'demo' 
-              ? "This is a demo of our Budget & Planning Pro module. In the full app, this connects to your actual income and expense data."
+              ? (previewData ? "You're viewing your budget preview based on the builder. Sign up to save and track over time." : "This is a demo of our Budget & Planning Pro module. In the full app, this connects to your actual income and expense data.")
               : "Create your personalized SAHM budget template. We'll help you build a realistic budget that actually works for your family."
             }
           </AlertDescription>
@@ -100,15 +169,15 @@ export default function DemoBudget() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <DemoBudgetDashboard />
+            <DemoBudgetDashboard summary={summaryOverride} />
           </TabsContent>
 
           <TabsContent value="income" className="space-y-6">
-            <DemoIncomeManager />
+            <DemoIncomeManager incomeSources={incomeSourcesOverride} />
           </TabsContent>
 
           <TabsContent value="expenses" className="space-y-6">
-            <DemoExpenseManager />
+            <DemoExpenseManager categoriesByGroupOverride={categoriesByGroupOverride} />
           </TabsContent>
 
           <TabsContent value="rules" className="space-y-6">

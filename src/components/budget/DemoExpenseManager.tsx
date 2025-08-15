@@ -54,8 +54,8 @@ const groupColors = {
   savings: 'bg-green-50 text-green-700 border-green-200'
 };
 
-export default function DemoExpenseManager() {
-  const [categoriesByGroup] = useState(demoBudgetCategories);
+export default function DemoExpenseManager({ categoriesByGroupOverride }: { categoriesByGroupOverride?: typeof demoBudgetCategories }) {
+  const [categoriesByGroup] = useState(categoriesByGroupOverride ?? demoBudgetCategories);
 
   const handleAddExpense = (groupType: BudgetGroupType) => {
     toast("Sign up to add real expenses", {

@@ -11,6 +11,8 @@ import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategori
 import { formatTTD } from '@/utils/budgetUtils';
 import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
 import { toast } from 'sonner';
+import { useBudgetPreview } from '@/context/BudgetPreviewContext';
+import { useNavigate } from 'react-router-dom';
 
 interface BudgetData {
   aboutYou: {
@@ -88,6 +90,8 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
 
 export default function SAHMBudgetBuilder() {
   const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
+  const { setPreviewData } = useBudgetPreview();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetData>({
     aboutYou: {
@@ -186,8 +190,9 @@ export default function SAHMBudgetBuilder() {
 
     const success = await submitBudget(budgetData);
     if (success) {
-      // Could redirect to a thank you page or show success state
-      setCurrentStep(5); // Ensure we're on the review step (now step 5, not 4)
+      setPreviewData(budgetData);
+      navigate('/demo/budget');
+      setCurrentStep(5); // Ensure we're on the review step
     }
   };
 
