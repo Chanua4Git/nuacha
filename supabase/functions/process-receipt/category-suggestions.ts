@@ -49,6 +49,34 @@ export async function suggestCategories(
 ): Promise<ReceiptLineItem[]> {
   console.log(`Suggesting categories for ${lineItems.length} line items from vendor: ${vendorName}`);
   
+  // Create a whitelist of valid category names from the comprehensive categories
+  const validCategoryNames = new Set(categories.map(cat => cat.name.toLowerCase()));
+  
+  // Add validation function to ensure category exists and prevent "Food" categorization
+  const validateCategory = (categoryName: string): string | null => {
+    if (!categoryName) return null;
+    const normalizedName = categoryName.toLowerCase();
+    
+    // NEVER allow "food" categorization - always map to groceries
+    if (normalizedName === 'food') {
+      console.log('Preventing "Food" categorization, mapping to Groceries');
+      const groceriesCategory = categories.find(cat => cat.name.toLowerCase() === 'groceries');
+      return groceriesCategory ? groceriesCategory.name : 'Groceries';
+    }
+    
+    // Check if category exists in our valid list
+    const validCategory = categories.find(cat => cat.name.toLowerCase() === normalizedName);
+    if (validCategory) return validCategory.name;
+    
+    // For grocery-related items, default to groceries if category doesn't exist
+    if (normalizedName.includes('grocery') || normalizedName.includes('food')) {
+      const groceriesCategory = categories.find(cat => cat.name.toLowerCase() === 'groceries');
+      return groceriesCategory ? groceriesCategory.name : 'Groceries';
+    }
+    
+    return null; // Invalid category
+  };
+  
   // If we have no categories or rules, return items as is
   if (!categories.length) {
     return lineItems;
@@ -472,11 +500,25 @@ function suggestCategoryForItem(
     }
     
     if (matchedCategory) {
-      console.log(`Found category: ${matchedCategory.name} (${matchedCategory.id})`);
-      return {
-        categoryId: matchedCategory.id,
-        confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
-      };
+      // Validate the category before returning it
+      const validatedCategoryName = validateCategory(matchedCategory.name);
+      if (validatedCategoryName) {
+        console.log(`Found and validated category: ${validatedCategoryName} (${matchedCategory.id})`);
+        return {
+          categoryId: matchedCategory.id,
+          confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
+        };
+      } else {
+        console.log(`Category ${matchedCategory.name} failed validation, falling back to groceries`);
+        // If validation fails, try to find groceries as fallback
+        const groceriesCategory = categories.find(cat => cat.name.toLowerCase() === 'groceries');
+        if (groceriesCategory) {
+          return {
+            categoryId: groceriesCategory.id,
+            confidence: 0.6
+          };
+        }
+      }
     }
   }
 
