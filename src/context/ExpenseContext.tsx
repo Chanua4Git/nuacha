@@ -92,6 +92,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [families, selectedFamily]);
 
+  // Add effect to clear selected family if it no longer exists
+  useEffect(() => {
+    if (selectedFamily && families.length > 0 && !families.find(f => f.id === selectedFamily.id)) {
+      console.log('Selected family no longer exists, resetting to first available');
+      setSelectedFamily(families[0]);
+    }
+  }, [families, selectedFamily]);
+
   // Persist selected family ID to localStorage
   useEffect(() => {
     if (selectedFamily) {

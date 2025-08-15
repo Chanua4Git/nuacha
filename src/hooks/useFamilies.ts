@@ -56,6 +56,15 @@ export const useFamilies = () => {
         throw new Error('No authenticated user');
       }
       
+      // Check for duplicate family names (case-insensitive)
+      const existingFamily = families.find(f => 
+        f.name.toLowerCase() === familyData.name.toLowerCase()
+      );
+      
+      if (existingFamily) {
+        throw new Error(`A family named "${familyData.name}" already exists`);
+      }
+      
       const familyToInsert = {
         name: familyData.name,
         color: familyData.color,

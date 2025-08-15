@@ -32,6 +32,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       
       setIsLoading(true);
       try {
+        console.log('Fetching expenses for user:', user.id, 'family:', filters?.familyId);
+        
         // Start with a basic query
         let query = supabase
           .from('expenses')
@@ -40,6 +42,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         // Apply family filter
         if (filters?.familyId) {
           // Specific family selected
+          console.log('Filtering by specific family:', filters.familyId);
           query = query.eq('family_id', filters.familyId);
         } else {
           // No specific family or "all" families - fetch user's families first
@@ -51,6 +54,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           if (familiesError) throw familiesError;
           
           const familyIds = families.map(f => f.id);
+          console.log('User families:', familyIds);
           if (familyIds.length > 0) {
             query = query.in('family_id', familyIds);
           } else {
@@ -122,6 +126,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           payrollEntryId: item.payroll_entry_id,
         })) as Expense[];
         
+        console.log('Fetched expenses:', mappedExpenses.length, 'for family:', filters?.familyId);
         setExpenses(mappedExpenses);
       } catch (err: any) {
         console.error('Error fetching expenses:', err);
