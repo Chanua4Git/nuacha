@@ -99,16 +99,35 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       };
 
       (expenses || []).forEach(expense => {
-        // Find category by UUID first (preferred), then fallback to name matching, then budgetCategoryId
-        let category = categories?.find(cat => cat.id === expense.category);
-        if (!category) {
-          category = categories?.find(cat => cat.name === expense.category);
-        }
-        if (!category && expense.budget_category_id) {
+        // Priority order: budget_category_id first, then category field, then name matching
+        let category = null;
+        
+        // 1. Check budget_category_id first (preferred)
+        if (expense.budget_category_id) {
           category = categories?.find(cat => cat.id === expense.budget_category_id);
         }
+        
+        // 2. If no budget category found, try category field as UUID
+        if (!category && expense.category) {
+          category = categories?.find(cat => cat.id === expense.category);
+        }
+        
+        // 3. Fallback to name matching if category is a string
+        if (!category && expense.category) {
+          category = categories?.find(cat => cat.name === expense.category);
+        }
+        
+        // 4. If still no budget category found, try to map to default "wants" category
+        if (!category) {
+          category = categories?.find(cat => cat.group_type === 'wants' && cat.name === 'Unplanned purchases');
+        }
+        
+        // Add to appropriate group
         if (category && category.group_type) {
           expensesByGroup[category.group_type] += expense.amount;
+        } else {
+          // Default to 'wants' if no category found
+          expensesByGroup.wants += expense.amount;
         }
       });
 

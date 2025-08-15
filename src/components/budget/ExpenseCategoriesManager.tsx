@@ -150,35 +150,57 @@ export const ExpenseCategoriesManager = () => {
 
   const categoriesByType = organizeCategories();
 
-  // Calculate expenses by category for the selected month
+  // Calculate expenses by category for the selected month - include ALL expenses
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    console.log(`Processing expense: ${expense.id}, category: ${expense.category}, budgetCategoryId: ${expense.budgetCategoryId}`);
+    console.log(`Processing expense: ${expense.id}, category: ${expense.category}, budgetCategoryId: ${expense.budgetCategoryId}, description: ${expense.description}`);
     
-    // First priority: use budget_category_id if available
-    let category = expense.budgetCategoryId ? 
-      budgetCategories.find(cat => cat.id === expense.budgetCategoryId) : null;
+    let category = null;
     
-    // Second priority: match by category name (exact)
-    if (!category) {
-      category = budgetCategories.find(cat => cat.name.toLowerCase() === expense.category.toLowerCase());
+    // Priority 1: Use budget_category_id if available (preferred)
+    if (expense.budgetCategoryId) {
+      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+      console.log('Found by budgetCategoryId:', category?.name);
     }
     
-    // Third priority: fuzzy match for common categories
+    // Priority 2: Try category field as UUID
+    if (!category && expense.category) {
+      category = budgetCategories.find(cat => cat.id === expense.category);
+      console.log('Found by category UUID:', category?.name);
+    }
+    
+    // Priority 3: Exact name matching
+    if (!category && expense.category) {
+      category = budgetCategories.find(cat => cat.name.toLowerCase() === expense.category.toLowerCase());
+      console.log('Found by exact name match:', category?.name);
+    }
+    
+    // Priority 4: Enhanced fuzzy matching including description
     if (!category) {
+      const categoryName = expense.category?.toLowerCase() || '';
+      const description = expense.description?.toLowerCase() || '';
+      
       category = budgetCategories.find(cat => {
         const catName = cat.name.toLowerCase();
-        const expenseCat = expense.category.toLowerCase();
+        
         return (
-          (catName.includes('groceries') && expenseCat.includes('groceries')) ||
-          (catName.includes('food') && expenseCat.includes('food')) ||
-          (catName.includes('household') && expenseCat.includes('household')) ||
-          (catName.includes('medical') && expenseCat.includes('medical')) ||
-          (catName.includes('transport') && expenseCat.includes('transport'))
+          // Groceries/Food matching (including JTA supermarket)
+          (categoryName.includes('groceries') || description.includes('jta') || description.includes('supermarket') || description.includes('grocery')) && catName.includes('groceries') ||
+          categoryName.includes('food') && catName.includes('food') ||
+          categoryName.includes('household') && catName.includes('household') ||
+          categoryName.includes('medical') && catName.includes('medical') ||
+          categoryName.includes('transport') && catName.includes('transport') ||
+          categoryName.includes('child') && catName.includes('child') ||
+          categoryName.includes('school') && catName.includes('school')
         );
       });
+      console.log('Found by fuzzy match:', category?.name);
     }
     
-    console.log(`Found category:`, category);
+    // Priority 5: Default to first "wants" category if no match found
+    if (!category) {
+      category = budgetCategories.find(cat => cat.groupType === 'wants');
+      console.log('Using default wants category:', category?.name);
+    }
     
     if (category) {
       if (!acc[category.id]) {
@@ -188,7 +210,7 @@ export const ExpenseCategoriesManager = () => {
       acc[category.id].expenses.push(expense);
       console.log(`Added ${expense.amount} to category ${category.name}, new total: ${acc[category.id].total}`);
     } else {
-      console.log(`No category found for expense ${expense.id}`);
+      console.log(`ERROR: No category found for expense ${expense.id} - this should not happen!`);
     }
     
     return acc;

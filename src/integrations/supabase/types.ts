@@ -1414,6 +1414,10 @@ export type Database = {
         Args: { category_name: string; family_uuid: string; user_uuid: string }
         Returns: string
       }
+      map_all_expenses_to_budget_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       map_expenses_to_budget_categories: {
         Args: Record<PropertyKey, never>
         Returns: undefined
