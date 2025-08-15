@@ -1307,6 +1307,66 @@ export type Database = {
         }
         Relationships: []
       }
+      sahm_budget_submissions: {
+        Row: {
+          created_at: string
+          dependents: number | null
+          email: string
+          household_size: number | null
+          id: string
+          ip_address: unknown | null
+          location: string | null
+          name: string | null
+          needs_data: Json
+          notes: string | null
+          savings_data: Json
+          total_budget: number | null
+          total_needs: number | null
+          total_savings: number | null
+          total_wants: number | null
+          user_agent: string | null
+          wants_data: Json
+        }
+        Insert: {
+          created_at?: string
+          dependents?: number | null
+          email: string
+          household_size?: number | null
+          id?: string
+          ip_address?: unknown | null
+          location?: string | null
+          name?: string | null
+          needs_data?: Json
+          notes?: string | null
+          savings_data?: Json
+          total_budget?: number | null
+          total_needs?: number | null
+          total_savings?: number | null
+          total_wants?: number | null
+          user_agent?: string | null
+          wants_data?: Json
+        }
+        Update: {
+          created_at?: string
+          dependents?: number | null
+          email?: string
+          household_size?: number | null
+          id?: string
+          ip_address?: unknown | null
+          location?: string | null
+          name?: string | null
+          needs_data?: Json
+          notes?: string | null
+          savings_data?: Json
+          total_budget?: number | null
+          total_needs?: number | null
+          total_savings?: number | null
+          total_wants?: number | null
+          user_agent?: string | null
+          wants_data?: Json
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string

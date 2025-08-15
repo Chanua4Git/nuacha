@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin, Loader2 } from 'lucide-react';
 import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategories';
 import { formatTTD } from '@/utils/budgetUtils';
+import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
 import { toast } from 'sonner';
 
 interface BudgetData {
@@ -74,6 +75,7 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
 };
 
 export default function SAHMBudgetBuilder() {
+  const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
   const [currentStep, setCurrentStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetData>({
     aboutYou: {
@@ -136,13 +138,19 @@ export default function SAHMBudgetBuilder() {
     }
   };
 
-  const handleDownload = () => {
-    toast.success("Budget template generated!", {
-      description: "Your personalized SAHM budget is ready. Check your email for the download link.",
-    });
-    
-    // Here you would typically call an API to generate and email the template
-    console.log('Budget data for template generation:', budgetData);
+  const handleDownload = async () => {
+    if (!budgetData.aboutYou.email) {
+      toast.error("Email required", {
+        description: "Please provide your email to receive the budget template.",
+      });
+      return;
+    }
+
+    const success = await submitBudget(budgetData);
+    if (success) {
+      // Could redirect to a thank you page or show success state
+      setCurrentStep(4); // Ensure we're on the review step
+    }
   };
 
   const renderStepContent = () => {
@@ -403,10 +411,19 @@ export default function SAHMBudgetBuilder() {
                 onClick={handleDownload} 
                 size="lg" 
                 className="w-full md:w-auto"
-                disabled={!budgetData.aboutYou.email}
+                disabled={!budgetData.aboutYou.email || isSubmitting}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Get My Personalized Budget Template
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving Your Budget...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Get My Personalized Budget Template
+                  </>
+                )}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
                 Free download • No spam • Used to help other moms too
