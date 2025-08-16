@@ -168,7 +168,7 @@ export default function DemoBudgetDashboard({ summary }: { summary?: typeof defa
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Object.entries(demoSummary.ruleComparison).map(([group, data]) => {
+            {Object.entries((summary ?? defaultSummary).ruleComparison).map(([group, data]) => {
               const status = getVarianceStatus(data.variance);
               return (
                 <div key={group} className="flex items-center justify-between p-4 border rounded-lg">
