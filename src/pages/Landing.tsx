@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp } from "lucide-react";
+import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart } from "lucide-react";
 import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
@@ -24,6 +24,12 @@ const Landing = () => {
                   <Button size="lg" className="rounded-full px-8 bg-[#5A7684] hover:bg-[#5A7684]/90 transition-all duration-300">
                     Try Expense Tracking
                     <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/demo/budget">
+                  <Button size="lg" variant="outline" className="rounded-full px-8 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white transition-all duration-300">
+                    Build Your Budget
+                    <PieChart className="ml-2" />
                   </Button>
                 </Link>
                 <Link to="/payroll">
@@ -76,7 +82,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="border-none shadow-lg bg-gradient-to-br from-[#F4E8D3]/20 to-white backdrop-blur">
                 <CardContent className="p-8">
                   <Scan className="w-12 h-12 text-[#5A7684] mb-4" />
@@ -88,6 +94,22 @@ const Landing = () => {
                     <Button className="w-full bg-[#5A7684] hover:bg-[#5A7684]/90">
                       Try Receipt Scanning
                       <ArrowRight className="ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-lg bg-gradient-to-br from-[#E8F2F0]/20 to-white backdrop-blur">
+                <CardContent className="p-8">
+                  <PieChart className="w-12 h-12 text-[#5A7684] mb-4" />
+                  <h3 className="text-2xl font-playfair mb-4">Personal Budget Builder</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Create personalized budgets with the 50/30/20 rule. Perfect for families and SAHM (Stay-at-Home Moms) financial planning.
+                  </p>
+                  <Link to="/demo/budget">
+                    <Button variant="outline" className="w-full border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white">
+                      Build Your Budget
+                      <PieChart className="ml-2" />
                     </Button>
                   </Link>
                 </CardContent>
