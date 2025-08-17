@@ -20,6 +20,8 @@ const recommendedCategorySeeds: CategorySeed[] = [
       { name: 'Water & Sewer', group: 'needs' },
       { name: 'Gas', group: 'needs' },
       { name: 'Internet / Wi-Fi', group: 'needs' },
+      { name: 'Mobile Phone Service', group: 'needs' },
+      { name: 'Home Phone Service', group: 'needs' },
       { name: 'Cable / Streaming services', group: 'wants' },
       { name: 'Garbage collection', group: 'needs' },
     ],
@@ -35,6 +37,7 @@ const recommendedCategorySeeds: CategorySeed[] = [
       { name: 'Medical tests', group: 'needs' },
       { name: 'Medication', group: 'needs' },
       { name: 'Medical supplies', group: 'needs' },
+      { name: 'Elderly Care / Support', group: 'needs' },
     ],
   },
   {
@@ -55,6 +58,7 @@ const recommendedCategorySeeds: CategorySeed[] = [
     group: 'needs',
     children: [
       { name: 'Groceries', group: 'needs' },
+      { name: 'Special Dietary Needs (Formula, Baby Food)', group: 'needs' },
       { name: 'Pet food & supplies', group: 'needs' },
       { name: 'Toiletries', group: 'needs' },
       { name: 'Paper goods', group: 'needs' },
@@ -77,10 +81,13 @@ const recommendedCategorySeeds: CategorySeed[] = [
     group: 'needs',
     children: [
       { name: 'Health insurance', group: 'needs' },
+      { name: 'Dental insurance', group: 'needs' },
       { name: 'Life insurance', group: 'needs' },
       { name: 'Home insurance', group: 'needs' },
       { name: 'Other insurance', group: 'needs' },
       { name: 'Loan repayments', group: 'needs' },
+      { name: 'Student loan payments', group: 'needs' },
+      { name: 'Property taxes', group: 'needs' },
       { name: 'Savings', group: 'savings' },
       { name: 'Investments', group: 'savings' },
     ],
@@ -89,6 +96,7 @@ const recommendedCategorySeeds: CategorySeed[] = [
     name: 'Personal Care & Wellness',
     group: 'wants',
     children: [
+      { name: 'Vision care (glasses, contacts, exams)', group: 'needs' },
       { name: 'Haircuts & grooming', group: 'wants' },
       { name: 'Spa & massage', group: 'wants' },
       { name: 'Gym membership', group: 'wants' },
@@ -100,6 +108,8 @@ const recommendedCategorySeeds: CategorySeed[] = [
     group: 'needs',
     children: [
       { name: 'School fees', group: 'needs' },
+      { name: 'School lunches / meal programs', group: 'needs' },
+      { name: 'School transportation (bus fees)', group: 'needs' },
       { name: 'Books & stationery', group: 'needs' },
       { name: 'Extracurricular activities', group: 'wants' },
       { name: 'School uniforms', group: 'needs' },
@@ -154,7 +164,7 @@ function determineGroupFromName(name: string): BudgetGroup {
   
   // Needs categories (Essential expenses)
   if (
-    /rent|mortgage|electricity|water|sewer|gas|internet|wifi|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|life insurance|home insurance|loan repayments|emergency|legal fees|bank fees|school fees|books|stationery|school uniforms|childcare/.test(n)
+    /rent|mortgage|electricity|water|sewer|gas|internet|wifi|phone|mobile|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|dental insurance|life insurance|home insurance|loan repayments|student loan|property tax|emergency|legal fees|bank fees|school fees|school lunch|school transport|books|stationery|school uniforms|childcare|vision care|glasses|contacts|elderly care|special dietary|formula|baby food/.test(n)
   ) {
     return 'needs';
   }

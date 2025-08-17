@@ -20,6 +20,8 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'water-sewer', name: 'Water & Sewer', color: '#0EA5E9', group: 'needs' },
       { id: 'gas', name: 'Gas', color: '#0EA5E9', group: 'needs' },
       { id: 'internet-wifi', name: 'Internet / Wi-Fi', color: '#0EA5E9', group: 'needs' },
+      { id: 'mobile-phone', name: 'Mobile Phone Service', color: '#0EA5E9', group: 'needs' },
+      { id: 'home-phone', name: 'Home Phone Service', color: '#0EA5E9', group: 'needs' },
       { id: 'cable-streaming', name: 'Cable / Streaming services', color: '#0EA5E9', group: 'wants' },
       { id: 'garbage-collection', name: 'Garbage collection', color: '#0EA5E9', group: 'needs' }
     ]
@@ -42,7 +44,8 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'medical-tests', name: 'Medical tests', color: '#EF4444', group: 'needs' },
       { id: 'medication', name: 'Medication', color: '#EF4444', group: 'needs' },
       { id: 'medical-supplies', name: 'Medical supplies', color: '#EF4444', group: 'needs' },
-      { id: 'emotional-support', name: 'Emotional Support / Mental Health', color: '#EF4444', group: 'needs' }
+      { id: 'emotional-support', name: 'Emotional Support / Mental Health', color: '#EF4444', group: 'needs' },
+      { id: 'elderly-care', name: 'Elderly Care / Support', color: '#EF4444', group: 'needs' }
     ]
   },
 
@@ -81,6 +84,7 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'frozen-foods', name: 'Frozen foods', color: '#22C55E', group: 'needs' },
       { id: 'beverages', name: 'Beverages', color: '#22C55E', group: 'needs' },
       { id: 'snacks-treats', name: 'Snacks & treats', color: '#22C55E', group: 'wants' },
+      { id: 'special-dietary', name: 'Special Dietary Needs (Formula, Baby Food)', color: '#22C55E', group: 'needs' },
       { id: 'cleaning-supplies', name: 'Cleaning supplies', color: '#22C55E', group: 'needs' },
       { id: 'kitchen-supplies', name: 'Kitchen supplies', color: '#22C55E', group: 'needs' },
       { id: 'bathroom-supplies', name: 'Bathroom supplies', color: '#22C55E', group: 'needs' },
@@ -114,11 +118,14 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'health-insurance', name: 'Health insurance', color: '#6366F1', group: 'needs' },
+      { id: 'dental-insurance', name: 'Dental insurance', color: '#6366F1', group: 'needs' },
       { id: 'life-insurance', name: 'Life insurance', color: '#6366F1', group: 'needs' },
       { id: 'home-insurance', name: 'Home insurance', color: '#6366F1', group: 'needs' },
       { id: 'other-insurance', name: 'Other insurance', color: '#6366F1', group: 'needs' },
       { id: 'loan-repayments', name: 'Loan repayments', color: '#6366F1', group: 'needs' },
+      { id: 'student-loans', name: 'Student loan payments', color: '#6366F1', group: 'needs' },
       { id: 'minimum-debt', name: 'Minimum Debt', color: '#6366F1', group: 'needs' },
+      { id: 'property-tax', name: 'Property taxes', color: '#6366F1', group: 'needs' },
       { id: 'bank-fees', name: 'Bank fees', color: '#6366F1', group: 'needs' },
       { id: 'savings', name: 'Savings', color: '#6366F1', group: 'savings' },
       { id: 'investments', name: 'Investments', color: '#6366F1', group: 'savings' }
@@ -133,6 +140,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'personal-hygiene', name: 'Personal hygiene', color: '#EC4899', group: 'needs' },
+      { id: 'vision-care', name: 'Vision care (glasses, contacts, exams)', color: '#EC4899', group: 'needs' },
       { id: 'skincare', name: 'Skincare', color: '#EC4899', group: 'wants' },
       { id: 'makeup-cosmetics', name: 'Makeup & cosmetics', color: '#EC4899', group: 'wants' },
       { id: 'haircuts-grooming', name: 'Haircuts & grooming', color: '#EC4899', group: 'wants' },
@@ -155,6 +163,8 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'school-fees', name: 'School fees', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-lunches', name: 'School lunches / meal programs', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-transportation', name: 'School transportation (bus fees)', color: '#8B5CF6', group: 'needs' },
       { id: 'books-stationery', name: 'Books & stationery', color: '#8B5CF6', group: 'needs' },
       { id: 'extracurricular', name: 'Extracurricular activities', color: '#8B5CF6', group: 'wants' },
       { id: 'school-uniforms', name: 'School uniforms', color: '#8B5CF6', group: 'needs' },
@@ -233,10 +243,8 @@ export const comprehensiveCategories: DemoCategory[] = [
     id: 'technology-electronics',
     name: 'Technology & Electronics',
     color: '#3B82F6',
-    group: 'wants',
+    group: 'needs',
     children: [
-      { id: 'mobile-phone', name: 'Mobile phone & service', color: '#3B82F6', group: 'needs' },
-      { id: 'internet-service', name: 'Internet service', color: '#3B82F6', group: 'needs' },
       { id: 'computer-laptop', name: 'Computer & laptop', color: '#3B82F6', group: 'wants' },
       { id: 'software-apps', name: 'Software & apps', color: '#3B82F6', group: 'wants' },
       { id: 'electronics-gadgets', name: 'Electronics & gadgets', color: '#3B82F6', group: 'wants' },

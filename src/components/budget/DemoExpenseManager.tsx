@@ -30,12 +30,23 @@ const createMockExpenses = (categoryName: string, group: string) => {
   };
 };
 
+// Priority essential categories for demo - matching SAHM budget builder
+const priorityEssentialCategories = [
+  'rent-mortgage', 'electricity', 'water-sewer', 'gas', 'internet-wifi',
+  'mobile-phone', 'fuel', 'vehicle-insurance', 'health-insurance',
+  'groceries', 'childcare', 'school-fees', 'medical-supplies', 
+  'household-repairs', 'emergency-expenses', 'toiletries'
+];
+
 const demoBudgetCategories = {
-  needs: getCategoriesByGroup('needs').slice(0, 8).map(cat => ({
-    id: cat.id,
-    name: cat.name,
-    ...createMockExpenses(cat.name, 'needs')
-  })),
+  needs: getCategoriesByGroup('needs')
+    .filter(cat => priorityEssentialCategories.includes(cat.id))
+    .slice(0, 12)
+    .map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      ...createMockExpenses(cat.name, 'needs')
+    })),
   wants: getCategoriesByGroup('wants').slice(0, 6).map(cat => ({
     id: cat.id,
     name: cat.name,

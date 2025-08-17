@@ -112,10 +112,23 @@ export default function SAHMBudgetBuilder() {
     notes: ''
   });
 
-  // SAHM priority needs with specific categories requested
-  const sahmPriorityNeeds = ['groceries', 'childcare', 'health-insurance', 'home-insurance', 
-    'pest-control', 'electricity', 'fuel', 'school-fees', 'medical-supplies', 
-    'household-repairs', 'emergency-expenses', 'toiletries'];
+  // SAHM priority needs with comprehensive essential categories
+  const sahmPriorityNeeds = [
+    // Housing essentials
+    'rent-mortgage', 'electricity', 'water-sewer', 'gas', 'internet-wifi',
+    // Communication essentials  
+    'mobile-phone', 'home-phone',
+    // Transportation essentials
+    'fuel', 'vehicle-loan', 'vehicle-insurance', 'vehicle-maintenance', 'public-transportation',
+    // Health & safety essentials
+    'health-insurance', 'life-insurance', 'dental-insurance', 'vision-care',
+    // Financial obligations
+    'loan-repayments', 'property-tax', 'student-loans', 'minimum-debt',
+    // Family & care essentials
+    'childcare', 'groceries', 'school-fees', 'school-lunches', 'school-transportation', 'medical-supplies', 'special-dietary',
+    // Household essentials
+    'home-insurance', 'pest-control', 'household-repairs', 'emergency-expenses', 'toiletries', 'elderly-care'
+  ];
   
   const needsCategories = getCategoriesByGroup('needs').filter(cat => 
     sahmPriorityNeeds.includes(cat.id)
