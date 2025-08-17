@@ -138,9 +138,14 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     // Sort categories within each parent group alphabetically
     Object.keys(parentGroups).forEach(groupKey => {
       const group = parentGroups[groupKey as keyof typeof parentGroups];
-      Object.keys(group).forEach(parentId => {
-        group[parentId].sort((a, b) => a.name.localeCompare(b.name));
-      });
+      if (group) {
+        Object.keys(group).forEach(parentId => {
+          const categoryArray = group[parentId];
+          if (categoryArray && Array.isArray(categoryArray)) {
+            categoryArray.sort((a, b) => a.name.localeCompare(b.name));
+          }
+        });
+      }
     });
 
     return parentGroups;
