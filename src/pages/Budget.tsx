@@ -69,8 +69,9 @@ export default function Budget() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {user ? (
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="builder">Budget Builder</TabsTrigger>
             <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="rules">Rules</TabsTrigger>
@@ -89,6 +90,10 @@ export default function Budget() {
           <>
             <TabsContent value="dashboard" className="space-y-6">
               <BudgetDashboard />
+            </TabsContent>
+
+            <TabsContent value="builder" className="space-y-6">
+              <SAHMBudgetBuilder />
             </TabsContent>
 
             <TabsContent value="income" className="space-y-6">

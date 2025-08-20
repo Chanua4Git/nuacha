@@ -13,6 +13,8 @@ import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
 import { toast } from 'sonner';
 import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { useNavigate } from 'react-router-dom';
+import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 interface BudgetData {
   aboutYou: {
@@ -89,9 +91,11 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
 };
 
 export default function SAHMBudgetBuilder() {
-  const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
-  const { setPreviewData } = useBudgetPreview();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
+  const { createTemplate } = useBudgetTemplates();
+  const { setPreviewData } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetData>({
     aboutYou: {
@@ -201,11 +205,59 @@ export default function SAHMBudgetBuilder() {
       return;
     }
 
-    const success = await submitBudget(budgetData);
-    if (success) {
-      setPreviewData(budgetData);
-      navigate('/demo/budget');
-      setCurrentStep(5); // Ensure we're on the review step
+    try {
+      if (user) {
+        // For authenticated users, save as budget template
+        const totalIncome = Object.values(budgetData.income).reduce((sum, income) => {
+          const frequency = income.frequency;
+          const amount = income.amount;
+          if (frequency === 'weekly') return sum + (amount * 52 / 12);
+          if (frequency === 'yearly') return sum + (amount / 12);
+          return sum + amount; // monthly
+        }, 0);
+
+        // Transform the income data to match the template format
+        const transformedIncome: Record<string, number> = {};
+        Object.entries(budgetData.income).forEach(([key, income]) => {
+          if (income.amount > 0) {
+            let monthlyAmount = income.amount;
+            if (income.frequency === 'weekly') monthlyAmount = income.amount * 52 / 12;
+            if (income.frequency === 'yearly') monthlyAmount = income.amount / 12;
+            transformedIncome[key] = monthlyAmount;
+          }
+        });
+
+        const templateData = {
+          aboutYou: budgetData.aboutYou,
+          income: transformedIncome,
+          needs: budgetData.needs,
+          wants: budgetData.wants,
+          savings: budgetData.savings,
+          notes: budgetData.notes,
+        };
+        
+        await createTemplate({
+          name: `Budget Template - ${new Date().toLocaleDateString()}`,
+          description: 'Created using Budget Builder',
+          total_monthly_income: totalIncome,
+          template_data: templateData,
+          is_default: true,
+        });
+        
+        toast.success("Budget template created! Redirecting to your dashboard...");
+        navigate('/budget?tab=dashboard');
+      } else {
+        // For demo users, submit to leads
+        const success = await submitBudget(budgetData);
+        if (success) {
+          setPreviewData(budgetData);
+          navigate('/demo/budget');
+          setCurrentStep(5); // Ensure we're on the review step
+        }
+      }
+    } catch (error) {
+      console.error('Failed to process budget:', error);
+      toast.error("Failed to save budget template");
     }
   };
 
@@ -614,7 +666,7 @@ export default function SAHMBudgetBuilder() {
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    Get My Personalized Budget Template
+                    {user ? 'Create Budget Template' : 'Get My Personalized Budget Template'}
                   </>
                 )}
               </Button>

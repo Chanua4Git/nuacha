@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
+import { useBudgetVariance } from '@/hooks/useBudgetVariance';
 import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
