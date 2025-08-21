@@ -115,4 +115,13 @@
   [data-radix-navigation-menu-content] {
     @apply !z-50 !bg-white !opacity-100;
   }
+
+  /* Fix dropdown menu transparency issues */
+  [data-radix-dropdown-menu-content] {
+    @apply !bg-white !z-50 !opacity-100 border shadow-lg;
+  }
+
+  [data-radix-dropdown-menu-viewport] {
+    @apply !z-50 !bg-white;
+  }
 }
