@@ -6,6 +6,7 @@ import CategoryManager from '@/components/accounting/CategoryManager';
 import BudgetManager from '@/components/accounting/BudgetManager';
 import FamilyMembersManager from '@/components/FamilyMembersManager';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
+import { CategoryCleanupBanner } from '@/components/CategoryCleanupBanner';
 
 const Options = () => {
   const { selectedFamily } = useExpense();
@@ -21,6 +22,8 @@ const Options = () => {
             Adjust your settings and manage your financial organization
           </p>
         </div>
+        
+        <CategoryCleanupBanner />
 
         <Tabs defaultValue="members">
           <TabsList className="mb-6">

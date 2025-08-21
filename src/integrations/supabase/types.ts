@@ -1530,11 +1530,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_duplicate_categories_advanced: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          categories_updated: number
+          duplicates_removed: number
+          message: string
+        }[]
+      }
       create_default_budget_categories: {
         Args: { user_uuid: string }
         Returns: undefined
       }
       ensure_user_budget_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
+      ensure_user_budget_categories_safe: {
         Args: { user_uuid: string }
         Returns: undefined
       }

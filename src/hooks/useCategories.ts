@@ -74,7 +74,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       if (error) throw error;
       
       // Convert snake_case database fields to camelCase for application use
-      const mappedCategories: CategoryWithCamelCase[] = (data || []).map(item => ({
+      let mappedCategories: CategoryWithCamelCase[] = (data || []).map(item => ({
         id: item.id,
         name: item.name,
         color: item.color,
@@ -90,8 +90,20 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         isBudgetCategory: item.is_budget_category
       }));
       
-      setCategories(mappedCategories);
-      setHierarchicalCategories(buildHierarchy(mappedCategories));
+      // Client-side deduplication as safety net
+      const seen = new Set<string>();
+      const deduplicatedCategories = mappedCategories.filter(cat => {
+        const key = `${cat.userId || 'null'}-${cat.familyId || 'null'}-${cat.name.toLowerCase()}-${cat.isBudgetCategory}`;
+        if (seen.has(key)) {
+          console.warn('Duplicate category detected and filtered:', cat.name, cat.id);
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+      
+      setCategories(deduplicatedCategories);
+      setHierarchicalCategories(buildHierarchy(deduplicatedCategories));
     } catch (err: any) {
       console.error('Error fetching categories:', err);
       setError(err);

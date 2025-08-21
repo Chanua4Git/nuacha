@@ -263,17 +263,18 @@ export async function seedRecommendedExpenseCategories(familyId: string) {
 }
 
 export async function ensureBudgetDefaults(userId: string) {
-  // If user has no budget categories, initialize defaults using the unified system
+  // If user has no budget categories, initialize defaults using the safer version
   const { data: existing, error } = await supabase
     .from('categories')
     .select('id')
     .eq('user_id', userId)
     .is('is_budget_category', true)
+    .is('family_id', null)
     .limit(1);
   if (error) throw error;
 
   if (!existing || existing.length === 0) {
-    await supabase.rpc('ensure_user_budget_categories', { user_uuid: userId });
+    await supabase.rpc('ensure_user_budget_categories_safe', { user_uuid: userId });
   }
 }
 
@@ -282,18 +283,31 @@ export async function ensureBudgetCategory(
   name: string,
   group: BudgetGroup,
   sortOrder = 100
-) {
+): Promise<string> {
+  // Enhanced duplicate check - look for existing by name and user, regardless of group initially
   const { data: existing, error: selectError } = await supabase
     .from('categories')
-    .select('id')
+    .select('id, group_type')
     .eq('user_id', userId)
     .eq('name', name)
-    .eq('group_type', group)
     .is('is_budget_category', true)
+    .is('family_id', null) // Only user-level budget categories
     .limit(1);
   if (selectError) throw selectError;
-  if (existing && existing.length > 0) return existing[0].id;
+  
+  if (existing && existing.length > 0) {
+    const category = existing[0];
+    // If group type differs, update it
+    if (category.group_type !== group) {
+      await supabase
+        .from('categories')
+        .update({ group_type: group })
+        .eq('id', category.id);
+    }
+    return category.id as string;
+  }
 
+  // No existing category found, create new one
   const { data: inserted, error: insertError } = await supabase
     .from('categories')
     .insert({ 
@@ -302,11 +316,28 @@ export async function ensureBudgetCategory(
       group_type: group, 
       sort_order: sortOrder,
       is_budget_category: true,
-      color: '#5A7684' // Default color
+      family_id: null, // Explicitly set for user-level budget categories
+      color: group === 'needs' ? '#EF4444' : group === 'savings' ? '#22C55E' : '#F97316'
     })
     .select('id')
     .single();
-  if (insertError) throw insertError;
+  if (insertError) {
+    // Handle potential race condition - try to find existing again
+    if (insertError.code === '23505') { // Unique violation
+      const { data: raceCheck } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', name)
+        .is('is_budget_category', true)
+        .is('family_id', null)
+        .limit(1);
+      if (raceCheck && raceCheck.length > 0) {
+        return raceCheck[0].id as string;
+      }
+    }
+    throw insertError;
+  }
   return inserted!.id as string;
 }
 
