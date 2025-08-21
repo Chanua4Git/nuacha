@@ -118,10 +118,20 @@
 
   /* Fix dropdown menu transparency issues */
   [data-radix-dropdown-menu-content] {
-    @apply !bg-white !z-50 !opacity-100 border shadow-lg;
+    @apply !bg-white !z-50 !opacity-100 border shadow-lg p-2 rounded-lg;
   }
 
   [data-radix-dropdown-menu-viewport] {
     @apply !z-50 !bg-white;
+  }
+
+  /* Enhanced dropdown menu item spacing */
+  [data-radix-dropdown-menu-item] {
+    @apply px-3 py-2 min-h-[2.5rem] flex items-center cursor-pointer hover:bg-gray-50 rounded-md;
+  }
+
+  /* Ensure proper backdrop for dropdown menus */
+  [data-radix-dropdown-menu-content] {
+    @apply backdrop-blur-sm;
   }
 }
