@@ -25,6 +25,7 @@ import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
 import Reports from "./pages/Reports";
 import Budget from "./pages/Budget";
 import DemoBudget from "./pages/DemoBudget";
+import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 
 const queryClient = new QueryClient({
@@ -106,6 +107,11 @@ const App = () => {
                     <Route path="/budget" element={
                       <ProtectedRoute>
                         <Budget />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/receipts" element={
+                      <ProtectedRoute>
+                        <Receipts />
                       </ProtectedRoute>
                     } />
                     <Route path="/demo/budget" element={<DemoBudget />} />
