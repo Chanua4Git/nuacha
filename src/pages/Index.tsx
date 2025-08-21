@@ -1,18 +1,28 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
 import ExpenseForm from '@/components/expense-form/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
 import RemindersList from '@/components/RemindersList';
 import { CategorySyncBanner } from '@/components/CategorySyncBanner';
-import { PlusCircle, ListFilter, Tag } from 'lucide-react';
+import { PlusCircle, ListFilter, Tag, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useFamilies } from '@/hooks/useFamilies';
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'expenses';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -44,7 +54,7 @@ const Index = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="expenses">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6">
                 <TabsTrigger value="expenses">
                   <ListFilter className="h-4 w-4 mr-2" />
@@ -53,6 +63,10 @@ const Index = () => {
                 <TabsTrigger value="add-expense">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add Expense
+                </TabsTrigger>
+                <TabsTrigger value="budget" onClick={() => navigate('/budget')}>
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Budget
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="expenses" className="mt-0">

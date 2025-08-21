@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, Heart, ArrowRight } from 'lucide-react';
+import { Info, Heart, ArrowRight, PlusCircle, Tag } from 'lucide-react';
+import FamilySelector from '@/components/FamilySelector';
 import BudgetDashboard from '@/components/budget/BudgetDashboard';
 import IncomeManager from '@/components/budget/IncomeManager';
 import { ExpenseCategoriesManager } from '@/components/budget/ExpenseCategoriesManager';
@@ -13,9 +14,10 @@ import HowToUse from '@/components/budget/HowToUse';
 import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 export default function Budget() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || (user ? 'dashboard' : 'build-budget');
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -61,6 +63,25 @@ export default function Budget() {
         </div>
       </div>
 
+      {/* Family Selector - Only for authenticated users */}
+      {user && (
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <div className="flex-1">
+            <FamilySelector />
+          </div>
+          <div>
+            <Button 
+              onClick={() => navigate('/options')} 
+              variant="outline" 
+              className="w-full md:w-auto"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              Add Categories
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Demo Alert for Non-Authenticated Users */}
       {!user && (
         <Alert className="border-primary/20 bg-primary/5">
@@ -83,7 +104,11 @@ export default function Budget() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {user ? (
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="add-expense" onClick={() => navigate('/app?tab=add-expense')}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Expense
+            </TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="builder">Budget Builder</TabsTrigger>
             <TabsTrigger value="income">Income</TabsTrigger>
