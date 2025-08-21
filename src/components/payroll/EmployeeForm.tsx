@@ -47,7 +47,7 @@ const employeeFormSchema = z.object({
   }
 }, {
   message: "Rate field is required and must be greater than 0 for the selected employment type",
-  path: ["employment_type"],
+  path: ["hourly_rate", "monthly_salary", "daily_rate", "weekly_rate"],
 });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
@@ -83,7 +83,21 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       monthly_salary: initialData.monthly_salary?.toString() || '',
       daily_rate: initialData.daily_rate?.toString() || '',
       weekly_rate: initialData.weekly_rate?.toString() || '',
-    } : {},
+    } : {
+      employee_number: '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      national_id: '',
+      employment_type: 'monthly',
+      hourly_rate: '',
+      monthly_salary: '',
+      daily_rate: '',
+      weekly_rate: '',
+      nis_number: '',
+      date_hired: '',
+    },
     mode: 'onChange',
   });
 
@@ -91,7 +105,20 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   const isEditMode = Boolean(initialData);
 
   // Debug logging for form state (temporary)
-  console.log('Form State Debug:', { isValid, isDirty, isEditMode });
+  console.log('Form State Debug:', { 
+    isValid, 
+    isDirty, 
+    isEditMode, 
+    employmentType,
+    errors: Object.keys(errors),
+    formValues: {
+      employment_type: employmentType,
+      hourly_rate: watch('hourly_rate'),
+      monthly_salary: watch('monthly_salary'),
+      daily_rate: watch('daily_rate'),
+      weekly_rate: watch('weekly_rate')
+    }
+  });
 
   const handleFormSubmit = async (data: EmployeeFormValues) => {
     setIsSubmitting(true);
