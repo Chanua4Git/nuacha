@@ -1,30 +1,155 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Receipt, Filter, Download, FileImage } from 'lucide-react';
+import { Receipt, Filter, Download, FileImage, ChevronDown, FileText, Archive, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ReceiptGallery from '@/components/receipt/ReceiptGallery';
+import ExportProgressDialog from '@/components/receipt/ExportProgressDialog';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useCategories } from '@/hooks/useCategories';
+import { useExpenses } from '@/hooks/useExpenses';
 import { useState } from 'react';
 import { useFilters } from '@/hooks/useFilters';
+import { exportReceiptsToPDF, exportReceiptsToZip, exportReceiptImages, estimateExportSize, ProgressCallback } from '@/utils/receipt/exportUtils';
+import { toast } from 'sonner';
 
 const Receipts = () => {
   const { families } = useFamilies();
   const { categories } = useCategories();
   const { filters, updateFilter, clearFilters } = useFilters();
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
+  
+  // Export states
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  const [isExportComplete, setIsExportComplete] = useState(false);
+  const [isExportError, setIsExportError] = useState(false);
+  const [exportErrorMessage, setExportErrorMessage] = useState('');
 
-  const handleExportSelected = () => {
-    // TODO: Implement export functionality in Phase 3
-    console.log('Exporting receipts:', selectedReceipts);
+  // Get filtered expenses for export
+  const expenseFilters = {
+    familyId: filters.familyId,
+    categoryId: filters.categoryIds?.[0],
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    place: filters.searchTerm,
+    minAmount: filters.minAmount,
+    maxAmount: filters.maxAmount,
+    searchTerm: filters.searchTerm
+  };
+  
+  const { expenses } = useExpenses(expenseFilters);
+  
+  // Filter to selected receipts and those with images
+  const getExportableExpenses = (useSelected = true) => {
+    let expensesToExport = expenses.filter(expense => 
+      expense.receiptUrl || expense.receiptImageUrl
+    );
+    
+    if (useSelected && selectedReceipts.length > 0) {
+      expensesToExport = expensesToExport.filter(expense => 
+        selectedReceipts.includes(expense.id)
+      );
+    }
+    
+    return expensesToExport;
+  };
+
+  const resetExportState = () => {
+    setExportProgress(null);
+    setIsExportComplete(false);
+    setIsExportError(false);
+    setExportErrorMessage('');
+  };
+
+  const handleExportType = async (type: 'pdf' | 'zip' | 'images') => {
+    const expensesToExport = getExportableExpenses();
+    
+    if (expensesToExport.length === 0) {
+      toast.error('No receipts with images found to export');
+      return;
+    }
+
+    setIsExportDialogOpen(true);
+    resetExportState();
+
+    const progressCallback: ProgressCallback = (progress) => {
+      setExportProgress(progress);
+    };
+
+    try {
+      switch (type) {
+        case 'pdf':
+          await exportReceiptsToPDF(expensesToExport, families, categories, progressCallback);
+          break;
+        case 'zip':
+          await exportReceiptsToZip(expensesToExport, families, categories, progressCallback);
+          break;
+        case 'images':
+          await exportReceiptImages(expensesToExport, progressCallback);
+          break;
+      }
+      
+      setIsExportComplete(true);
+      toast.success(`Successfully exported ${expensesToExport.length} receipts`);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      setIsExportError(true);
+      setExportErrorMessage(error instanceof Error ? error.message : 'Export failed');
+      toast.error('Export failed. Please try again.');
+    }
+  };
+
+  const handleExportAll = async (type: 'pdf' | 'zip' | 'images') => {
+    const expensesToExport = getExportableExpenses(false); // Don't filter by selection
+    
+    if (expensesToExport.length === 0) {
+      toast.error('No receipts with images found to export');
+      return;
+    }
+
+    setIsExportDialogOpen(true);
+    resetExportState();
+
+    const progressCallback: ProgressCallback = (progress) => {
+      setExportProgress(progress);
+    };
+
+    try {
+      switch (type) {
+        case 'pdf':
+          await exportReceiptsToPDF(expensesToExport, families, categories, progressCallback);
+          break;
+        case 'zip':
+          await exportReceiptsToZip(expensesToExport, families, categories, progressCallback);
+          break;
+        case 'images':
+          await exportReceiptImages(expensesToExport, progressCallback);
+          break;
+      }
+      
+      setIsExportComplete(true);
+      toast.success(`Successfully exported ${expensesToExport.length} receipts`);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      setIsExportError(true);
+      setExportErrorMessage(error instanceof Error ? error.message : 'Export failed');
+      toast.error('Export failed. Please try again.');
+    }
   };
 
   const filterCount = Object.values(filters).filter(value => 
     value !== undefined && value !== null && value !== ''
   ).length;
+  
+  // Get size estimates for UI
+  const expensesForEstimate = getExportableExpenses();
+  const sizeEstimates = expensesForEstimate.length > 0 ? estimateExportSize(expensesForEstimate) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,11 +168,79 @@ const Receipts = () => {
             </div>
             <div className="flex items-center gap-2">
               {selectedReceipts.length > 0 && (
-                <Button onClick={handleExportSelected} className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Export Selected ({selectedReceipts.length})
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Export Selected ({selectedReceipts.length})
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuItem onClick={() => handleExportType('pdf')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      <div className="flex-1">
+                        <div className="font-medium">Download as PDF</div>
+                        <div className="text-xs text-muted-foreground">
+                          Single document {sizeEstimates && `(~${sizeEstimates.pdf})`}
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportType('zip')}>
+                      <Archive className="mr-2 h-4 w-4" />
+                      <div className="flex-1">
+                        <div className="font-medium">Download as ZIP</div>
+                        <div className="text-xs text-muted-foreground">
+                          Images + CSV data {sizeEstimates && `(~${sizeEstimates.zip})`}
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportType('images')}>
+                      <Image className="mr-2 h-4 w-4" />
+                      <div className="flex-1">
+                        <div className="font-medium">Images Only</div>
+                        <div className="text-xs text-muted-foreground">
+                          Receipt images {sizeEstimates && `(~${sizeEstimates.images})`}
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
+              
+              {/* Export All Button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Export All
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={() => handleExportAll('pdf')}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <div className="flex-1">
+                      <div className="font-medium">Download as PDF</div>
+                      <div className="text-xs text-muted-foreground">All filtered receipts</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportAll('zip')}>
+                    <Archive className="mr-2 h-4 w-4" />
+                    <div className="flex-1">
+                      <div className="font-medium">Download as ZIP</div>
+                      <div className="text-xs text-muted-foreground">Images + CSV data</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportAll('images')}>
+                    <Image className="mr-2 h-4 w-4" />
+                    <div className="flex-1">
+                      <div className="font-medium">Images Only</div>
+                      <div className="text-xs text-muted-foreground">Receipt images</div>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -173,6 +366,16 @@ const Receipts = () => {
           filters={filters}
           selectedReceipts={selectedReceipts}
           onSelectionChange={setSelectedReceipts}
+        />
+        
+        {/* Export Progress Dialog */}
+        <ExportProgressDialog
+          isOpen={isExportDialogOpen}
+          onClose={() => setIsExportDialogOpen(false)}
+          progress={exportProgress}
+          isComplete={isExportComplete}
+          isError={isExportError}
+          errorMessage={exportErrorMessage}
         />
       </div>
     </div>
