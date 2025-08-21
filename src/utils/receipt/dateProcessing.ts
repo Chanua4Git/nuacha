@@ -12,6 +12,20 @@ export interface DateValidationResult {
 }
 
 /**
+ * Helper function to parse dates in local timezone
+ */
+function parseLocalDate(dateString: string): Date {
+  // For YYYY-MM-DD format, parse in local timezone to avoid UTC shift
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  // For other formats, use standard parsing but be aware of potential issues
+  return new Date(dateString);
+}
+
+/**
  * Validates and corrects OCR-extracted dates
  */
 export function validateAndCorrectDate(
@@ -28,8 +42,8 @@ export function validateAndCorrectDate(
 
   console.log('📅 Validating OCR date:', ocrDateString);
 
-  // Try to parse the OCR date
-  let parsedDate = new Date(ocrDateString);
+  // Parse date in local timezone to avoid UTC conversion issues
+  let parsedDate = parseLocalDate(ocrDateString);
   let confidence = 0.5;
   const suggestions: string[] = [];
 
@@ -37,7 +51,7 @@ export function validateAndCorrectDate(
   if (isNaN(parsedDate.getTime())) {
     // Try common OCR mistake patterns
     const correctedDateString = correctCommonOcrMistakes(ocrDateString);
-    parsedDate = new Date(correctedDateString);
+    parsedDate = parseLocalDate(correctedDateString);
     
     if (!isNaN(parsedDate.getTime())) {
       suggestions.push(`Corrected "${ocrDateString}" to "${correctedDateString}"`);

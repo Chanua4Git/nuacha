@@ -3,6 +3,18 @@ import { MindeeOCRResult } from './types.ts';
 import { processLineItems } from './line-items.ts';
 import { validateAndCorrectOcrDate } from './date-validation.ts';
 
+// Helper function to parse dates in local timezone
+function parseLocalDate(dateString: string): Date {
+  // For YYYY-MM-DD format, parse in local timezone to avoid UTC shift
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  // For other formats, use standard parsing but be aware of potential issues
+  return new Date(dateString);
+}
+
 // Enhanced date validation with fallback handling
 function validateAndCorrectDate(dateString: string | undefined, imageMetadata?: { fileName?: string; timestamp?: number }) {
   console.log('📅 Processing date from OCR:', dateString);
@@ -17,8 +29,8 @@ function validateAndCorrectDate(dateString: string | undefined, imageMetadata?: 
   }
 
   try {
-    // Try to parse the date string
-    const parsedDate = new Date(dateString);
+    // Parse date in local timezone to avoid UTC conversion issues
+    const parsedDate = parseLocalDate(dateString);
     
     if (isNaN(parsedDate.getTime())) {
       console.log('⚠️ Invalid date format, using current date as fallback');

@@ -6,6 +6,20 @@ export interface DateValidationResult {
   issues: string[];
 }
 
+/**
+ * Helper function to parse dates in local timezone
+ */
+function parseLocalDate(dateString: string): Date {
+  // For YYYY-MM-DD format, parse in local timezone to avoid UTC shift
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  // For other formats, use standard parsing but be aware of potential issues
+  return new Date(dateString);
+}
+
 export function validateAndCorrectOCRDate(
   dateInput: Date | string | undefined,
   imageMetadata?: { fileName?: string; timestamp?: number }
@@ -30,10 +44,10 @@ export function validateAndCorrectOCRDate(
     };
   }
 
-  // Convert to Date object if it's a string
+  // Convert to Date object if it's a string using local timezone parsing
   let workingDate: Date;
   if (typeof dateInput === 'string') {
-    workingDate = new Date(dateInput);
+    workingDate = parseLocalDate(dateInput);
   } else {
     workingDate = new Date(dateInput);
   }
