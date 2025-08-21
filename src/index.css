@@ -101,4 +101,18 @@
   .expense-card-other {
     @apply border-gray-400;
   }
+
+  /* Global dropdown fixes */
+  .dropdown-content {
+    @apply !bg-white border shadow-lg !z-50 !opacity-100;
+  }
+
+  /* Ensure all Radix navigation menus have proper stacking */
+  [data-radix-navigation-menu-viewport] {
+    @apply !z-50 !bg-white;
+  }
+
+  [data-radix-navigation-menu-content] {
+    @apply !z-50 !bg-white !opacity-100;
+  }
 }

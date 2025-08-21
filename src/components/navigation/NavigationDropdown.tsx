@@ -41,7 +41,7 @@ const NavigationDropdown = ({ title, items, className }: NavigationDropdownProps
             {title}
             <ChevronDown className="h-3 w-3" />
           </NavigationMenuTrigger>
-          <NavigationMenuContent className="min-w-[200px] p-2 bg-popover border shadow-lg rounded-md z-50">
+          <NavigationMenuContent className="min-w-[200px] p-2 !bg-white border shadow-lg rounded-md !z-50 !opacity-100">
             <div className="grid gap-1">
               {items.map((item) => (
                 <NavigationMenuLink key={item.name} asChild>
