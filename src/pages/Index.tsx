@@ -13,16 +13,23 @@ import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useFamilies } from '@/hooks/useFamilies';
 const Index = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'expenses';
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab);
+    const tab = searchParams.get('tab') || 'expenses';
+    setActiveTab(tab);
+  }, [searchParams]);
+
+  const handleTabChange = (value: string) => {
+    if (value === 'budget') {
+      navigate('/budget');
+    } else {
+      setActiveTab(value);
+      setSearchParams({ tab: value });
     }
-  }, [searchParams, activeTab]);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -54,7 +61,7 @@ const Index = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="mb-6">
                 <TabsTrigger value="expenses">
                   <ListFilter className="h-4 w-4 mr-2" />
@@ -64,7 +71,7 @@ const Index = () => {
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add Expense
                 </TabsTrigger>
-                <TabsTrigger value="budget" onClick={() => navigate('/budget')}>
+                <TabsTrigger value="budget">
                   <Calculator className="h-4 w-4 mr-2" />
                   Budget
                 </TabsTrigger>
