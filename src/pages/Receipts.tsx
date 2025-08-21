@@ -70,14 +70,14 @@ const Receipts = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Family</label>
                 <Select 
-                  value={filters.familyId || ''} 
-                  onValueChange={(value) => updateFilter('familyId', value || undefined)}
+                  value={filters.familyId} 
+                  onValueChange={(value) => updateFilter('familyId', value === 'all' ? undefined : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All families" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All families</SelectItem>
+                    <SelectItem value="all">All families</SelectItem>
                     {families.map((family) => (
                       <SelectItem key={family.id} value={family.id}>
                         {family.name}
@@ -90,14 +90,14 @@ const Receipts = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Category</label>
                 <Select 
-                  value={filters.categoryIds?.[0] || ''} 
-                  onValueChange={(value) => updateFilter('categoryIds', value ? [value] : undefined)}
+                  value={filters.categoryIds?.[0]} 
+                  onValueChange={(value) => updateFilter('categoryIds', value === 'all' ? undefined : [value])}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
