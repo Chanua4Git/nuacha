@@ -9,7 +9,7 @@ import { useBudgetVariance } from '@/hooks/useBudgetVariance';
 import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
-
+import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 export default function BudgetDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>({
     type: 'monthly',
@@ -19,6 +19,8 @@ export default function BudgetDashboard() {
   });
   
   const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate);
+  const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates();
+  const activeTemplate = getDefaultTemplate();
 
   if (loading) {
     return (
@@ -75,6 +77,34 @@ export default function BudgetDashboard() {
 
   return (
     <div className="space-y-6">
+      {activeTemplate ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
+            <div>
+              <div className="text-sm text-muted-foreground">Active Budget Template</div>
+              <div className="text-lg font-medium">{activeTemplate.name}</div>
+              <div className="text-xs text-muted-foreground">Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}</div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <a href="/budget?tab=builder">Edit in Builder</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
+            <div>
+              <div className="text-sm text-muted-foreground">No active budget template</div>
+              <div className="text-lg font-medium">Create your plan to compare vs actuals</div>
+            </div>
+            <Button asChild>
+              <a href="/budget?tab=builder">Create Budget Template</a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       {/* Period Selection */}
       <Card>
         <CardContent className="p-6">
