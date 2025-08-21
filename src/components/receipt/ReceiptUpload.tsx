@@ -3,8 +3,9 @@ import React, { useState, useRef } from 'react';
 import { processReceiptImage } from '@/utils/receipt';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
+import { removeBackground, loadImage } from '@/utils/receipt/backgroundRemoval';
 import UploadArea from './UploadArea';
-import ReceiptPreview from './ReceiptPreview';
+import EnhancedReceiptPreview from './EnhancedReceiptPreview';
 
 interface ReceiptUploadProps {
   onImageUpload: (file: File) => void;
@@ -23,6 +24,8 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [removeBackgroundEnabled, setRemoveBackgroundEnabled] = useState(false);
+  const [wasProcessedWithBackground, setWasProcessedWithBackground] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -72,6 +75,14 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
     }
   };
 
+  const handleEnhancedRetry = async () => {
+    if (currentFile) {
+      await processReceipt(currentFile, true, true);
+    } else if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const checkIfLongReceipt = (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -87,7 +98,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
     });
   };
 
-  const processReceipt = async (file: File, isRetry = false) => {
+  const processReceipt = async (file: File, isRetry = false, withBackgroundRemoval = false) => {
     setCurrentFile(file);
     onImageUpload(file);
     
@@ -104,7 +115,31 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
     
     setIsProcessing(true);
     try {
-      const extractedData = await processReceiptImage(file);
+      let fileToProcess = file;
+
+      // Apply background removal if enabled
+      if (withBackgroundRemoval || removeBackgroundEnabled) {
+        try {
+          const img = await loadImage(file);
+          const processedBlob = await removeBackground(img);
+          fileToProcess = new File([processedBlob], 'processed-receipt.png', { type: 'image/png' });
+          setWasProcessedWithBackground(true);
+          
+          toast.success('Background removed', {
+            description: 'Processing with enhanced clarity.'
+          });
+        } catch (error) {
+          console.error('Background removal failed:', error);
+          toast('Background removal skipped', {
+            description: 'Processing with original image.'
+          });
+          setWasProcessedWithBackground(false);
+        }
+      } else {
+        setWasProcessedWithBackground(false);
+      }
+
+      const extractedData = await processReceiptImage(fileToProcess);
       
       if (extractedData) {
         // Log quality indicators for long receipts
@@ -149,11 +184,15 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
           handleFileSelect={handleFileSelect}
         />
       ) : (
-        <ReceiptPreview
+        <EnhancedReceiptPreview
           imagePreview={imagePreview}
           isProcessing={isProcessing}
           onRetry={handleRetry}
+          onEnhancedRetry={handleEnhancedRetry}
           onRemove={onImageRemove}
+          removeBackgroundEnabled={removeBackgroundEnabled}
+          onToggleBackgroundRemoval={setRemoveBackgroundEnabled}
+          wasProcessedWithBackground={wasProcessedWithBackground}
         />
       )}
     </div>

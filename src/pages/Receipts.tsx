@@ -1,13 +1,15 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Receipt, Filter, Download, FileImage, ChevronDown, FileText, Archive, Image } from 'lucide-react';
+import { Receipt, Filter, Download, FileImage, ChevronDown, FileText, Archive, Image, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import ReceiptGallery from '@/components/receipt/ReceiptGallery';
 import ExportProgressDialog from '@/components/receipt/ExportProgressDialog';
+import BatchBackgroundRemoval from '@/components/receipt/BatchBackgroundRemoval';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
@@ -21,6 +23,7 @@ const Receipts = () => {
   const { categories } = useCategories();
   const { filters, updateFilter, clearFilters } = useFilters();
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
+  const [showBatchRemoval, setShowBatchRemoval] = useState(false);
   
   // Export states
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -167,6 +170,19 @@ const Receipts = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Batch Background Removal Button */}
+              <Dialog open={showBatchRemoval} onOpenChange={setShowBatchRemoval}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Remove Backgrounds
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <BatchBackgroundRemoval onClose={() => setShowBatchRemoval(false)} />
+                </DialogContent>
+              </Dialog>
+
               {selectedReceipts.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
