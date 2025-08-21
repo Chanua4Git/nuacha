@@ -1,6 +1,7 @@
 export interface BudgetTemplate {
   id: string;
   user_id: string;
+  family_id: string;
   name: string;
   description?: string;
   total_monthly_income: number;

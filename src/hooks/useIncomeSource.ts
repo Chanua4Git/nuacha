@@ -4,28 +4,31 @@ import { IncomeSource } from '@/types/budget';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { toast } from 'sonner';
 
-export function useIncomeSource() {
+export function useIncomeSource(familyId?: string) {
   const { user } = useAuth();
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !familyId) {
+      setIncomeSources([]);
       setLoading(false);
       return;
     }
 
     fetchIncomeSources();
-  }, [user]);
+  }, [user, familyId]);
 
   async function fetchIncomeSources() {
+    if (!familyId) return;
+    
     try {
       setLoading(true);
       
       const { data, error } = await supabase
         .from('income_sources')
         .select('*')
-        .eq('user_id', user!.id)
+        .eq('family_id', familyId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -41,15 +44,16 @@ export function useIncomeSource() {
     }
   }
 
-  async function createIncomeSource(sourceData: Omit<IncomeSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
-    if (!user) return null;
+  async function createIncomeSource(sourceData: Omit<IncomeSource, 'id' | 'user_id' | 'family_id' | 'created_at' | 'updated_at'>) {
+    if (!user || !familyId) return null;
 
     try {
       const { data, error } = await supabase
         .from('income_sources')
         .insert({
           ...sourceData,
-          user_id: user.id
+          user_id: user.id,
+          family_id: familyId
         })
         .select()
         .single();
@@ -75,7 +79,7 @@ export function useIncomeSource() {
         .from('income_sources')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('family_id', familyId)
         .select()
         .single();
 
@@ -100,7 +104,7 @@ export function useIncomeSource() {
         .from('income_sources')
         .update({ is_active: false })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('family_id', familyId);
 
       if (error) throw error;
 

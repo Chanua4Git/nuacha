@@ -4,25 +4,30 @@ import { useAuth } from '@/auth/contexts/AuthProvider';
 import type { BudgetTemplate, BudgetTemplateData } from '@/types/budgetTemplate';
 import { toast } from 'sonner';
 
-export function useBudgetTemplates() {
+export function useBudgetTemplates(familyId?: string) {
   const { user } = useAuth();
   const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && familyId) {
       fetchTemplates();
+    } else {
+      setTemplates([]);
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [user, familyId]);
 
   const fetchTemplates = async () => {
+    if (!familyId) return;
+    
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('budget_templates')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('family_id', familyId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -47,14 +52,14 @@ export function useBudgetTemplates() {
     is_default?: boolean;
   }) => {
     try {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !familyId) throw new Error('User not authenticated or family not selected');
 
       // If this is being set as default, unset other defaults first
       if (templateData.is_default) {
         await supabase
           .from('budget_templates')
           .update({ is_default: false })
-          .eq('user_id', user.id);
+          .eq('family_id', familyId);
       }
 
       const { data, error } = await supabase
@@ -62,6 +67,7 @@ export function useBudgetTemplates() {
         .insert({
           ...templateData,
           user_id: user.id,
+          family_id: familyId,
           template_data: templateData.template_data as any,
         })
         .select()
@@ -94,7 +100,7 @@ export function useBudgetTemplates() {
         await supabase
           .from('budget_templates')
           .update({ is_default: false })
-          .eq('user_id', user.id);
+          .eq('family_id', familyId);
       }
 
       const updateData = {
@@ -106,7 +112,7 @@ export function useBudgetTemplates() {
         .from('budget_templates')
         .update(updateData)
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('family_id', familyId)
         .select()
         .single();
 
@@ -138,7 +144,7 @@ export function useBudgetTemplates() {
         .from('budget_templates')
         .update({ is_active: false })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('family_id', familyId);
 
       if (error) throw error;
 

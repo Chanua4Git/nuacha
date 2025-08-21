@@ -12,9 +12,11 @@ import { formatTTD, toMonthly, getFrequencyDisplay } from '@/utils/budgetUtils';
 import { IncomeSource, FrequencyType } from '@/types/budget';
 import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { useExpense } from '@/context/ExpenseContext';
 
 export default function IncomeManager() {
-  const { incomeSources, loading, createIncomeSource, updateIncomeSource, deleteIncomeSource } = useIncomeSource();
+  const { selectedFamily } = useExpense();
+  const { incomeSources, loading, createIncomeSource, updateIncomeSource, deleteIncomeSource } = useIncomeSource(selectedFamily?.id);
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,6 +28,11 @@ export default function IncomeManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedFamily) {
+      toast.error('Please select a family first');
+      return;
+    }
     
     if (!formData.name.trim() || formData.amount_ttd <= 0) {
       toast.error('Please fill in all required fields');
@@ -88,19 +95,29 @@ export default function IncomeManager() {
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Income Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{formatTTD(totalMonthlyIncome)}</div>
-          <p className="text-sm text-muted-foreground">Total monthly income from {incomeSources.length} sources</p>
-        </CardContent>
-      </Card>
+      {!selectedFamily ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">
+              <p>Please select a family to manage income sources.</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Summary Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Income Summary - {selectedFamily.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{formatTTD(totalMonthlyIncome)}</div>
+              <p className="text-sm text-muted-foreground">Total monthly income from {incomeSources.length} sources</p>
+            </CardContent>
+          </Card>
 
       {/* Income Sources Table */}
       <Card>
@@ -249,6 +266,8 @@ export default function IncomeManager() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

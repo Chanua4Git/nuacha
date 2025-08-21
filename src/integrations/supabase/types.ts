@@ -120,6 +120,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          family_id: string | null
           id: string
           is_active: boolean
           is_default: boolean
@@ -132,6 +133,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          family_id?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -144,6 +146,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          family_id?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -153,7 +156,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budget_templates_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       budgets: {
         Row: {
@@ -691,6 +702,7 @@ export type Database = {
         Row: {
           amount_ttd: number
           created_at: string
+          family_id: string | null
           frequency: string
           id: string
           is_active: boolean
@@ -702,6 +714,7 @@ export type Database = {
         Insert: {
           amount_ttd?: number
           created_at?: string
+          family_id?: string | null
           frequency: string
           id?: string
           is_active?: boolean
@@ -713,6 +726,7 @@ export type Database = {
         Update: {
           amount_ttd?: number
           created_at?: string
+          family_id?: string | null
           frequency?: string
           id?: string
           is_active?: boolean
@@ -721,7 +735,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "income_sources_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nis_earnings_classes: {
         Row: {

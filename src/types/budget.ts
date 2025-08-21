@@ -4,6 +4,7 @@ export type BudgetGroupType = 'needs' | 'wants' | 'savings';
 export interface IncomeSource {
   id: string;
   user_id: string;
+  family_id: string;
   name: string;
   frequency: FrequencyType;
   amount_ttd: number;

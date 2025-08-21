@@ -10,6 +10,8 @@ import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
+import { useExpense } from '@/context/ExpenseContext';
+
 export default function BudgetDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>({
     type: 'monthly',
@@ -18,8 +20,9 @@ export default function BudgetDashboard() {
     displayName: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   });
   
+  const { selectedFamily } = useExpense();
   const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate);
-  const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates();
+  const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const activeTemplate = getDefaultTemplate();
 
   if (loading) {
@@ -77,11 +80,21 @@ export default function BudgetDashboard() {
 
   return (
     <div className="space-y-6">
+      {!selectedFamily ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">
+              <p>Please select a family to view budget dashboard.</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       {activeTemplate ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
             <div>
-              <div className="text-sm text-muted-foreground">Active Budget Template</div>
+              <div className="text-sm text-muted-foreground">Active Budget Template - {selectedFamily.name}</div>
               <div className="text-lg font-medium">{activeTemplate.name}</div>
               <div className="text-xs text-muted-foreground">Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}</div>
             </div>
@@ -96,7 +109,7 @@ export default function BudgetDashboard() {
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
             <div>
-              <div className="text-sm text-muted-foreground">No active budget template</div>
+              <div className="text-sm text-muted-foreground">No active budget template for {selectedFamily.name}</div>
               <div className="text-lg font-medium">Create your plan to compare vs actuals</div>
             </div>
             <Button asChild>
@@ -109,7 +122,7 @@ export default function BudgetDashboard() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Budget Dashboard</h2>
+            <h2 className="text-xl font-semibold">Budget Dashboard - {selectedFamily.name}</h2>
             <PeriodSelector
               value={selectedPeriod}
               onChange={setSelectedPeriod}
@@ -264,6 +277,8 @@ export default function BudgetDashboard() {
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 }

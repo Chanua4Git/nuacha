@@ -15,6 +15,7 @@ import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { useNavigate } from 'react-router-dom';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useExpense } from '@/context/ExpenseContext';
 
 interface BudgetData {
   aboutYou: {
@@ -114,8 +115,9 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
 export default function SAHMBudgetBuilder() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedFamily } = useExpense();
   const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
-  const { createTemplate } = useBudgetTemplates();
+  const { createTemplate } = useBudgetTemplates(selectedFamily?.id);
   const { setPreviewData } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetData>({
@@ -237,7 +239,7 @@ export default function SAHMBudgetBuilder() {
     }
 
     try {
-      if (user) {
+      if (user && selectedFamily) {
         // For authenticated users, save as budget template
         const totalIncome = Object.values(budgetData.income).reduce((sum, income) => {
           const frequency = income.frequency;
@@ -277,6 +279,8 @@ export default function SAHMBudgetBuilder() {
         
         toast.success("Budget template created! Redirecting to your dashboard...");
         navigate('/budget?tab=dashboard');
+      } else if (user && !selectedFamily) {
+        toast.error('Please select a family first');
       } else {
         // For demo users, submit to leads
         const success = await submitBudget(budgetData);
