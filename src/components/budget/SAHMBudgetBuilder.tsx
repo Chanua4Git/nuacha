@@ -44,6 +44,7 @@ interface CategoryInputProps {
 const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange }) => {
   const getSAHMExample = (categoryName: string): string => {
     const examples: Record<string, string> = {
+      // Needs examples
       'Groceries': 'weekly grocery shopping for family',
       'Electricity': 'monthly electricity bill',
       'Childcare': 'daycare, babysitter, or after-school care',
@@ -51,16 +52,36 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
       'Child clothing': 'growing kids need new clothes regularly',
       'School fees': 'tuition, supplies, activities',
       'Personal hygiene': 'basic toiletries for family',
-      'Dining out': 'family meals, treats for the kids',
       'Emergency expenses': 'unexpected costs that always come up',
-      'Savings': 'emergency fund, kids\' future, family goals',
       'Health insurance': 'medical coverage for the family',
       'Home insurance': 'property and contents insurance',
       'Pest control': 'monthly pest control service',
       'Employee NIS Contributions': 'NIS for domestic employees (helper, nanny)',
       'Medical supplies': 'medications, first aid, health items',
       'Household repairs': 'fixing things around the house',
-      'Toiletries': 'soap, shampoo, toothpaste, etc.'
+      'Toiletries': 'soap, shampoo, toothpaste, etc.',
+      
+      // Wants examples - lifestyle & personal care
+      'Dining out': 'family meals, date nights, treats for the kids',
+      'Skincare': 'face creams, serums, skincare routine',
+      'Makeup & cosmetics': 'makeup, beauty products, cosmetics',
+      'Haircuts & grooming': 'salon visits, hair treatments, styling',
+      'Nail care': 'manicures, pedicures, nail treatments',
+      'Spa & massage': 'spa treatments, massages, wellness',
+      'Gym membership': 'fitness membership, exercise classes',
+      'Cable / Streaming services': 'Netflix, cable TV, streaming subscriptions',
+      'Subscriptions': 'magazines, apps, online services',
+      'Events & tickets': 'movies, concerts, family outings',
+      'Hobbies & crafts': 'craft supplies, hobby materials, creative projects',
+      'Extracurricular activities': 'kids\' sports, music, dance classes',
+      'Toys & games': 'children\'s toys, games, entertainment',
+      'Birthday gifts': 'family birthday presents and celebrations',
+      'Holiday gifts': 'Christmas, holiday gifts and celebrations',
+      'Activities & tours': 'family day trips, local adventures, staycations',
+      'Gaming': 'video games, gaming accessories, entertainment',
+      
+      // Savings examples
+      'Savings': 'emergency fund, kids\' future, family goals'
     };
     return examples[categoryName] || `monthly ${categoryName.toLowerCase()} expenses`;
   };
@@ -133,6 +154,13 @@ export default function SAHMBudgetBuilder() {
     // Household essentials
     'home-insurance', 'pest-control', 'household-repairs', 'emergency-expenses', 'toiletries', 'elderly-care'
   ];
+
+  // Priority wants categories for SAHM lifestyle - comprehensive lifestyle options
+  const sahmPriorityWants = [
+    'dining-out', 'skincare', 'makeup-cosmetics', 'haircuts-grooming', 'nail-care', 'spa-massage', 
+    'gym-membership', 'cable-streaming', 'subscriptions', 'events-tickets', 'hobbies-crafts',
+    'extracurricular', 'child-toys', 'birthday-gifts', 'holiday-gifts', 'activities-tours', 'gaming'
+  ];
   
   const needsCategories = getCategoriesByGroup('needs').filter(cat => 
     sahmPriorityNeeds.includes(cat.id)
@@ -140,7 +168,10 @@ export default function SAHMBudgetBuilder() {
     // Add Employee NIS as a new category
     { id: 'employee-nis', name: 'Employee NIS Contributions', color: '#EF4444', group: 'needs' as const }
   ]);
-  const wantsCategories = getCategoriesByGroup('wants').slice(0, 8);
+  
+  const wantsCategories = getCategoriesByGroup('wants').filter(cat => 
+    sahmPriorityWants.includes(cat.id)
+  );
   const savingsCategories = getCategoriesByGroup('savings').slice(0, 4);
 
   const steps = [
