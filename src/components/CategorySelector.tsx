@@ -124,15 +124,24 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     // Group categories under their parent categories
     categories.forEach(category => {
       const parentId = mapDatabaseCategoryToParent(category);
-      const parentCategory = comprehensiveCategories.find(p => p.id === parentId);
       
-      if (parentCategory) {
-        const groupType = category.groupType as keyof typeof parentGroups;
-        if (!parentGroups[groupType][parentId]) {
-          parentGroups[groupType][parentId] = [];
-        }
-        parentGroups[groupType][parentId].push(category);
+      // Ensure groupType is valid, default to 'needs' if undefined or invalid
+      let groupType = category.groupType as keyof typeof parentGroups;
+      if (!groupType || !['needs', 'wants', 'savings'].includes(groupType)) {
+        groupType = 'needs'; // Default fallback
       }
+      
+      // Ensure the parent group exists for this groupType
+      if (!parentGroups[groupType]) {
+        parentGroups[groupType] = {};
+      }
+      
+      // Ensure the parent category array exists
+      if (!parentGroups[groupType][parentId]) {
+        parentGroups[groupType][parentId] = [];
+      }
+      
+      parentGroups[groupType][parentId].push(category);
     });
 
     // Sort categories within each parent group alphabetically
