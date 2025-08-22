@@ -18,14 +18,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   placeholder = "Select category...",
   className
 }) => {
-  // Only fetch family-specific categories, exclude general/budget categories
-  const { categories, hierarchicalCategories, isLoading } = useCategories(familyId, false);
+  // Fetch both family-specific AND budget categories for full categorization
+  const { categories, hierarchicalCategories, isLoading } = useCategories(familyId, true);
 
-  // Client-side deduplication by name (case-insensitive) - keep the first occurrence
-  const deduplicatedCategories = React.useMemo(() => {
+  // Group categories by groupType and sort alphabetically within groups
+  const groupedCategories = React.useMemo(() => {
     const seen = new Set<string>();
     const uniqueCategories: CategoryWithChildren[] = [];
     
+    // First deduplicate by name (case-insensitive)
     hierarchicalCategories.forEach(category => {
       const nameLower = category.name.toLowerCase();
       if (!seen.has(nameLower)) {
@@ -34,7 +35,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
       }
     });
     
-    return uniqueCategories;
+    // Group by groupType and sort alphabetically within each group
+    const groups = {
+      needs: uniqueCategories.filter(cat => cat.groupType === 'needs').sort((a, b) => a.name.localeCompare(b.name)),
+      wants: uniqueCategories.filter(cat => cat.groupType === 'wants').sort((a, b) => a.name.localeCompare(b.name)),
+      savings: uniqueCategories.filter(cat => cat.groupType === 'savings').sort((a, b) => a.name.localeCompare(b.name)),
+      other: uniqueCategories.filter(cat => !cat.groupType || !['needs', 'wants', 'savings'].includes(cat.groupType)).sort((a, b) => a.name.localeCompare(b.name))
+    };
+    
+    return groups;
   }, [hierarchicalCategories]);
 
   const renderCategoryOption = (category: CategoryWithChildren, level: number = 0) => {
@@ -47,6 +56,19 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
           {displayName}
         </SelectItem>
         {category.children?.map(child => renderCategoryOption(child, level + 1))}
+      </React.Fragment>
+    );
+  };
+
+  const renderGroup = (title: string, categories: CategoryWithChildren[], colorClass: string) => {
+    if (categories.length === 0) return null;
+    
+    return (
+      <React.Fragment key={title}>
+        <SelectItem value={`__header_${title}`} disabled className={`font-semibold text-sm ${colorClass} opacity-70 cursor-default`}>
+          {title.toUpperCase()}
+        </SelectItem>
+        {categories.map(category => renderCategoryOption(category))}
       </React.Fragment>
     );
   };
@@ -67,12 +89,17 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {deduplicatedCategories.length === 0 ? (
+        {Object.values(groupedCategories).every(group => group.length === 0) ? (
           <SelectItem value="" disabled>
             No categories available
           </SelectItem>
         ) : (
-          deduplicatedCategories.map(category => renderCategoryOption(category))
+          <>
+            {renderGroup('Needs', groupedCategories.needs, 'text-red-600')}
+            {renderGroup('Wants', groupedCategories.wants, 'text-orange-600')}
+            {renderGroup('Savings', groupedCategories.savings, 'text-green-600')}
+            {renderGroup('Other', groupedCategories.other, 'text-gray-600')}
+          </>
         )}
       </SelectContent>
     </Select>
