@@ -144,17 +144,16 @@ function suggestCategoryForItem(
   // This is a very basic algorithm, could be improved with ML/AI
   const cleanItemDesc = item.description.toLowerCase();
 
-  // Enhanced vendor recognition for grocery stores
-  const groceryVendors = [
-    'supermarket', 'grocery', 'market', 'food', 'walmart', 'target', 'kroger', 
-    'safeway', 'whole foods', 'trader joe', 'costco', 'sam\'s club', 'publix',
-    'iga', 'foodland', 'stop & shop', 'giant', 'harris teeter', 'wegmans',
-    'aldi', 'lidl', 'fresh market', 'hi-lo', 'massey', 'penny savers',
-    'jta', 'supercentre', 'pricesmart', 'massy', 'xtra foods'
+  // Enhanced vendor recognition for coffee shops and major chains
+  const diningVendors = [
+    'starbucks', 'tim hortons', 'dunkin', 'costa coffee', 'caribou coffee', 'peet\'s coffee',
+    'mcdonald', 'burger king', 'kfc', 'taco bell', 'subway', 'pizza hut', 'domino',
+    'restaurant', 'cafe', 'coffee', 'diner', 'bistro', 'grill', 'bar', 'pub',
+    'fast food', 'takeout', 'delivery'
   ];
 
-  // Check if this is a grocery store vendor - default unknown items to groceries
-  const isGroceryVendor = groceryVendors.some(vendor => 
+  // Check if this is a dining/restaurant vendor - default coffee/food items to dining out
+  const isDiningVendor = diningVendors.some(vendor => 
     vendorName.toLowerCase().includes(vendor)
   );
 
@@ -519,6 +518,23 @@ function suggestCategoryForItem(
           };
         }
       }
+    }
+  }
+
+  // Smart vendor-based categorization - prioritize dining for coffee shops
+  if (isDiningVendor) {
+    const diningCategory = categories.find(cat => 
+      cat.name.toLowerCase().includes('dining') ||
+      cat.name.toLowerCase().includes('food') ||
+      cat.id === 'dining-out'
+    );
+    
+    if (diningCategory) {
+      console.log(`Coffee shop/restaurant detected: ${vendorName} → ${diningCategory.name}`);
+      return {
+        categoryId: diningCategory.id,
+        confidence: 0.85 // High confidence for coffee shop categorization
+      };
     }
   }
 
