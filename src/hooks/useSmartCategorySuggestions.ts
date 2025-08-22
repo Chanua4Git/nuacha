@@ -19,47 +19,53 @@ interface SuggestionFactors {
   temporalScore: number;
 }
 
-// Baseline intelligence for vendor patterns
+// Trinidad and Tobago vendor patterns for smart categorization
 const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
-  // Coffee shops
-  'starbucks': { category: 'dining-out', confidence: 0.95 },
-  'tim hortons': { category: 'dining-out', confidence: 0.95 },
-  'dunkin': { category: 'dining-out', confidence: 0.95 },
-  'costa coffee': { category: 'dining-out', confidence: 0.95 },
-  'caribou coffee': { category: 'dining-out', confidence: 0.95 },
-  'peet\'s coffee': { category: 'dining-out', confidence: 0.95 },
+  // T&T Grocery Stores
+  'jta': { category: 'groceries', confidence: 0.95 },
+  'massy stores': { category: 'groceries', confidence: 0.95 },
+  'massy': { category: 'groceries', confidence: 0.95 },
+  'xtrafoods': { category: 'groceries', confidence: 0.95 },
+  'xtra foods': { category: 'groceries', confidence: 0.95 },
+  'hi-lo': { category: 'groceries', confidence: 0.95 },
+  'hilo': { category: 'groceries', confidence: 0.95 },
+  'pricesmart': { category: 'groceries', confidence: 0.95 },
+  'price smart': { category: 'groceries', confidence: 0.95 },
+  'truvalu': { category: 'groceries', confidence: 0.95 },
+  'tru valu': { category: 'groceries', confidence: 0.95 },
+  'super pharm': { category: 'groceries', confidence: 0.9 },
+  'superpharm': { category: 'groceries', confidence: 0.9 },
   
-  // Fast food
+  // International chains present in T&T
+  'starbucks': { category: 'dining-out', confidence: 0.95 },
   'mcdonald': { category: 'dining-out', confidence: 0.95 },
   'burger king': { category: 'dining-out', confidence: 0.95 },
   'kfc': { category: 'dining-out', confidence: 0.95 },
-  'taco bell': { category: 'dining-out', confidence: 0.95 },
   'subway': { category: 'dining-out', confidence: 0.95 },
   'pizza hut': { category: 'dining-out', confidence: 0.95 },
   'domino': { category: 'dining-out', confidence: 0.95 },
   
-  // Grocery stores
-  'walmart': { category: 'groceries', confidence: 0.9 },
-  'target': { category: 'groceries', confidence: 0.85 },
-  'kroger': { category: 'groceries', confidence: 0.95 },
-  'safeway': { category: 'groceries', confidence: 0.95 },
-  'whole foods': { category: 'groceries', confidence: 0.95 },
-  'trader joe': { category: 'groceries', confidence: 0.95 },
-  'costco': { category: 'groceries', confidence: 0.9 },
-  'sam\'s club': { category: 'groceries', confidence: 0.9 },
-  
-  // Gas stations
+  // T&T Gas Stations
+  'np': { category: 'fuel', confidence: 0.95 },
+  'national petroleum': { category: 'fuel', confidence: 0.95 },
+  'rubis': { category: 'fuel', confidence: 0.95 },
   'shell': { category: 'fuel', confidence: 0.95 },
-  'exxon': { category: 'fuel', confidence: 0.95 },
-  'bp': { category: 'fuel', confidence: 0.95 },
-  'chevron': { category: 'fuel', confidence: 0.95 },
   'texaco': { category: 'fuel', confidence: 0.95 },
+  'bp': { category: 'fuel', confidence: 0.95 },
+  'petrotrin': { category: 'fuel', confidence: 0.95 },
   
-  // Pharmacies
-  'cvs': { category: 'medication', confidence: 0.9 },
-  'walgreens': { category: 'medication', confidence: 0.9 },
-  'rite aid': { category: 'medication', confidence: 0.9 },
+  // T&T Banks and Financial
+  'rbc': { category: 'bank-fees', confidence: 0.9 },
+  'republic bank': { category: 'bank-fees', confidence: 0.9 },
+  'first citizens': { category: 'bank-fees', confidence: 0.9 },
+  'scotiabank': { category: 'bank-fees', confidence: 0.9 },
+  'cibc': { category: 'bank-fees', confidence: 0.9 },
+  'linx': { category: 'bank-fees', confidence: 0.85 },
+  'atm': { category: 'bank-fees', confidence: 0.8 },
+  
+  // Pharmacies (generic pattern maintained)
   'pharmacy': { category: 'medication', confidence: 0.85 },
+  'drug store': { category: 'medication', confidence: 0.85 },
 };
 
 // Line item intelligence for coffee/food items

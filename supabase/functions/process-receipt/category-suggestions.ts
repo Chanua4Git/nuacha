@@ -144,16 +144,28 @@ function suggestCategoryForItem(
   // This is a very basic algorithm, could be improved with ML/AI
   const cleanItemDesc = item.description.toLowerCase();
 
-  // Enhanced vendor recognition for coffee shops and major chains
+  // Trinidad and Tobago vendor recognition for dining establishments
   const diningVendors = [
-    'starbucks', 'tim hortons', 'dunkin', 'costa coffee', 'caribou coffee', 'peet\'s coffee',
-    'mcdonald', 'burger king', 'kfc', 'taco bell', 'subway', 'pizza hut', 'domino',
-    'restaurant', 'cafe', 'coffee', 'diner', 'bistro', 'grill', 'bar', 'pub',
-    'fast food', 'takeout', 'delivery'
+    // International chains present in T&T
+    'starbucks', 'kfc', 'mcdonald', 'burger king', 'subway', 'pizza hut', 'domino',
+    // Local T&T restaurants and dining
+    'restaurant', 'cafe', 'coffee', 'diner', 'bistro', 'grill', 'bar', 'pub', 'roti shop',
+    'doubles', 'bake and shark', 'fast food', 'takeout', 'delivery', 'lime', 'food court'
   ];
 
   // Check if this is a dining/restaurant vendor - default coffee/food items to dining out
   const isDiningVendor = diningVendors.some(vendor => 
+    vendorName.toLowerCase().includes(vendor)
+  );
+
+  // Check if this is a grocery vendor - for T&T specific stores
+  const groceryVendors = [
+    'jta', 'massy', 'xtrafoods', 'xtra foods', 'hi-lo', 'hilo', 
+    'pricesmart', 'price smart', 'truvalu', 'tru valu', 'super pharm', 'superpharm',
+    'grocery', 'supermarket', 'market'
+  ];
+  
+  const isGroceryVendor = groceryVendors.some(vendor => 
     vendorName.toLowerCase().includes(vendor)
   );
 
