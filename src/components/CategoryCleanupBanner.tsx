@@ -1,85 +1,63 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Trash2, CheckCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
-
-interface CleanupResult {
-  duplicates_removed: number;
-  categories_updated: number;
-  message: string;
-}
+import { AlertTriangle, Loader2, CheckCircle, Wrench } from 'lucide-react';
+import { useCategoryCleanup } from '@/hooks/useCategoryCleanup';
 
 export const CategoryCleanupBanner: React.FC = () => {
-  const [isCleaningUp, setIsCleaningUp] = useState(false);
-  const [lastCleanupResult, setLastCleanupResult] = useState<CleanupResult | null>(null);
-
-  const runCleanup = async () => {
-    setIsCleaningUp(true);
-    try {
-      const { data, error } = await supabase
-        .rpc('cleanup_duplicate_categories_advanced');
-      
-      if (error) throw error;
-      
-      const result = data?.[0] as CleanupResult;
-      setLastCleanupResult(result);
-      
-      if (result.duplicates_removed > 0) {
-        toast.success('Categories cleaned up successfully', {
-          description: result.message
-        });
-        // Trigger a page refresh to see the updated categories
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        toast.info(result.message);
-      }
-    } catch (error) {
-      console.error('Error running cleanup:', error);
-      toast.error('Failed to clean up categories', {
-        description: 'Please try again or contact support if the issue persists.'
-      });
-    } finally {
-      setIsCleaningUp(false);
-    }
-  };
+  const { 
+    runComprehensiveCleanup, 
+    validateCategories, 
+    isProcessing 
+  } = useCategoryCleanup();
 
   return (
-    <Alert className="mb-6 border-amber-200 bg-amber-50">
-      <AlertCircle className="h-4 w-4 text-amber-600" />
+    <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+      <AlertTriangle className="h-4 w-4 text-yellow-600" />
       <AlertDescription className="flex items-center justify-between">
         <div className="flex-1">
-          {lastCleanupResult?.duplicates_removed === 0 ? (
-            <span className="text-amber-800 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              No duplicate categories found. Your categories are clean!
-            </span>
-          ) : (
-            <span className="text-amber-800">
-              {lastCleanupResult 
-                ? `Last cleanup: ${lastCleanupResult.message}`
-                : 'Some categories may have duplicates. Click to clean up and improve performance.'
-              }
-            </span>
-          )}
+          <span className="font-medium text-yellow-800">
+            Category Optimization Tools
+          </span>
+          <p className="text-sm text-yellow-700 mt-1">
+            Clean up duplicate categories, fix orphaned references, and optimize your category structure for better performance.
+          </p>
         </div>
-        <Button 
-          onClick={runCleanup} 
-          disabled={isCleaningUp}
-          variant="outline"
-          size="sm"
-          className="ml-4"
-        >
-          {isCleaningUp ? (
-            <>Cleaning...</>
-          ) : (
-            <>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clean Up Categories
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2 ml-4">
+          <Button
+            onClick={validateCategories}
+            disabled={isProcessing}
+            variant="outline"
+            size="sm"
+            className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-1" />
+            )}
+            Validate
+          </Button>
+          <Button
+            onClick={runComprehensiveCleanup}
+            disabled={isProcessing}
+            variant="outline"
+            size="sm"
+            className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Wrench className="h-4 w-4 mr-1" />
+                Full Cleanup
+              </>
+            )}
+          </Button>
+        </div>
       </AlertDescription>
     </Alert>
   );

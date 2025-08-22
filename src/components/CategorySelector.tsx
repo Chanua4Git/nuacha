@@ -121,28 +121,39 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       savings: {} as { [parentId: string]: CategoryWithCamelCase[] }
     };
 
-    // Group categories under their parent categories
-    categories.forEach(category => {
-      const parentId = mapDatabaseCategoryToParent(category);
-      
-      // Ensure groupType is valid, default to 'needs' if undefined or invalid
-      let groupType = category.groupType as keyof typeof parentGroups;
-      if (!groupType || !['needs', 'wants', 'savings'].includes(groupType)) {
-        groupType = 'needs'; // Default fallback
-      }
-      
-      // Ensure the parent group exists for this groupType
-      if (!parentGroups[groupType]) {
-        parentGroups[groupType] = {};
-      }
-      
-      // Ensure the parent category array exists
-      if (!parentGroups[groupType][parentId]) {
-        parentGroups[groupType][parentId] = [];
-      }
-      
+  // Group categories under their parent categories
+  categories.forEach(category => {
+    const parentId = mapDatabaseCategoryToParent(category);
+    const parentCategory = comprehensiveCategories.find(p => p.id === parentId);
+    
+    // Ensure groupType is valid, default to 'needs' if undefined or invalid
+    let groupType = category.groupType as keyof typeof parentGroups;
+    if (!groupType || !['needs', 'wants', 'savings'].includes(groupType)) {
+      groupType = 'needs'; // Default fallback
+    }
+    
+    // Ensure the parent group exists for this groupType
+    if (!parentGroups[groupType]) {
+      parentGroups[groupType] = {};
+    }
+    
+    // Ensure the parent category array exists
+    if (!parentGroups[groupType][parentId]) {
+      parentGroups[groupType][parentId] = [];
+    }
+    
+    // Only add if parent category exists in comprehensive categories or if no parent mapping
+    if (parentCategory || parentId === 'miscellaneous') {
       parentGroups[groupType][parentId].push(category);
-    });
+    } else {
+      // Fallback: add to miscellaneous if parent not found
+      console.warn(`Category "${category.name}" could not be mapped to parent "${parentId}", adding to miscellaneous`);
+      if (!parentGroups[groupType]['miscellaneous']) {
+        parentGroups[groupType]['miscellaneous'] = [];
+      }
+      parentGroups[groupType]['miscellaneous'].push(category);
+    }
+  });
 
     // Sort categories within each parent group alphabetically
     Object.keys(parentGroups).forEach(groupKey => {
