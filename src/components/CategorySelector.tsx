@@ -37,6 +37,32 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       (cat.userId && !cat.familyId) // Include user-level budget categories
     )
   );
+
+  // Deduplicate by name (case-insensitive), preferring family-level categories over user-level ones
+  const displayCategories = Object.values(
+    availableCategories.reduce((acc, cat) => {
+      const key = cat.name.trim().toLowerCase();
+      const existing = acc[key];
+      const isFamily = selectedFamily && cat.familyId === selectedFamily?.id;
+      if (!existing) {
+        acc[key] = cat;
+      } else {
+        const existingIsFamily = selectedFamily && existing.familyId === selectedFamily?.id;
+        // Prefer family-level over user-level
+        if (isFamily && !existingIsFamily) {
+          acc[key] = cat;
+        } else if (isFamily === existingIsFamily) {
+          // If both same scope, prefer regular categories over budget categories
+          const catIsRegular = !cat.isBudgetCategory;
+          const existingIsRegular = !existing.isBudgetCategory;
+          if (catIsRegular && !existingIsRegular) {
+            acc[key] = cat;
+          }
+        }
+      }
+      return acc;
+    }, {} as Record<string, CategoryWithCamelCase>)
+  );
   
   const getCategory = (id: string): CategoryWithCamelCase | undefined => 
     categories.find(c => c.id === id);
@@ -173,13 +199,13 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
 
   // Render hierarchical categories for both demo and real data
   const renderCategories = () => {
-    if (availableCategories.length === 0) {
+    if (displayCategories.length === 0) {
       // Use comprehensive demo categories with hierarchical structure
       return renderHierarchicalDemoCategories();
     }
     
     // Use real categories organized hierarchically under parent headers
-    const organizedCategories = organizeCategories(availableCategories);
+    const organizedCategories = organizeCategories(displayCategories);
     
     // Get parent categories for each group from comprehensiveCategories
     const needsParents = comprehensiveCategories.filter(cat => cat.group === 'needs');
