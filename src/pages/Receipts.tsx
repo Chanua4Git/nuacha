@@ -24,6 +24,7 @@ const Receipts = () => {
   const { filters, updateFilter, clearFilters } = useFilters();
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [showBatchRemoval, setShowBatchRemoval] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Export states
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -179,7 +180,14 @@ const Receipts = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl">
-                  <BatchBackgroundRemoval onClose={() => setShowBatchRemoval(false)} />
+                  <BatchBackgroundRemoval 
+                    onClose={() => setShowBatchRemoval(false)}
+                    filters={expenseFilters}
+                    onComplete={() => {
+                      setRefreshKey(prev => prev + 1);
+                      setShowBatchRemoval(false);
+                    }}
+                  />
                 </DialogContent>
               </Dialog>
 
@@ -379,6 +387,7 @@ const Receipts = () => {
 
         {/* Receipt Gallery */}
         <ReceiptGallery 
+          key={refreshKey}
           filters={filters}
           selectedReceipts={selectedReceipts}
           onSelectionChange={setSelectedReceipts}

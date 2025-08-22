@@ -13,10 +13,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface BatchBackgroundRemovalProps {
   onClose: () => void;
+  filters?: any;
+  onComplete?: () => void;
 }
 
-const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose }) => {
-  const { expenses } = useExpenses();
+const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose, filters, onComplete }) => {
+  const { expenses } = useExpenses(filters);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
@@ -24,10 +26,11 @@ const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose
   const [currentReceipt, setCurrentReceipt] = useState<string>('');
 
   // Find receipts with backgrounds that can be processed
-  const receiptsWithImages = expenses?.filter(expense => 
-    expense.receiptUrl && 
-    !expense.receiptUrl.includes('processed-receipt.png')
-  ) || [];
+  const receiptsWithImages = expenses?.filter(expense => {
+    const hasReceiptUrl = expense.receiptUrl && !expense.receiptUrl.includes('processed-receipt');
+    const hasReceiptImageUrl = expense.receiptImageUrl && !expense.receiptImageUrl.includes('processed-receipt');
+    return hasReceiptUrl || hasReceiptImageUrl;
+  }) || [];
 
   const handleBatchProcess = async () => {
     if (receiptsWithImages.length === 0) {
@@ -44,8 +47,12 @@ const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose
       try {
         setCurrentReceipt(expense.description || 'Unknown receipt');
 
+        // Determine which image URL to process
+        const imageUrl = expense.receiptUrl || expense.receiptImageUrl;
+        if (!imageUrl) continue;
+
         // Download the original image
-        const response = await fetch(expense.receiptUrl!);
+        const response = await fetch(imageUrl);
         const blob = await response.blob();
         
         // Load image and remove background
@@ -68,10 +75,18 @@ const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose
           .from('receipts')
           .getPublicUrl(fileName);
 
-        // Update expense with new receipt URL
+        // Update expense with new processed receipt URLs
+        const updateData: any = {};
+        if (expense.receiptUrl) {
+          updateData.receipt_url = urlData.publicUrl;
+        }
+        if (expense.receiptImageUrl) {
+          updateData.receipt_image_url = urlData.publicUrl;
+        }
+
         const { error: updateError } = await supabase
           .from('expenses')
-          .update({ receipt_url: urlData.publicUrl })
+          .update(updateData)
           .eq('id', expense.id);
 
         if (updateError) throw updateError;
@@ -91,6 +106,11 @@ const BatchBackgroundRemoval: React.FC<BatchBackgroundRemovalProps> = ({ onClose
       toast.success(`Successfully processed ${processedCount} receipts!`);
     } else {
       toast.warning(`Processed ${processedCount} receipts, ${failedCount} failed`);
+    }
+
+    // Call completion callback to refresh the data
+    if (onComplete) {
+      onComplete();
     }
   };
 
