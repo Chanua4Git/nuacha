@@ -472,6 +472,8 @@ const ExpenseForm = () => {
           <CategorySelector
             value={category}
             onChange={setCategory}
+            place={place || ocrResult?.storeDetails?.name}
+            lineItems={ocrResult?.lineItems}
           />
           
           <RecurringDateSelector

@@ -8,8 +8,9 @@ import {
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
 import { useCategories } from '@/hooks/useCategories';
-import { Tag, RefreshCw } from 'lucide-react';
-import { CategoryWithCamelCase } from '@/types/expense';
+import { useSmartCategorySuggestions } from '@/hooks/useSmartCategorySuggestions';
+import { Tag, RefreshCw, Sparkles, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { CategoryWithCamelCase, ReceiptLineItem } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getAllDemoCategories, findDemoCategory, comprehensiveCategories } from '@/data/comprehensiveCategories';
@@ -20,13 +21,23 @@ interface CategorySelectorProps {
   className?: string;
   suggestedCategoryId?: string;
   includeAllOption?: boolean; // Add this prop for Reports page
+  place?: string; // For smart suggestions
+  lineItems?: ReceiptLineItem[]; // For smart suggestions
 }
 
-const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption }: CategorySelectorProps) => {
+const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption, place, lineItems }: CategorySelectorProps) => {
   const { selectedFamily } = useExpense();
   
   // Use the categories hook directly to get fresh data
   const { categories, isLoading: categoriesLoading, refetch } = useCategories(selectedFamily?.id);
+  
+  // Get smart suggestions based on place and line items
+  const { suggestions, isLoading: suggestionsLoading } = useSmartCategorySuggestions(
+    place,
+    lineItems,
+    selectedFamily?.id,
+    categories
+  );
   
   // Filter categories to show general ones + those for the selected family
   // Include user-level budget categories when familyId is null
@@ -195,6 +206,54 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     });
 
     return parentGroups;
+  };
+
+  // Render smart suggestions section
+  const renderSmartSuggestions = () => {
+    if (suggestions.length === 0) return null;
+
+    const getReasonIcon = (reason: string) => {
+      if (reason.includes('purchases')) return <TrendingUp className="w-3 h-3 text-primary/60" />;
+      if (reason.includes('items')) return <Tag className="w-3 h-3 text-primary/60" />;
+      if (reason.includes('Frequently')) return <TrendingUp className="w-3 h-3 text-primary/60" />;
+      if (reason.includes('Recently')) return <Clock className="w-3 h-3 text-primary/60" />;
+      if (reason.includes('time')) return <Calendar className="w-3 h-3 text-primary/60" />;
+      return <Sparkles className="w-3 h-3 text-primary/60" />;
+    };
+
+    return (
+      <>
+        <div className="px-2 py-1.5 text-xs font-semibold text-primary bg-primary/5 border-b flex items-center gap-1">
+          <Sparkles className="w-3 h-3" />
+          SMART SUGGESTIONS
+        </div>
+        {suggestions.map((suggestion, index) => (
+          <SelectItem
+            key={`smart-${suggestion.categoryId}`}
+            value={suggestion.categoryId}
+            className="flex items-center justify-between px-3 py-2 bg-primary/5 hover:bg-primary/10"
+          >
+            <div className="flex items-center flex-1">
+              <span 
+                className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                style={{ backgroundColor: suggestion.category.color }}
+              />
+              <div className="flex flex-col flex-1">
+                <span className="font-medium text-sm">{suggestion.category.name}</span>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {getReasonIcon(suggestion.reasons[0])}
+                  <span>{suggestion.reasons[0]}</span>
+                  <span className="ml-auto text-primary font-medium">
+                    {Math.round(suggestion.confidence)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </SelectItem>
+        ))}
+        <div className="h-px bg-border my-1" />
+      </>
+    );
   };
 
   // Render hierarchical categories for both demo and real data
@@ -496,7 +555,10 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="z-50 bg-background border shadow-md">
+        <SelectContent className="z-50 bg-background border shadow-md max-h-[400px]">
+          {/* Show smart suggestions first */}
+          {renderSmartSuggestions()}
+          
           {includeAllOption && (
             <SelectItem value="all_categories">
               <div className="flex items-center">
@@ -506,7 +568,8 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             </SelectItem>
           )}
           
-          {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && (
+          {/* Show suggested category if no smart suggestions available */}
+          {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && suggestions.length === 0 && (
             <SelectItem 
               value={suggestedCategory.id} 
               className="font-medium border-b border-dashed border-gray-200 pb-1 mb-1"
