@@ -173,8 +173,7 @@ const DemoExpenseForm = ({
           
           <CategorySelector
             value={category}
-            onValueChange={setCategory}
-            familyId="demo-family"
+            onChange={setCategory}
           />
           
           <DateSelector

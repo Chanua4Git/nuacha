@@ -18,7 +18,7 @@ import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabe
 import { toast } from 'sonner';
 
 const ExpenseList = () => {
-  const { filteredExpenses, expenses: allExpenses, deleteExpense, selectedFamily } = useExpense();
+  const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -244,8 +244,7 @@ const ExpenseList = () => {
               <div>
                 <CategorySelector
                   value={filters.categoryId}
-                  onValueChange={(value) => updateFilter('categoryId', value)}
-                  familyId={selectedFamily?.id || ''}
+                  onChange={(value) => updateFilter('categoryId', value)}
                 />
               </div>
               

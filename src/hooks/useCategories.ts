@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Category, CategoryWithCamelCase } from '@/types/expense';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 
+// Interface for the hierarchical category structure
 export interface CategoryWithChildren extends CategoryWithCamelCase {
   children?: CategoryWithChildren[];
 }
@@ -15,23 +17,30 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Build hierarchical structure from flat categories
   const buildHierarchy = (categories: CategoryWithCamelCase[]): CategoryWithChildren[] => {
+    // Create a map of categories by id for easy access
     const categoryMap = new Map<string, CategoryWithChildren>();
     
+    // Initialize the map with all categories
     categories.forEach(cat => {
       categoryMap.set(cat.id, { ...cat, children: [] });
     });
     
+    // Create hierarchical structure
     const rootCategories: CategoryWithChildren[] = [];
     
+    // Process each category to build the tree
     categories.forEach(cat => {
       const category = categoryMap.get(cat.id);
       if (!category) return;
       
       if (cat.parentId && categoryMap.has(cat.parentId)) {
+        // This is a child category, add it to its parent's children
         const parent = categoryMap.get(cat.parentId);
         parent?.children?.push(category);
       } else {
+        // This is a root category
         rootCategories.push(category);
       }
     });
@@ -39,6 +48,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
     return rootCategories;
   };
 
+  // Fetch categories and build hierarchy
   const fetchCategories = async () => {
     if (!user) {
       console.log('User not available yet, skipping category fetch');
@@ -51,22 +61,19 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       let query = supabase.from('categories').select('*');
       
       if (familyId) {
-        if (includeGeneralCategories) {
-          // Include family-specific AND user-level budget categories
-          query = query.or(`family_id.eq.${familyId},and(family_id.is.null,user_id.eq.${user.id})`);
-        } else {
-          // Only family-specific categories (excludes user-level budget categories)
-          query = query.eq('family_id', familyId);
-        }
+        // Include family-specific, user-level budget categories, and general categories
+        query = query.or(`family_id.eq.${familyId},and(family_id.is.null,user_id.eq.${user.id})`);
       } else if (includeGeneralCategories) {
+        // Include user-level categories (including budget categories) and general categories
         query = query.or(`user_id.eq.${user.id},family_id.is.null`);
       } else {
-        return;
+        return; // No specific family and not including general - skip fetch
       }
       
       const { data, error } = await query;
       if (error) throw error;
       
+      // Convert snake_case database fields to camelCase for application use
       let mappedCategories: CategoryWithCamelCase[] = (data || []).map(item => ({
         id: item.id,
         name: item.name,
@@ -83,10 +90,10 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         isBudgetCategory: item.is_budget_category
       }));
       
-      // Enhanced client-side deduplication (case-insensitive by name + family/user context)
+      // Client-side deduplication as safety net
       const seen = new Set<string>();
       const deduplicatedCategories = mappedCategories.filter(cat => {
-        const key = `${cat.userId || 'null'}-${cat.familyId || 'null'}-${cat.name.toLowerCase()}-${cat.isBudgetCategory || false}`;
+        const key = `${cat.userId || 'null'}-${cat.familyId || 'null'}-${cat.name.toLowerCase()}-${cat.isBudgetCategory}`;
         if (seen.has(key)) {
           console.warn('Duplicate category detected and filtered:', cat.name, cat.id);
           return false;
@@ -109,10 +116,12 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
   };
 
   useEffect(() => {
+    // Initial load
     if (user) {
       fetchCategories();
     }
 
+    // Realtime subscription for category changes
     const channel = supabase
       .channel(`categories-${familyId || 'all'}-${includeGeneralCategories ? 'incl-general' : 'family-only'}`)
       .on(
@@ -120,6 +129,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         { event: '*', schema: 'public', table: 'categories' },
         (payload: any) => {
           const row = payload.new ?? payload.old;
+          // If no family filter, or include general categories, refetch broadly
           if (!familyId) {
             fetchCategories();
             return;
@@ -141,6 +151,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   const createCategory = async (category: Omit<CategoryWithCamelCase, 'id'>) => {
     try {
+      // Convert camelCase to snake_case for database insert
       const { data, error } = await supabase
         .from('categories')
         .insert([{
@@ -156,6 +167,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
       
       if (error) throw error;
       
+      // Convert snake_case back to camelCase for application use
       const newCategory: CategoryWithCamelCase = {
         id: data[0].id,
         name: data[0].name,
@@ -190,6 +202,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   const updateCategory = async (id: string, updates: Partial<CategoryWithCamelCase>) => {
     try {
+      // Convert camelCase to snake_case for database update
       const updatesToApply: any = {};
       
       if (updates.name !== undefined) updatesToApply.name = updates.name;
@@ -224,6 +237,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         description: `Changes to "${updates.name || 'category'}" have been saved.`
       });
       
+      // Convert snake_case back to camelCase
       return {
         id: data[0].id,
         name: data[0].name,
@@ -246,6 +260,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
   const deleteCategory = async (id: string) => {
     try {
+      // Build a set of this category and all its descendants
       const buildDescendants = (rootId: string) => {
         const ids = new Set<string>();
         const names = new Set<string>();
@@ -273,6 +288,8 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
 
       const { ids: idsToDelete, names: namesToCheck } = buildDescendants(id);
 
+      // Guard: block deletion if any related expenses or receipt line items exist
+      // 1) Expenses use category by NAME in this app schema
       const expenseQuery = supabase
         .from('expenses')
         .select('id')
@@ -300,6 +317,7 @@ export const useCategories = (familyId?: string, includeGeneralCategories: boole
         throw new Error(`${reason} Please reassign them before deleting.`);
       }
 
+      // Delete the category and all its descendants in a single statement
       const { error } = await supabase
         .from('categories')
         .delete()
