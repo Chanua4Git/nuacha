@@ -24,7 +24,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
-  const [removeBackgroundEnabled, setRemoveBackgroundEnabled] = useState(false);
+  const [removeBackgroundEnabled, setRemoveBackgroundEnabled] = useState(true);
   const [wasProcessedWithBackground, setWasProcessedWithBackground] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -100,7 +100,6 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
 
   const processReceipt = async (file: File, isRetry = false, withBackgroundRemoval = false) => {
     setCurrentFile(file);
-    onImageUpload(file);
     
     // Check if this is a long receipt and warn user
     if (!isRetry) {
@@ -116,6 +115,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
     setIsProcessing(true);
     try {
       let fileToProcess = file;
+      let fileToSave = file; // This will be the file we pass to onImageUpload
 
       // Apply background removal if enabled
       if (withBackgroundRemoval || removeBackgroundEnabled) {
@@ -123,6 +123,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
           const img = await loadImage(file);
           const processedBlob = await removeBackground(img);
           fileToProcess = new File([processedBlob], 'processed-receipt.png', { type: 'image/png' });
+          fileToSave = fileToProcess; // Use the processed file for saving
           setWasProcessedWithBackground(true);
           
           toast.success('Background removed', {
@@ -134,10 +135,15 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
             description: 'Processing with original image.'
           });
           setWasProcessedWithBackground(false);
+          // fileToSave remains the original file
         }
       } else {
         setWasProcessedWithBackground(false);
+        // fileToSave remains the original file
       }
+
+      // Upload the appropriate file (processed or original)
+      onImageUpload(fileToSave);
 
       const extractedData = await processReceiptImage(fileToProcess);
       
