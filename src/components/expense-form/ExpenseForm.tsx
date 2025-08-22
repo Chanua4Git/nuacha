@@ -471,7 +471,8 @@ const ExpenseForm = () => {
           
           <CategorySelector
             value={category}
-            onChange={setCategory}
+            onValueChange={setCategory}
+            familyId={selectedFamily?.id || ''}
           />
           
           <RecurringDateSelector

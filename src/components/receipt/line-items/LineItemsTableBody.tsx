@@ -153,7 +153,7 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
               {familyId && (
                 <CategorySelector 
                   value={isEditing ? editingItem.categoryId : item.categoryId} 
-                  onChange={(categoryId) => {
+                  onValueChange={(categoryId) => {
                     if (isEditing) {
                       handleChange(index, 'categoryId', categoryId);
                     } else if (onSaveLineItem) {
@@ -167,7 +167,7 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                         .catch(() => toast.error("Failed to update category"));
                     }
                   }}
-                  suggestedCategoryId={item.suggestedCategoryId}
+                  familyId={familyId || ''}
                   className="mb-0"
                 />
               )}

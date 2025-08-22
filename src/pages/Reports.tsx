@@ -204,8 +204,8 @@ const Reports = () => {
                       <div>
                         <CategorySelector
                           value={selectedCategory}
-                          onChange={(value) => setSelectedCategory(value)}
-                          includeAllOption={true}
+                          onValueChange={(value) => setSelectedCategory(value)}
+                          familyId={selectedFamily.id}
                         />
                       </div>
                     </div>
