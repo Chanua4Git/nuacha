@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export type BudgetGroup = 'needs' | 'wants' | 'savings';
@@ -5,7 +6,7 @@ export type BudgetGroup = 'needs' | 'wants' | 'savings';
 type CategorySeed = {
   name: string;
   color?: string;
-  group?: BudgetGroup; // Preferred budget group for mapping
+  group?: BudgetGroup;
   children?: CategorySeed[];
 };
 
@@ -162,34 +163,32 @@ const recommendedCategorySeeds: CategorySeed[] = [
 function determineGroupFromName(name: string): BudgetGroup {
   const n = name.toLowerCase();
   
-  // Needs categories (Essential expenses)
   if (
     /rent|mortgage|electricity|water|sewer|gas|internet|wifi|phone|mobile|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|dental insurance|life insurance|home insurance|loan repayments|student loan|property tax|emergency|legal fees|bank fees|school fees|school lunch|school transport|books|stationery|school uniforms|childcare|vision care|glasses|contacts|elderly care|special dietary|formula|baby food/.test(n)
   ) {
     return 'needs';
   }
   
-  // Savings categories
   if (/saving|investment|retire|debt/.test(n)) {
     return 'savings';
   }
   
-  // Wants categories (Lifestyle expenses) - everything else defaults here
   return 'wants';
 }
 
+// Case-insensitive check for existing categories
 async function getOrCreateCategory(
   familyId: string,
   name: string,
   parentId: string | null
 ): Promise<string> {
   try {
-    // Check for existing category by name + parent within family
+    // Check for existing category by name + parent within family (case-insensitive)
     let query = supabase
       .from('categories')
       .select('id')
       .eq('family_id', familyId)
-      .eq('name', name);
+      .ilike('name', name); // Use ilike for case-insensitive match
 
     if (parentId === null) {
       query = query.filter('parent_id', 'is', null);
@@ -239,7 +238,6 @@ async function seedTree(
 
 export async function seedRecommendedExpenseCategories(familyId: string) {
   try {
-    // Verify family exists and user has access by checking family ownership
     const { data: family, error: familyError } = await supabase
       .from('families')
       .select('id, user_id')
@@ -263,7 +261,6 @@ export async function seedRecommendedExpenseCategories(familyId: string) {
 }
 
 export async function ensureBudgetDefaults(userId: string) {
-  // If user has no budget categories, initialize defaults using the safer version
   const { data: existing, error } = await supabase
     .from('categories')
     .select('id')
@@ -278,26 +275,26 @@ export async function ensureBudgetDefaults(userId: string) {
   }
 }
 
+// Case-insensitive budget category creation with enhanced duplicate checking
 export async function ensureBudgetCategory(
   userId: string,
   name: string,
   group: BudgetGroup,
   sortOrder = 100
 ): Promise<string> {
-  // Enhanced duplicate check - look for existing by name and user, regardless of group initially
+  // Case-insensitive duplicate check
   const { data: existing, error: selectError } = await supabase
     .from('categories')
     .select('id, group_type')
     .eq('user_id', userId)
-    .eq('name', name)
+    .ilike('name', name) // Case-insensitive search
     .is('is_budget_category', true)
-    .is('family_id', null) // Only user-level budget categories
+    .is('family_id', null)
     .limit(1);
   if (selectError) throw selectError;
   
   if (existing && existing.length > 0) {
     const category = existing[0];
-    // If group type differs, update it
     if (category.group_type !== group) {
       await supabase
         .from('categories')
@@ -316,19 +313,18 @@ export async function ensureBudgetCategory(
       group_type: group, 
       sort_order: sortOrder,
       is_budget_category: true,
-      family_id: null, // Explicitly set for user-level budget categories
+      family_id: null,
       color: group === 'needs' ? '#EF4444' : group === 'savings' ? '#22C55E' : '#F97316'
     })
     .select('id')
     .single();
   if (insertError) {
-    // Handle potential race condition - try to find existing again
-    if (insertError.code === '23505') { // Unique violation
+    if (insertError.code === '23505') { // Unique violation - race condition
       const { data: raceCheck } = await supabase
         .from('categories')
         .select('id')
         .eq('user_id', userId)
-        .eq('name', name)
+        .ilike('name', name)
         .is('is_budget_category', true)
         .is('family_id', null)
         .limit(1);
@@ -348,7 +344,6 @@ export async function syncExpenseToBudgetCategories(
   try {
     await ensureBudgetDefaults(userId);
 
-    // Verify family ownership before syncing
     const { data: family, error: familyError } = await supabase
       .from('families')
       .select('id, user_id')
@@ -361,18 +356,15 @@ export async function syncExpenseToBudgetCategories(
       throw new Error('You do not have permission to sync categories for this family');
     }
 
-    // Fetch all categories for the family
     const { data: cats, error } = await supabase
       .from('categories')
       .select('id, name, parent_id')
       .eq('family_id', familyId);
     if (error) throw error;
 
-    // Build a set of unique top-level and important subcategory names
     const uniqueNames = new Set<string>();
     cats?.forEach((c) => uniqueNames.add(c.name));
 
-    // Also include all seed names to guarantee presence
     const collectSeedNames = (seeds: CategorySeed[]) => {
       for (const s of seeds) {
         uniqueNames.add(s.name);
@@ -381,7 +373,6 @@ export async function syncExpenseToBudgetCategories(
     };
     collectSeedNames(recommendedCategorySeeds);
 
-    // Create missing budget categories with group inference
     let sort = 50;
     for (const name of uniqueNames) {
       const group = determineGroupFromName(name);
