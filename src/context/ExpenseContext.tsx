@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo, use
 import { Family, Expense, CategoryWithCamelCase, Reminder } from '@/types/expense';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useExpenses } from '@/hooks/useExpenses';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useReminders } from '@/hooks/useReminders';
 
@@ -111,7 +111,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const { 
     categories,
     isLoading: categoriesLoading 
-  } = useCategories(selectedFamily?.id);
+  } = useUnifiedCategories({ 
+    familyId: selectedFamily?.id, 
+    mode: 'family-only' 
+  });
 
   // Get expenses based on the selected family - only fetch when family is properly selected
   const { 

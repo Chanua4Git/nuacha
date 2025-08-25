@@ -22,125 +22,143 @@ interface SuggestionFactors {
 // Trinidad and Tobago vendor patterns for smart categorization
 const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
   // T&T Grocery Stores
-  'jta': { category: 'groceries', confidence: 0.95 },
-  'massy stores': { category: 'groceries', confidence: 0.95 },
-  'massy': { category: 'groceries', confidence: 0.95 },
-  'xtrafoods': { category: 'groceries', confidence: 0.95 },
-  'xtra foods': { category: 'groceries', confidence: 0.95 },
-  'hi-lo': { category: 'groceries', confidence: 0.95 },
-  'hilo': { category: 'groceries', confidence: 0.95 },
-  'pricesmart': { category: 'groceries', confidence: 0.95 },
-  'price smart': { category: 'groceries', confidence: 0.95 },
-  'truvalu': { category: 'groceries', confidence: 0.95 },
-  'tru valu': { category: 'groceries', confidence: 0.95 },
-  'super pharm': { category: 'groceries', confidence: 0.9 },
-  'superpharm': { category: 'groceries', confidence: 0.9 },
+  'jta': { category: 'Groceries', confidence: 0.95 },
+  'massy stores': { category: 'Groceries', confidence: 0.95 },
+  'massy': { category: 'Groceries', confidence: 0.95 },
+  'xtrafoods': { category: 'Groceries', confidence: 0.95 },
+  'xtra foods': { category: 'Groceries', confidence: 0.95 },
+  'hi-lo': { category: 'Groceries', confidence: 0.95 },
+  'hilo': { category: 'Groceries', confidence: 0.95 },
+  'pricesmart': { category: 'Groceries', confidence: 0.95 },
+  'price smart': { category: 'Groceries', confidence: 0.95 },
+  'truvalu': { category: 'Groceries', confidence: 0.95 },
+  'tru valu': { category: 'Groceries', confidence: 0.95 },
+  'super pharm': { category: 'Groceries', confidence: 0.9 },
+  'superpharm': { category: 'Groceries', confidence: 0.9 },
   
   // T&T Restaurants, Cafes & Dining
-  'trademark bistro': { category: 'dining-out', confidence: 0.95 },
-  'trademark': { category: 'dining-out', confidence: 0.9 },
-  'buzo osteria': { category: 'dining-out', confidence: 0.95 },
-  'buzo': { category: 'dining-out', confidence: 0.9 },
-  'jaffa': { category: 'dining-out', confidence: 0.95 },
-  'more vino': { category: 'dining-out', confidence: 0.95 },
-  'shakers': { category: 'dining-out', confidence: 0.95 },
-  'rituals coffee': { category: 'dining-out', confidence: 0.95 },
-  'rituals': { category: 'dining-out', confidence: 0.9 },
-  'cafe': { category: 'dining-out', confidence: 0.85 },
-  'bistro': { category: 'dining-out', confidence: 0.9 },
-  'restaurant': { category: 'dining-out', confidence: 0.9 },
-  'bar': { category: 'dining-out', confidence: 0.85 },
-  'grill': { category: 'dining-out', confidence: 0.9 },
+  'trademark bistro': { category: 'Dining out', confidence: 0.95 },
+  'trademark': { category: 'Dining out', confidence: 0.9 },
+  'buzo osteria': { category: 'Dining out', confidence: 0.95 },
+  'buzo': { category: 'Dining out', confidence: 0.9 },
+  'jaffa': { category: 'Dining out', confidence: 0.95 },
+  'more vino': { category: 'Dining out', confidence: 0.95 },
+  'shakers': { category: 'Dining out', confidence: 0.95 },
+  'rituals coffee': { category: 'Dining out', confidence: 0.95 },
+  'rituals': { category: 'Dining out', confidence: 0.9 },
+  'cafe': { category: 'Dining out', confidence: 0.85 },
+  'bistro': { category: 'Dining out', confidence: 0.9 },
+  'restaurant': { category: 'Dining out', confidence: 0.9 },
+  'bar': { category: 'Dining out', confidence: 0.85 },
+  'grill': { category: 'Dining out', confidence: 0.9 },
   
   // International chains present in T&T
-  'starbucks': { category: 'dining-out', confidence: 0.95 },
-  'mcdonald': { category: 'dining-out', confidence: 0.95 },
-  'burger king': { category: 'dining-out', confidence: 0.95 },
-  'kfc': { category: 'dining-out', confidence: 0.95 },
-  'subway': { category: 'dining-out', confidence: 0.95 },
-  'pizza hut': { category: 'dining-out', confidence: 0.95 },
-  'domino': { category: 'dining-out', confidence: 0.95 },
+  'starbucks': { category: 'Dining out', confidence: 0.95 },
+  'mcdonald': { category: 'Dining out', confidence: 0.95 },
+  'burger king': { category: 'Dining out', confidence: 0.95 },
+  'kfc': { category: 'Dining out', confidence: 0.95 },
+  'subway': { category: 'Dining out', confidence: 0.95 },
+  'pizza hut': { category: 'Dining out', confidence: 0.95 },
+  'domino': { category: 'Dining out', confidence: 0.95 },
   
   // T&T Gas Stations
-  'np': { category: 'fuel', confidence: 0.95 },
-  'national petroleum': { category: 'fuel', confidence: 0.95 },
-  'rubis': { category: 'fuel', confidence: 0.95 },
-  'shell': { category: 'fuel', confidence: 0.95 },
-  'texaco': { category: 'fuel', confidence: 0.95 },
-  'bp': { category: 'fuel', confidence: 0.95 },
-  'petrotrin': { category: 'fuel', confidence: 0.95 },
+  'np': { category: 'Fuel', confidence: 0.95 },
+  'national petroleum': { category: 'Fuel', confidence: 0.95 },
+  'rubis': { category: 'Fuel', confidence: 0.95 },
+  'shell': { category: 'Fuel', confidence: 0.95 },
+  'texaco': { category: 'Fuel', confidence: 0.95 },
+  'bp': { category: 'Fuel', confidence: 0.95 },
+  'petrotrin': { category: 'Fuel', confidence: 0.95 },
   
   // T&T Banks and Financial
-  'rbc': { category: 'bank-fees', confidence: 0.9 },
-  'republic bank': { category: 'bank-fees', confidence: 0.9 },
-  'first citizens': { category: 'bank-fees', confidence: 0.9 },
-  'scotiabank': { category: 'bank-fees', confidence: 0.9 },
-  'cibc': { category: 'bank-fees', confidence: 0.9 },
-  'linx': { category: 'bank-fees', confidence: 0.85 },
-  'atm': { category: 'bank-fees', confidence: 0.8 },
+  'rbc': { category: 'Bank fees', confidence: 0.9 },
+  'republic bank': { category: 'Bank fees', confidence: 0.9 },
+  'first citizens': { category: 'Bank fees', confidence: 0.9 },
+  'scotiabank': { category: 'Bank fees', confidence: 0.9 },
+  'cibc': { category: 'Bank fees', confidence: 0.9 },
+  'linx': { category: 'Bank fees', confidence: 0.85 },
+  'atm': { category: 'Bank fees', confidence: 0.8 },
+  
+  // Utilities
+  't&tec': { category: 'Electricity', confidence: 0.95 },
+  'wasa': { category: 'Water & Sewer', confidence: 0.95 },
+  'ngc': { category: 'Gas', confidence: 0.95 },
+  'digicel': { category: 'Internet / Wi-Fi', confidence: 0.9 },
+  'bmobile': { category: 'Internet / Wi-Fi', confidence: 0.9 },
+  'tstt': { category: 'Internet / Wi-Fi', confidence: 0.9 },
+  'flow': { category: 'Internet / Wi-Fi', confidence: 0.9 },
   
   // Pharmacies (generic pattern maintained)
-  'pharmacy': { category: 'medication', confidence: 0.85 },
-  'drug store': { category: 'medication', confidence: 0.85 },
+  'pharmacy': { category: 'Medication', confidence: 0.85 },
+  'drug store': { category: 'Medication', confidence: 0.85 },
 };
 
 // Line item intelligence for coffee/food items
 const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
   // Coffee drinks and cafe items
-  'cookie': { category: 'dining-out', confidence: 0.9 },
-  'cookies': { category: 'dining-out', confidence: 0.9 },
-  'pastry': { category: 'dining-out', confidence: 0.9 },
-  'croissant': { category: 'dining-out', confidence: 0.9 },
-  'muffin': { category: 'dining-out', confidence: 0.9 },
-  'cake': { category: 'dining-out', confidence: 0.85 },
-  'latte': { category: 'dining-out', confidence: 0.9 },
-  'cappuccino': { category: 'dining-out', confidence: 0.9 },
-  'espresso': { category: 'dining-out', confidence: 0.9 },
-  'americano': { category: 'dining-out', confidence: 0.9 },
-  'macchiato': { category: 'dining-out', confidence: 0.9 },
-  'mocha': { category: 'dining-out', confidence: 0.9 },
-  'frappuccino': { category: 'dining-out', confidence: 0.9 },
-  'coffee': { category: 'dining-out', confidence: 0.8 },
-  'tea': { category: 'dining-out', confidence: 0.75 },
+  'cookie': { category: 'Dining out', confidence: 0.9 },
+  'cookies': { category: 'Dining out', confidence: 0.9 },
+  'pastry': { category: 'Dining out', confidence: 0.9 },
+  'croissant': { category: 'Dining out', confidence: 0.9 },
+  'muffin': { category: 'Dining out', confidence: 0.9 },
+  'cake': { category: 'Dining out', confidence: 0.85 },
+  'latte': { category: 'Dining out', confidence: 0.9 },
+  'cappuccino': { category: 'Dining out', confidence: 0.9 },
+  'espresso': { category: 'Dining out', confidence: 0.9 },
+  'americano': { category: 'Dining out', confidence: 0.9 },
+  'macchiato': { category: 'Dining out', confidence: 0.9 },
+  'mocha': { category: 'Dining out', confidence: 0.9 },
+  'frappuccino': { category: 'Dining out', confidence: 0.9 },
+  'coffee': { category: 'Dining out', confidence: 0.8 },
+  'tea': { category: 'Dining out', confidence: 0.75 },
   
   // Fast food items
-  'burger': { category: 'dining-out', confidence: 0.85 },
-  'fries': { category: 'dining-out', confidence: 0.85 },
-  'sandwich': { category: 'dining-out', confidence: 0.8 },
-  'pizza': { category: 'dining-out', confidence: 0.85 },
-  'wings': { category: 'dining-out', confidence: 0.85 },
-  'wrap': { category: 'dining-out', confidence: 0.8 },
+  'burger': { category: 'Dining out', confidence: 0.85 },
+  'fries': { category: 'Dining out', confidence: 0.85 },
+  'sandwich': { category: 'Dining out', confidence: 0.8 },
+  'pizza': { category: 'Dining out', confidence: 0.85 },
+  'wings': { category: 'Dining out', confidence: 0.85 },
+  'wrap': { category: 'Dining out', confidence: 0.8 },
   
   // Trinidad & Tobago specific foods
-  'doubles': { category: 'dining-out', confidence: 0.95 },
-  'bake and shark': { category: 'dining-out', confidence: 0.95 },
-  'roti': { category: 'dining-out', confidence: 0.9 },
-  'pelau': { category: 'dining-out', confidence: 0.9 },
-  'callaloo': { category: 'dining-out', confidence: 0.9 },
-  'macaroni pie': { category: 'dining-out', confidence: 0.9 },
-  'curry': { category: 'dining-out', confidence: 0.8 },
+  'doubles': { category: 'Dining out', confidence: 0.95 },
+  'bake and shark': { category: 'Dining out', confidence: 0.95 },
+  'roti': { category: 'Dining out', confidence: 0.9 },
+  'pelau': { category: 'Dining out', confidence: 0.9 },
+  'callaloo': { category: 'Dining out', confidence: 0.9 },
+  'macaroni pie': { category: 'Dining out', confidence: 0.9 },
+  'curry': { category: 'Dining out', confidence: 0.8 },
   
   // Grocery items (when not from dining vendors)
-  'milk': { category: 'groceries', confidence: 0.8 },
-  'bread': { category: 'groceries', confidence: 0.8 },
-  'eggs': { category: 'groceries', confidence: 0.8 },
-  'banana': { category: 'groceries', confidence: 0.75 },
-  'apple': { category: 'groceries', confidence: 0.75 },
-  'rice': { category: 'groceries', confidence: 0.8 },
-  'chicken': { category: 'groceries', confidence: 0.8 },
-  'beef': { category: 'groceries', confidence: 0.8 },
-  'vegetables': { category: 'groceries', confidence: 0.8 },
-  'fruits': { category: 'groceries', confidence: 0.8 },
+  'milk': { category: 'Groceries', confidence: 0.8 },
+  'bread': { category: 'Groceries', confidence: 0.8 },
+  'eggs': { category: 'Groceries', confidence: 0.8 },
+  'banana': { category: 'Groceries', confidence: 0.75 },
+  'apple': { category: 'Groceries', confidence: 0.75 },
+  'rice': { category: 'Groceries', confidence: 0.8 },
+  'chicken': { category: 'Groceries', confidence: 0.8 },
+  'beef': { category: 'Groceries', confidence: 0.8 },
+  'vegetables': { category: 'Groceries', confidence: 0.8 },
+  'fruits': { category: 'Groceries', confidence: 0.8 },
   
   // T&T specific grocery items
-  'dasheen': { category: 'groceries', confidence: 0.9 },
-  'yam': { category: 'groceries', confidence: 0.9 },
-  'plantain': { category: 'groceries', confidence: 0.9 },
-  'coconut': { category: 'groceries', confidence: 0.85 },
-  'cassava': { category: 'groceries', confidence: 0.9 },
-  'eddoes': { category: 'groceries', confidence: 0.9 },
-  'ochro': { category: 'groceries', confidence: 0.85 },
-  'pumpkin': { category: 'groceries', confidence: 0.8 },
+  'dasheen': { category: 'Groceries', confidence: 0.9 },
+  'yam': { category: 'Groceries', confidence: 0.9 },
+  'plantain': { category: 'Groceries', confidence: 0.9 },
+  'coconut': { category: 'Groceries', confidence: 0.85 },
+  'cassava': { category: 'Groceries', confidence: 0.9 },
+  'eddoes': { category: 'Groceries', confidence: 0.9 },
+  'ochro': { category: 'Groceries', confidence: 0.85 },
+  'pumpkin': { category: 'Groceries', confidence: 0.8 },
+  
+  // Personal care items
+  'shampoo': { category: 'Toiletries', confidence: 0.9 },
+  'toothpaste': { category: 'Toiletries', confidence: 0.9 },
+  'soap': { category: 'Toiletries', confidence: 0.9 },
+  'deodorant': { category: 'Toiletries', confidence: 0.9 },
+  'toilet paper': { category: 'Paper goods', confidence: 0.9 },
+  'tissue': { category: 'Paper goods', confidence: 0.8 },
+  'paper towel': { category: 'Paper goods', confidence: 0.8 },
 };
 
 export const useSmartCategorySuggestions = (
@@ -356,9 +374,9 @@ function getBaselineSuggestions(
     for (const [vendorPattern, { category: categoryName, confidence }] of Object.entries(VENDOR_PATTERNS)) {
       if (placeLower.includes(vendorPattern)) {
         const matchingCategory = categories.find(cat => 
-          cat.name.toLowerCase().includes(categoryName) || 
-          cat.name.toLowerCase() === categoryName ||
-          (categoryName === 'dining-out' && (cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('food')))
+          cat.name.toLowerCase().includes(categoryName.toLowerCase()) || 
+          cat.name.toLowerCase() === categoryName.toLowerCase() ||
+          (categoryName === 'Dining out' && (cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('restaurant')))
         );
         if (matchingCategory) {
           suggestions.push({
@@ -379,9 +397,9 @@ function getBaselineSuggestions(
       for (const [itemPattern, { category: categoryName, confidence }] of Object.entries(LINE_ITEM_PATTERNS)) {
         if (descLower.includes(itemPattern)) {
           const matchingCategory = categories.find(cat => 
-            cat.name.toLowerCase().includes(categoryName) || 
-            cat.name.toLowerCase() === categoryName ||
-            (categoryName === 'dining-out' && (cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('food')))
+            cat.name.toLowerCase().includes(categoryName.toLowerCase()) || 
+            cat.name.toLowerCase() === categoryName.toLowerCase() ||
+            (categoryName === 'Dining out' && (cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('restaurant')))
           );
           if (matchingCategory) {
             const existing = suggestions.find(s => s.categoryId === matchingCategory.id);

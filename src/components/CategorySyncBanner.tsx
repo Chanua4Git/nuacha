@@ -5,12 +5,15 @@ import { RefreshCw, X } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useCategorySync } from '@/hooks/useCategorySync';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 
 export const CategorySyncBanner = () => {
   const { selectedFamily } = useExpense();
   const { families } = useFamilies();
-  const { categories } = useCategories(selectedFamily?.id);
+  const { categories } = useUnifiedCategories({ 
+    familyId: selectedFamily?.id, 
+    mode: 'family-only' 
+  });
   const { syncCategoriesForFamily, syncCategoriesForAllFamilies, isSyncing } = useCategorySync();
   const [dismissed, setDismissed] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);

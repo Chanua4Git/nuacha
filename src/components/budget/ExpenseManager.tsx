@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
@@ -29,8 +29,10 @@ export default function ExpenseManager() {
     }
   }, [families, selectedFamilyId]);
   
-  // Fetch categories for all families to get comprehensive budget categories
-  const { categories, isLoading: categoriesLoading } = useCategories(undefined, true);
+  // Fetch budget categories only
+  const { categories, isLoading: categoriesLoading } = useUnifiedCategories({ 
+    mode: 'budget-only' 
+  });
 
   // Filter categories to include budget categories for the selected family or all families
   const budgetCategories = categories.filter(cat => {
