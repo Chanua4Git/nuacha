@@ -34,6 +34,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   // Use unified categories for consistent behavior across the app
   const { 
     categories: unifiedCategories, 
+    hierarchicalCategories,
     budgetCategories,
     isLoading: categoriesLoading, 
     refetch 
@@ -156,16 +157,48 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     );
   };
 
-  // Render categories simply by group
-  const renderCategories = () => {
+  // Render hierarchical categories for real users
+  const renderHierarchicalCategories = (categories: any[], groupName: string, groupColor: string) => {
+    if (categories.length === 0) return null;
+
     return (
       <>
-        {groupedCategories.needs.length > 0 && (
-          <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400">
-              NEEDS (Essential)
-            </div>
-            {groupedCategories.needs.map((category) => (
+        <div className={`px-2 py-1.5 text-xs font-semibold ${groupColor}`}>
+          {groupName}
+        </div>
+        {categories.map((category) => {
+          if (category.children && category.children.length > 0) {
+            // Parent category with children
+            return (
+              <div key={category.id}>
+                {/* Parent Category Header - Non-selectable */}
+                <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
+                     style={{ borderLeftColor: category.color }}>
+                  {category.name}
+                </div>
+                {/* Child Categories - sorted alphabetically */}
+                {category.children
+                  .sort((a: any, b: any) => a.name.localeCompare(b.name))
+                  .map((child: any) => (
+                    <SelectItem 
+                      key={child.id} 
+                      value={child.id}
+                      className="flex items-center pl-6"
+                    >
+                      <div className="flex items-center">
+                        <span 
+                          className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                          style={{ backgroundColor: child.color }}
+                        />
+                        {child.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+              </div>
+            );
+          } else {
+            // Standalone category without children
+            return (
               <SelectItem key={category.id} value={category.id} className="pl-4">
                 <div className="flex items-center gap-2">
                   <div
@@ -175,71 +208,78 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
                   {category.name}
                 </div>
               </SelectItem>
-            ))}
-          </>
+            );
+          }
+        })}
+      </>
+    );
+  };
+
+  // Group hierarchical categories by budget type
+  const groupedHierarchicalCategories = useMemo(() => {
+    if (!user) return { needs: [], wants: [], savings: [], other: [] };
+    
+    const grouped = {
+      needs: [] as any[],
+      wants: [] as any[],
+      savings: [] as any[],
+      other: [] as any[]
+    };
+    
+    hierarchicalCategories.forEach(category => {
+      const groupType = category.groupType as 'needs' | 'wants' | 'savings';
+      
+      if (groupType === 'needs') {
+        grouped.needs.push(category);
+      } else if (groupType === 'wants') {
+        grouped.wants.push(category);
+      } else if (groupType === 'savings') {
+        grouped.savings.push(category);
+      } else {
+        grouped.other.push(category);
+      }
+    });
+    
+    // Sort each group alphabetically
+    Object.values(grouped).forEach(group => {
+      group.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return grouped;
+  }, [hierarchicalCategories, user]);
+
+  // Render categories - hierarchical for real users, demo for guests
+  const renderCategories = () => {
+    if (!user) {
+      // Demo mode - use existing hierarchical demo categories
+      return renderHierarchicalDemoCategories();
+    }
+
+    // Real user - use hierarchical categories from database
+    return (
+      <>
+        {renderHierarchicalCategories(
+          groupedHierarchicalCategories.needs, 
+          'NEEDS (Essential)', 
+          'text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400'
         )}
         
-        {groupedCategories.wants.length > 0 && (
-          <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400">
-              WANTS (Discretionary)
-            </div>
-            {groupedCategories.wants.map((category) => (
-              <SelectItem key={category.id} value={category.id} className="pl-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </>
+        {renderHierarchicalCategories(
+          groupedHierarchicalCategories.wants, 
+          'WANTS (Discretionary)', 
+          'text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400'
         )}
         
-        {groupedCategories.savings.length > 0 && (
-          <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400">
-              SAVINGS & INVESTMENTS
-            </div>
-            {groupedCategories.savings.map((category) => (
-              <SelectItem key={category.id} value={category.id} className="pl-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </>
+        {renderHierarchicalCategories(
+          groupedHierarchicalCategories.savings, 
+          'SAVINGS & INVESTMENTS', 
+          'text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400'
         )}
         
-        {groupedCategories.other.length > 0 && (
-          <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 dark:bg-gray-950 dark:text-gray-400">
-              OTHER
-            </div>
-            {groupedCategories.other.map((category) => (
-              <SelectItem key={category.id} value={category.id} className="pl-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </>
-        )}
-        
-        {allCategories.length === 0 && (
-          <>
-            {renderHierarchicalDemoCategories()}
-          </>
+        {renderHierarchicalCategories(
+          groupedHierarchicalCategories.other, 
+          'OTHER', 
+          'text-gray-600 bg-gray-50 dark:bg-gray-950 dark:text-gray-400'
         )}
       </>
     );
