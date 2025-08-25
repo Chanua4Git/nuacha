@@ -21,7 +21,7 @@ export default function BudgetDashboard() {
   });
   
   const { selectedFamily } = useExpense();
-  const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate);
+  const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate, selectedFamily?.id);
   const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const activeTemplate = getDefaultTemplate();
 

@@ -5,13 +5,13 @@ import { Expense } from '@/types/expense';
 import { toMonthly, getFirstDayOfMonth } from '@/utils/budgetUtils';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 
-export function useBudgetSummary(startDate: Date, endDate?: Date) {
+export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: string) {
   const { user } = useAuth();
   const [summary, setSummary] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const dateKey = useMemo(() => `${startDate.toISOString()}-${endDate?.toISOString() || startDate.toISOString()}`, [startDate, endDate]);
+  const dateKey = useMemo(() => `${startDate.toISOString()}-${endDate?.toISOString() || startDate.toISOString()}-${familyId || 'all'}`, [startDate, endDate, familyId]);
 
   const calculateSummary = async () => {
     if (!user) {
@@ -23,12 +23,18 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
       setLoading(true);
       setError(null);
 
-      // Fetch income sources
-      const { data: incomeSources, error: incomeError } = await supabase
+      // Fetch income sources - filter by family if provided
+      let incomeQuery = supabase
         .from('income_sources')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true);
+      
+      if (familyId) {
+        incomeQuery = incomeQuery.eq('family_id', familyId);
+      }
+      
+      const { data: incomeSources, error: incomeError } = await incomeQuery;
 
       if (incomeError) throw incomeError;
 
@@ -185,7 +191,7 @@ export function useBudgetSummary(startDate: Date, endDate?: Date) {
 
   useEffect(() => {
     calculateSummary();
-  }, [user, dateKey]);
+  }, [user, dateKey, familyId]);
 
   return { summary, loading, error, refetch: calculateSummary };
 }
