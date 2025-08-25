@@ -26,6 +26,49 @@ export const autoCategorizeExpense = (description: string, place: string, catego
 
   const isGroceryVendor = groceryVendors.some(vendor => placeName.includes(vendor));
 
+  // Enhanced Alcohol & Beverages Recognition
+  const alcoholBrands = [
+    'smirnoff', 'carib', 'stag', 'corona', 'heineken', 'budweiser', 'miller', 'coors',
+    'bacardi', 'captain morgan', 'absolut', 'grey goose', 'johnnie walker', 'jack daniels',
+    'jose cuervo', 'patron', 'jameson', 'glenfiddich', 'macallan', 'hennessy', 'remy martin',
+    'moet', 'dom perignon', 'champagne', 'prosecco', 'wine', 'merlot', 'chardonnay', 'pinot',
+    'vodka', 'rum', 'whiskey', 'whisky', 'gin', 'tequila', 'brandy', 'cognac', 'liqueur',
+    'beer', 'lager', 'ale', 'stout', 'cider', 'cocktail', 'margarita', 'mojito', 'pina colada'
+  ];
+
+  const alcoholKeywords = [
+    'alcohol', 'alcoholic', 'spirits', 'liquor', 'brewery', 'distillery', 'winery',
+    'draft', 'draught', 'bottle', 'can', 'six pack', 'case', 'keg', 'shot', 'drink'
+  ];
+
+  const hasAlcohol = alcoholBrands.some(brand => desc.includes(brand)) ||
+                    alcoholKeywords.some(keyword => desc.includes(keyword));
+
+  // Context-aware alcohol categorization
+  if (hasAlcohol) {
+    console.log(`🍺 Detected alcohol: "${desc}" from "${placeName}"`);
+    
+    // If from grocery store, categorize as Beverages (under Groceries)
+    if (isGroceryVendor) {
+      const beverageCategory = categories.find(c => 
+        c.id === 'beverages' || c.name?.toLowerCase().includes('beverage')
+      );
+      if (beverageCategory) {
+        console.log(`🛒 Alcohol from grocery store → Beverages category`);
+        return beverageCategory.id;
+      }
+    }
+    
+    // Otherwise, categorize as Dining out (bar/restaurant context)
+    const diningCategory = categories.find(c => 
+      c.id === 'dining-out' || c.name?.toLowerCase().includes('dining')
+    );
+    if (diningCategory) {
+      console.log(`🍸 Alcohol from bar/restaurant → Dining out category`);
+      return diningCategory.id;
+    }
+  }
+
   // Enhanced Groceries & Food with brand recognition and specific items
   if (desc.includes('grocery') || desc.includes('food') || desc.includes('supermarket') ||
       desc.includes('produce') || desc.includes('meat') || desc.includes('dairy') ||

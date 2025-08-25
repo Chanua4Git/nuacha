@@ -1569,6 +1569,14 @@ export type Database = {
           message: string
         }[]
       }
+      seed_comprehensive_categories_for_user: {
+        Args: { family_uuid?: string; user_uuid: string }
+        Returns: undefined
+      }
+      seed_user_comprehensive_categories: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
       sync_comprehensive_budget_categories: {
         Args: Record<PropertyKey, never>
         Returns: undefined
