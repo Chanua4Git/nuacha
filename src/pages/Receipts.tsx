@@ -11,7 +11,7 @@ import ReceiptGallery from '@/components/receipt/ReceiptGallery';
 import ExportProgressDialog from '@/components/receipt/ExportProgressDialog';
 import BatchBackgroundRemoval from '@/components/receipt/BatchBackgroundRemoval';
 import { useFamilies } from '@/hooks/useFamilies';
-import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useState } from 'react';
 import { useFilters } from '@/hooks/useFilters';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 
 const Receipts = () => {
   const { families } = useFamilies();
-  const { categories } = useUnifiedCategories({ mode: 'unified' });
+  const { categories } = useCategories();
   const { filters, updateFilter, clearFilters } = useFilters();
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [showBatchRemoval, setShowBatchRemoval] = useState(false);

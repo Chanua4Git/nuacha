@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { CategorizationRule } from '@/types/receipt';
 import { 
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle 
@@ -17,7 +17,7 @@ import { Edit, Trash2, Plus, Save, X, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 const CategoryRulesManager = () => {
-  const { categories } = useUnifiedCategories({ mode: 'unified' });
+  const { categories } = useCategories();
   const [rules, setRules] = useState<CategorizationRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingRule, setEditingRule] = useState<CategorizationRule | null>(null);

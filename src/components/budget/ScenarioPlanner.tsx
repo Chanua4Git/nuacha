@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
-import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { formatTTD } from '@/utils/budgetUtils';
 import { CategoryWithCamelCase } from '@/types/expense';
@@ -29,9 +29,7 @@ interface BudgetCategory extends CategoryWithCamelCase {
 
 export default function ScenarioPlanner() {
   const { user } = useAuth();
-  const { categories, isLoading: loading } = useUnifiedCategories({ 
-    mode: 'budget-only' 
-  });
+  const { categories, isLoading: loading } = useCategories();
   const [selectedMonth] = useState(new Date());
   const { summary } = useBudgetSummary(selectedMonth);
   

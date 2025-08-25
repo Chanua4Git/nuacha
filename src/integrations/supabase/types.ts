@@ -1562,13 +1562,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      reclassify_categories: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          categories_reclassified: number
-          message: string
-        }[]
-      }
       sync_comprehensive_budget_categories: {
         Args: Record<PropertyKey, never>
         Returns: undefined

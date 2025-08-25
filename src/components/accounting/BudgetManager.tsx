@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useBudgets } from '@/hooks/useBudgets';
-import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { BudgetFormData } from '@/types/accounting';
 import { Loader2, Plus, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
@@ -30,10 +30,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({ familyId }) => {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   
-  const { categories, isLoading: categoriesLoading } = useUnifiedCategories({ 
-    familyId, 
-    mode: 'family-only' 
-  });
+  const { categories, isLoading: categoriesLoading } = useCategories(familyId);
   const {
     budgetsWithCategories,
     isLoading: budgetsLoading,
