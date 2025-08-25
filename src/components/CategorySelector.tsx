@@ -8,13 +8,14 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useExpense } from '@/context/ExpenseContext';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { useSmartCategorySuggestions } from '@/hooks/useSmartCategorySuggestions';
 import { Tag, RefreshCw, Sparkles, TrendingUp, Clock, Calendar } from 'lucide-react';
 import { CategoryWithCamelCase, ReceiptLineItem } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getAllDemoCategories, findDemoCategory, comprehensiveCategories } from '@/data/comprehensiveCategories';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 interface CategorySelectorProps {
   value?: string;
@@ -28,56 +29,45 @@ interface CategorySelectorProps {
 
 const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption, place, lineItems }: CategorySelectorProps) => {
   const { selectedFamily } = useExpense();
-  
-  // Use the categories hook directly to get fresh data
-  const { categories, isLoading: categoriesLoading, refetch } = useCategories(selectedFamily?.id);
+  const { user } = useAuth();
+
+  // Use unified categories for consistent behavior across the app
+  const { 
+    categories: unifiedCategories, 
+    budgetCategories,
+    isLoading: categoriesLoading, 
+    refetch 
+  } = useUnifiedCategories({
+    familyId: selectedFamily?.id,
+    mode: user ? 'unified' : 'all', // Use unified mode for logged-in users, all for demo
+  });
+
+  // Get all available categories (unified for logged-in users, demo for others)
+  const allCategories = useMemo(() => {
+    if (!user) {
+      // Demo mode - use comprehensive demo categories
+      return getAllDemoCategories();
+    }
+    
+    // Logged-in user - use unified categories
+    return unifiedCategories;
+  }, [user, unifiedCategories]);
   
   // Get smart suggestions based on place and line items
   const { suggestions, isLoading: suggestionsLoading } = useSmartCategorySuggestions(
     place,
     lineItems,
     selectedFamily?.id,
-    categories
+    allCategories
   );
   
-  // Filter categories to show general ones + those for the selected family
-  // Include user-level budget categories when familyId is null
-  const availableCategories = categories.filter(cat => 
-    (cat.id && cat.id !== '') && (
-      !cat.familyId || 
-      (selectedFamily && cat.familyId === selectedFamily.id) ||
-      (cat.userId && !cat.familyId) // Include user-level budget categories
-    )
-  );
-
-  // Deduplicate by name (case-insensitive), preferring family-level categories over user-level ones
-  const displayCategories = Object.values(
-    availableCategories.reduce((acc, cat) => {
-      const key = cat.name.trim().toLowerCase();
-      const existing = acc[key];
-      const isFamily = selectedFamily && cat.familyId === selectedFamily?.id;
-      if (!existing) {
-        acc[key] = cat;
-      } else {
-        const existingIsFamily = selectedFamily && existing.familyId === selectedFamily?.id;
-        // Prefer family-level over user-level
-        if (isFamily && !existingIsFamily) {
-          acc[key] = cat;
-        } else if (isFamily === existingIsFamily) {
-          // If both same scope, prefer regular categories over budget categories
-          const catIsRegular = !cat.isBudgetCategory;
-          const existingIsRegular = !existing.isBudgetCategory;
-          if (catIsRegular && !existingIsRegular) {
-            acc[key] = cat;
-          }
-        }
-      }
-      return acc;
-    }, {} as Record<string, CategoryWithCamelCase>)
-  );
-  
-  const getCategory = (id: string): CategoryWithCamelCase | undefined => 
-    categories.find(c => c.id === id);
+  const getCategory = (id: string): CategoryWithCamelCase | any => {
+    if (!user) {
+      // Demo mode - find in demo categories
+      return getAllDemoCategories().find(c => c.id === id || c.name === id);
+    }
+    return unifiedCategories.find(c => c.id === id);
+  };
   
   const selectedCategory = value ? getCategory(value) : undefined;
   const suggestedCategory = suggestedCategoryId ? getCategory(suggestedCategoryId) : undefined;
@@ -88,19 +78,22 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   };
 
   const groupedCategories = useMemo(() => {
-    if (!categories) return { needs: [], wants: [], savings: [], other: [] };
-    
     const grouped = {
-      needs: [] as typeof categories,
-      wants: [] as typeof categories,
-      savings: [] as typeof categories,
-      other: [] as typeof categories
+      needs: [] as typeof allCategories,
+      wants: [] as typeof allCategories,
+      savings: [] as typeof allCategories,
+      other: [] as typeof allCategories
     };
     
-    categories.forEach(category => {
-      const groupType = category.groupType as 'needs' | 'wants' | 'savings';
-      if (groupType && grouped[groupType]) {
-        grouped[groupType].push(category);
+    allCategories.forEach(category => {
+      const groupType = ('groupType' in category ? category.groupType : category.group) as 'needs' | 'wants' | 'savings';
+      
+      if (groupType === 'needs') {
+        grouped.needs.push(category);
+      } else if (groupType === 'wants') {
+        grouped.wants.push(category);
+      } else if (groupType === 'savings') {
+        grouped.savings.push(category);
       } else {
         // Handle categories without proper groupType
         grouped.other.push(category);
@@ -113,7 +106,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     });
     
     return grouped;
-  }, [categories]);
+  }, [allCategories]);
 
   // Render smart suggestions section
   const renderSmartSuggestions = () => {
@@ -243,7 +236,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
           </>
         )}
         
-        {displayCategories.length === 0 && (
+        {allCategories.length === 0 && (
           <>
             {renderHierarchicalDemoCategories()}
           </>
