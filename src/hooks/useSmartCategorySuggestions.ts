@@ -36,6 +36,22 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
   'super pharm': { category: 'groceries', confidence: 0.9 },
   'superpharm': { category: 'groceries', confidence: 0.9 },
   
+  // T&T Restaurants, Cafes & Dining
+  'trademark bistro': { category: 'dining-out', confidence: 0.95 },
+  'trademark': { category: 'dining-out', confidence: 0.9 },
+  'buzo osteria': { category: 'dining-out', confidence: 0.95 },
+  'buzo': { category: 'dining-out', confidence: 0.9 },
+  'jaffa': { category: 'dining-out', confidence: 0.95 },
+  'more vino': { category: 'dining-out', confidence: 0.95 },
+  'shakers': { category: 'dining-out', confidence: 0.95 },
+  'rituals coffee': { category: 'dining-out', confidence: 0.95 },
+  'rituals': { category: 'dining-out', confidence: 0.9 },
+  'cafe': { category: 'dining-out', confidence: 0.85 },
+  'bistro': { category: 'dining-out', confidence: 0.9 },
+  'restaurant': { category: 'dining-out', confidence: 0.9 },
+  'bar': { category: 'dining-out', confidence: 0.85 },
+  'grill': { category: 'dining-out', confidence: 0.9 },
+  
   // International chains present in T&T
   'starbucks': { category: 'dining-out', confidence: 0.95 },
   'mcdonald': { category: 'dining-out', confidence: 0.95 },
@@ -70,7 +86,13 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
 
 // Line item intelligence for coffee/food items
 const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
-  // Coffee drinks
+  // Coffee drinks and cafe items
+  'cookie': { category: 'dining-out', confidence: 0.9 },
+  'cookies': { category: 'dining-out', confidence: 0.9 },
+  'pastry': { category: 'dining-out', confidence: 0.9 },
+  'croissant': { category: 'dining-out', confidence: 0.9 },
+  'muffin': { category: 'dining-out', confidence: 0.9 },
+  'cake': { category: 'dining-out', confidence: 0.85 },
   'latte': { category: 'dining-out', confidence: 0.9 },
   'cappuccino': { category: 'dining-out', confidence: 0.9 },
   'espresso': { category: 'dining-out', confidence: 0.9 },
@@ -79,12 +101,24 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'mocha': { category: 'dining-out', confidence: 0.9 },
   'frappuccino': { category: 'dining-out', confidence: 0.9 },
   'coffee': { category: 'dining-out', confidence: 0.8 },
+  'tea': { category: 'dining-out', confidence: 0.75 },
   
   // Fast food items
   'burger': { category: 'dining-out', confidence: 0.85 },
   'fries': { category: 'dining-out', confidence: 0.85 },
   'sandwich': { category: 'dining-out', confidence: 0.8 },
   'pizza': { category: 'dining-out', confidence: 0.85 },
+  'wings': { category: 'dining-out', confidence: 0.85 },
+  'wrap': { category: 'dining-out', confidence: 0.8 },
+  
+  // Trinidad & Tobago specific foods
+  'doubles': { category: 'dining-out', confidence: 0.95 },
+  'bake and shark': { category: 'dining-out', confidence: 0.95 },
+  'roti': { category: 'dining-out', confidence: 0.9 },
+  'pelau': { category: 'dining-out', confidence: 0.9 },
+  'callaloo': { category: 'dining-out', confidence: 0.9 },
+  'macaroni pie': { category: 'dining-out', confidence: 0.9 },
+  'curry': { category: 'dining-out', confidence: 0.8 },
   
   // Grocery items (when not from dining vendors)
   'milk': { category: 'groceries', confidence: 0.8 },
@@ -92,6 +126,21 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'eggs': { category: 'groceries', confidence: 0.8 },
   'banana': { category: 'groceries', confidence: 0.75 },
   'apple': { category: 'groceries', confidence: 0.75 },
+  'rice': { category: 'groceries', confidence: 0.8 },
+  'chicken': { category: 'groceries', confidence: 0.8 },
+  'beef': { category: 'groceries', confidence: 0.8 },
+  'vegetables': { category: 'groceries', confidence: 0.8 },
+  'fruits': { category: 'groceries', confidence: 0.8 },
+  
+  // T&T specific grocery items
+  'dasheen': { category: 'groceries', confidence: 0.9 },
+  'yam': { category: 'groceries', confidence: 0.9 },
+  'plantain': { category: 'groceries', confidence: 0.9 },
+  'coconut': { category: 'groceries', confidence: 0.85 },
+  'cassava': { category: 'groceries', confidence: 0.9 },
+  'eddoes': { category: 'groceries', confidence: 0.9 },
+  'ochro': { category: 'groceries', confidence: 0.85 },
+  'pumpkin': { category: 'groceries', confidence: 0.8 },
 };
 
 export const useSmartCategorySuggestions = (
