@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { useReceiptDetails } from '@/hooks/useReceiptDetails';
 import { CheckCircle, Edit, Loader2, Store, Tag, Trash2, CreditCard, Calendar, Receipt, Info } from 'lucide-react';
 import { ReceiptLineItem } from '@/types/receipt';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { CategoryWithCamelCase } from '@/types/expense';
 
 interface DetailedReceiptViewProps {
@@ -17,7 +17,7 @@ interface DetailedReceiptViewProps {
 
 const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) => {
   const { receiptDetail, lineItems, isLoading, saveLineItem, deleteLineItem } = useReceiptDetails(expenseId);
-  const { categories } = useCategories();
+  const { categories } = useUnifiedCategories({ mode: 'unified' });
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<ReceiptLineItem | null>(null);
 

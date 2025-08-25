@@ -9,7 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useFamilies } from '@/hooks/useFamilies';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { ExpenseFilters } from '@/hooks/useFilters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ReceiptImageDisplay from '@/components/receipt/ReceiptImageDisplay';
@@ -46,7 +46,7 @@ const ReceiptGallery: React.FC<ReceiptGalleryProps> = ({
 
   const { expenses, isLoading, error } = useExpenses(expenseFilters);
   const { families } = useFamilies();
-  const { categories } = useCategories();
+  const { categories } = useUnifiedCategories({ mode: 'unified' });
 
   // Filter expenses that have receipts
   const expensesWithReceipts = expenses.filter(expense => 

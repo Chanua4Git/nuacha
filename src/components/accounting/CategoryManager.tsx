@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCategories } from '@/hooks/useCategories';
+import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { CategoryFormData, CategoryWithChildren } from '@/types/accounting';
 import { Loader2, Plus, Trash2, Edit, ChevronRight, ChevronDown, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -27,7 +27,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     createCategory,
     updateCategory,
     deleteCategory
-  } = useCategories(familyId);
+  } = useUnifiedCategories({ 
+    familyId, 
+    mode: 'family-only' 
+  });
   
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryWithChildren | null>(null);
