@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { 
   Select, 
   SelectContent, 
@@ -86,127 +87,33 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     onChange(categoryId);
   };
 
-  // Map database categories to their parent categories from comprehensiveCategories
-  const mapDatabaseCategoryToParent = (category: CategoryWithCamelCase) => {
-    // Create a mapping of category names to their parent categories
-    const categoryMapping: { [key: string]: string } = {
-      // Housing & Utilities
-      'rent': 'housing-utilities', 'mortgage': 'housing-utilities', 'electricity': 'housing-utilities',
-      'water': 'housing-utilities', 'gas': 'housing-utilities', 'internet': 'housing-utilities',
-      'cable': 'housing-utilities', 'streaming': 'housing-utilities', 'garbage': 'housing-utilities',
-      
-      // Caregiving & Medical
-      'nurse': 'caregiving-medical', 'doctor': 'caregiving-medical', 'medical': 'caregiving-medical',
-      'medication': 'caregiving-medical', 'specialist': 'caregiving-medical', 'emotional': 'caregiving-medical',
-      
-      // Household Operations
-      'cleaning': 'household-operations', 'housekeeper': 'household-operations', 'laundry': 'household-operations',
-      'care': 'household-operations', 'garden': 'household-operations', 'yard': 'household-operations',
-      'pool': 'household-operations', 'pest': 'household-operations', 'repairs': 'household-operations',
-      
-      // Groceries & Household Supplies
-      'groceries': 'groceries-household', 'pet food': 'groceries-household', 'toiletries': 'groceries-household',
-      'paper goods': 'groceries-household',
-      
-      // Transportation
-      'fuel': 'transportation', 'taxi': 'transportation', 'rideshare': 'transportation',
-      'public transport': 'transportation', 'vehicle': 'transportation',
-      
-      // Insurance & Financial
-      'insurance': 'insurance-financial', 'loan': 'insurance-financial', 'debt': 'insurance-financial',
-      'bank': 'insurance-financial', 'savings': 'insurance-financial', 'investments': 'insurance-financial',
-      
-      // Personal Care & Wellness
-      'haircut': 'personal-care', 'grooming': 'personal-care', 'spa': 'personal-care',
-      'massage': 'personal-care', 'gym': 'personal-care', 'vitamins': 'personal-care',
-      
-      // Education & Child Expenses
-      'school': 'education-child', 'books': 'education-child', 'stationery': 'education-child',
-      'childcare': 'education-child', 'tutoring': 'education-child', 'child': 'education-child',
-      'toys': 'education-child', 'uniform': 'education-child',
-      
-      // Entertainment & Leisure
-      'dining': 'entertainment-leisure', 'restaurant': 'entertainment-leisure', 'subscription': 'entertainment-leisure',
-      'events': 'entertainment-leisure', 'tickets': 'entertainment-leisure', 'hobbies': 'entertainment-leisure',
-      
-      // Gifts & Special Occasions
-      'gift': 'gifts-occasions', 'birthday': 'gifts-occasions', 'holiday': 'gifts-occasions',
-      'anniversary': 'gifts-occasions', 'wedding': 'gifts-occasions', 'celebration': 'gifts-occasions',
-      
-      // Travel & Holidays
-      'travel': 'travel-holidays', 'flight': 'travel-holidays', 'accommodation': 'travel-holidays',
-      'hotel': 'travel-holidays', 'vacation': 'travel-holidays', 'tour': 'travel-holidays'
+  const groupedCategories = useMemo(() => {
+    if (!categories) return { needs: [], wants: [], savings: [], other: [] };
+    
+    const grouped = {
+      needs: [] as typeof categories,
+      wants: [] as typeof categories,
+      savings: [] as typeof categories,
+      other: [] as typeof categories
     };
     
-    // Find parent category by matching keywords in category name
-    const categoryName = category.name.toLowerCase();
-    for (const [keyword, parentId] of Object.entries(categoryMapping)) {
-      if (categoryName.includes(keyword)) {
-        return parentId;
-      }
-    }
-    
-    // Default to miscellaneous if no match found
-    return 'miscellaneous';
-  };
-
-  // Organize categories hierarchically under their parent categories
-  const organizeCategories = (categories: CategoryWithCamelCase[]) => {
-    const parentGroups = {
-      needs: {} as { [parentId: string]: CategoryWithCamelCase[] },
-      wants: {} as { [parentId: string]: CategoryWithCamelCase[] },
-      savings: {} as { [parentId: string]: CategoryWithCamelCase[] }
-    };
-
-  // Group categories under their parent categories
-  categories.forEach(category => {
-    const parentId = mapDatabaseCategoryToParent(category);
-    const parentCategory = comprehensiveCategories.find(p => p.id === parentId);
-    
-    // Ensure groupType is valid, default to 'needs' if undefined or invalid
-    let groupType = category.groupType as keyof typeof parentGroups;
-    if (!groupType || !['needs', 'wants', 'savings'].includes(groupType)) {
-      groupType = 'needs'; // Default fallback
-    }
-    
-    // Ensure the parent group exists for this groupType
-    if (!parentGroups[groupType]) {
-      parentGroups[groupType] = {};
-    }
-    
-    // Ensure the parent category array exists
-    if (!parentGroups[groupType][parentId]) {
-      parentGroups[groupType][parentId] = [];
-    }
-    
-    // Only add if parent category exists in comprehensive categories or if no parent mapping
-    if (parentCategory || parentId === 'miscellaneous') {
-      parentGroups[groupType][parentId].push(category);
-    } else {
-      // Fallback: add to miscellaneous if parent not found
-      console.warn(`Category "${category.name}" could not be mapped to parent "${parentId}", adding to miscellaneous`);
-      if (!parentGroups[groupType]['miscellaneous']) {
-        parentGroups[groupType]['miscellaneous'] = [];
-      }
-      parentGroups[groupType]['miscellaneous'].push(category);
-    }
-  });
-
-    // Sort categories within each parent group alphabetically
-    Object.keys(parentGroups).forEach(groupKey => {
-      const group = parentGroups[groupKey as keyof typeof parentGroups];
-      if (group) {
-        Object.keys(group).forEach(parentId => {
-          const categoryArray = group[parentId];
-          if (categoryArray && Array.isArray(categoryArray)) {
-            categoryArray.sort((a, b) => a.name.localeCompare(b.name));
-          }
-        });
+    categories.forEach(category => {
+      const groupType = category.groupType as 'needs' | 'wants' | 'savings';
+      if (groupType && grouped[groupType]) {
+        grouped[groupType].push(category);
+      } else {
+        // Handle categories without proper groupType
+        grouped.other.push(category);
       }
     });
-
-    return parentGroups;
-  };
+    
+    // Sort each group alphabetically
+    Object.values(grouped).forEach(group => {
+      group.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return grouped;
+  }, [categories]);
 
   // Render smart suggestions section
   const renderSmartSuggestions = () => {
@@ -256,137 +163,89 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     );
   };
 
-  // Render hierarchical categories for both demo and real data
+  // Render categories simply by group
   const renderCategories = () => {
-    if (displayCategories.length === 0) {
-      // Use comprehensive demo categories with hierarchical structure
-      return renderHierarchicalDemoCategories();
-    }
-    
-    // Use real categories organized hierarchically under parent headers
-    const organizedCategories = organizeCategories(displayCategories);
-    
-    // Get parent categories for each group from comprehensiveCategories
-    const needsParents = comprehensiveCategories.filter(cat => cat.group === 'needs');
-    const wantsParents = comprehensiveCategories.filter(cat => cat.group === 'wants');
-    const savingsParents = comprehensiveCategories.filter(cat => cat.group === 'savings');
-    
     return (
       <>
-        {/* NEEDS Section */}
-        {Object.keys(organizedCategories.needs).length > 0 && (
+        {groupedCategories.needs.length > 0 && (
           <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b">
+            <div className="px-2 py-1.5 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400">
               NEEDS (Essential)
             </div>
-            {needsParents.map(parentCategory => {
-              const childCategories = organizedCategories.needs[parentCategory.id] || [];
-              if (childCategories.length === 0) return null;
-              
-              return (
-                <div key={parentCategory.id}>
-                  {/* Parent Category Header - Non-selectable */}
-                  <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
-                       style={{ borderLeftColor: parentCategory.color }}>
-                    {parentCategory.name}
-                  </div>
-                  {/* Child Categories */}
-                  {childCategories.map(category => (
-                    <SelectItem 
-                      key={category.id} 
-                      value={category.id}
-                      className="flex items-center pl-6"
-                    >
-                      <div className="flex items-center">
-                        <span 
-                          className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-                          style={{ backgroundColor: parentCategory.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+            {groupedCategories.needs.map((category) => (
+              <SelectItem key={category.id} value={category.id} className="pl-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
                 </div>
-              );
-            })}
+              </SelectItem>
+            ))}
           </>
         )}
-
-        {/* WANTS Section */}
-        {Object.keys(organizedCategories.wants).length > 0 && (
+        
+        {groupedCategories.wants.length > 0 && (
           <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+            <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400">
               WANTS (Discretionary)
             </div>
-            {wantsParents.map(parentCategory => {
-              const childCategories = organizedCategories.wants[parentCategory.id] || [];
-              if (childCategories.length === 0) return null;
-              
-              return (
-                <div key={parentCategory.id}>
-                  {/* Parent Category Header - Non-selectable */}
-                  <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
-                       style={{ borderLeftColor: parentCategory.color }}>
-                    {parentCategory.name}
-                  </div>
-                  {/* Child Categories */}
-                  {childCategories.map(category => (
-                    <SelectItem 
-                      key={category.id} 
-                      value={category.id}
-                      className="flex items-center pl-6"
-                    >
-                      <div className="flex items-center">
-                        <span 
-                          className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-                          style={{ backgroundColor: parentCategory.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+            {groupedCategories.wants.map((category) => (
+              <SelectItem key={category.id} value={category.id} className="pl-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
                 </div>
-              );
-            })}
+              </SelectItem>
+            ))}
           </>
         )}
-
-        {/* SAVINGS Section */}
-        {Object.keys(organizedCategories.savings).length > 0 && (
+        
+        {groupedCategories.savings.length > 0 && (
           <>
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-t">
+            <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400">
               SAVINGS & INVESTMENTS
             </div>
-            {savingsParents.map(parentCategory => {
-              const childCategories = organizedCategories.savings[parentCategory.id] || [];
-              if (childCategories.length === 0) return null;
-              
-              return (
-                <div key={parentCategory.id}>
-                  {/* Parent Category Header - Non-selectable */}
-                  <div className="px-2 py-1 text-xs font-medium text-foreground bg-muted/20 border-l-2" 
-                       style={{ borderLeftColor: parentCategory.color }}>
-                    {parentCategory.name}
-                  </div>
-                  {/* Child Categories */}
-                  {childCategories.map(category => (
-                    <SelectItem 
-                      key={category.id} 
-                      value={category.id}
-                      className="flex items-center pl-6"
-                    >
-                      <div className="flex items-center">
-                        <span 
-                          className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-                          style={{ backgroundColor: parentCategory.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+            {groupedCategories.savings.map((category) => (
+              <SelectItem key={category.id} value={category.id} className="pl-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
                 </div>
-              );
-            })}
+              </SelectItem>
+            ))}
+          </>
+        )}
+        
+        {groupedCategories.other.length > 0 && (
+          <>
+            <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 dark:bg-gray-950 dark:text-gray-400">
+              OTHER
+            </div>
+            {groupedCategories.other.map((category) => (
+              <SelectItem key={category.id} value={category.id} className="pl-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))}
+          </>
+        )}
+        
+        {displayCategories.length === 0 && (
+          <>
+            {renderHierarchicalDemoCategories()}
           </>
         )}
       </>
@@ -555,35 +414,17 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="z-50 bg-background border shadow-md max-h-[400px]">
-          {/* Show smart suggestions first */}
-          {renderSmartSuggestions()}
-          
+        <SelectContent className="bg-background border-border max-h-80 overflow-y-auto z-50">
           {includeAllOption && (
-            <SelectItem value="all_categories">
-              <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2 flex-shrink-0 bg-muted" />
+            <>
+              <SelectItem value="all" className="font-medium">
                 All Categories
-              </div>
-            </SelectItem>
+              </SelectItem>
+              <div className="h-px bg-border my-1" />
+            </>
           )}
           
-          {/* Show suggested category if no smart suggestions available */}
-          {suggestedCategory && suggestedCategory.id !== value && suggestedCategory.id && suggestions.length === 0 && (
-            <SelectItem 
-              value={suggestedCategory.id} 
-              className="font-medium border-b border-dashed border-gray-200 pb-1 mb-1"
-            >
-              <div className="flex items-center">
-                <span 
-                  className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-                  style={{ backgroundColor: suggestedCategory.color || '#64748B' }}
-                />
-                {suggestedCategory.name} (Suggested)
-              </div>
-            </SelectItem>
-          )}
-          
+          {renderSmartSuggestions()}
           {renderCategories()}
         </SelectContent>
       </Select>

@@ -1,15 +1,18 @@
 
 import { useExpense } from '@/context/ExpenseContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Users, Tag, Calculator } from 'lucide-react';
+import { PlusCircle, Users, Tag, Calculator, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import CategoryManager from '@/components/accounting/CategoryManager';
 import BudgetManager from '@/components/accounting/BudgetManager';
 import FamilyMembersManager from '@/components/FamilyMembersManager';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import { CategoryCleanupBanner } from '@/components/CategoryCleanupBanner';
+import { useComprehensiveCategoryCleanup } from '@/hooks/useComprehensiveCategoryCleanup';
 
 const Options = () => {
   const { selectedFamily } = useExpense();
+  const { runComprehensiveCleanup, isProcessing } = useComprehensiveCategoryCleanup();
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -17,10 +20,23 @@ const Options = () => {
         <AppBreadcrumbs currentPage="Configuration Options" />
         
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Configuration Options</h1>
-          <p className="text-muted-foreground mt-1">
-            Adjust your settings and manage your financial organization
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Configuration Options</h1>
+              <p className="text-muted-foreground mt-1">
+                Adjust your settings and manage your financial organization
+              </p>
+            </div>
+            <Button 
+              onClick={runComprehensiveCleanup}
+              disabled={isProcessing}
+              variant="outline"
+              className="ml-4"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+              {isProcessing ? 'Cleaning...' : 'Clean Up Categories'}
+            </Button>
+          </div>
         </div>
         
         <CategoryCleanupBanner />
