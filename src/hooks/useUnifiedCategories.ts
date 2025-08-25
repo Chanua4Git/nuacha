@@ -102,7 +102,6 @@ export const useUnifiedCategories = ({
           .from('categories')
           .select('*')
           .eq('family_id', familyId)
-          .is('is_budget_category', false)
           .order('sort_order', { ascending: true });
         
         if (familyError) throw familyError;
@@ -148,13 +147,15 @@ export const useUnifiedCategories = ({
           break;
       }
 
-      // Sort by group type and name for consistent display
+      // Sort by group type, then sort_order if available, then name
       combinedCategories.sort((a, b) => {
-        const groupOrder = { needs: 0, wants: 1, savings: 2 };
+        const groupOrder = { needs: 0, wants: 1, savings: 2 } as const;
         const aGroup = groupOrder[a.groupType as keyof typeof groupOrder] ?? 3;
         const bGroup = groupOrder[b.groupType as keyof typeof groupOrder] ?? 3;
-        
         if (aGroup !== bGroup) return aGroup - bGroup;
+        const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
         return a.name.localeCompare(b.name);
       });
 
@@ -190,13 +191,13 @@ export const useUnifiedCategories = ({
           const isRelevant = (() => {
             switch (mode) {
               case 'family-only':
-                return row?.family_id === familyId && !row?.is_budget_category;
+                return row?.family_id === familyId;
               case 'budget-only':
                 return row?.user_id === user?.id && row?.is_budget_category && !row?.family_id;
               case 'unified':
               case 'all':
                 return (
-                  (row?.family_id === familyId && !row?.is_budget_category) ||
+                  (row?.family_id === familyId) ||
                   (row?.user_id === user?.id && row?.is_budget_category && !row?.family_id)
                 );
               default:
