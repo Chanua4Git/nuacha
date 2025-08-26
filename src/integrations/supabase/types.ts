@@ -1570,7 +1570,9 @@ export type Database = {
         }[]
       }
       seed_comprehensive_categories_for_user: {
-        Args: { family_uuid?: string; user_uuid: string }
+        Args:
+          | { family_uuid?: string; user_uuid: string }
+          | { user_uuid: string }
         Returns: undefined
       }
       seed_user_comprehensive_categories: {
