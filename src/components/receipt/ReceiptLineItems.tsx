@@ -116,7 +116,12 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     ? lineItems 
     : (receiptData.lineItems || []).map(item => {
         const mappedCategoryId = mapSuggestedCategoryId(item.suggestedCategoryId);
-        console.log('Line item:', item.description, 'original suggested:', item.suggestedCategoryId, 'mapped to:', mappedCategoryId);
+        
+        // Validate that the mapped category actually exists in available categories
+        const categoryExists = mappedCategoryId && unifiedCategories.some(c => c.id === mappedCategoryId);
+        const finalCategoryId = categoryExists ? mappedCategoryId : undefined;
+        
+        console.log('Line item:', item.description, 'original suggested:', item.suggestedCategoryId, 'mapped to:', mappedCategoryId, 'exists:', categoryExists, 'final:', finalCategoryId);
         
         return {
           id: undefined,
@@ -124,8 +129,8 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
           description: item.description,
           quantity: item.quantity,
           totalPrice: typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : (item.totalPrice || 0),
-          categoryId: mappedCategoryId,
-          suggestedCategoryId: mappedCategoryId,
+          categoryId: finalCategoryId, // This will auto-populate the dropdown
+          suggestedCategoryId: finalCategoryId,
           categoryConfidence: item.categoryConfidence,
           sku: item.sku,
           discount: item.discounted
