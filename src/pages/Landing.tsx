@@ -4,8 +4,15 @@ import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, Trending
 import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
+import { useExitIntent } from "@/hooks/useExitIntent";
+import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
 
 const Landing = () => {
+  const { showExitIntent, resetExitIntent, disableExitIntent } = useExitIntent({
+    threshold: 50,
+    delay: 500,
+    enabled: true
+  });
   return <>
       <DemoBreadcrumbs currentPage="home" />
       <div className="min-h-screen bg-background py-12 px-4">
@@ -196,6 +203,16 @@ const Landing = () => {
             </div>
           </div>
         </footer>
+
+        {/* Exit Intent Lead Capture Modal */}
+        <ExitIntentLeadCaptureModal 
+          open={showExitIntent} 
+          onOpenChange={(open) => {
+            if (!open) {
+              disableExitIntent();
+            }
+          }} 
+        />
       </div>
     </>;
 };
