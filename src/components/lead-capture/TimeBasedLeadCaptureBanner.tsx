@@ -7,11 +7,15 @@ import { toast } from "sonner";
 interface TimeBasedLeadCaptureBannerProps {
   open: boolean;
   onClose: () => void;
+  onCompleted?: () => void;
+  onDismissed?: () => void;
 }
 
 export default function TimeBasedLeadCaptureBanner({ 
   open, 
-  onClose 
+  onClose,
+  onCompleted,
+  onDismissed 
 }: TimeBasedLeadCaptureBannerProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,6 +37,9 @@ export default function TimeBasedLeadCaptureBanner({
       toast.success("Thank you for your interest!", {
         description: "We'll keep you updated on Nuacha's financial management solutions.",
       });
+      
+      // Notify parent of completion
+      onCompleted?.();
       
       // Close banner after successful submission
       setTimeout(() => {
@@ -81,7 +88,10 @@ export default function TimeBasedLeadCaptureBanner({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={() => {
+                onDismissed?.();
+                onClose();
+              }}
               className="h-8 w-8 p-0 flex-shrink-0"
               disabled={isLoading}
             >

@@ -8,11 +8,15 @@ import { toast } from "sonner";
 interface ExitIntentLeadCaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCompleted?: () => void;
+  onDismissed?: () => void;
 }
 
 export default function ExitIntentLeadCaptureModal({ 
   open, 
-  onOpenChange 
+  onOpenChange,
+  onCompleted,
+  onDismissed 
 }: ExitIntentLeadCaptureModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,6 +37,9 @@ export default function ExitIntentLeadCaptureModal({
       toast.success("Thank you!", {
         description: "We'll keep you updated on Nuacha's journey. 🌟"
       });
+
+      // Notify parent of completion
+      onCompleted?.();
 
       setTimeout(() => {
         onOpenChange(false);
@@ -55,7 +62,10 @@ export default function ExitIntentLeadCaptureModal({
             variant="ghost"
             size="sm"
             className="absolute right-4 top-4 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onDismissed?.();
+              onOpenChange(false);
+            }}
           >
             <X className="h-4 w-4" />
           </Button>

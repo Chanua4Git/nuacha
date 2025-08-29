@@ -6,7 +6,7 @@ interface UseTimeBasedLeadCaptureOptions {
 }
 
 export function useTimeBasedLeadCapture(options: UseTimeBasedLeadCaptureOptions = {}) {
-  const { inactivityThreshold = 3 * 60 * 1000, enabled = true } = options; // 3 minutes default
+  const { inactivityThreshold = 3 * 60 * 1000, enabled = true } = options;
   const [showBanner, setShowBanner] = useState(false);
   
   const inactivityTimerRef = useRef<NodeJS.Timeout>();

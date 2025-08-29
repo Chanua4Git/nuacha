@@ -6,19 +6,29 @@ import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
 import { useExitIntent } from "@/hooks/useExitIntent";
 import { useTimeBasedLeadCapture } from "@/hooks/useTimeBasedLeadCapture";
+import { useLeadCaptureManager } from "@/hooks/useLeadCaptureManager";
 import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
 import TimeBasedLeadCaptureBanner from "@/components/lead-capture/TimeBasedLeadCaptureBanner";
 
 const Landing = () => {
+  // Initialize the unified lead capture manager
+  const {
+    shouldEnableExitIntent,
+    shouldEnableTimeBased,
+    markCompleted,
+    markDismissed,
+    getStatusMessage
+  } = useLeadCaptureManager();
+
   const { showExitIntent, resetExitIntent, disableExitIntent } = useExitIntent({
     threshold: 50,
     delay: 500,
-    enabled: true
+    enabled: shouldEnableExitIntent
   });
 
   const { showBanner, closeBanner, disableBanner } = useTimeBasedLeadCapture({
     inactivityThreshold: 3 * 60 * 1000, // 3 minutes
-    enabled: true
+    enabled: shouldEnableTimeBased
   });
   return <>
       <DemoBreadcrumbs currentPage="home" />
@@ -218,13 +228,17 @@ const Landing = () => {
             if (!open) {
               disableExitIntent();
             }
-          }} 
+          }}
+          onCompleted={() => markCompleted('exit-intent')}
+          onDismissed={() => markDismissed('exit-intent')}
         />
 
         {/* Time-Based Lead Capture Banner */}
         <TimeBasedLeadCaptureBanner 
           open={showBanner} 
           onClose={disableBanner}
+          onCompleted={() => markCompleted('time-based')}
+          onDismissed={() => markDismissed('time-based')}
         />
       </div>
     </>;
