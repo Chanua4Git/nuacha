@@ -5,12 +5,19 @@ import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
 import { useExitIntent } from "@/hooks/useExitIntent";
+import { useTimeBasedLeadCapture } from "@/hooks/useTimeBasedLeadCapture";
 import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
+import TimeBasedLeadCaptureBanner from "@/components/lead-capture/TimeBasedLeadCaptureBanner";
 
 const Landing = () => {
   const { showExitIntent, resetExitIntent, disableExitIntent } = useExitIntent({
     threshold: 50,
     delay: 500,
+    enabled: true
+  });
+
+  const { showBanner, closeBanner, disableBanner } = useTimeBasedLeadCapture({
+    inactivityThreshold: 3 * 60 * 1000, // 3 minutes
     enabled: true
   });
   return <>
@@ -212,6 +219,12 @@ const Landing = () => {
               disableExitIntent();
             }
           }} 
+        />
+
+        {/* Time-Based Lead Capture Banner */}
+        <TimeBasedLeadCaptureBanner 
+          open={showBanner} 
+          onClose={disableBanner}
         />
       </div>
     </>;
