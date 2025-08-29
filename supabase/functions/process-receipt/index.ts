@@ -193,34 +193,68 @@ serve(async (req) => {
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
       
       try {
+        // Get user ID from authorization header
+        const authHeader = req.headers.get('authorization');
+        let userId = null;
+        
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.replace('Bearer ', '');
+          try {
+            // For authenticated users, get their user ID
+            const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+            userId = user?.id;
+          } catch (authError) {
+            console.log('Auth error, proceeding without user-specific categories:', authError);
+          }
+        }
+        
         // Get the vendor name to help with categorization
         const vendorName = result.supplier?.value || 
                           result.storeDetails?.name || 
                           "";
         
-        // Get categories from database to use for suggestions
-        const { data: categories } = await supabaseAdmin
-          .from('categories')
-          .select('*');
+        // Get categories from database - filter by user if authenticated
+        let categoriesQuery = supabaseAdmin.from('categories').select('*');
         
-        // Get categorization rules if available
-        const { data: rules } = await supabaseAdmin
-          .from('categorization_rules')
-          .select('*')
-          .eq('is_active', true)
-          .order('priority', { ascending: false });
+        if (userId) {
+          // For authenticated users, get their specific categories
+          categoriesQuery = categoriesQuery.eq('user_id', userId);
+          console.log(`Getting categories for user: ${userId}`);
+        } else {
+          // For demo users, get a representative sample of categories
+          categoriesQuery = categoriesQuery.limit(50);
+          console.log('Getting sample categories for demo user');
+        }
         
-        if (categories) {
+        const { data: categories } = await categoriesQuery;
+        
+        // Get categorization rules if available and user is authenticated
+        let rules = [];
+        if (userId) {
+          const { data: userRules } = await supabaseAdmin
+            .from('categorization_rules')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .order('priority', { ascending: false });
+          rules = userRules || [];
+        }
+        
+        if (categories && categories.length > 0) {
+          console.log(`Processing with ${categories.length} categories for vendor: ${vendorName}`);
+          
           // Process line items and suggest categories
           const enhancedLineItems = await suggestCategories(
             result.lineItems,
             vendorName,
             categories,
-            rules || []
+            rules
           );
           
           // Replace the original line items with the enhanced ones
           result.lineItems = enhancedLineItems;
+        } else {
+          console.log('No categories found, skipping category suggestions');
         }
       } catch (error) {
         console.error('Error suggesting categories:', error);

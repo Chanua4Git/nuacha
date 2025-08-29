@@ -169,7 +169,41 @@ function suggestCategoryForItem(
     vendorName.toLowerCase().includes(vendor)
   );
 
-    // Enhanced keyword mapping with brand recognition and fuzzy matching
+  console.log(`Vendor analysis - isDining: ${isDiningVendor}, isGrocery: ${isGroceryVendor}, vendor: "${vendorName}"`);
+
+  // PRIORITY 1: If it's a dining vendor, prioritize dining category
+  if (isDiningVendor) {
+    const diningCategory = categories.find(cat => 
+      cat.name.toLowerCase().includes('dining') || 
+      cat.name.toLowerCase() === 'dining out'
+    );
+    
+    if (diningCategory) {
+      console.log(`✅ Dining vendor detected - using category: ${diningCategory.name}`);
+      return {
+        categoryId: diningCategory.id,
+        confidence: 0.9 // High confidence for dining vendor
+      };
+    }
+  }
+
+  // PRIORITY 2: If it's a grocery vendor, prioritize grocery category
+  if (isGroceryVendor) {
+    const groceryCategory = categories.find(cat => 
+      cat.name.toLowerCase().includes('groceries') || 
+      cat.name.toLowerCase() === 'groceries'
+    );
+    
+    if (groceryCategory) {
+      console.log(`✅ Grocery vendor detected - using category: ${groceryCategory.name}`);
+      return {
+        categoryId: groceryCategory.id,
+        confidence: 0.85 // Good confidence for grocery vendor
+      };
+    }
+  }
+
+  // PRIORITY 3: Enhanced keyword mapping with brand recognition and fuzzy matching
   const keywordMap: { [key: string]: string[] } = {
     // Food & Groceries - Enhanced with brand names and common terms
     'grocery': ['groceries'],
@@ -350,10 +384,10 @@ function suggestCategoryForItem(
     'console': ['gaming', 'technology'],
     'appliance': ['home-appliances', 'technology'],
 
-    // Restaurant & Dining
+    // Restaurant & Dining - Enhanced with T&T specific items
     'restaurant': ['dining-out', 'dining'],
     'cafe': ['dining-out', 'dining'],
-    'coffee': ['dining-out', 'dining'],
+    'coffee shop': ['dining-out', 'dining'],
     'lunch': ['dining-out', 'dining'],
     'dinner': ['dining-out', 'dining'],
     'takeout': ['dining-out', 'dining'],
@@ -361,6 +395,21 @@ function suggestCategoryForItem(
     'pizza': ['dining-out', 'dining'],
     'burger': ['dining-out', 'dining'],
     'fast food': ['dining-out', 'dining'],
+    'doubles': ['dining-out', 'dining'],
+    'bake and shark': ['dining-out', 'dining'],
+    'roti': ['dining-out', 'dining'],
+    'pelau': ['dining-out', 'dining'],
+    'curry': ['dining-out', 'dining'],
+    
+    // Coffee & Café items - SHOULD GO TO DINING when from dining vendor
+    'coffee': isDiningVendor ? ['dining-out', 'dining'] : ['beverages', 'groceries'],
+    'latte': ['dining-out', 'dining'],
+    'cappuccino': ['dining-out', 'dining'],
+    'espresso': ['dining-out', 'dining'],
+    'americano': ['dining-out', 'dining'],
+    'macchiato': ['dining-out', 'dining'],
+    'mocha': ['dining-out', 'dining'],
+    'frappuccino': ['dining-out', 'dining'],
 
     // Transportation
     'gas': ['fuel', 'transportation'],
