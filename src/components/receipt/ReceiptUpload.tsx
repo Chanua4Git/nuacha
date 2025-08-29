@@ -12,13 +12,15 @@ interface ReceiptUploadProps {
   onImageRemove: () => void;
   onDataExtracted: (data: OCRResult) => void;
   imagePreview: string | null;
+  familyId?: string;
 }
 
 const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ 
   onImageUpload, 
   onImageRemove, 
   onDataExtracted,
-  imagePreview 
+  imagePreview,
+  familyId
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -145,7 +147,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
       // Upload the appropriate file (processed or original)
       onImageUpload(fileToSave);
 
-      const extractedData = await processReceiptImage(fileToProcess);
+      const extractedData = await processReceiptImage(fileToProcess, familyId);
       
       if (extractedData) {
         // Log quality indicators for long receipts

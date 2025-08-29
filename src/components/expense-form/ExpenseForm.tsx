@@ -411,6 +411,7 @@ const ExpenseForm = () => {
               onDataExtracted={handleOcrData}
               isLongReceiptMode={isLongReceiptMode}
               onToggleLongReceiptMode={() => setIsLongReceiptMode(!isLongReceiptMode)}
+              familyId={selectedFamily?.id}
             />
           ) : (
             <ReceiptUpload
@@ -418,6 +419,7 @@ const ExpenseForm = () => {
               onImageRemove={handleImageRemove}
               onDataExtracted={handleOcrData}
               imagePreview={imagePreview}
+              familyId={selectedFamily?.id}
             />
           )}
 

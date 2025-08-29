@@ -216,7 +216,11 @@ serve(async (req) => {
                           result.storeDetails?.name || 
                           "";
         
+        // Get familyId from request body
+        const familyId = requestBody.familyId;
+        
         console.log(`🏪 Vendor name detected: "${vendorName}"`);
+        console.log(`👨‍👩‍👧‍👦 Family ID: ${familyId}`);
         console.log(`📦 Processing ${result.lineItems.length} line items for categorization`);
         
         // Get categories from database - filter by user if authenticated
@@ -224,23 +228,56 @@ serve(async (req) => {
         let rules = [];
         
         if (userId) {
-          console.log(`🔍 Fetching user-specific categories for user: ${userId}`);
+          console.log(`🔍 Fetching unified categories for user: ${userId}, family: ${familyId}`);
           
-          // For authenticated users, get only their budget categories
-          const { data: userCategories, error: categoriesError } = await supabaseAdmin
-            .from('categories')
-            .select('id, name, color, group_type')
-            .eq('user_id', userId)
-            .eq('is_budget_category', true)
-            .is('family_id', null)
-            .order('name');
+          // For authenticated users, get unified categories (both budget and family categories)
+          let categoryQueries = [];
           
-          if (categoriesError) {
-            console.error('❌ Error fetching user categories:', categoriesError);
-          } else {
-            categories = userCategories || [];
-            console.log(`✅ Found ${categories.length} user budget categories:`, categories.map(c => c.name));
+          // Always get budget categories
+          categoryQueries.push(
+            supabaseAdmin
+              .from('categories')
+              .select('id, name, color, group_type')
+              .eq('user_id', userId)
+              .eq('is_budget_category', true)
+              .is('family_id', null)
+          );
+          
+          // If familyId is provided, also get family-specific categories
+          if (familyId) {
+            categoryQueries.push(
+              supabaseAdmin
+                .from('categories')
+                .select('id, name, color, group_type')
+                .eq('user_id', userId)
+                .eq('family_id', familyId)
+                .order('name')
+            );
           }
+          
+          // Execute all category queries
+          const categoryResults = await Promise.all(categoryQueries);
+          const allCategories = [];
+          
+          for (const { data: categoryData, error: categoryError } of categoryResults) {
+            if (categoryError) {
+              console.error('❌ Error fetching categories:', categoryError);
+            } else if (categoryData) {
+              allCategories.push(...categoryData);
+            }
+          }
+          
+          // Deduplicate categories by name (family categories override budget categories)
+          const categoryMap = new Map();
+          allCategories.forEach(cat => {
+            const existing = categoryMap.get(cat.name.toLowerCase());
+            if (!existing || cat.family_id) { // Family categories take precedence
+              categoryMap.set(cat.name.toLowerCase(), cat);
+            }
+          });
+          
+          categories = Array.from(categoryMap.values());
+          console.log(`✅ Found ${categories.length} unified categories:`, categories.map(c => c.name));
           
           // Get categorization rules if available
           const { data: userRules, error: rulesError } = await supabaseAdmin

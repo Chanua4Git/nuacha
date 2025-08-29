@@ -7,7 +7,7 @@ import { processReceiptWithEdgeFunction } from './ocrProcessing';
 import { preprocessReceiptImage, checkImageQuality } from './imagePreprocessing';
 import { toast } from 'sonner';
 
-export async function processReceiptImage(file: File): Promise<OCRResult> {
+export async function processReceiptImage(file: File, familyId?: string): Promise<OCRResult> {
   try {
     // Show processing toast to give feedback during OCR
     const loadingToast = toast.loading("Analyzing your receipt...", {
@@ -51,7 +51,7 @@ export async function processReceiptImage(file: File): Promise<OCRResult> {
     }
     
     try {
-      const result = await processReceiptWithEdgeFunction(receiptUrl);
+      const result = await processReceiptWithEdgeFunction(receiptUrl, familyId);
       toast.dismiss(loadingToast);
       
       const confidence = result.confidence || 0;

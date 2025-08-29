@@ -46,6 +46,31 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     
     console.log('Mapping suggested category ID:', suggestedId);
     
+    // Handle special fallback category IDs from the backend
+    if (suggestedId === 'groceries-fallback') {
+      console.log('Handling groceries fallback - looking for Groceries category');
+      const groceriesCategory = unifiedCategories.find(c => 
+        c.name.toLowerCase().includes('groceries') || 
+        c.name.toLowerCase() === 'groceries'
+      );
+      if (groceriesCategory) {
+        console.log('Found Groceries category for fallback:', groceriesCategory.name, groceriesCategory.id);
+        return groceriesCategory.id;
+      }
+    }
+    
+    if (suggestedId === 'dining-out-fallback') {
+      console.log('Handling dining out fallback - looking for Dining out category');
+      const diningCategory = unifiedCategories.find(c => 
+        c.name.toLowerCase().includes('dining') || 
+        c.name.toLowerCase() === 'dining out'
+      );
+      if (diningCategory) {
+        console.log('Found Dining out category for fallback:', diningCategory.name, diningCategory.id);
+        return diningCategory.id;
+      }
+    }
+    
     // First, check if the suggested ID exists in unified categories
     const directMatch = unifiedCategories.find(c => c.id === suggestedId);
     if (directMatch) {
@@ -71,8 +96,19 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       }
     }
     
+    // Additional safety net: check if it's a plain category name and find by name
+    if (typeof suggestedId === 'string') {
+      const plainNameMatch = unifiedCategories.find(c => 
+        c.name.toLowerCase() === suggestedId.toLowerCase()
+      );
+      if (plainNameMatch) {
+        console.log('Found category by plain name matching:', plainNameMatch.name, plainNameMatch.id);
+        return plainNameMatch.id;
+      }
+    }
+    
     console.log('No mapping found for suggested category ID:', suggestedId);
-    return suggestedId; // Return original ID as fallback
+    return undefined; // Return undefined to indicate no valid mapping found
   };
 
   // Convert receiptData.lineItems to proper format if needed

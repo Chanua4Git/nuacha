@@ -23,6 +23,7 @@ interface MultiImageReceiptUploadProps {
   onDataExtracted: (data: OCRResult) => void;
   isLongReceiptMode: boolean;
   onToggleLongReceiptMode: () => void;
+  familyId?: string;
 }
 
 const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
@@ -31,6 +32,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
   onDataExtracted,
   isLongReceiptMode,
   onToggleLongReceiptMode,
+  familyId,
 }) => {
   const [sections, setSections] = useState<ReceiptSection[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -145,7 +147,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
         }
       }
 
-      const extractedData = await processReceiptImage(fileToProcess);
+      const extractedData = await processReceiptImage(fileToProcess, familyId);
 
       setSections(prev => prev.map(s => 
         s.id === sectionId 
@@ -193,7 +195,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
         }
 
         // Process the receipt
-        const extractedData = await processReceiptImage(fileToProcess);
+        const extractedData = await processReceiptImage(fileToProcess, familyId);
         console.log('Extracted data for section:', section.id, extractedData);
         
         // Update state with the result

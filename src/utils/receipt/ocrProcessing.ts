@@ -7,13 +7,13 @@ import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 import { CategoryWithCamelCase } from '@/types/expense';
 import { validateAndCorrectDate, showDateValidationWarning } from './dateProcessing';
 
-export async function processReceiptWithEdgeFunction(receiptUrl: string): Promise<OCRResult> {
+export async function processReceiptWithEdgeFunction(receiptUrl: string, familyId?: string): Promise<OCRResult> {
   try {
-    console.log('📄 Processing receipt:', receiptUrl);
+    console.log('📄 Processing receipt:', receiptUrl, 'for family:', familyId);
     
     // Check if this is a local file URL (for demo/unauthenticated users)
     const isLocalFileUrl = receiptUrl.startsWith('blob:');
-    let requestBody: any = { receiptUrl };
+    let requestBody: any = { receiptUrl, familyId };
     
     // For demo users (unauthenticated), we need to send the file directly
     if (isLocalFileUrl) {
@@ -39,7 +39,8 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string): Promis
         requestBody = { 
           receiptBase64: base64Content,
           contentType: blob.type,
-          isDemo: true
+          isDemo: true,
+          familyId
         };
         
         console.log('🎯 Demo mode: Base64 conversion complete, content type:', blob.type);

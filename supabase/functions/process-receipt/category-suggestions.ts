@@ -185,6 +185,13 @@ function suggestCategoryForItem(
         confidence: 0.9 // High confidence for dining vendor
       };
     }
+    
+    // Fallback: If no "Dining out" category found, create a fallback suggestion
+    console.log(`⚠️ Dining vendor but no Dining out category found - creating fallback`);
+    return {
+      categoryId: 'dining-out-fallback',
+      confidence: 0.8
+    };
   }
 
   // PRIORITY 2: If it's a grocery vendor, prioritize grocery category
@@ -201,6 +208,13 @@ function suggestCategoryForItem(
         confidence: 0.85 // Good confidence for grocery vendor
       };
     }
+    
+    // Fallback: If no "Groceries" category found, create a fallback suggestion
+    console.log(`⚠️ Grocery vendor but no Groceries category found - creating fallback`);
+    return {
+      categoryId: 'groceries-fallback',
+      confidence: 0.75
+    };
   }
 
   // PRIORITY 3: Enhanced keyword mapping with brand recognition and fuzzy matching

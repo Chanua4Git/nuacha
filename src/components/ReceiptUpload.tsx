@@ -12,13 +12,15 @@ interface ReceiptUploadProps {
   onImageRemove: () => void;
   onDataExtracted: (data: OCRResult) => void;
   imagePreview: string | null;
+  familyId?: string;
 }
 
 const ReceiptUpload = ({ 
   onImageUpload, 
   onImageRemove, 
   onDataExtracted,
-  imagePreview 
+  imagePreview,
+  familyId
 }: ReceiptUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -79,7 +81,7 @@ const ReceiptUpload = ({
     
     setIsProcessing(true);
     try {
-      const extractedData = await processReceiptImage(file);
+      const extractedData = await processReceiptImage(file, familyId);
       
       if (validateOCRResult(extractedData)) {
         onDataExtracted(extractedData);
