@@ -67,7 +67,23 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
       // Demo mode - find in demo categories
       return getAllDemoCategories().find(c => c.id === id || c.name === id);
     }
-    return unifiedCategories.find(c => c.id === id);
+    
+    // First try unified categories
+    const unifiedMatch = unifiedCategories.find(c => c.id === id);
+    if (unifiedMatch) {
+      return unifiedMatch;
+    }
+    
+    // Safety net: If not found in unified, check budget categories directly
+    // This handles cases where suggested categories might not be visible in unified set
+    const budgetMatch = budgetCategories.find(c => c.id === id);
+    if (budgetMatch) {
+      console.log('Category found in budget categories but not unified:', budgetMatch.name);
+      return budgetMatch;
+    }
+    
+    console.log('Category not found in any set:', id);
+    return undefined;
   };
   
   const selectedCategory = value ? getCategory(value) : undefined;
@@ -130,7 +146,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
         </div>
         {suggestions.map((suggestion, index) => (
           <SelectItem
-            key={`smart-${suggestion.categoryId}`}
+            key={`smart-${suggestion.categoryId}-${index}`}
             value={suggestion.categoryId}
             className="flex items-center justify-between px-3 py-2 bg-primary/5 hover:bg-primary/10"
           >
@@ -176,12 +192,12 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
                      style={{ borderLeftColor: category.color }}>
                   {category.name}
                 </div>
-                {/* Child Categories - sorted alphabetically */}
+            {/* Child Categories - sorted alphabetically */}
                 {category.children
                   .sort((a: any, b: any) => a.name.localeCompare(b.name))
-                  .map((child: any) => (
+                  .map((child: any, childIndex: number) => (
                     <SelectItem 
-                      key={child.id} 
+                      key={`${child.id}-${childIndex}`} 
                       value={child.id}
                       className="flex items-center pl-6"
                     >
@@ -305,9 +321,9 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
               {parentCategory.name}
             </div>
             {/* Child Categories */}
-            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map((child, childIndex) => (
               <SelectItem 
-                key={child.id} 
+                key={`${child.id}-needs-${childIndex}`} 
                 value={child.id}
                 className="flex items-center pl-6"
               >
@@ -335,9 +351,9 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
               {parentCategory.name}
             </div>
             {/* Child Categories */}
-            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map((child, childIndex) => (
               <SelectItem 
-                key={child.id} 
+                key={`${child.id}-wants-${childIndex}`} 
                 value={child.id}
                 className="flex items-center pl-6"
               >
@@ -365,9 +381,9 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
               {parentCategory.name}
             </div>
             {/* Child Categories */}
-            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map(child => (
+            {parentCategory.children?.sort((a, b) => a.name.localeCompare(b.name)).map((child, childIndex) => (
               <SelectItem 
-                key={child.id} 
+                key={`${child.id}-savings-${childIndex}`} 
                 value={child.id}
                 className="flex items-center pl-6"
               >
