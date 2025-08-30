@@ -68,7 +68,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Don't navigate if user is already on an app route and is authenticated
     if (user && isAppRoute(location.pathname) && isAppRoute(path)) {
-      console.log(`User already on an app route (${location.pathname}), not redirecting to ${path}`);
       return;
     }
     
@@ -101,7 +100,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (isEmailVerified && isFromAuthDemo) {
       // Process verification first to avoid race conditions
-      console.log("AuthProvider: Processing verification parameters");
       setAuthDemoActiveSync(true);
       localStorage.setItem("verificationComplete", "true");
       urlParamsProcessed.current = true;
@@ -111,7 +109,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log("Auth state change:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
@@ -120,7 +117,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const verificationComplete = localStorage.getItem("verificationComplete") === "true";
           
           if (verificationComplete) {
-            console.log("AuthProvider: Verification complete, cleaning up");
             localStorage.removeItem("verificationComplete");
             window.history.replaceState({}, "", "/");
             safeNavigate("/", { replace: true });
@@ -137,7 +133,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             // If user has an intended path, use it regardless of current location
             if (intendedPath !== "/" && localStorage.getItem('intendedPath')) {
-              console.log(`AuthProvider: Redirecting to intended path: ${intendedPath}`);
               localStorage.removeItem('intendedPath');
               safeNavigate(intendedPath, { replace: true });
               return;
@@ -145,7 +140,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             // If already on a valid app route and no specific intended path, stay here
             if (isAppRoute(location.pathname)) {
-              console.log(`User already on app route (${location.pathname}), staying here`);
               localStorage.removeItem('intendedPath'); // Clean up any stale intended path
               return;
             }
@@ -164,7 +158,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
       })
       .catch((err) => {
-        console.error('Error loading session:', err);
         setIsLoading(false);
       });
 
@@ -183,7 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabaseClient.auth.signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Handle sign out error silently
     } finally {
       setSession(null);
       setUser(null);

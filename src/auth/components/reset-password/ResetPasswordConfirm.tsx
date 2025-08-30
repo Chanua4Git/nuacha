@@ -29,10 +29,7 @@ const ResetPasswordConfirm = () => {
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       
-      console.log('Token validation:', { type, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
-
       if (!accessToken || type !== 'recovery') {
-        console.error('Invalid reset link:', { type, hasAccessToken: !!accessToken });
         setIsValid(false);
         toast.error('Invalid reset link', {
           description: 'Please request a new password reset link.',
@@ -47,18 +44,15 @@ const ResetPasswordConfirm = () => {
         });
 
         if (error) {
-          console.error('Session establishment error:', error);
           throw error;
         }
 
         if (!session) {
-          console.error('No session established');
           throw new Error('No session established');
         }
 
         setIsValid(true);
       } catch (error: any) {
-        console.error('Token validation error:', error);
         setIsValid(false);
         toast.error('Reset link expired', {
           description: 'Please request a new password reset link.',
@@ -110,7 +104,6 @@ const ResetPasswordConfirm = () => {
         });
       }
     } catch (error: any) {
-      console.error('Update password error:', error);
       toast.error('Password update failed', {
         description: error.message || 'Please try again or request a new reset link.',
       });

@@ -50,21 +50,13 @@ export default function ExpenseManager() {
            (cat.familyId === selectedFamilyId);
   });
 
-  console.log('Budget categories found:', budgetCategories.length);
-  if (budgetCategories.length > 0) {
-    console.log('Sample categories:', budgetCategories.slice(0, 3).map(c => ({
-      id: c.id,
-      name: c.name,
-      groupType: c.groupType
-    })));
-  }
   
   // If no budget categories exist, create them automatically
   useEffect(() => {
     if (user && budgetCategories.length === 0 && !categoriesLoading) {
       // Trigger creation of default budget categories
       // This will be handled by the unified category system
-      console.log('No budget categories found for user, they should be created automatically');
+      
     }
   }, [user, budgetCategories.length, categoriesLoading]);
 
@@ -72,7 +64,6 @@ export default function ExpenseManager() {
   const categoriesByGroup = budgetCategories.reduce((acc, category) => {
     const groupType = category.groupType;
     if (!groupType) {
-      console.warn('Category missing groupType:', category);
       return acc;
     }
     if (!acc[groupType]) {
@@ -82,8 +73,6 @@ export default function ExpenseManager() {
     return acc;
   }, {} as Record<string, typeof categories>);
   
-  console.log('Categories by group:', categoriesByGroup);
-  console.log('Budget categories found:', budgetCategories.length);
   
   // Get expenses from context - when 'all' is selected, we'll filter later
   const { expenses: allExpenses, isLoading: expensesLoading } = useExpense();
@@ -132,20 +121,9 @@ export default function ExpenseManager() {
     
     if (category) {
       acc[category.id] = (acc[category.id] || 0) + expense.amount;
-      console.log(`Matched expense "${expense.description}" (${expense.amount}) to category "${category.name}"`);
-    } else {
-      console.warn('No matching budget category found for expense:', {
-        expenseId: expense.id,
-        description: expense.description,
-        category: expense.category,
-        budgetCategoryId: expense.budgetCategoryId,
-        amount: expense.amount
-      });
     }
     return acc;
   }, {} as Record<string, number>);
-  
-  console.log('Expenses by category totals:', expensesByCategory);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setSelectedMonth(prev => {

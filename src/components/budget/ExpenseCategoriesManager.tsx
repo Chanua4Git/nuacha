@@ -20,30 +20,18 @@ export const ExpenseCategoriesManager = () => {
   
   const { selectedFamily, expenses, categories } = useExpense();
   
-  // DEBUG: Log all the data we're working with
-  console.log('🔍 ExpenseCategoriesManager Debug:');
-  console.log('Selected Family:', selectedFamily);
-  console.log('All Expenses from Context:', expenses);
-  console.log('All Categories from Context:', categories);
-  console.log('Selected Month:', selectedMonth);
+  // Filter expenses by selected month using string comparison (avoids timezone issues)
   
   // Filter expenses by selected month using string comparison (avoids timezone issues)
   const monthStartString = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
   const monthEndString = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
   
-  console.log('Date Range:', { monthStartString, monthEndString });
-  
   const monthlyExpenses = expenses.filter(expense => {
-    const isInRange = expense.date >= monthStartString && expense.date <= monthEndString;
-    console.log(`Expense ${expense.id}: date=${expense.date}, inRange=${isInRange}`);
-    return isInRange;
+    return expense.date >= monthStartString && expense.date <= monthEndString;
   });
-  
-  console.log('Monthly Expenses after date filter:', monthlyExpenses);
   
   // Filter to only budget categories
   const budgetCategories = categories.filter(cat => cat.isBudgetCategory);
-  console.log('Budget Categories:', budgetCategories);
 
   // Map database categories to parent categories
   const mapDatabaseCategoryToParent = (categoryName: string) => {
@@ -152,26 +140,21 @@ export const ExpenseCategoriesManager = () => {
 
   // Calculate expenses by category for the selected month - include ALL expenses
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    console.log(`Processing expense: ${expense.id}, category: ${expense.category}, budgetCategoryId: ${expense.budgetCategoryId}, description: ${expense.description}`);
-    
     let category = null;
     
     // Priority 1: Use budget_category_id if available (preferred)
     if (expense.budgetCategoryId) {
       category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
-      console.log('Found by budgetCategoryId:', category?.name);
     }
     
     // Priority 2: Try category field as UUID
     if (!category && expense.category) {
       category = budgetCategories.find(cat => cat.id === expense.category);
-      console.log('Found by category UUID:', category?.name);
     }
     
     // Priority 3: Exact name matching
     if (!category && expense.category) {
       category = budgetCategories.find(cat => cat.name.toLowerCase() === expense.category.toLowerCase());
-      console.log('Found by exact name match:', category?.name);
     }
     
     // Priority 4: Enhanced fuzzy matching including description
@@ -193,13 +176,11 @@ export const ExpenseCategoriesManager = () => {
           categoryName.includes('school') && catName.includes('school')
         );
       });
-      console.log('Found by fuzzy match:', category?.name);
     }
     
     // Priority 5: Default to first "wants" category if no match found
     if (!category) {
       category = budgetCategories.find(cat => cat.groupType === 'wants');
-      console.log('Using default wants category:', category?.name);
     }
     
     if (category) {
@@ -208,15 +189,10 @@ export const ExpenseCategoriesManager = () => {
       }
       acc[category.id].total += expense.amount;
       acc[category.id].expenses.push(expense);
-      console.log(`Added ${expense.amount} to category ${category.name}, new total: ${acc[category.id].total}`);
-    } else {
-      console.log(`ERROR: No category found for expense ${expense.id} - this should not happen!`);
     }
     
     return acc;
   }, {} as Record<string, { total: number; expenses: any[] }>);
-
-  console.log('Final expensesByCategory:', expensesByCategory);
 
   // Calculate totals for each group
   const getAllCategoriesInGroup = (groupType: 'needs' | 'wants' | 'savings') => {
