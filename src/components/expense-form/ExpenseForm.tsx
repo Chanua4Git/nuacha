@@ -24,6 +24,8 @@ import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
 import { Camera, Image, Images } from 'lucide-react';
 import { useEffect } from 'react';
+import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
+import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 
 const ExpenseForm = () => {
   const { selectedFamily, createExpense } = useExpense();
@@ -52,6 +54,12 @@ const ExpenseForm = () => {
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
   const [showDetailedReceiptView, setShowDetailedReceiptView] = useState(false);
+
+  // Duplicate detection states
+  const { checkForReceiptDuplicates, isChecking } = useReceiptDuplicateDetection(selectedFamily?.id);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<any>(null);
+  const [pendingSubmission, setPendingSubmission] = useState<any>(null);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -191,6 +199,57 @@ const ExpenseForm = () => {
           return;
         }
       }
+    }
+
+    // Check for duplicates if we have OCR data (scanned receipt)
+    if (ocrResult && selectedFamily) {
+      try {
+        const duplicateCheck = await checkForReceiptDuplicates(
+          ocrResult,
+          selectedFamily.id,
+          amount,
+          description,
+          place,
+          datesToProcess[0]
+        );
+
+        if (duplicateCheck.hasDuplicates) {
+          // Store submission data for later use
+          setPendingSubmission({
+            datesToProcess,
+            receiptUrl: null, // Will be set later
+            payrollPeriodId: null,
+            payrollEntryId: null,
+          });
+          setDuplicateCheckResult(duplicateCheck);
+          setShowDuplicateDialog(true);
+          return; // Don't proceed with submission yet
+        }
+      } catch (error) {
+        console.warn('Duplicate check failed, proceeding with submission:', error);
+        // Continue with submission if duplicate check fails
+      }
+    }
+
+    await proceedWithSubmission();
+  };
+
+  const proceedWithSubmission = async () => {
+    if (!selectedFamily) return;
+
+    // Reconstruct datesToProcess within this function
+    let datesToProcess: Date[] = [];
+    if (dateMode === 'single' && singleDate) {
+      datesToProcess = [singleDate];
+    } else if (dateMode === 'multiple') {
+      datesToProcess = multipleDates;
+    } else if (dateMode === 'recurring') {
+      datesToProcess = generatedDates;
+    }
+
+    if (datesToProcess.length === 0) {
+      toast.error('Please select at least one date');
+      return;
     }
 
     setIsSubmitting(true);
@@ -338,6 +397,11 @@ const ExpenseForm = () => {
       setShowDetailedReceiptView(false);
       handleImagesRemove();
 
+      // Reset duplicate detection states
+      setShowDuplicateDialog(false);
+      setDuplicateCheckResult(null);
+      setPendingSubmission(null);
+
       const expenseCount = createdExpenses.length;
       toast.success(`${expenseCount} expense${expenseCount > 1 ? 's' : ''} added successfully${payrollLink.enabled ? ' and payroll logged' : ''}`);
 
@@ -363,6 +427,19 @@ const ExpenseForm = () => {
     if (dateMode === 'recurring' && generatedDates.length) return new Date(Math.max(...generatedDates.map(d => d.getTime())));
     return undefined;
   })();
+
+  const handleDuplicateConfirm = async () => {
+    await proceedWithSubmission();
+  };
+
+  const handleDuplicateCancel = () => {
+    setShowDuplicateDialog(false);
+    setDuplicateCheckResult(null);
+    setPendingSubmission(null);
+    toast("We've kept your expense details", {
+      description: "You can modify them and try again."
+    });
+  };
 
   return (
     <Card className="w-full max-w-xl mx-auto">
@@ -534,12 +611,21 @@ const ExpenseForm = () => {
           <Button 
             type="submit" 
             className="w-full"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedFamily || isChecking}
           >
-            {isSubmitting ? 'Adding...' : 'Add Expense'}
+            {isSubmitting ? 'Adding Expense...' : isChecking ? 'Checking for duplicates...' : 'Add Expense'}
           </Button>
         </CardFooter>
       </form>
+
+      {/* Duplicate Detection Dialog */}
+      <ReceiptDuplicateDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+        duplicateGroups={duplicateCheckResult?.duplicateGroups || []}
+        onConfirm={handleDuplicateConfirm}
+        onCancel={handleDuplicateCancel}
+      />
     </Card>
   );
 };
