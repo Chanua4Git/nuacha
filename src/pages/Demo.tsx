@@ -60,6 +60,7 @@ const Demo = () => {
     name: string;
     interestType: string;
     additionalInfo: string;
+    phone?: string;
   }) => {
     setIsSubmitting(true);
 
@@ -69,6 +70,8 @@ const Demo = () => {
         name: data.name,
         interest_type: data.interestType,
         additional_info: data.additionalInfo,
+        phone: data.phone,
+        source: 'demo-page',
         receipt_data: extractedData ? JSON.stringify(extractedData) : null
       });
 

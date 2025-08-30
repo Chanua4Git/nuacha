@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef } from "react";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface LeadCaptureFormProps {
   onSubmit: (data: {
@@ -17,6 +19,7 @@ interface LeadCaptureFormProps {
     name: string;
     interestType: string;
     additionalInfo: string;
+    phone?: string;
   }) => void;
   isLoading?: boolean;
 }
@@ -26,11 +29,12 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
   const [name, setName] = useState("");
   const [interestType, setInterestType] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [phone, setPhone] = useState<string | undefined>();
   const submitButtonRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ email, name, interestType, additionalInfo });
+    onSubmit({ email, name, interestType, additionalInfo, phone });
   };
 
   return (
@@ -61,6 +65,22 @@ const LeadCaptureForm = ({ onSubmit, isLoading }: LeadCaptureFormProps) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground">
+              Phone (optional)
+            </label>
+            <PhoneInput
+              id="phone"
+              international
+              countryCallingCodeEditable={false}
+              defaultCountry="TT"
+              value={phone}
+              onChange={setPhone}
+              placeholder="Enter phone number"
+              className="phone-input px-3 py-2 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md"
             />
           </div>
 

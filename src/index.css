@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Phone input styling */
+.phone-input {
+  width: 100%;
+}
+
+.phone-input .PhoneInputInput {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  color: inherit !important;
+  width: 100% !important;
+}
+
+.phone-input .PhoneInputCountrySelect {
+  border: none !important;
+  background: transparent !important;
+  margin-right: 8px !important;
+}
+
+.phone-input .PhoneInputCountrySelectArrow {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.phone-input-wrapper .phone-input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 @layer base {
   :root {
     --background: 0 0% 98%;

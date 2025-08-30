@@ -8,11 +8,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 export interface ExitIntentLeadCaptureData {
   email: string;
   name: string;
   interestType: string;
+  phone?: string;
   source: string;
 }
 
@@ -28,6 +31,7 @@ export default function ExitIntentLeadCaptureForm({
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [interestType, setInterestType] = useState("");
+  const [phone, setPhone] = useState<string | undefined>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +41,7 @@ export default function ExitIntentLeadCaptureForm({
       email: email.trim(), 
       name: name.trim(), 
       interestType: interestType || 'general',
+      phone,
       source: 'exit-intent'
     });
   };
@@ -62,6 +67,18 @@ export default function ExitIntentLeadCaptureForm({
           placeholder="Your name"
           className="h-11"
         />
+
+        <div className="space-y-1">
+          <PhoneInput
+            international
+            countryCallingCodeEditable={false}
+            defaultCountry="TT"
+            value={phone}
+            onChange={setPhone}
+            placeholder="Phone (optional)"
+            className="phone-input h-11 px-3 py-2 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md"
+          />
+        </div>
 
         <Select value={interestType} onValueChange={setInterestType}>
           <SelectTrigger className="h-11">

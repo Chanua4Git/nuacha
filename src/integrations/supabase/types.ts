@@ -331,9 +331,13 @@ export type Database = {
           employee_count: string | null
           id: string
           interest_type: string | null
+          ip_address: unknown | null
           last_contact: string | null
           name: string
+          phone: string | null
           receipt_data: Json | null
+          source: string | null
+          user_agent: string | null
         }
         Insert: {
           additional_info?: string | null
@@ -344,9 +348,13 @@ export type Database = {
           employee_count?: string | null
           id?: string
           interest_type?: string | null
+          ip_address?: unknown | null
           last_contact?: string | null
           name: string
+          phone?: string | null
           receipt_data?: Json | null
+          source?: string | null
+          user_agent?: string | null
         }
         Update: {
           additional_info?: string | null
@@ -357,9 +365,13 @@ export type Database = {
           employee_count?: string | null
           id?: string
           interest_type?: string | null
+          ip_address?: unknown | null
           last_contact?: string | null
           name?: string
+          phone?: string | null
           receipt_data?: Json | null
+          source?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }

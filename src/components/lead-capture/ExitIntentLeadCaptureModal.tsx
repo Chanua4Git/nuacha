@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ExitIntentLeadCaptureForm, { ExitIntentLeadCaptureData } from "./ExitIntentLeadCaptureForm";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ExitIntentLeadCaptureModalProps {
   open: boolean;
@@ -24,15 +25,20 @@ export default function ExitIntentLeadCaptureModal({
     setIsLoading(true);
     
     try {
-      // Store the lead data in localStorage for now
-      // In production, this would send to your lead capture system
-      const existingLeads = JSON.parse(localStorage.getItem('nuacha_leads') || '[]');
-      existingLeads.push({
-        ...data,
-        timestamp: new Date().toISOString(),
-        type: 'exit-intent'
-      });
-      localStorage.setItem('nuacha_leads', JSON.stringify(existingLeads));
+      // Save to Supabase database
+      const { error } = await supabase
+        .from('demo_leads')
+        .insert([{
+          email: data.email,
+          name: data.name,
+          interest_type: data.interestType,
+          phone: data.phone,
+          source: data.source,
+          user_agent: navigator.userAgent,
+          additional_info: `Exit intent capture from ${window.location.pathname}`
+        }]);
+
+      if (error) throw error;
 
       toast.success("Thank you!", {
         description: "We'll keep you updated on Nuacha's journey. 🌟"
@@ -45,6 +51,7 @@ export default function ExitIntentLeadCaptureModal({
         onOpenChange(false);
       }, 1000);
     } catch (error) {
+      console.error('Lead capture error:', error);
       toast.error("Something went wrong", {
         description: "Please try again or contact us directly."
       });
