@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/auth/contexts/AuthProvider';
 
 interface LeadCaptureStatus {
   exitIntent: {
@@ -28,6 +29,8 @@ export function useLeadCaptureManager(options: LeadCaptureManagerOptions = {}) {
     dismissalCooldown = DEFAULT_DISMISSAL_COOLDOWN, 
     respectGlobalDisable = true 
   } = options;
+
+  const { user } = useAuth();
 
   const [status, setStatus] = useState<LeadCaptureStatus>(() => {
     try {
@@ -68,6 +71,9 @@ export function useLeadCaptureManager(options: LeadCaptureManagerOptions = {}) {
 
   // Main logic to determine if a capture method should be enabled
   const shouldEnableCapture = useCallback((method: 'exitIntent' | 'timeBased') => {
+    // Never show lead capture to authenticated users
+    if (user) return false;
+    
     // If globally disabled, don't show anything
     if (respectGlobalDisable && status.globalDisabled) return false;
     
@@ -91,7 +97,7 @@ export function useLeadCaptureManager(options: LeadCaptureManagerOptions = {}) {
     }
     
     return true;
-  }, [status, respectGlobalDisable, canReengage]);
+  }, [user, status, respectGlobalDisable, canReengage]);
 
   // Mark a method as completed
   const markCompleted = useCallback((method: 'exit-intent' | 'time-based') => {
