@@ -61,6 +61,9 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
       'Medical supplies': 'medications, first aid, health items',
       'Household repairs': 'fixing things around the house',
       'Toiletries': 'soap, shampoo, toothpaste, etc.',
+      'Annuity payments': 'monthly annuity or pension payments',
+      'Garden services': 'essential yard maintenance and landscaping',
+      'Yard': 'yard maintenance, lawn care, garden upkeep',
       
       // Wants examples - lifestyle & personal care
       'Dining out': 'family meals, date nights, treats for the kids',
@@ -221,11 +224,13 @@ export default function SAHMBudgetBuilder() {
     // Health & safety essentials
     'health-insurance', 'life-insurance', 'dental-insurance', 'vision-care',
     // Financial obligations
-    'loan-repayments', 'property-tax', 'student-loans', 'minimum-debt',
+    'loan-repayments', 'property-tax', 'student-loans', 'minimum-debt', 'annuity-payments',
     // Family & care essentials
     'childcare', 'groceries', 'school-fees', 'school-lunches', 'school-transportation', 'medical-supplies', 'special-dietary',
     // Household essentials
-    'home-insurance', 'pest-control', 'household-repairs', 'emergency-expenses', 'toiletries', 'elderly-care'
+    'home-insurance', 'pest-control', 'household-repairs', 'emergency-expenses', 'toiletries', 'elderly-care',
+    // Yard maintenance essentials
+    'garden-services-essential', 'yard'
   ];
 
   // Priority wants categories for SAHM lifestyle - comprehensive lifestyle options

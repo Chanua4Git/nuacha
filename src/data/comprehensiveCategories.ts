@@ -152,6 +152,7 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'student-loans', name: 'Student loan payments', color: '#6366F1', group: 'needs' },
       { id: 'minimum-debt', name: 'Minimum debt payments', color: '#6366F1', group: 'needs' },
       { id: 'extra-debt', name: 'Extra debt payments (snowball/avalanche)', color: '#6366F1', group: 'needs' },
+      { id: 'annuity-payments', name: 'Annuity payments', color: '#6366F1', group: 'needs' },
       { id: 'child-support', name: 'Child support paid / alimony', color: '#6366F1', group: 'needs' }
     ]
   },
