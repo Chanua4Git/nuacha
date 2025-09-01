@@ -69,4 +69,8 @@ export interface CategoryFormData {
   budget?: number;
   description?: string;
   icon?: string;
+  userId?: string;
+  groupType?: 'needs' | 'wants' | 'savings';
+  sortOrder?: number;
+  isBudgetCategory?: boolean;
 }

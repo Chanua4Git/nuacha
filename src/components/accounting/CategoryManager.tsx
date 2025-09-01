@@ -48,6 +48,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     budget: undefined,
     description: '',
     icon: '',
+    userId: user?.id,
+    groupType: 'wants', // Default to wants
+    sortOrder: 999, // Put new categories at end
+    isBudgetCategory: false, // Default to family-level category
   };
   
   const [formData, setFormData] = useState<CategoryFormData>(defaultFormData);
@@ -75,6 +79,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
           budget: processedFormData.budget || null,
           description: processedFormData.description || null,
           icon: processedFormData.icon || null,
+          groupType: processedFormData.groupType,
+          sortOrder: processedFormData.sortOrder,
+          isBudgetCategory: processedFormData.isBudgetCategory,
         });
       } else {
         await createCategory({
@@ -85,6 +92,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
           budget: processedFormData.budget || null,
           description: processedFormData.description || null,
           icon: processedFormData.icon || null,
+          userId: user?.id,
+          groupType: processedFormData.groupType || 'wants',
+          sortOrder: processedFormData.sortOrder || 999,
+          isBudgetCategory: processedFormData.isBudgetCategory || false,
         });
       }
       
@@ -97,6 +108,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
   
   const handleEditCategory = (category: CategoryWithChildren) => {
     setEditingCategory(category);
+    
+    // Type guard for groupType to ensure it's a valid value
+    const validGroupType = (type: any): type is 'needs' | 'wants' | 'savings' => {
+      return type === 'needs' || type === 'wants' || type === 'savings';
+    };
+    
     setFormData({
       name: category.name,
       color: category.color,
@@ -105,6 +122,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
       budget: category.budget,
       description: category.description || '',
       icon: category.icon || '',
+      userId: category.userId,
+      groupType: validGroupType(category.groupType) ? category.groupType : 'wants',
+      sortOrder: category.sortOrder || 999,
+      isBudgetCategory: category.isBudgetCategory || false,
     });
     setFormOpen(true);
   };
@@ -670,6 +691,25 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
                   />
                   <span className="text-sm text-muted-foreground">{formData.color}</span>
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="groupType" className="text-right text-sm font-medium">
+                  Group Type
+                </label>
+                <Select
+                  value={formData.groupType || "wants"}
+                  onValueChange={(value) => setFormData({...formData, groupType: value as 'needs' | 'wants' | 'savings'})}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select group type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="needs">Needs (Essential)</SelectItem>
+                    <SelectItem value="wants">Wants (Discretionary)</SelectItem>
+                    <SelectItem value="savings">Savings & Investments</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="grid grid-cols-4 items-center gap-4">
