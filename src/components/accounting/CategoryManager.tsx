@@ -23,13 +23,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
   const {
     categories,
     hierarchicalCategories,
+    budgetCategories,
+    familyCategories,
     isLoading,
     createCategory,
     updateCategory,
     deleteCategory
   } = useUnifiedCategories({ 
     familyId, 
-    mode: 'family-only' 
+    mode: 'all' 
   });
   
   const [formOpen, setFormOpen] = useState(false);
@@ -142,13 +144,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     return count;
   };
   
-  const renderCategoryTree = (categories: CategoryWithChildren[], depth = 0) => {
+  const renderCategoryTree = (categories: CategoryWithChildren[], depth = 0, isSystemCategory = false) => {
     return categories.map(category => (
       <div key={category.id} className="mb-1">
         <div 
-          className={`flex items-center p-2 rounded-md hover:bg-background ${
+          className={`flex items-center p-2 rounded-md hover:bg-accent/50 ${
             depth > 0 ? 'ml-' + (depth * 4) : ''
-          }`}
+          } ${isSystemCategory ? 'opacity-80' : ''}`}
         >
           {category.children && category.children.length > 0 ? (
             <Button 
@@ -173,79 +175,115 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
               className="w-3 h-3 rounded-full mr-2" 
               style={{ backgroundColor: category.color }}
             />
-            <span>{category.name}</span>
+            <span className={`${isSystemCategory ? 'text-muted-foreground' : ''}`}>
+              {category.name}
+            </span>
             {category.budget && (
               <span className="ml-2 text-xs text-muted-foreground">
                 Budget: ${category.budget}
               </span>
             )}
+            {isSystemCategory && (
+              <span className="ml-2 text-xs text-muted-foreground italic">
+                (System)
+              </span>
+            )}
           </div>
           
-          <div className="flex space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handleEditCategory(category)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Delete Category</DialogTitle>
-                </DialogHeader>
-                <p>
-                  Are you sure you want to delete the category "{category.name}"?
-                  This action cannot be undone.
-                </p>
-                {(() => {
-                  const subCount = countDescendants(category.id);
-                  return subCount > 0 ? (
-                    <p className="text-destructive">
-                      This will also delete {subCount} subcategor{subCount === 1 ? 'y' : 'ies'}.
-                    </p>
-                  ) : null;
-                })()}
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDeleteCategory(category.id)}
-                    >
-                      Delete
-                    </Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          {!isSystemCategory && (
+            <div className="flex space-x-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleEditCategory(category)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Category</DialogTitle>
+                  </DialogHeader>
+                  <p>
+                    Are you sure you want to delete the category "{category.name}"?
+                    This action cannot be undone.
+                  </p>
+                  {(() => {
+                    const subCount = countDescendants(category.id);
+                    return subCount > 0 ? (
+                      <p className="text-destructive">
+                        This will also delete {subCount} subcategor{subCount === 1 ? 'y' : 'ies'}.
+                      </p>
+                    ) : null;
+                  })()}
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDeleteCategory(category.id)}
+                      >
+                        Delete
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </div>
         
         {category.children && expandedCategories[category.id] && (
           <div>
-            {renderCategoryTree(category.children, depth + 1)}
+            {renderCategoryTree(category.children, depth + 1, isSystemCategory)}
           </div>
         )}
       </div>
     ));
+  };
+
+  // Group categories by type
+  const groupedCategories = {
+    needs: hierarchicalCategories.filter(cat => cat.groupType === 'needs'),
+    wants: hierarchicalCategories.filter(cat => cat.groupType === 'wants'),  
+    savings: hierarchicalCategories.filter(cat => cat.groupType === 'savings'),
+    family: hierarchicalCategories.filter(cat => cat.familyId === familyId && !cat.groupType)
+  };
+
+  const renderCategoryGroup = (title: string, categories: CategoryWithChildren[], colorClass: string, isSystemGroup = false) => {
+    if (categories.length === 0) return null;
+    
+    return (
+      <div className="mb-6">
+        <div className={`flex items-center mb-3 pb-2 border-b border-border`}>
+          <div className={`w-4 h-4 rounded-full mr-2 ${colorClass}`} />
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <span className="ml-2 text-sm text-muted-foreground">
+            ({categories.length} categories)
+          </span>
+        </div>
+        <div className="border rounded-md">
+          {renderCategoryTree(categories, 0, isSystemGroup)}
+        </div>
+      </div>
+    );
   };
   
   if (!user) {
@@ -270,7 +308,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
         <div>
           <CardTitle>Categories</CardTitle>
           <CardDescription>
-            Create and manage your expense categories
+            System categories (Needs, Wants, Savings) and your family-specific categories
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -325,11 +363,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
           </div>
         ) : hierarchicalCategories.length === 0 ? (
           <div className="text-center p-8 text-muted-foreground">
-            <p>No categories yet. Create your first category to get started.</p>
+            <p>No categories yet. Sync system categories to get started.</p>
           </div>
         ) : (
-          <div className="border rounded-md">
-            {renderCategoryTree(hierarchicalCategories)}
+          <div className="space-y-6">
+            {renderCategoryGroup("Needs", groupedCategories.needs, "bg-destructive", true)}
+            {renderCategoryGroup("Wants", groupedCategories.wants, "bg-warning", true)}
+            {renderCategoryGroup("Savings & Investments", groupedCategories.savings, "bg-success", true)}
+            {renderCategoryGroup("Family Specific Categories", groupedCategories.family, "bg-primary", false)}
           </div>
         )}
       </CardContent>
