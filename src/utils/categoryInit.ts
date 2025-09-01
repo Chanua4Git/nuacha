@@ -69,6 +69,57 @@ export const autoCategorizeExpense = (description: string, place: string, catego
     }
   }
 
+  // Enhanced Restaurant & Dining Detection (should come before groceries to avoid conflicts)
+  const restaurantKeywords = [
+    'restaurant', 'cafe', 'coffee', 'kitchen', 'grill', 'bar', 'pub', 'bistro',
+    'diner', 'eatery', 'pizzeria', 'pizza', 'burger', 'taco', 'sushi', 'thai',
+    'chinese', 'indian', 'mexican', 'italian', 'fast food', 'drive thru',
+    'takeout', 'delivery', 'food court', 'bakery', 'pastry', 'dessert',
+    'ice cream', 'frozen yogurt', 'smoothie', 'juice bar', 'tea house',
+    'starbucks', 'dunkin', 'mcdonalds', 'burger king', 'kfc', 'subway',
+    'dominos', 'pizza hut', 'taco bell', 'chipotle', 'panera'
+  ];
+
+  const coffeePlaces = [
+    'coffee', 'cafe', 'espresso', 'latte', 'cappuccino', 'mocha', 'frappuccino',
+    'starbucks', 'dunkin', 'tim hortons', 'costa', 'peets', 'caribou'
+  ];
+
+  const isDiningEstablishment = restaurantKeywords.some(keyword => 
+    placeName.includes(keyword) || desc.includes(keyword)
+  );
+
+  const isCoffeePlace = coffeePlaces.some(keyword => 
+    placeName.includes(keyword) || desc.includes(keyword)
+  );
+
+  // Handle coffee shops and restaurants first (before groceries)
+  if (isDiningEstablishment || isCoffeePlace) {
+    console.log(`🍽️ Detected dining/coffee: "${desc}" from "${placeName}"`);
+    
+    const diningCategory = categories.find(c => 
+      (c.id === 'dining-out' || c.name?.toLowerCase().includes('dining')) ||
+      (c.name?.toLowerCase().includes('restaurant')) ||
+      (c.name?.toLowerCase().includes('food') && c.name?.toLowerCase().includes('out'))
+    );
+    
+    if (diningCategory) {
+      console.log(`✅ Categorized as dining out`);
+      return diningCategory.id;
+    }
+    
+    // Fallback to entertainment category if dining out doesn't exist
+    const entertainmentCategory = categories.find(c => 
+      c.name?.toLowerCase().includes('entertainment') ||
+      c.name?.toLowerCase().includes('leisure')
+    );
+    
+    if (entertainmentCategory) {
+      console.log(`📺 Fallback to entertainment category`);
+      return entertainmentCategory.id;
+    }
+  }
+
   // Enhanced Groceries & Food with brand recognition and specific items
   if (desc.includes('grocery') || desc.includes('food') || desc.includes('supermarket') ||
       desc.includes('produce') || desc.includes('meat') || desc.includes('dairy') ||
@@ -85,7 +136,7 @@ export const autoCategorizeExpense = (description: string, place: string, catego
       desc.includes('rice') || desc.includes('flour') || desc.includes('sugar') ||
       desc.includes('oil') || desc.includes('vinegar') || desc.includes('salt') ||
       desc.includes('pepper') || desc.includes('spice') || desc.includes('seasoning') ||
-      isGroceryVendor) {
+      (isGroceryVendor && !isDiningEstablishment && !isCoffeePlace)) {
     
     // Try to find specific subcategories first
     if (desc.includes('fruit') || desc.includes('vegetable') || desc.includes('produce') ||
