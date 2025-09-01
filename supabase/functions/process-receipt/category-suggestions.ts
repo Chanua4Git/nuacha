@@ -175,7 +175,9 @@ function suggestCategoryForItem(
   if (isDiningVendor) {
     const diningCategory = categories.find(cat => 
       cat.name.toLowerCase().includes('dining') || 
-      cat.name.toLowerCase() === 'dining out'
+      cat.name.toLowerCase() === 'dining out' ||
+      cat.name.toLowerCase().includes('dining out / takeout') ||
+      cat.name.toLowerCase().includes('takeout')
     );
     
     if (diningCategory) {

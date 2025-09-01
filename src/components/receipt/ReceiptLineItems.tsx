@@ -63,7 +63,9 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       console.log('Handling dining out fallback - looking for Dining out category');
       const diningCategory = unifiedCategories.find(c => 
         c.name.toLowerCase().includes('dining') || 
-        c.name.toLowerCase() === 'dining out'
+        c.name.toLowerCase() === 'dining out' ||
+        c.name.toLowerCase().includes('dining out / takeout') ||
+        c.name.toLowerCase().includes('takeout')
       );
       if (diningCategory) {
         console.log('Found Dining out category for fallback:', diningCategory.name, diningCategory.id);
