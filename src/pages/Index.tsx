@@ -6,7 +6,6 @@ import ExpenseForm from '@/components/expense-form/ExpenseForm';
 import ExpenseList from '@/components/ExpenseList';
 import RemindersList from '@/components/RemindersList';
 import { CategorySyncBanner } from '@/components/CategorySyncBanner';
-import { CategorySeedingBanner } from '@/components/CategorySeedingBanner';
 import { PlusCircle, ListFilter, Tag, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -62,7 +61,6 @@ const Index = () => {
           </p>
         </div>
         
-        <CategorySeedingBanner />
         <CategorySyncBanner />
         
         <div className="flex flex-col md:flex-row md:items-start gap-4 mb-8">
