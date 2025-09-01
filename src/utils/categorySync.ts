@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { comprehensiveCategories } from '@/data/comprehensiveCategories';
 
 export type BudgetGroup = 'needs' | 'wants' | 'savings';
 
@@ -10,171 +11,48 @@ type CategorySeed = {
 };
 
 // Comprehensive category structure aligned with budget categories
-const recommendedCategorySeeds: CategorySeed[] = [
-  {
-    name: 'Housing & Utilities',
-    group: 'needs',
-    children: [
-      { name: 'Rent / Mortgage', group: 'needs' },
-      { name: 'Electricity', group: 'needs' },
-      { name: 'Water & Sewer', group: 'needs' },
-      { name: 'Gas', group: 'needs' },
-      { name: 'Internet / Wi-Fi', group: 'needs' },
-      { name: 'Mobile Phone Service', group: 'needs' },
-      { name: 'Home Phone Service', group: 'needs' },
-      { name: 'Cable / Streaming services', group: 'wants' },
-      { name: 'Garbage collection', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Caregiving & Medical',
-    group: 'needs',
-    children: [
-      { name: 'Day nurse', group: 'needs' },
-      { name: 'Night nurse', group: 'needs' },
-      { name: 'Doctor visits', group: 'needs' },
-      { name: 'Specialist visits', group: 'needs' },
-      { name: 'Medical tests', group: 'needs' },
-      { name: 'Medication', group: 'needs' },
-      { name: 'Medical supplies', group: 'needs' },
-      { name: 'Elderly Care / Support', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Household Operations',
-    group: 'needs',
-    children: [
-      { name: 'Housekeeper', group: 'wants' },
-      { name: 'Garden services', group: 'wants' },
-      { name: 'Pool maintenance', group: 'wants' },
-      { name: 'Pest control', group: 'needs' },
-      { name: 'Laundry', group: 'needs' },
-      { name: 'Household repairs', group: 'needs' },
-      { name: 'Appliance repairs', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Groceries & Household Supplies',
-    group: 'needs',
-    children: [
-      { name: 'Groceries', group: 'needs' },
-      { name: 'Special Dietary Needs (Formula, Baby Food)', group: 'needs' },
-      { name: 'Pet food & supplies', group: 'needs' },
-      { name: 'Toiletries', group: 'needs' },
-      { name: 'Paper goods', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Transportation',
-    group: 'needs',
-    children: [
-      { name: 'Fuel', group: 'needs' },
-      { name: 'Taxi / rideshare', group: 'needs' },
-      { name: 'Public transportation', group: 'needs' },
-      { name: 'Vehicle maintenance', group: 'needs' },
-      { name: 'Vehicle insurance', group: 'needs' },
-      { name: 'Vehicle loan payment', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Insurance & Financial',
-    group: 'needs',
-    children: [
-      { name: 'Health insurance', group: 'needs' },
-      { name: 'Dental insurance', group: 'needs' },
-      { name: 'Life insurance', group: 'needs' },
-      { name: 'Home insurance', group: 'needs' },
-      { name: 'Other insurance', group: 'needs' },
-      { name: 'Loan repayments', group: 'needs' },
-      { name: 'Student loan payments', group: 'needs' },
-      { name: 'Property taxes', group: 'needs' },
-      { name: 'Savings', group: 'savings' },
-      { name: 'Investments', group: 'savings' },
-    ],
-  },
-  {
-    name: 'Personal Care & Wellness',
-    group: 'wants',
-    children: [
-      { name: 'Vision care (glasses, contacts, exams)', group: 'needs' },
-      { name: 'Haircuts & grooming', group: 'wants' },
-      { name: 'Spa & massage', group: 'wants' },
-      { name: 'Gym membership', group: 'wants' },
-      { name: 'Vitamins & supplements', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Education & Child Expenses',
-    group: 'needs',
-    children: [
-      { name: 'School fees', group: 'needs' },
-      { name: 'School lunches / meal programs', group: 'needs' },
-      { name: 'School transportation (bus fees)', group: 'needs' },
-      { name: 'Books & stationery', group: 'needs' },
-      { name: 'Extracurricular activities', group: 'wants' },
-      { name: 'School uniforms', group: 'needs' },
-      { name: 'Childcare', group: 'needs' },
-    ],
-  },
-  {
-    name: 'Entertainment & Leisure',
-    group: 'wants',
-    children: [
-      { name: 'Dining out', group: 'wants' },
-      { name: 'Subscriptions', group: 'wants' },
-      { name: 'Events & tickets', group: 'wants' },
-      { name: 'Hobbies & crafts', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Gifts & Special Occasions',
-    group: 'wants',
-    children: [
-      { name: 'Birthday gifts', group: 'wants' },
-      { name: 'Holiday gifts', group: 'wants' },
-      { name: 'Anniversaries', group: 'wants' },
-      { name: 'Weddings & celebrations', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Travel & Holidays',
-    group: 'wants',
-    children: [
-      { name: 'Flights & transportation', group: 'wants' },
-      { name: 'Accommodation', group: 'wants' },
-      { name: 'Travel insurance', group: 'wants' },
-      { name: 'Activities & tours', group: 'wants' },
-    ],
-  },
-  {
-    name: 'Miscellaneous',
-    group: 'needs',
-    children: [
-      { name: 'Emergency expenses', group: 'needs' },
-      { name: 'Donations & charity', group: 'wants' },
-      { name: 'Legal fees', group: 'needs' },
-      { name: 'Bank fees', group: 'needs' },
-      { name: 'Unplanned purchases', group: 'wants' },
-    ],
-  },
-];
+// Build seeds directly from the comprehensive demo categories to keep site-wide consistency
+const mapToSeeds = (items: any[]): CategorySeed[] =>
+  items.map((c: any) => ({
+    name: c.name,
+    group: (c.group || 'needs') as BudgetGroup,
+    children: c.children ? mapToSeeds(c.children) : undefined,
+  }));
+
+const recommendedCategorySeeds: CategorySeed[] = mapToSeeds(comprehensiveCategories);
+
 
 function determineGroupFromName(name: string): BudgetGroup {
   const n = name.toLowerCase();
-  
-  // Needs categories (Essential expenses)
-  if (
-    /rent|mortgage|electricity|water|sewer|gas|internet|wifi|phone|mobile|garbage|day nurse|night nurse|doctor|specialist|medical|medication|medicine|pest control|laundry|household repairs|appliance repairs|groceries|pet food|toiletries|paper goods|fuel|taxi|rideshare|public transportation|vehicle maintenance|vehicle insurance|vehicle loan|health insurance|dental insurance|life insurance|home insurance|loan repayments|student loan|property tax|emergency|legal fees|bank fees|school fees|school lunch|school transport|books|stationery|school uniforms|childcare|vision care|glasses|contacts|elderly care|special dietary|formula|baby food/.test(n)
-  ) {
-    return 'needs';
-  }
-  
-  // Savings categories
-  if (/saving|investment|retire|debt/.test(n)) {
-    return 'savings';
-  }
-  
-  // Wants categories (Lifestyle expenses) - everything else defaults here
+
+  const needsKeywords = [
+    'rent', 'mortgage', 'property tax', 'hoa', 'maintenance fees', 'electricity', 'water', 'sewer',
+    'gas', 'garbage', 'internet', 'wi-fi', 'wifi', 'mobile', 'home phone', 'day nurse', 'night nurse',
+    'weekday nurse', 'weekend day nurse', 'elderly care', 'doctor', 'specialist', 'mental health',
+    'counseling', 'dental', 'orthodontic', 'vision', 'glasses', 'contacts', 'medication', 'medical supplies',
+    'tests', 'diagnostics', 'emergency care', 'ambulance', 'childcare', 'tuition', 'school fees',
+    'books', 'stationery', 'uniforms', 'school lunches', 'meal programs', 'bus fees', 'exam', 'device',
+    'technology fees', 'tutoring & homework help', 'iep', 'camps during school breaks', 'child food',
+    'child toiletries', 'co-pays', 'groceries', 'special dietary', 'paper goods', 'toiletries', 'diapers',
+    'feminine care', 'cleaning supplies', 'water delivery', 'cleaning & housekeeping', 'laundry',
+    'household repairs', 'appliance repairs', 'garden services', 'pool maintenance', 'pest control',
+    'domestic employee payroll', 'fuel', 'public transportation', 'taxi', 'rideshare', 'vehicle insurance',
+    'vehicle loan', 'vehicle maintenance', 'registration', 'inspection', 'parking', 'tolls', 'roadside assistance',
+    "driver's license", 'health insurance', 'dental insurance', 'life insurance', 'home insurance',
+    'other insurance', 'loan repayments', 'student loan', 'minimum debt', 'extra debt', 'child support',
+    'pet food', 'vet', 'pet medications', 'grooming', 'boarding', 'bank fees', 'legal fees', 'emergency expenses',
+    'postage', 'shipping', 'po box'
+  ];
+
+  const savingsKeywords = [
+    'emergency fund', 'sinking fund', 'home maintenance & appliance replacement', 'vehicle maintenance & replacement',
+    'medical / dental out-of-pocket', 'education costs', 'gifts & holidays', 'travel fund', 'pet care fund',
+    'retirement', 'education savings', 'investments', 'unit trust', 'mutual fund', 'insurance deductibles reserve',
+    'savings', 'investment'
+  ];
+
+  if (needsKeywords.some(k => n.includes(k))) return 'needs';
+  if (savingsKeywords.some(k => n.includes(k))) return 'savings';
   return 'wants';
 }
 
