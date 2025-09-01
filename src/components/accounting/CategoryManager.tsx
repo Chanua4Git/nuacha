@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -259,28 +259,263 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
     ));
   };
 
-  // Group categories by type
-  const groupedCategories = {
-    needs: hierarchicalCategories.filter(cat => cat.groupType === 'needs'),
-    wants: hierarchicalCategories.filter(cat => cat.groupType === 'wants'),  
-    savings: hierarchicalCategories.filter(cat => cat.groupType === 'savings'),
-    family: hierarchicalCategories.filter(cat => cat.familyId === familyId && !cat.groupType)
-  };
+  // Group categories by type matching CategorySelector structure
+  const groupedHierarchicalCategories = useMemo(() => {
+    const grouped = {
+      needs: [] as CategoryWithChildren[],
+      wants: [] as CategoryWithChildren[],
+      savings: [] as CategoryWithChildren[],
+      other: [] as CategoryWithChildren[]
+    };
+    
+    hierarchicalCategories.forEach(category => {
+      const groupType = category.groupType as 'needs' | 'wants' | 'savings';
+      
+      if (groupType === 'needs') {
+        grouped.needs.push(category);
+      } else if (groupType === 'wants') {
+        grouped.wants.push(category);
+      } else if (groupType === 'savings') {
+        grouped.savings.push(category);
+      } else {
+        grouped.other.push(category);
+      }
+    });
+    
+    // Sort each group alphabetically
+    Object.values(grouped).forEach(group => {
+      group.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return grouped;
+  }, [hierarchicalCategories]);
 
-  const renderCategoryGroup = (title: string, categories: CategoryWithChildren[], colorClass: string, isSystemGroup = false) => {
+  const renderCategorySection = (title: string, categories: CategoryWithChildren[], colorClass: string, isSystemSection = false) => {
     if (categories.length === 0) return null;
     
     return (
       <div className="mb-6">
-        <div className={`flex items-center mb-3 pb-2 border-b border-border`}>
-          <div className={`w-4 h-4 rounded-full mr-2 ${colorClass}`} />
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <span className="ml-2 text-sm text-muted-foreground">
-            ({categories.length} categories)
-          </span>
+        {/* Section Header matching CategorySelector style */}
+        <div className={`px-3 py-2 text-sm font-semibold border rounded-t-md ${colorClass}`}>
+          {title}
         </div>
-        <div className="border rounded-md">
-          {renderCategoryTree(categories, 0, isSystemGroup)}
+        
+        {/* Categories */}
+        <div className="border border-t-0 rounded-b-md">
+          {categories.map(category => {
+            if (category.children && category.children.length > 0) {
+              // Parent category with children
+              return (
+                <div key={category.id}>
+                  {/* Parent Category Header */}
+                  <div 
+                    className="px-3 py-2 text-sm font-medium bg-muted/20 border-l-4 border-b flex items-center justify-between" 
+                    style={{ borderLeftColor: category.color }}
+                  >
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span>{category.name}</span>
+                      {category.budget && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          Budget: ${category.budget}
+                        </span>
+                      )}
+                      {isSystemSection && (
+                        <span className="ml-2 text-xs text-muted-foreground italic">
+                          (System)
+                        </span>
+                      )}
+                    </div>
+                    
+                    {!isSystemSection && (
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6"
+                          onClick={() => toggleExpand(category.id)}
+                        >
+                          {expandedCategories[category.id] ? 
+                            <ChevronDown className="h-3 w-3" /> : 
+                            <ChevronRight className="h-3 w-3" />
+                          }
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleEditCategory(category)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Child Categories */}
+                  <div>
+                    {category.children
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((child, childIndex) => (
+                        <div 
+                          key={`${child.id}-${childIndex}`}
+                          className={`flex items-center justify-between px-6 py-2 border-b last:border-b-0 hover:bg-accent/50 ${
+                            isSystemSection ? 'opacity-80' : ''
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: child.color }}
+                            />
+                            <span className={`${isSystemSection ? 'text-muted-foreground' : ''}`}>
+                              {child.name}
+                            </span>
+                            {child.budget && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                Budget: ${child.budget}
+                              </span>
+                            )}
+                            {isSystemSection && (
+                              <span className="ml-2 text-xs text-muted-foreground italic">
+                                (System)
+                              </span>
+                            )}
+                          </div>
+                          
+                          {!isSystemSection && (
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => handleEditCategory(child)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Delete Category</DialogTitle>
+                                  </DialogHeader>
+                                  <p>
+                                    Are you sure you want to delete the category "{child.name}"?
+                                    This action cannot be undone.
+                                  </p>
+                                  <DialogFooter>
+                                    <DialogClose asChild>
+                                      <Button variant="outline">Cancel</Button>
+                                    </DialogClose>
+                                    <DialogClose asChild>
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() => handleDeleteCategory(child.id)}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </DialogClose>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              );
+            } else {
+              // Standalone category without children
+              return (
+                <div 
+                  key={category.id}
+                  className={`flex items-center justify-between px-4 py-2 border-b last:border-b-0 hover:bg-accent/50 ${
+                    isSystemSection ? 'opacity-80' : ''
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span className={`${isSystemSection ? 'text-muted-foreground' : ''}`}>
+                      {category.name}
+                    </span>
+                    {category.budget && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        Budget: ${category.budget}
+                      </span>
+                    )}
+                    {isSystemSection && (
+                      <span className="ml-2 text-xs text-muted-foreground italic">
+                        (System)
+                      </span>
+                    )}
+                  </div>
+                  
+                  {!isSystemSection && (
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleEditCategory(category)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Delete Category</DialogTitle>
+                          </DialogHeader>
+                          <p>
+                            Are you sure you want to delete the category "{category.name}"?
+                            This action cannot be undone.
+                          </p>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <DialogClose asChild>
+                              <Button
+                                variant="destructive"
+                                onClick={() => handleDeleteCategory(category.id)}
+                              >
+                                Delete
+                              </Button>
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+          })}
         </div>
       </div>
     );
@@ -367,10 +602,33 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ familyId }) => {
           </div>
         ) : (
           <div className="space-y-6">
-            {renderCategoryGroup("Needs", groupedCategories.needs, "bg-destructive", true)}
-            {renderCategoryGroup("Wants", groupedCategories.wants, "bg-warning", true)}
-            {renderCategoryGroup("Savings & Investments", groupedCategories.savings, "bg-success", true)}
-            {renderCategoryGroup("Family Specific Categories", groupedCategories.family, "bg-primary", false)}
+            {renderCategorySection(
+              "NEEDS (Essential)", 
+              groupedHierarchicalCategories.needs, 
+              "text-red-600 bg-red-50 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800", 
+              true
+            )}
+            
+            {renderCategorySection(
+              "WANTS (Discretionary)", 
+              groupedHierarchicalCategories.wants, 
+              "text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800", 
+              true
+            )}
+            
+            {renderCategorySection(
+              "SAVINGS & INVESTMENTS", 
+              groupedHierarchicalCategories.savings, 
+              "text-green-600 bg-green-50 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800", 
+              true
+            )}
+            
+            {renderCategorySection(
+              "OTHER", 
+              groupedHierarchicalCategories.other, 
+              "text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-950 dark:text-gray-400 dark:border-gray-800", 
+              false
+            )}
           </div>
         )}
       </CardContent>
