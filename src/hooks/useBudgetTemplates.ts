@@ -24,6 +24,8 @@ export function useBudgetTemplates(familyId?: string) {
     
     try {
       setIsLoading(true);
+      console.log('useBudgetTemplates - Fetching templates for family:', familyId);
+      
       const { data, error } = await supabase
         .from('budget_templates')
         .select('*')
@@ -32,11 +34,19 @@ export function useBudgetTemplates(familyId?: string) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates((data || []).map(template => ({
+      
+      console.log('useBudgetTemplates - Raw data from DB:', data);
+      
+      const processedTemplates = (data || []).map(template => ({
         ...template,
         template_data: template.template_data as BudgetTemplateData
-      })));
+      }));
+      
+      console.log('useBudgetTemplates - Processed templates:', processedTemplates);
+      setTemplates(processedTemplates);
+      setError(null);
     } catch (err) {
+      console.error('useBudgetTemplates - Error fetching templates:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch templates');
       toast.error('Failed to load budget templates');
     } finally {
@@ -159,7 +169,17 @@ export function useBudgetTemplates(familyId?: string) {
   };
 
   const getDefaultTemplate = () => {
-    return templates.find(template => template.is_default) || templates[0];
+    console.log('getDefaultTemplate - Looking through templates:', templates);
+    const defaultTemplate = templates.find(template => template.is_default);
+    console.log('getDefaultTemplate - Found default template:', defaultTemplate);
+    
+    const fallbackTemplate = templates[0];
+    console.log('getDefaultTemplate - Fallback (first) template:', fallbackTemplate);
+    
+    const result = defaultTemplate || fallbackTemplate;
+    console.log('getDefaultTemplate - Returning:', result);
+    
+    return result;
   };
 
   return {

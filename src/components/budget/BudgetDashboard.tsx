@@ -12,6 +12,7 @@ import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function BudgetDashboard() {
   const navigate = useNavigate();
@@ -27,9 +28,20 @@ export default function BudgetDashboard() {
   const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const activeTemplate = getDefaultTemplate();
 
+  // Debug template loading
+  React.useEffect(() => {
+    console.log('BudgetDashboard - Templates loaded:', templates);
+    console.log('BudgetDashboard - Active template:', activeTemplate);
+    console.log('BudgetDashboard - Templates loading:', templatesLoading);
+    console.log('BudgetDashboard - Selected family:', selectedFamily?.id);
+  }, [templates, activeTemplate, templatesLoading, selectedFamily]);
+
   const handleEditTemplate = () => {
-    if (activeTemplate) {
-      navigate(`/budget?tab=builder&mode=edit&templateId=${activeTemplate.id}`);
+    const templateToEdit = activeTemplate || templates[0];
+    if (templateToEdit) {
+      navigate(`/budget?tab=builder&mode=edit&templateId=${templateToEdit.id}`);
+    } else {
+      toast.error('No template available to edit');
     }
   };
 
@@ -102,17 +114,52 @@ export default function BudgetDashboard() {
         </Card>
       ) : (
         <>
-      {activeTemplate ? (
+      {templatesLoading ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Loading budget templates...</span>
+            </div>
+          </CardContent>
+        </Card>
+      ) : activeTemplate ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
             <div>
               <div className="text-sm text-muted-foreground">Active Budget Template - {selectedFamily.name}</div>
               <div className="text-lg font-medium">{activeTemplate.name}</div>
-              <div className="text-xs text-muted-foreground">Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}</div>
+              <div className="text-xs text-muted-foreground">
+                Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Created: {new Date(activeTemplate.created_at).toLocaleDateString()}
+              </div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleEditTemplate}>
                 Edit in Builder
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/budget?tab=builder&mode=view&templateId=${activeTemplate.id}`)}>
+                View Details
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : templates.length > 0 ? (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
+            <div>
+              <div className="text-sm text-muted-foreground">Budget templates found for {selectedFamily.name}</div>
+              <div className="text-lg font-medium">No default template set</div>
+              <div className="text-xs text-muted-foreground">You have {templates.length} template(s) available</div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => handleEditTemplate()}>
+                Edit Latest Template
+              </Button>
+              <Button variant="outline" onClick={handleCreateTemplate}>
+                Create New Template
               </Button>
             </div>
           </CardContent>
@@ -121,8 +168,9 @@ export default function BudgetDashboard() {
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
             <div>
-              <div className="text-sm text-muted-foreground">No active budget template for {selectedFamily.name}</div>
+              <div className="text-sm text-muted-foreground">No budget template found for {selectedFamily.name}</div>
               <div className="text-lg font-medium">Create your plan to compare vs actuals</div>
+              <div className="text-xs text-muted-foreground">A template helps you track planned vs actual spending</div>
             </div>
             <Button onClick={handleCreateTemplate}>
               Create Budget Template

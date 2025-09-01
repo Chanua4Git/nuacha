@@ -118,7 +118,7 @@ export default function SAHMBudgetBuilder() {
   const { user } = useAuth();
   const { selectedFamily } = useExpense();
   const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
-  const { createTemplate, updateTemplate, templates } = useBudgetTemplates(selectedFamily?.id);
+  const { createTemplate, updateTemplate, templates, isLoading: templatesLoading } = useBudgetTemplates(selectedFamily?.id);
   const { setPreviewData } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +127,7 @@ export default function SAHMBudgetBuilder() {
   const mode = searchParams.get('mode');
   const templateId = searchParams.get('templateId');
   const isEditMode = mode === 'edit' && templateId;
+  const isViewMode = mode === 'view' && templateId;
   const [budgetData, setBudgetData] = useState<BudgetData>({
     aboutYou: {
       name: '',
@@ -148,39 +149,66 @@ export default function SAHMBudgetBuilder() {
 
   // Load existing template data when in edit mode
   useEffect(() => {
-    if (isEditMode && templates.length > 0) {
+    console.log('SAHMBudgetBuilder - Edit mode check:', { isEditMode, templateId, templatesLength: templates.length });
+    
+    if (isEditMode && templateId && templates.length > 0) {
       const template = templates.find(t => t.id === templateId);
+      console.log('SAHMBudgetBuilder - Found template:', template);
+      
       if (template && template.template_data) {
         setIsLoading(true);
         try {
           const templateData = template.template_data;
+          console.log('SAHMBudgetBuilder - Loading template data:', templateData);
+          
+          // Pre-populate form with existing data
           setBudgetData({
             aboutYou: {
               name: templateData.aboutYou?.name || '',
               location: templateData.aboutYou?.location || '',
               householdSize: templateData.aboutYou?.household_size || 2,
               dependents: templateData.aboutYou?.dependents || 0,
-              email: templateData.aboutYou?.email || ''
+              email: templateData.aboutYou?.email || user?.email || ''
             },
             income: {
-              primaryIncome: { amount: templateData.income?.primaryIncome || 0, frequency: 'monthly', source: 'Primary Income' },
-              secondaryIncome: { amount: templateData.income?.secondaryIncome || 0, frequency: 'monthly', source: 'Secondary Income' },
-              otherIncome: { amount: templateData.income?.otherIncome || 0, frequency: 'monthly', source: 'Other Income' }
+              primaryIncome: { 
+                amount: templateData.income?.primaryIncome || 0, 
+                frequency: 'monthly', 
+                source: 'Primary Income' 
+              },
+              secondaryIncome: { 
+                amount: templateData.income?.secondaryIncome || 0, 
+                frequency: 'monthly', 
+                source: 'Secondary Income' 
+              },
+              otherIncome: { 
+                amount: templateData.income?.otherIncome || 0, 
+                frequency: 'monthly', 
+                source: 'Other Income' 
+              }
             },
             needs: templateData.needs || {},
             wants: templateData.wants || {},
             savings: templateData.savings || {},
             notes: templateData.notes || ''
           });
+          
+          toast.success(`Loaded template: ${template.name}`);
         } catch (error) {
           console.error('Error loading template data:', error);
           toast.error('Failed to load template data');
         } finally {
           setIsLoading(false);
         }
+      } else if (template && !template.template_data) {
+        console.warn('SAHMBudgetBuilder - Template found but no template_data:', template);
+        toast.error('Template data is corrupted or missing');
+      } else {
+        console.warn('SAHMBudgetBuilder - Template not found with ID:', templateId);
+        toast.error('Template not found');
       }
     }
-  }, [isEditMode, templateId, templates]);
+  }, [isEditMode, templateId, templates, user?.email]);
 
   // SAHM priority needs with comprehensive essential categories
   const sahmPriorityNeeds = [
