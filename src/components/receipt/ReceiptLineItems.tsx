@@ -65,11 +65,21 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
         c.name.toLowerCase().includes('dining') || 
         c.name.toLowerCase() === 'dining out' ||
         c.name.toLowerCase().includes('dining out / takeout') ||
-        c.name.toLowerCase().includes('takeout')
+        c.name.toLowerCase().includes('takeout') ||
+        c.name.toLowerCase().includes('restaurant') ||
+        c.name.toLowerCase().includes('entertainment') // Fallback to entertainment if no dining category
       );
       if (diningCategory) {
         console.log('Found Dining out category for fallback:', diningCategory.name, diningCategory.id);
         return diningCategory.id;
+      } else {
+        console.log('No dining out category found in unified categories, using first wants category');
+        // Ultimate fallback - use any "wants" category
+        const wantsCategory = unifiedCategories.find(c => c.groupType === 'wants');
+        if (wantsCategory) {
+          console.log('Using wants category as ultimate fallback:', wantsCategory.name);
+          return wantsCategory.id;
+        }
       }
     }
     

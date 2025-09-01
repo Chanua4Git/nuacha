@@ -140,7 +140,22 @@ export const useUnifiedCategories = ({
           // Prioritize family categories, fallback to budget categories for missing ones
           const familyNames = new Set(familyCats.map(c => c.name.toLowerCase()));
           const uniqueBudgetCats = budgetCats.filter(c => !familyNames.has(c.name.toLowerCase()));
-          combinedCategories = [...familyCats, ...uniqueBudgetCats];
+          
+          // Re-parent orphaned budget category children that match family parent names
+          const reparentedBudgetCats = uniqueBudgetCats.map(budgetCat => {
+            if (budgetCat.parentId && budgetCats.some(bc => bc.id === budgetCat.parentId)) {
+              const budgetParent = budgetCats.find(bc => bc.id === budgetCat.parentId);
+              const familyParent = familyCats.find(fc => 
+                budgetParent && fc.name.toLowerCase() === budgetParent.name.toLowerCase()
+              );
+              if (familyParent) {
+                return { ...budgetCat, parentId: familyParent.id };
+              }
+            }
+            return budgetCat;
+          });
+          
+          combinedCategories = [...familyCats, ...reparentedBudgetCats];
           break;
         case 'all':
           combinedCategories = [...familyCats, ...budgetCats];

@@ -12,16 +12,36 @@ import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useFamilies } from '@/hooks/useFamilies';
+import { useExpense } from '@/context/ExpenseContext';
+import { ensureEssentialFamilyCategories } from '@/utils/categorySync';
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { selectedFamily } = useExpense();
   const initialTab = searchParams.get('tab') || 'expenses';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [hasRunAutoSync, setHasRunAutoSync] = useState(false);
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'expenses';
     setActiveTab(tab);
   }, [searchParams]);
+
+  // Auto-sync essential categories once per session when family is selected
+  useEffect(() => {
+    const autoSyncEssentials = async () => {
+      if (selectedFamily && !hasRunAutoSync) {
+        try {
+          await ensureEssentialFamilyCategories(selectedFamily.id);
+          setHasRunAutoSync(true);
+        } catch (error) {
+          console.error('Auto-sync failed:', error);
+        }
+      }
+    };
+    
+    autoSyncEssentials();
+  }, [selectedFamily, hasRunAutoSync]);
 
   const handleTabChange = (value: string) => {
     if (value === 'budget') {

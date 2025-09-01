@@ -18,11 +18,19 @@ export const CategorySyncBanner = () => {
   const [dismissed, setDismissed] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
 
-  // Check if categories need syncing (look for the new structure)
-  const needsSync = hasChecked && categories.length > 0 && !categories.some(cat => 
-    cat.name.includes('Education & Child Expenses') || 
-    cat.name.includes('Housing & Utilities') ||
-    cat.name.includes('Caregiving & Medical')
+  // Check if categories need syncing (look for essential categories)
+  const needsSync = hasChecked && categories.length > 0 && (
+    !categories.some(cat => 
+      cat.name.includes('Education & Child Expenses') || 
+      cat.name.includes('Housing & Utilities') ||
+      cat.name.includes('Caregiving & Medical')
+    ) ||
+    // Also check for essential individual categories that should exist
+    !categories.some(cat => 
+      cat.name.toLowerCase().includes('dining out') ||
+      cat.name.toLowerCase().includes('dining out / takeout')
+    ) ||
+    categories.length < 20 // If too few categories, likely needs comprehensive sync
   );
 
   useEffect(() => {

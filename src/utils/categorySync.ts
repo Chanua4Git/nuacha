@@ -259,6 +259,20 @@ export async function syncExpenseToBudgetCategories(
     };
     collectSeedNames(recommendedCategorySeeds);
 
+    // Ensure essential categories that may be missing
+    const essentialCategories = [
+      'Dining out / takeout',
+      'Groceries & Household Supplies', 
+      'Entertainment & Leisure',
+      'Personal Care & Wellness',
+      'Transportation',
+      'Housing & Utilities',
+      'Caregiving & Medical',
+      'Education & Child Expenses'
+    ];
+    
+    essentialCategories.forEach(name => uniqueNames.add(name));
+
     // Create missing budget categories with group inference
     let sort = 50;
     for (const name of uniqueNames) {
@@ -268,5 +282,23 @@ export async function syncExpenseToBudgetCategories(
   } catch (error) {
     console.error('Error syncing expense to budget categories:', error);
     throw error;
+  }
+}
+
+// Enhanced function to ensure essential family categories exist
+export async function ensureEssentialFamilyCategories(familyId: string) {
+  const essentialCategories = [
+    { name: 'Dining out / takeout', color: '#F97316', group: 'wants' },
+    { name: 'Groceries & Household Supplies', color: '#22C55E', group: 'needs' },
+    { name: 'Entertainment & Leisure', color: '#F97316', group: 'wants' },
+    { name: 'Personal Care & Wellness', color: '#F97316', group: 'wants' },
+    { name: 'Transportation', color: '#F97316', group: 'needs' },
+    { name: 'Housing & Utilities', color: '#0EA5E9', group: 'needs' },
+    { name: 'Caregiving & Medical', color: '#EF4444', group: 'needs' },
+    { name: 'Education & Child Expenses', color: '#EF4444', group: 'needs' }
+  ];
+
+  for (const cat of essentialCategories) {
+    await getOrCreateCategory(familyId, cat.name, null);
   }
 }
