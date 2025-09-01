@@ -8,6 +8,8 @@ export interface DemoCategory {
 }
 
 export const comprehensiveCategories: DemoCategory[] = [
+  // 🔴 NEEDS (Essential)
+  
   // 1. Housing & Utilities (Needs)
   {
     id: 'housing-utilities',
@@ -16,14 +18,16 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'rent-mortgage', name: 'Rent / Mortgage', color: '#0EA5E9', group: 'needs' },
+      { id: 'property-taxes', name: 'Property taxes', color: '#0EA5E9', group: 'needs' },
+      { id: 'hoa-maintenance', name: 'HOA / Maintenance fees', color: '#0EA5E9', group: 'needs' },
       { id: 'electricity', name: 'Electricity', color: '#0EA5E9', group: 'needs' },
       { id: 'water-sewer', name: 'Water & Sewer', color: '#0EA5E9', group: 'needs' },
-      { id: 'gas', name: 'Gas', color: '#0EA5E9', group: 'needs' },
+      { id: 'gas', name: 'Gas (cooking/heating)', color: '#0EA5E9', group: 'needs' },
+      { id: 'garbage-collection', name: 'Garbage collection', color: '#0EA5E9', group: 'needs' },
       { id: 'internet-wifi', name: 'Internet / Wi-Fi', color: '#0EA5E9', group: 'needs' },
       { id: 'mobile-phone', name: 'Mobile Phone Service', color: '#0EA5E9', group: 'needs' },
       { id: 'home-phone', name: 'Home Phone Service', color: '#0EA5E9', group: 'needs' },
-      { id: 'cable-streaming', name: 'Cable / Streaming services', color: '#0EA5E9', group: 'wants' },
-      { id: 'garbage-collection', name: 'Garbage collection', color: '#0EA5E9', group: 'needs' }
+      { id: 'cable-streaming', name: 'Cable / Streaming services', color: '#0EA5E9', group: 'wants' }
     ]
   },
 
@@ -36,36 +40,41 @@ export const comprehensiveCategories: DemoCategory[] = [
     children: [
       { id: 'day-nurse', name: 'Day nurse', color: '#EF4444', group: 'needs' },
       { id: 'night-nurse', name: 'Night nurse', color: '#EF4444', group: 'needs' },
-      { id: 'nurse', name: 'Nurse', color: '#EF4444', group: 'needs' },
       { id: 'weekday-nurse', name: 'WeekDay nurse', color: '#EF4444', group: 'needs' },
       { id: 'weekend-day-nurse', name: 'Weekend Day Nurse', color: '#EF4444', group: 'needs' },
+      { id: 'elderly-care', name: 'Elderly Care / Support', color: '#EF4444', group: 'needs' },
       { id: 'doctor-visits', name: 'Doctor visits', color: '#EF4444', group: 'needs' },
       { id: 'specialist-visits', name: 'Specialist visits', color: '#EF4444', group: 'needs' },
-      { id: 'medical-tests', name: 'Medical tests', color: '#EF4444', group: 'needs' },
-      { id: 'medication', name: 'Medication', color: '#EF4444', group: 'needs' },
-      { id: 'medical-supplies', name: 'Medical supplies', color: '#EF4444', group: 'needs' },
-      { id: 'emotional-support', name: 'Emotional Support / Mental Health', color: '#EF4444', group: 'needs' },
-      { id: 'elderly-care', name: 'Elderly Care / Support', color: '#EF4444', group: 'needs' }
+      { id: 'mental-health-therapy', name: 'Mental health therapy / counseling', color: '#EF4444', group: 'needs' },
+      { id: 'dental-care', name: 'Dental care (checkups, orthodontics)', color: '#EF4444', group: 'needs' },
+      { id: 'vision-care', name: 'Vision care (glasses, contacts, exams)', color: '#EF4444', group: 'needs' },
+      { id: 'medication', name: 'Medication (prescriptions)', color: '#EF4444', group: 'needs' },
+      { id: 'medical-supplies', name: 'Medical supplies (first aid, devices)', color: '#EF4444', group: 'needs' },
+      { id: 'medical-tests', name: 'Medical tests & diagnostics', color: '#EF4444', group: 'needs' },
+      { id: 'emergency-care', name: 'Emergency care / ambulance co-pays', color: '#EF4444', group: 'needs' }
     ]
   },
 
-  // 3. Household Operations (Mixed)
+  // 3. Education & Child Expenses (Needs)
   {
-    id: 'household-operations',
-    name: 'Household Operations',
-    color: '#10B981',
+    id: 'education-child',
+    name: 'Education & Child Expenses',
+    color: '#8B5CF6',
     group: 'needs',
     children: [
-      { id: 'cleaning-housekeeping', name: 'Cleaning & Housekeeping', color: '#10B981', group: 'wants' },
-      { id: 'housekeeper', name: 'Housekeeper', color: '#10B981', group: 'wants' },
-      { id: 'laundry', name: 'Laundry', color: '#10B981', group: 'needs' },
-      { id: 'care', name: 'Care', color: '#10B981', group: 'needs' },
-      { id: 'garden-services', name: 'Garden services', color: '#10B981', group: 'wants' },
-      { id: 'yard', name: 'Yard', color: '#10B981', group: 'wants' },
-      { id: 'pool-maintenance', name: 'Pool maintenance', color: '#10B981', group: 'wants' },
-      { id: 'pest-control', name: 'Pest control', color: '#10B981', group: 'needs' },
-      { id: 'household-repairs', name: 'Household repairs', color: '#10B981', group: 'needs' },
-      { id: 'appliance-repairs', name: 'Appliance repairs', color: '#10B981', group: 'needs' }
+      { id: 'childcare', name: 'Childcare (nanny/daycare/babysitting/after-school)', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-fees', name: 'School fees / tuition', color: '#8B5CF6', group: 'needs' },
+      { id: 'books-stationery', name: 'Books & stationery', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-uniforms', name: 'School uniforms', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-lunches', name: 'School lunches / meal programs', color: '#8B5CF6', group: 'needs' },
+      { id: 'school-transportation', name: 'School transportation (bus fees)', color: '#8B5CF6', group: 'needs' },
+      { id: 'exam-testing-fees', name: 'Exam / testing fees', color: '#8B5CF6', group: 'needs' },
+      { id: 'device-technology-fees', name: 'Device & technology fees', color: '#8B5CF6', group: 'needs' },
+      { id: 'tutoring-homework-help', name: 'Tutoring & Homework Help (required/IEP support)', color: '#8B5CF6', group: 'needs' },
+      { id: 'camps-school-breaks', name: 'Camps during school breaks (if needed for care)', color: '#8B5CF6', group: 'needs' },
+      { id: 'child-food-snacks', name: 'Child food & snacks', color: '#8B5CF6', group: 'needs' },
+      { id: 'child-toiletries', name: 'Child toiletries', color: '#8B5CF6', group: 'needs' },
+      { id: 'child-medical-dental', name: 'Child medical & dental co-pays', color: '#8B5CF6', group: 'needs' }
     ]
   },
 
@@ -77,24 +86,36 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'groceries', name: 'Groceries', color: '#22C55E', group: 'needs' },
-      { id: 'fresh-produce', name: 'Fresh produce', color: '#22C55E', group: 'needs' },
-      { id: 'meat-seafood', name: 'Meat & seafood', color: '#22C55E', group: 'needs' },
-      { id: 'dairy-eggs', name: 'Dairy & eggs', color: '#22C55E', group: 'needs' },
-      { id: 'pantry-staples', name: 'Pantry staples', color: '#22C55E', group: 'needs' },
-      { id: 'frozen-foods', name: 'Frozen foods', color: '#22C55E', group: 'needs' },
-      { id: 'beverages', name: 'Beverages', color: '#22C55E', group: 'needs' },
-      { id: 'snacks-treats', name: 'Snacks & treats', color: '#22C55E', group: 'wants' },
-      { id: 'special-dietary', name: 'Special Dietary Needs (Formula, Baby Food)', color: '#22C55E', group: 'needs' },
-      { id: 'cleaning-supplies', name: 'Cleaning supplies', color: '#22C55E', group: 'needs' },
-      { id: 'kitchen-supplies', name: 'Kitchen supplies', color: '#22C55E', group: 'needs' },
-      { id: 'bathroom-supplies', name: 'Bathroom supplies', color: '#22C55E', group: 'needs' },
-      { id: 'toiletries', name: 'Toiletries', color: '#22C55E', group: 'needs' },
+      { id: 'special-dietary', name: 'Special Dietary Needs (Formula, Baby Food, allergies)', color: '#22C55E', group: 'needs' },
       { id: 'paper-goods', name: 'Paper goods', color: '#22C55E', group: 'needs' },
-      { id: 'pet-food-supplies', name: 'Pet food & supplies', color: '#22C55E', group: 'needs' }
+      { id: 'toiletries', name: 'Toiletries', color: '#22C55E', group: 'needs' },
+      { id: 'diapers-wipes', name: 'Diapers & wipes', color: '#22C55E', group: 'needs' },
+      { id: 'feminine-care', name: 'Feminine care products', color: '#22C55E', group: 'needs' },
+      { id: 'cleaning-supplies', name: 'Cleaning supplies', color: '#22C55E', group: 'needs' },
+      { id: 'water-delivery', name: 'Water delivery', color: '#22C55E', group: 'needs' }
     ]
   },
 
-  // 5. Transportation (Needs)
+  // 5. Household Operations (Needs portion)
+  {
+    id: 'household-operations-needs',
+    name: 'Household Operations',
+    color: '#10B981',
+    group: 'needs',
+    children: [
+      { id: 'cleaning-housekeeping-routine', name: 'Cleaning & Housekeeping (routine)', color: '#10B981', group: 'needs' },
+      { id: 'laundry', name: 'Laundry', color: '#10B981', group: 'needs' },
+      { id: 'housekeeper-essential', name: 'Housekeeper (essential basis only)', color: '#10B981', group: 'needs' },
+      { id: 'household-repairs', name: 'Household repairs & maintenance', color: '#10B981', group: 'needs' },
+      { id: 'appliance-repairs', name: 'Appliance repairs', color: '#10B981', group: 'needs' },
+      { id: 'garden-services-essential', name: 'Garden services', color: '#10B981', group: 'needs' },
+      { id: 'pool-maintenance-essential', name: 'Pool maintenance', color: '#10B981', group: 'needs' },
+      { id: 'pest-control', name: 'Pest control', color: '#10B981', group: 'needs' },
+      { id: 'domestic-employee-payroll', name: 'Domestic employee payroll (NIS, severance, vacation)', color: '#10B981', group: 'needs' }
+    ]
+  },
+
+  // 6. Transportation (Needs)
   {
     id: 'transportation',
     name: 'Transportation',
@@ -102,15 +123,20 @@ export const comprehensiveCategories: DemoCategory[] = [
     group: 'needs',
     children: [
       { id: 'fuel', name: 'Fuel', color: '#F97316', group: 'needs' },
-      { id: 'taxi-rideshare', name: 'Taxi / rideshare', color: '#F97316', group: 'needs' },
       { id: 'public-transportation', name: 'Public transportation', color: '#F97316', group: 'needs' },
-      { id: 'vehicle-maintenance', name: 'Vehicle maintenance', color: '#F97316', group: 'needs' },
+      { id: 'taxi-rideshare', name: 'Taxi / rideshare', color: '#F97316', group: 'needs' },
       { id: 'vehicle-insurance', name: 'Vehicle insurance', color: '#F97316', group: 'needs' },
-      { id: 'vehicle-loan', name: 'Vehicle loan payment', color: '#F97316', group: 'needs' }
+      { id: 'vehicle-loan', name: 'Vehicle loan payment', color: '#F97316', group: 'needs' },
+      { id: 'vehicle-maintenance', name: 'Vehicle maintenance (oil/tires)', color: '#F97316', group: 'needs' },
+      { id: 'registration-inspection', name: 'Registration / inspection', color: '#F97316', group: 'needs' },
+      { id: 'parking-fees', name: 'Parking fees', color: '#F97316', group: 'needs' },
+      { id: 'tolls', name: 'Tolls', color: '#F97316', group: 'needs' },
+      { id: 'roadside-assistance', name: 'Roadside assistance (auto club)', color: '#F97316', group: 'needs' },
+      { id: 'drivers-license', name: 'Driver\'s license renewal', color: '#F97316', group: 'needs' }
     ]
   },
 
-  // 6. Insurance & Financial (Needs/Savings)
+  // 7. Insurance & Financial (Needs)
   {
     id: 'insurance-financial',
     name: 'Insurance & Financial',
@@ -121,164 +147,179 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'dental-insurance', name: 'Dental insurance', color: '#6366F1', group: 'needs' },
       { id: 'life-insurance', name: 'Life insurance', color: '#6366F1', group: 'needs' },
       { id: 'home-insurance', name: 'Home insurance', color: '#6366F1', group: 'needs' },
-      { id: 'other-insurance', name: 'Other insurance', color: '#6366F1', group: 'needs' },
-      { id: 'loan-repayments', name: 'Loan repayments', color: '#6366F1', group: 'needs' },
+      { id: 'other-insurance', name: 'Other insurance (disability, critical illness, contents)', color: '#6366F1', group: 'needs' },
+      { id: 'loan-repayments', name: 'Loan repayments (non-vehicle)', color: '#6366F1', group: 'needs' },
       { id: 'student-loans', name: 'Student loan payments', color: '#6366F1', group: 'needs' },
-      { id: 'minimum-debt', name: 'Minimum Debt', color: '#6366F1', group: 'needs' },
-      { id: 'property-tax', name: 'Property taxes', color: '#6366F1', group: 'needs' },
-      { id: 'bank-fees', name: 'Bank fees', color: '#6366F1', group: 'needs' },
-      { id: 'savings', name: 'Savings', color: '#6366F1', group: 'savings' },
-      { id: 'investments', name: 'Investments', color: '#6366F1', group: 'savings' }
+      { id: 'minimum-debt', name: 'Minimum debt payments', color: '#6366F1', group: 'needs' },
+      { id: 'extra-debt', name: 'Extra debt payments (snowball/avalanche)', color: '#6366F1', group: 'needs' },
+      { id: 'child-support', name: 'Child support paid / alimony', color: '#6366F1', group: 'needs' }
     ]
   },
 
-  // 7. Personal Care & Wellness (Mixed)
+  // 8. Pet Care (Needs - if you already have a pet)
   {
-    id: 'personal-care',
-    name: 'Personal Care & Wellness',
-    color: '#EC4899',
+    id: 'pet-care-needs',
+    name: 'Pet Care',
+    color: '#64748B',
     group: 'needs',
     children: [
-      { id: 'personal-hygiene', name: 'Personal hygiene', color: '#EC4899', group: 'needs' },
-      { id: 'vision-care', name: 'Vision care (glasses, contacts, exams)', color: '#EC4899', group: 'needs' },
-      { id: 'skincare', name: 'Skincare', color: '#EC4899', group: 'wants' },
-      { id: 'makeup-cosmetics', name: 'Makeup & cosmetics', color: '#EC4899', group: 'wants' },
-      { id: 'haircuts-grooming', name: 'Haircuts & grooming', color: '#EC4899', group: 'wants' },
-      { id: 'nail-care', name: 'Nail care', color: '#EC4899', group: 'wants' },
-      { id: 'spa-massage', name: 'Spa & massage', color: '#EC4899', group: 'wants' },
-      { id: 'gym-membership', name: 'Gym membership', color: '#EC4899', group: 'wants' },
-      { id: 'fitness-equipment', name: 'Fitness equipment', color: '#EC4899', group: 'wants' },
-      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' },
-      { id: 'dental-care', name: 'Dental care products', color: '#EC4899', group: 'needs' },
-      { id: 'feminine-products', name: 'Feminine products', color: '#EC4899', group: 'needs' },
-      { id: 'men-grooming', name: 'Men\'s grooming', color: '#EC4899', group: 'needs' }
+      { id: 'pet-food-supplies', name: 'Pet food & supplies', color: '#64748B', group: 'needs' },
+      { id: 'vet-visits', name: 'Vet visits & vaccinations', color: '#64748B', group: 'needs' },
+      { id: 'pet-medications', name: 'Pet medications', color: '#64748B', group: 'needs' },
+      { id: 'pet-grooming', name: 'Grooming', color: '#64748B', group: 'needs' },
+      { id: 'pet-boarding', name: 'Boarding / pet sitting', color: '#64748B', group: 'needs' }
     ]
   },
 
-  // 8. Education & Child Expenses (Needs)
+  // 9. Miscellaneous (Essential)
   {
-    id: 'education-child',
-    name: 'Education & Child Expenses',
-    color: '#8B5CF6',
+    id: 'miscellaneous-needs',
+    name: 'Miscellaneous (Essential)',
+    color: '#64748B',
     group: 'needs',
     children: [
-      { id: 'school-fees', name: 'School fees', color: '#8B5CF6', group: 'needs' },
-      { id: 'school-lunches', name: 'School lunches / meal programs', color: '#8B5CF6', group: 'needs' },
-      { id: 'school-transportation', name: 'School transportation (bus fees)', color: '#8B5CF6', group: 'needs' },
-      { id: 'books-stationery', name: 'Books & stationery', color: '#8B5CF6', group: 'needs' },
-      { id: 'extracurricular', name: 'Extracurricular activities', color: '#8B5CF6', group: 'wants' },
-      { id: 'school-uniforms', name: 'School uniforms', color: '#8B5CF6', group: 'needs' },
-      { id: 'childcare', name: 'Childcare', color: '#8B5CF6', group: 'needs' },
-      { id: 'tutoring-homework', name: 'Tutoring & Homework Help', color: '#8B5CF6', group: 'wants' },
-      { id: 'child-food', name: 'Child food & snacks', color: '#8B5CF6', group: 'needs' },
-      { id: 'child-toiletries', name: 'Child toiletries', color: '#8B5CF6', group: 'needs' },
-      { id: 'child-clothing', name: 'Child clothing', color: '#8B5CF6', group: 'needs' },
-      { id: 'child-toys', name: 'Toys & games', color: '#8B5CF6', group: 'wants' },
-      { id: 'child-medical', name: 'Child medical & dental', color: '#8B5CF6', group: 'needs' }
+      { id: 'bank-fees', name: 'Bank fees', color: '#64748B', group: 'needs' },
+      { id: 'legal-fees', name: 'Legal fees (custody/mediation/notary)', color: '#64748B', group: 'needs' },
+      { id: 'emergency-expenses', name: 'Emergency expenses', color: '#64748B', group: 'needs' },
+      { id: 'postage-shipping', name: 'Postage / shipping / PO box', color: '#64748B', group: 'needs' }
     ]
   },
 
-  // 9. Entertainment & Leisure (Wants)
+  // 🟡 WANTS (Discretionary)
+
+  // 10. Entertainment & Leisure (Wants)
   {
     id: 'entertainment-leisure',
     name: 'Entertainment & Leisure',
     color: '#F59E0B',
     group: 'wants',
     children: [
-      { id: 'dining-out', name: 'Dining out', color: '#F59E0B', group: 'wants' },
-      { id: 'subscriptions', name: 'Subscriptions', color: '#F59E0B', group: 'wants' },
+      { id: 'dining-out', name: 'Dining out / takeout', color: '#F59E0B', group: 'wants' },
+      { id: 'snacks-treats', name: 'Snacks & treats', color: '#F59E0B', group: 'wants' },
       { id: 'events-tickets', name: 'Events & tickets', color: '#F59E0B', group: 'wants' },
-      { id: 'hobbies-crafts', name: 'Hobbies & crafts', color: '#F59E0B', group: 'wants' }
+      { id: 'hobbies-crafts', name: 'Hobbies & crafts', color: '#F59E0B', group: 'wants' },
+      { id: 'subscriptions', name: 'Subscriptions (apps, magazines, streaming)', color: '#F59E0B', group: 'wants' }
     ]
   },
 
-  // 10. Gifts & Special Occasions (Wants)
+  // 11. Personal Care & Wellness (Wants)
+  {
+    id: 'personal-care-wants',
+    name: 'Personal Care & Wellness',
+    color: '#EC4899',
+    group: 'wants',
+    children: [
+      { id: 'haircuts-grooming', name: 'Haircuts & grooming', color: '#EC4899', group: 'wants' },
+      { id: 'spa-massage', name: 'Spa & massage', color: '#EC4899', group: 'wants' },
+      { id: 'gym-membership', name: 'Gym membership', color: '#EC4899', group: 'wants' },
+      { id: 'skincare', name: 'Skincare', color: '#EC4899', group: 'wants' },
+      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' }
+    ]
+  },
+
+  // 12. Gifts & Special Occasions (Wants)
   {
     id: 'gifts-occasions',
     name: 'Gifts & Special Occasions',
     color: '#EF4444',
     group: 'wants',
     children: [
+      { id: 'anniversaries', name: 'Anniversaries', color: '#EF4444', group: 'wants' },
       { id: 'birthday-gifts', name: 'Birthday gifts', color: '#EF4444', group: 'wants' },
       { id: 'holiday-gifts', name: 'Holiday gifts', color: '#EF4444', group: 'wants' },
-      { id: 'anniversaries', name: 'Anniversaries', color: '#EF4444', group: 'wants' },
-      { id: 'weddings-celebrations', name: 'Weddings & celebrations', color: '#EF4444', group: 'wants' }
+      { id: 'weddings-celebrations', name: 'Weddings & celebrations', color: '#EF4444', group: 'wants' },
+      { id: 'teacher-school-gifts', name: 'Teacher / school gifts', color: '#EF4444', group: 'wants' }
     ]
   },
 
-  // 11. Travel & Holidays (Wants)
+  // 13. Travel & Holidays (Wants)
   {
     id: 'travel-holidays',
     name: 'Travel & Holidays',
     color: '#06B6D4',
     group: 'wants',
     children: [
-      { id: 'flights-transport', name: 'Flights & transportation', color: '#06B6D4', group: 'wants' },
       { id: 'accommodation', name: 'Accommodation', color: '#06B6D4', group: 'wants' },
+      { id: 'flights-transport', name: 'Flights & transportation', color: '#06B6D4', group: 'wants' },
+      { id: 'activities-tours', name: 'Activities & tours', color: '#06B6D4', group: 'wants' },
       { id: 'travel-insurance', name: 'Travel insurance', color: '#06B6D4', group: 'wants' },
-      { id: 'activities-tours', name: 'Activities & tours', color: '#06B6D4', group: 'wants' }
+      { id: 'passports-visas', name: 'Passports / visas', color: '#06B6D4', group: 'wants' }
     ]
   },
 
-  // 12. Clothing & Fashion (Mixed)
+  // 14. Household Operations (Wants portion)
   {
-    id: 'clothing-fashion',
-    name: 'Clothing & Fashion',
-    color: '#A855F7',
-    group: 'needs',
-    children: [
-      { id: 'everyday-clothing', name: 'Everyday clothing', color: '#A855F7', group: 'needs' },
-      { id: 'work-attire', name: 'Work attire', color: '#A855F7', group: 'needs' },
-      { id: 'undergarments-socks', name: 'Undergarments & socks', color: '#A855F7', group: 'needs' },
-      { id: 'shoes-footwear', name: 'Shoes & footwear', color: '#A855F7', group: 'needs' },
-      { id: 'outerwear-coats', name: 'Outerwear & coats', color: '#A855F7', group: 'needs' },
-      { id: 'formal-wear', name: 'Formal wear', color: '#A855F7', group: 'wants' },
-      { id: 'accessories', name: 'Accessories', color: '#A855F7', group: 'wants' },
-      { id: 'luxury-fashion', name: 'Luxury fashion', color: '#A855F7', group: 'wants' }
-    ]
-  },
-
-  // 13. Technology & Electronics (Mixed)
-  {
-    id: 'technology-electronics',
-    name: 'Technology & Electronics',
-    color: '#3B82F6',
-    group: 'needs',
-    children: [
-      { id: 'computer-laptop', name: 'Computer & laptop', color: '#3B82F6', group: 'wants' },
-      { id: 'software-apps', name: 'Software & apps', color: '#3B82F6', group: 'wants' },
-      { id: 'electronics-gadgets', name: 'Electronics & gadgets', color: '#3B82F6', group: 'wants' },
-      { id: 'home-appliances', name: 'Home appliances', color: '#3B82F6', group: 'needs' },
-      { id: 'tech-repairs', name: 'Tech repairs', color: '#3B82F6', group: 'needs' },
-      { id: 'gaming', name: 'Gaming', color: '#3B82F6', group: 'wants' }
-    ]
-  },
-
-  // 14. Miscellaneous (Various)
-  {
-    id: 'miscellaneous',
-    name: 'Miscellaneous',
-    color: '#64748B',
-    group: 'needs',
-    children: [
-      { id: 'emergency-expenses', name: 'Emergency expenses', color: '#64748B', group: 'needs' },
-      { id: 'donations-charity', name: 'Donations & charity', color: '#64748B', group: 'wants' },
-      { id: 'legal-fees', name: 'Legal fees', color: '#64748B', group: 'needs' },
-      { id: 'professional-services', name: 'Professional services', color: '#64748B', group: 'needs' },
-      { id: 'unplanned-purchases', name: 'Unplanned purchases', color: '#64748B', group: 'wants' },
-      { id: 'pet-care', name: 'Pet Care', color: '#64748B', group: 'wants' },
-      { id: 'other-expenses', name: 'Other expenses', color: '#64748B', group: 'wants' }
-    ]
-  },
-
-  // 15. Wants (Lifestyle) - Separate lifestyle category
-  {
-    id: 'wants-lifestyle',
-    name: 'Wants (Lifestyle)',
-    color: '#F97316',
+    id: 'household-operations-wants',
+    name: 'Household Operations (Wants)',
+    color: '#10B981',
     group: 'wants',
     children: [
-      { id: 'lifestyle-general', name: 'General lifestyle wants', color: '#F97316', group: 'wants' }
+      { id: 'deep-cleaning', name: 'Deep cleaning / one-off cleans', color: '#10B981', group: 'wants' },
+      { id: 'housekeeper-extra', name: 'Housekeeper (extra hours)', color: '#10B981', group: 'wants' },
+      { id: 'garden-services-wants', name: 'Garden services (non-essential)', color: '#10B981', group: 'wants' },
+      { id: 'pool-maintenance-wants', name: 'Pool maintenance (non-essential)', color: '#10B981', group: 'wants' },
+      { id: 'yard', name: 'Yard', color: '#10B981', group: 'wants' }
+    ]
+  },
+
+  // 15. Education & Child (Wants portion)
+  {
+    id: 'education-child-wants',
+    name: 'Education & Child (Wants)',
+    color: '#8B5CF6',
+    group: 'wants',
+    children: [
+      { id: 'extracurricular', name: 'Extracurricular activities / sports / music', color: '#8B5CF6', group: 'wants' },
+      { id: 'tutoring-enrichment', name: 'Tutoring & enrichment (optional)', color: '#8B5CF6', group: 'wants' },
+      { id: 'clubs-memberships', name: 'Clubs & memberships', color: '#8B5CF6', group: 'wants' },
+      { id: 'camps-enrichment', name: 'Camps (enrichment vs. care)', color: '#8B5CF6', group: 'wants' }
+    ]
+  },
+
+  // 16. Technology & Lifestyle (Wants)
+  {
+    id: 'technology-lifestyle',
+    name: 'Technology & Lifestyle',
+    color: '#3B82F6',
+    group: 'wants',
+    children: [
+      { id: 'device-upgrades', name: 'Device upgrades & accessories', color: '#3B82F6', group: 'wants' },
+      { id: 'cloud-storage', name: 'Cloud storage & premium apps', color: '#3B82F6', group: 'wants' },
+      { id: 'lifestyle-general', name: 'General lifestyle wants (catch-all)', color: '#3B82F6', group: 'wants' }
+    ]
+  },
+
+  // 💚 SAVINGS & INVESTMENTS
+
+  // 17. Core Savings
+  {
+    id: 'core-savings',
+    name: 'Core Savings',
+    color: '#22C55E',
+    group: 'savings',
+    children: [
+      { id: 'emergency-fund', name: 'Emergency fund', color: '#22C55E', group: 'savings' },
+      { id: 'home-maintenance-fund', name: 'Home maintenance & appliance replacement', color: '#22C55E', group: 'savings' },
+      { id: 'vehicle-maintenance-fund', name: 'Vehicle maintenance & replacement', color: '#22C55E', group: 'savings' },
+      { id: 'medical-dental-fund', name: 'Medical / dental out-of-pocket', color: '#22C55E', group: 'savings' },
+      { id: 'education-costs-fund', name: 'Education costs (fees, uniforms, devices)', color: '#22C55E', group: 'savings' },
+      { id: 'gifts-holidays-fund', name: 'Gifts & holidays', color: '#22C55E', group: 'savings' },
+      { id: 'travel-fund', name: 'Travel fund', color: '#22C55E', group: 'savings' },
+      { id: 'pet-care-fund', name: 'Pet care fund', color: '#22C55E', group: 'savings' }
+    ]
+  },
+
+  // 18. Long-Term
+  {
+    id: 'long-term-savings',
+    name: 'Long-Term',
+    color: '#059669',
+    group: 'savings',
+    children: [
+      { id: 'retirement-contributions', name: 'Retirement contributions', color: '#059669', group: 'savings' },
+      { id: 'education-savings', name: 'Education savings (college/tertiary fund)', color: '#059669', group: 'savings' },
+      { id: 'investments', name: 'Investments (brokerage, mutual funds, unit trusts)', color: '#059669', group: 'savings' },
+      { id: 'insurance-deductibles', name: 'Insurance deductibles reserve', color: '#059669', group: 'savings' }
     ]
   }
 ];
