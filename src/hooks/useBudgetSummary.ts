@@ -23,7 +23,30 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
       setLoading(true);
       setError(null);
 
-      // Fetch income sources - filter by family if provided
+      // First check for active budget template income
+      let templateIncome = 0;
+      
+      const { data: activeTemplate, error: templateError } = await supabase
+        .from('budget_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('is_default', true)
+        .or(familyId ? `family_id.eq.${familyId}` : 'family_id.is.null')
+        .maybeSingle();
+
+      if (templateError && templateError.code !== 'PGRST116') throw templateError;
+
+      if (activeTemplate?.template_data) {
+        // Calculate total income from template
+        const templateData = activeTemplate.template_data as any;
+        if (templateData?.income && typeof templateData.income === 'object') {
+          const incomeValues = Object.values(templateData.income);
+          templateIncome = incomeValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
+        }
+      }
+
+      // Fetch income sources as fallback - filter by family if provided
       let incomeQuery = supabase
         .from('income_sources')
         .select('*')
@@ -87,10 +110,12 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
         savings_pct: 20
       };
 
-      // Calculate total monthly income
-      const totalIncome = (incomeSources || []).reduce((sum, source) => {
-        return sum + toMonthly(source.amount_ttd, source.frequency as any);
-      }, 0);
+      // Calculate total monthly income - prioritize template income over income sources
+      const totalIncome = templateIncome > 0 
+        ? templateIncome 
+        : (incomeSources || []).reduce((sum, source) => {
+            return sum + toMonthly(source.amount_ttd, source.frequency as any);
+          }, 0);
 
       // Create category lookup
       const categoryMap = new Map(

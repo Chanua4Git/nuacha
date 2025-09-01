@@ -12,6 +12,7 @@ import RulesManager from '@/components/budget/RulesManager';
 import ScenarioPlanner from '@/components/budget/ScenarioPlanner';
 import HowToUse from '@/components/budget/HowToUse';
 import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
+import BudgetTemplateReport from '@/components/budget/BudgetTemplateReport';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -21,6 +22,10 @@ export default function Budget() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || (user ? 'dashboard' : 'build-budget');
   const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Check if we're in view mode for budget template
+  const mode = searchParams.get('mode');
+  const isViewMode = mode === 'view';
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -132,7 +137,7 @@ export default function Budget() {
             </TabsContent>
 
             <TabsContent value="builder" className="space-y-6">
-              <SAHMBudgetBuilder />
+              {isViewMode ? <BudgetTemplateReport /> : <SAHMBudgetBuilder />}
             </TabsContent>
 
             <TabsContent value="income" className="space-y-6">

@@ -7,7 +7,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useBudgetVariance } from '@/hooks/useBudgetVariance';
 import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target, PlusCircle, Edit, Eye } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
@@ -42,6 +42,15 @@ export default function BudgetDashboard() {
       navigate(`/budget?tab=builder&mode=edit&templateId=${templateToEdit.id}`);
     } else {
       toast.error('No template available to edit');
+    }
+  };
+
+  const handleViewTemplate = () => {
+    const templateToView = activeTemplate || templates[0];
+    if (templateToView) {
+      navigate(`/budget?tab=builder&mode=view&templateId=${templateToView.id}`);
+    } else {
+      toast.error('No template available to view');
     }
   };
 
@@ -114,70 +123,108 @@ export default function BudgetDashboard() {
         </Card>
       ) : (
         <>
-      {templatesLoading ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4 flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              <span className="text-sm text-muted-foreground">Loading budget templates...</span>
-            </div>
-          </CardContent>
-        </Card>
-      ) : activeTemplate ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
-            <div>
-              <div className="text-sm text-muted-foreground">Active Budget Template - {selectedFamily.name}</div>
-              <div className="text-lg font-medium">{activeTemplate.name}</div>
-              <div className="text-xs text-muted-foreground">
-                Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}
+        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-lg font-medium text-primary mb-2">
+                  {templatesLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin border-2 border-primary border-t-transparent rounded-full"></div>
+                      <span>Loading templates...</span>
+                    </div>
+                  ) : templates.length > 0 ? (
+                    <div className="flex items-center justify-between w-full">
+                      <span>Budget Template Active</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleViewTemplate}
+                          className="text-xs px-2 py-1 h-auto"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View Details
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleEditTemplate}
+                          className="text-xs px-2 py-1 h-auto"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    "No budget template found for " + selectedFamily?.name
+                  )}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {templatesLoading ? (
+                    "Checking for existing budget templates..."
+                  ) : templates.length > 0 ? (
+                    <span>
+                      Template: <strong>{getDefaultTemplate()?.name || 'Default Template'}</strong>
+                      {getDefaultTemplate()?.updated_at && (
+                        <span className="ml-2 text-xs opacity-75">
+                          (Updated: {new Date(getDefaultTemplate()!.updated_at).toLocaleDateString()})
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    "Create your plan to compare vs actuals"
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {templatesLoading ? (
+                    ""
+                  ) : templates.length > 0 ? (
+                    "This template is being used for your dashboard calculations"
+                  ) : (
+                    "A template helps you track planned vs actual spending"
+                  )}
+                </p>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Created: {new Date(activeTemplate.created_at).toLocaleDateString()}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {templatesLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-3 w-3 animate-spin border border-muted-foreground border-t-transparent rounded-full"></div>
+                <span className="text-sm">Loading your budget data...</span>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleEditTemplate}>
-                Edit in Builder
+            ) : templates.length > 0 ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewTemplate}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Template Report
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleEditTemplate}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Template
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                onClick={handleCreateTemplate}
+                className="w-full"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create Budget Template
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate(`/budget?tab=builder&mode=view&templateId=${activeTemplate.id}`)}>
-                View Details
-              </Button>
-            </div>
+            )}
           </CardContent>
         </Card>
-      ) : templates.length > 0 ? (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
-            <div>
-              <div className="text-sm text-muted-foreground">Budget templates found for {selectedFamily.name}</div>
-              <div className="text-lg font-medium">No default template set</div>
-              <div className="text-xs text-muted-foreground">You have {templates.length} template(s) available</div>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => handleEditTemplate()}>
-                Edit Latest Template
-              </Button>
-              <Button variant="outline" onClick={handleCreateTemplate}>
-                Create New Template
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4 flex items-center justify-between gap-4 flex-col md:flex-row">
-            <div>
-              <div className="text-sm text-muted-foreground">No budget template found for {selectedFamily.name}</div>
-              <div className="text-lg font-medium">Create your plan to compare vs actuals</div>
-              <div className="text-xs text-muted-foreground">A template helps you track planned vs actual spending</div>
-            </div>
-            <Button onClick={handleCreateTemplate}>
-              Create Budget Template
-            </Button>
-          </CardContent>
-        </Card>
-      )}
       {/* Period Selection */}
       <Card>
         <CardContent className="p-6">
