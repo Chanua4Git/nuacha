@@ -11,8 +11,10 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function BudgetDashboard() {
+  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>({
     type: 'monthly',
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -24,6 +26,16 @@ export default function BudgetDashboard() {
   const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate, selectedFamily?.id);
   const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const activeTemplate = getDefaultTemplate();
+
+  const handleEditTemplate = () => {
+    if (activeTemplate) {
+      navigate(`/budget?tab=builder&mode=edit&templateId=${activeTemplate.id}`);
+    }
+  };
+
+  const handleCreateTemplate = () => {
+    navigate('/budget?tab=builder&mode=create');
+  };
 
   if (loading) {
     return (
@@ -99,8 +111,8 @@ export default function BudgetDashboard() {
               <div className="text-xs text-muted-foreground">Planned monthly income: {formatTTD(Number(activeTemplate.total_monthly_income || 0))}</div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <a href="/budget?tab=builder">Edit in Builder</a>
+              <Button variant="outline" onClick={handleEditTemplate}>
+                Edit in Builder
               </Button>
             </div>
           </CardContent>
@@ -112,8 +124,8 @@ export default function BudgetDashboard() {
               <div className="text-sm text-muted-foreground">No active budget template for {selectedFamily.name}</div>
               <div className="text-lg font-medium">Create your plan to compare vs actuals</div>
             </div>
-            <Button asChild>
-              <a href="/budget?tab=builder">Create Budget Template</a>
+            <Button onClick={handleCreateTemplate}>
+              Create Budget Template
             </Button>
           </CardContent>
         </Card>

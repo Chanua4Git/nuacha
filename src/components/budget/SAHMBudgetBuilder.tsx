@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { formatTTD } from '@/utils/budgetUtils';
 import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
 import { toast } from 'sonner';
 import { useBudgetPreview } from '@/context/BudgetPreviewContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
@@ -114,12 +114,19 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ category, value, onChange
 
 export default function SAHMBudgetBuilder() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { selectedFamily } = useExpense();
   const { submitBudget, isSubmitting } = useSAHMBudgetSubmission();
-  const { createTemplate } = useBudgetTemplates(selectedFamily?.id);
+  const { createTemplate, updateTemplate, templates } = useBudgetTemplates(selectedFamily?.id);
   const { setPreviewData } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Check if we're in edit mode
+  const mode = searchParams.get('mode');
+  const templateId = searchParams.get('templateId');
+  const isEditMode = mode === 'edit' && templateId;
   const [budgetData, setBudgetData] = useState<BudgetData>({
     aboutYou: {
       name: '',
@@ -138,6 +145,42 @@ export default function SAHMBudgetBuilder() {
     savings: {},
     notes: ''
   });
+
+  // Load existing template data when in edit mode
+  useEffect(() => {
+    if (isEditMode && templates.length > 0) {
+      const template = templates.find(t => t.id === templateId);
+      if (template && template.template_data) {
+        setIsLoading(true);
+        try {
+          const templateData = template.template_data;
+          setBudgetData({
+            aboutYou: {
+              name: templateData.aboutYou?.name || '',
+              location: templateData.aboutYou?.location || '',
+              householdSize: templateData.aboutYou?.household_size || 2,
+              dependents: templateData.aboutYou?.dependents || 0,
+              email: templateData.aboutYou?.email || ''
+            },
+            income: {
+              primaryIncome: { amount: templateData.income?.primaryIncome || 0, frequency: 'monthly', source: 'Primary Income' },
+              secondaryIncome: { amount: templateData.income?.secondaryIncome || 0, frequency: 'monthly', source: 'Secondary Income' },
+              otherIncome: { amount: templateData.income?.otherIncome || 0, frequency: 'monthly', source: 'Other Income' }
+            },
+            needs: templateData.needs || {},
+            wants: templateData.wants || {},
+            savings: templateData.savings || {},
+            notes: templateData.notes || ''
+          });
+        } catch (error) {
+          console.error('Error loading template data:', error);
+          toast.error('Failed to load template data');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [isEditMode, templateId, templates]);
 
   // SAHM priority needs with comprehensive essential categories
   const sahmPriorityNeeds = [
@@ -269,15 +312,27 @@ export default function SAHMBudgetBuilder() {
           notes: budgetData.notes,
         };
         
-        await createTemplate({
-          name: `Budget Template - ${new Date().toLocaleDateString()}`,
-          description: 'Created using Budget Builder',
-          total_monthly_income: totalIncome,
-          template_data: templateData,
-          is_default: true,
-        });
+        if (isEditMode && templateId) {
+          // Update existing template
+          await updateTemplate(templateId, {
+            name: `Budget Template - ${new Date().toLocaleDateString()}`,
+            description: 'Updated using Budget Builder',
+            total_monthly_income: totalIncome,
+            template_data: templateData,
+          });
+          toast.success("Budget template updated! Redirecting to your dashboard...");
+        } else {
+          // Create new template
+          await createTemplate({
+            name: `Budget Template - ${new Date().toLocaleDateString()}`,
+            description: 'Created using Budget Builder',
+            total_monthly_income: totalIncome,
+            template_data: templateData,
+            is_default: true,
+          });
+          toast.success("Budget template created! Redirecting to your dashboard...");
+        }
         
-        toast.success("Budget template created! Redirecting to your dashboard...");
         navigate('/budget?tab=dashboard');
       } else if (user && !selectedFamily) {
         toast.error('Please select a family first');
@@ -292,7 +347,7 @@ export default function SAHMBudgetBuilder() {
       }
     } catch (error) {
       console.error('Failed to process budget:', error);
-      toast.error("Failed to save budget template");
+      toast.error(isEditMode ? "Failed to update budget template" : "Failed to save budget template");
     }
   };
 
