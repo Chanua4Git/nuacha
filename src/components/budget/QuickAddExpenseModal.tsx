@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import ExpenseTypeSelector, { ExpenseType } from '../expense-form/ExpenseTypeSelector';
 import DateSelector from '../expense-form/DateSelector';
 import { format } from 'date-fns';
+import BulkFileUpload from './BulkFileUpload';
+import { ParsedCSVResult } from '@/utils/csvParser';
 
 interface BulkExpenseItem {
   id: string;
@@ -33,7 +35,7 @@ const QuickAddExpenseModal = ({
   categoryName
 }: QuickAddExpenseModalProps) => {
   const { selectedFamily, createExpense } = useExpense();
-  const [mode, setMode] = useState<'single' | 'bulk'>('single');
+  const [mode, setMode] = useState<'single' | 'bulk' | 'file'>('single');
   const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,6 +60,25 @@ const QuickAddExpenseModal = ({
     setDate(new Date());
     setBulkItems([{ id: '1', amount: '', description: '', place: '', date: new Date() }]);
     onClose();
+  };
+
+  const handleFileDataParsed = (result: ParsedCSVResult) => {
+    // Convert parsed CSV data to bulk items format
+    const newBulkItems: BulkExpenseItem[] = result.data.map((row, index) => ({
+      id: (index + 1).toString(),
+      amount: row.amount,
+      description: row.description,
+      place: row.place,
+      date: row.date
+    }));
+    
+    setBulkItems(newBulkItems);
+    // Switch to bulk mode to show the parsed data
+    setMode('bulk');
+    
+    if (result.errors.length > 0) {
+      toast.warning(`File parsed with ${result.errors.length} warnings. Review the data before submitting.`);
+    }
   };
 
   const addBulkItem = () => {
@@ -133,7 +154,7 @@ const QuickAddExpenseModal = ({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            Add Expense{mode === 'bulk' ? 's' : ''} to {categoryName}
+            Add Expense{mode === 'bulk' || mode === 'file' ? 's' : ''} to {categoryName}
           </DialogTitle>
         </DialogHeader>
 
@@ -155,6 +176,15 @@ const QuickAddExpenseModal = ({
               onClick={() => setMode('bulk')}
             >
               Bulk Entry
+            </Button>
+            <Button
+              type="button"
+              variant={mode === 'file' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMode('file')}
+            >
+              <Upload className="w-4 h-4 mr-1" />
+              File Upload
             </Button>
           </div>
 
@@ -204,6 +234,11 @@ const QuickAddExpenseModal = ({
                 onSelect={setDate}
               />
             </div>
+          )}
+
+          {/* File Upload Mode */}
+          {mode === 'file' && (
+            <BulkFileUpload onDataParsed={handleFileDataParsed} />
           )}
 
           {/* Bulk Entry Mode */}
@@ -284,9 +319,11 @@ const QuickAddExpenseModal = ({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || mode === 'file'}
             >
-              {isSubmitting ? 'Adding...' : `Add ${mode === 'bulk' ? `${bulkItems.length} ` : ''}Expense${mode === 'bulk' ? 's' : ''}`}
+              {isSubmitting ? 'Adding...' : 
+               mode === 'file' ? 'Upload a file first' :
+               `Add ${mode === 'bulk' ? `${bulkItems.length} ` : ''}Expense${mode === 'bulk' ? 's' : ''}`}
             </Button>
           </div>
         </div>
