@@ -32,7 +32,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // List of app routes that should be preserved when user is authenticated
-const APP_ROUTES = ['/app', '/dashboard', '/options', '/reports', '/reminders', '/payroll'];
+const APP_ROUTES = ['/app', '/dashboard', '/options', '/reports', '/reminders', '/payroll', '/budget', '/receipts'];
 
 function safeGetIntendedPath(): string {
   try {
@@ -61,10 +61,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Safely navigate to prevent multiple redirects
   const safeNavigate = (path: string, options: { replace?: boolean } = {}) => {
     // Prevent multiple navigations in quick succession
     if (navigationInProgress.current) return;
+    
+    // Don't navigate if already on the target path
+    if (location.pathname === path) return;
     
     // Don't navigate if user is already on an app route and is authenticated
     if (user && isAppRoute(location.pathname) && isAppRoute(path)) {
@@ -114,22 +116,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
 
         if (event === 'SIGNED_IN') {
+          console.log('🔐 Auth: SIGNED_IN event, current path:', location.pathname);
           const verificationComplete = localStorage.getItem("verificationComplete") === "true";
           
           if (verificationComplete) {
             localStorage.removeItem("verificationComplete");
-            window.history.replaceState({}, "", "/");
             safeNavigate("/", { replace: true });
             return;
           }
 
-            if (isAuthDemoActive()) {
-              if (!location.pathname.startsWith('/authentication-demo')) {
-                safeNavigate('/', { replace: true });
-              }
-            } else {
+          if (isAuthDemoActive()) {
+            if (!location.pathname.startsWith('/authentication-demo')) {
+              safeNavigate('/authentication-demo', { replace: true });
+            }
+          } else {
             // Check for intended path first, prioritizing user's intended destination
             const intendedPath = safeGetIntendedPath();
+            console.log('🔐 Auth: intended path:', intendedPath, 'current path:', location.pathname);
             
             // If user has an intended path, use it regardless of current location
             if (intendedPath !== "/" && localStorage.getItem('intendedPath')) {
@@ -141,10 +144,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // If already on a valid app route and no specific intended path, stay here
             if (isAppRoute(location.pathname)) {
               localStorage.removeItem('intendedPath'); // Clean up any stale intended path
+              console.log('🔐 Auth: staying on current app route:', location.pathname);
               return;
             }
             
             // Default fallback
+            console.log('🔐 Auth: fallback navigation to root');
             safeNavigate("/", { replace: true });
           }
         }
