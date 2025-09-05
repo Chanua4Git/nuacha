@@ -6,6 +6,7 @@ import { Info, Eye, PenTool } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 import { BudgetSummary, FrequencyType } from '@/types/budget';
@@ -23,6 +24,7 @@ export default function DemoBudget() {
   const [mode, setMode] = useState<'demo' | 'builder'>('demo');
   const [activeTab, setActiveTab] = useState('dashboard');
   const { previewData } = useBudgetPreview();
+  const isMobile = useIsMobile();
 
   const incomeSourcesOverride = useMemo(() => {
     if (!previewData) return undefined;
@@ -159,13 +161,25 @@ export default function DemoBudget() {
       {/* Main Content */}
       {mode === 'demo' ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="rules">Rules</TabsTrigger>
-            <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-            <TabsTrigger value="help">How to Use</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+            <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
+              {isMobile ? 'Dashboard' : 'Dashboard'}
+            </TabsTrigger>
+            <TabsTrigger value="income" className="text-xs sm:text-sm">
+              {isMobile ? 'Income' : 'Income'}
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm">
+              {isMobile ? 'Expenses' : 'Expenses'}
+            </TabsTrigger>
+            <TabsTrigger value="rules" className="text-xs sm:text-sm">
+              {isMobile ? 'Rules' : 'Rules'}
+            </TabsTrigger>
+            <TabsTrigger value="scenarios" className="text-xs sm:text-sm">
+              {isMobile ? 'Scenarios' : 'Scenarios'}
+            </TabsTrigger>
+            <TabsTrigger value="help" className="text-xs sm:text-sm">
+              {isMobile ? 'Help' : 'How to Use'}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
