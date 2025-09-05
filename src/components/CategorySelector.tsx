@@ -454,7 +454,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             onClick={refetch}
             aria-label="Refresh categories"
           >
-            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", categoriesLoading ? "animate-spin" : "")} />
+            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", user && categoriesLoading ? "animate-spin" : "")} />
           </Button>
         </div>
       </div>

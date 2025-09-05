@@ -189,11 +189,17 @@ export const useUnifiedCategories = ({
   };
 
   useEffect(() => {
-    if (user) {
-      fetchCategories();
+    // For demo users (no authenticated user), don't load from Supabase
+    if (!user) {
+      setIsLoading(false);
+      setCategories([]);
+      setHierarchicalCategories([]);
+      return;
     }
+    
+    fetchCategories();
 
-    // Realtime subscription for category changes
+    // Set up real-time subscription for categories
     const channel = supabase
       .channel(`unified-categories-${familyId || 'none'}-${mode}`)
       .on(
