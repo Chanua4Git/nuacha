@@ -17,6 +17,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BudgetData {
   aboutYou: {
@@ -316,6 +317,21 @@ export default function SAHMBudgetBuilder() {
   };
 
   const submitTemplateRequest = async () => {
+    // Validate required fields
+    if (!budgetData.aboutYou.email) {
+      toast.error("Email required", {
+        description: "Please provide your email to receive updates about your template request.",
+      });
+      return false;
+    }
+
+    if (!templateRequestData.familySituation) {
+      toast.error("Family situation required", {
+        description: "Please select your family situation to help us create the right template.",
+      });
+      return false;
+    }
+
     try {
       const leadData = {
         email: budgetData.aboutYou.email,
@@ -332,18 +348,28 @@ export default function SAHMBudgetBuilder() {
         source: 'budget_builder'
       };
 
-      const response = await fetch('/api/demo-leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData)
-      });
+      const { error } = await supabase
+        .from('demo_leads')
+        .insert([leadData]);
 
-      if (response.ok) {
-        toast.success("Template request received! We'll notify you when it's ready.");
+      if (error) {
+        console.error('Error submitting template request:', error);
+        toast.error("Something went wrong", {
+          description: "We couldn't submit your request right now. Please try again.",
+        });
+        return false;
       }
+
+      toast.success("Template request received!", {
+        description: "We'll email you when your custom template is ready. Thanks for your patience!",
+      });
+      return true;
     } catch (error) {
       console.error('Failed to submit template request:', error);
-      // Don't block the flow if lead capture fails
+      toast.error("Something went wrong", {
+        description: "We couldn't submit your request right now. Please try again.",
+      });
+      return false;
     }
   };
 
@@ -488,6 +514,20 @@ export default function SAHMBudgetBuilder() {
                           value={templateRequestData.challenges}
                           onChange={(e) => setTemplateRequestData(prev => ({ ...prev, challenges: e.target.value }))}
                         />
+                      </div>
+                      
+                      {/* Submit Template Request Button */}
+                      <div className="pt-2">
+                        <Button 
+                          onClick={submitTemplateRequest}
+                          className="w-full"
+                          disabled={!budgetData.aboutYou.email || !templateRequestData.familySituation}
+                        >
+                          Submit Request
+                        </Button>
+                        <p className="text-sm text-muted-foreground mt-2 text-center">
+                          We'll email you when your custom template is ready!
+                        </p>
                       </div>
                     </div>
                   )}
