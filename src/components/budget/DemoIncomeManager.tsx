@@ -53,7 +53,7 @@ export default function DemoIncomeManager({ incomeSources }: { incomeSources?: t
     });
   };
 
-  const totalMonthlyIncome = incomeSources.reduce((sum, source) => {
+  const totalMonthlyIncome = incomeSourcesState.reduce((sum, source) => {
     return sum + toMonthly(source.amount_ttd, source.frequency);
   }, 0);
 
@@ -81,14 +81,14 @@ export default function DemoIncomeManager({ incomeSources }: { incomeSources?: t
             {formatTTD(totalMonthlyIncome)}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Total monthly equivalent from {incomeSources.length} income sources
+            Total monthly equivalent from {incomeSourcesState.length} income sources
           </p>
         </CardContent>
       </Card>
 
       {/* Income Sources List */}
       <div className="grid gap-4">
-        {incomeSources.map((source) => (
+        {incomeSourcesState.map((source) => (
           <Card key={source.id}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -144,7 +144,7 @@ export default function DemoIncomeManager({ incomeSources }: { incomeSources?: t
       </div>
 
       {/* Empty State for Demo */}
-      {incomeSources.length === 0 && (
+      {incomeSourcesState.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <h3 className="text-lg font-semibold mb-2">No Income Sources Yet</h3>
