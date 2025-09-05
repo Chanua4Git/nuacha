@@ -76,11 +76,11 @@ const Demo = () => {
       });
 
       if (error?.code === '23505') {
-        toast("You've already tried Nuacha!", {
-          description: "Ready to explore more? Check out our solutions.",
+        toast("Welcome back! Ready to get started?", {
+          description: "Since you've explored our demo, let's get you signed up to unlock the full Nuacha experience!",
           action: {
-            label: "View Solutions",
-            onClick: () => navigate('/options')
+            label: "Sign Up Now",
+            onClick: () => navigate('/signup')
           }
         });
         setDemoComplete(true);
