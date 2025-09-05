@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin, Loader2, FileText } from 'lucide-react';
 import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategories';
 import { formatTTD } from '@/utils/budgetUtils';
 import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
@@ -125,6 +126,14 @@ export default function SAHMBudgetBuilder() {
   const { setPreviewData } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Template selection and lead capture state
+  const [selectedTemplate, setSelectedTemplate] = useState('single-mom');
+  const [templateRequestData, setTemplateRequestData] = useState({
+    familySituation: '',
+    description: '',
+    challenges: ''
+  });
   
   // Check if we're in edit mode
   const mode = searchParams.get('mode');
@@ -306,12 +315,49 @@ export default function SAHMBudgetBuilder() {
     }
   };
 
+  const submitTemplateRequest = async () => {
+    try {
+      const leadData = {
+        email: budgetData.aboutYou.email,
+        name: budgetData.aboutYou.name || 'Anonymous',
+        interest_type: 'budget_template_request',
+        additional_info: JSON.stringify({
+          family_situation: templateRequestData.familySituation,
+          description: templateRequestData.description,
+          challenges: templateRequestData.challenges,
+          location: budgetData.aboutYou.location,
+          household_size: budgetData.aboutYou.householdSize,
+          dependents: budgetData.aboutYou.dependents
+        }),
+        source: 'budget_builder'
+      };
+
+      const response = await fetch('/api/demo-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(leadData)
+      });
+
+      if (response.ok) {
+        toast.success("Template request received! We'll notify you when it's ready.");
+      }
+    } catch (error) {
+      console.error('Failed to submit template request:', error);
+      // Don't block the flow if lead capture fails
+    }
+  };
+
   const handleDownload = async () => {
     if (!budgetData.aboutYou.email) {
       toast.error("Email required", {
         description: "Please provide your email to receive the budget template.",
       });
       return;
+    }
+
+    // Submit template request if user selected "Request New Template"
+    if (selectedTemplate === 'request-new' && templateRequestData.familySituation) {
+      await submitTemplateRequest();
     }
 
     try {
@@ -452,11 +498,92 @@ export default function SAHMBudgetBuilder() {
                   type="number"
                   min="0"
                   value={budgetData.aboutYou.dependents}
-                  onChange={(e) => updateAboutYou('dependents', parseInt(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-          </div>
+                   onChange={(e) => updateAboutYou('dependents', parseInt(e.target.value) || 0)}
+                 />
+               </div>
+             </div>
+
+             {/* Template Selection Section */}
+             <div className="border-t pt-6 space-y-4">
+               <div className="text-center space-y-2">
+                 <FileText className="h-6 w-6 text-primary mx-auto" />
+                 <h4 className="font-medium">Choose Your Budget Template</h4>
+                 <p className="text-sm text-muted-foreground">
+                   We're working on more templates! Help us build the perfect one for your family.
+                 </p>
+               </div>
+               
+               <div className="space-y-2">
+                 <Label>Budget Template</Label>
+                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select a template" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="single-mom">Single Mom Template</SelectItem>
+                     <SelectItem value="request-new">Request New Template</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+
+               {selectedTemplate === 'request-new' && (
+                 <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                   <div className="text-center space-y-1">
+                     <p className="text-sm font-medium text-primary">Tell us about your family situation</p>
+                     <p className="text-xs text-muted-foreground">Stay tuned - new templates rolling out soon!</p>
+                   </div>
+                   
+                   <div className="space-y-3">
+                     <div className="space-y-2">
+                       <Label>Family situation</Label>
+                       <Select value={templateRequestData.familySituation} onValueChange={(value) => 
+                         setTemplateRequestData(prev => ({ ...prev, familySituation: value }))
+                       }>
+                         <SelectTrigger>
+                           <SelectValue placeholder="Select your family type" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="single-dad">Single Dad</SelectItem>
+                           <SelectItem value="couple-with-kids">Couple with Kids</SelectItem>
+                           <SelectItem value="elderly-care">Family with Elderly Care</SelectItem>
+                           <SelectItem value="special-needs">Family with Special Needs</SelectItem>
+                           <SelectItem value="large-family">Large Family (5+ kids)</SelectItem>
+                           <SelectItem value="blended-family">Blended Family</SelectItem>
+                           <SelectItem value="multigenerational">Multigenerational Household</SelectItem>
+                           <SelectItem value="other">Other</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <Label>What makes your situation unique?</Label>
+                       <Textarea
+                         placeholder="Brief description of your family's specific needs..."
+                         value={templateRequestData.description}
+                         onChange={(e) => setTemplateRequestData(prev => ({ ...prev, description: e.target.value }))}
+                         rows={2}
+                       />
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <Label>Biggest budgeting challenges (optional)</Label>
+                       <Textarea
+                         placeholder="What specific challenges do you face with budgeting?"
+                         value={templateRequestData.challenges}
+                         onChange={(e) => setTemplateRequestData(prev => ({ ...prev, challenges: e.target.value }))}
+                         rows={2}
+                       />
+                     </div>
+                   </div>
+                   
+                   <div className="text-center">
+                     <p className="text-xs text-muted-foreground">
+                       💡 We'll notify you when your requested template is ready!
+                     </p>
+                   </div>
+                 </div>
+               )}
+             </div>           </div>
         );
 
       case 1: // Income
