@@ -64,6 +64,11 @@ const Landing = () => {
   const handleFileSelect = async (file: File) => {
     if (!file) return;
     
+    // Immediate feedback that system is working
+    toast("System is working for you! 🚀", {
+      description: "Hold on, we're processing your receipt and will redirect you to complete the magic."
+    });
+    
     setCurrentFile(file);
     setIsProcessing(true);
     
