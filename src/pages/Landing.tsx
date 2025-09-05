@@ -15,10 +15,12 @@ import { OCRResult } from "@/types/expense";
 import { toast } from "sonner";
 import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
 import { processReceiptWithEdgeFunction } from "@/utils/receipt/ocrProcessing";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Landing = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
   
   // Receipt processing state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,7 +49,19 @@ const Landing = () => {
   // Camera click handler
   const handleCameraClick = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.setAttribute('capture', 'environment');
+      if (isMobile) {
+        // On mobile, set capture attribute and provide feedback
+        fileInputRef.current.setAttribute('capture', 'environment');
+        toast("Opening camera...", {
+          description: "Take a photo of your receipt to get started!"
+        });
+      } else {
+        // On desktop, explain what's happening
+        fileInputRef.current.removeAttribute('capture');
+        toast("Select a photo from your device", {
+          description: "Choose a photo of your receipt from your computer or gallery."
+        });
+      }
       fileInputRef.current.click();
     }
   };
