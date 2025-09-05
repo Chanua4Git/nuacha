@@ -75,7 +75,7 @@ const HeroUploadSection = ({
                   <Camera className="h-8 w-8" />
                 </div>
                 <div className="text-left">
-                  <div className="text-lg font-medium">Capture with Care</div>
+                  <div className="text-lg font-medium">Take a photo of Receipt</div>
                   <div className="text-sm opacity-90">Take a photo of your receipt</div>
                 </div>
               </div>
@@ -102,7 +102,7 @@ const HeroUploadSection = ({
                     <Upload className="h-8 w-8" />
                   </div>
                   <div className="text-left">
-                    <div className="text-lg font-medium">Share Mindfully</div>
+                    <div className="text-lg font-medium">Upload Receipt</div>
                     <div className="text-sm opacity-80 group-hover:opacity-90">Upload from your device</div>
                   </div>
                 </div>
