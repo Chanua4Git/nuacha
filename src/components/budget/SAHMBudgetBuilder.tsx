@@ -435,13 +435,86 @@ export default function SAHMBudgetBuilder() {
       case 0: // About You
         return (
           <div className="space-y-6">
+            {/* Template Selection First */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Choose Your Budget Template</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single-mom">Single Mom Template</SelectItem>
+                      <SelectItem value="request-new">Request New Template</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {selectedTemplate === 'request-new' && (
+                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-medium">Tell us about your family situation</h4>
+                      <div className="space-y-2">
+                        <Label>Family situation</Label>
+                        <Select value={templateRequestData.familySituation} onValueChange={(value) => 
+                          setTemplateRequestData(prev => ({ ...prev, familySituation: value }))
+                        }>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your situation" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="single-parent-multiple-kids">Single parent with multiple children</SelectItem>
+                            <SelectItem value="blended-family">Blended family</SelectItem>
+                            <SelectItem value="multigenerational">Multi-generational household</SelectItem>
+                            <SelectItem value="special-needs-child">Family with special needs child</SelectItem>
+                            <SelectItem value="homeschooling">Homeschooling family</SelectItem>
+                            <SelectItem value="other">Other situation</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Describe your unique needs</Label>
+                        <Textarea
+                          placeholder="What makes your budget situation unique? (e.g., specific expenses, income patterns, challenges)"
+                          value={templateRequestData.description}
+                          onChange={(e) => setTemplateRequestData(prev => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Main budgeting challenges</Label>
+                        <Textarea
+                          placeholder="What are your biggest challenges with budgeting? What would help most?"
+                          value={templateRequestData.challenges}
+                          onChange={(e) => setTemplateRequestData(prev => ({ ...prev, challenges: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Dynamic Welcome Card */}
             <div className="text-center space-y-2">
               <Heart className="h-8 w-8 text-primary mx-auto" />
-              <h3 className="text-lg font-semibold">Welcome, amazing mom! 💕</h3>
-              <p className="text-muted-foreground">
-                Let's create a budget that actually works for your real life. 
-                Your info helps us personalize the template just for you.
-              </p>
+              {selectedTemplate === 'single-mom' ? (
+                <>
+                  <h3 className="text-lg font-semibold">Welcome, amazing mom! 💕</h3>
+                  <p className="text-muted-foreground">
+                    Let's create a budget that actually works for your real life.
+                    Your info helps us personalize the template just for you.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold">Let's build your perfect budget! 💫</h3>
+                  <p className="text-muted-foreground">
+                    We'll help you create a custom template that fits your unique family situation.
+                    Your info helps us personalize the template just for you.
+                  </p>
+                </>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -500,90 +573,9 @@ export default function SAHMBudgetBuilder() {
                   value={budgetData.aboutYou.dependents}
                    onChange={(e) => updateAboutYou('dependents', parseInt(e.target.value) || 0)}
                  />
-               </div>
-             </div>
-
-             {/* Template Selection Section */}
-             <div className="border-t pt-6 space-y-4">
-               <div className="text-center space-y-2">
-                 <FileText className="h-6 w-6 text-primary mx-auto" />
-                 <h4 className="font-medium">Choose Your Budget Template</h4>
-                 <p className="text-sm text-muted-foreground">
-                   We're working on more templates! Help us build the perfect one for your family.
-                 </p>
-               </div>
-               
-               <div className="space-y-2">
-                 <Label>Budget Template</Label>
-                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select a template" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="single-mom">Single Mom Template</SelectItem>
-                     <SelectItem value="request-new">Request New Template</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
-
-               {selectedTemplate === 'request-new' && (
-                 <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                   <div className="text-center space-y-1">
-                     <p className="text-sm font-medium text-primary">Tell us about your family situation</p>
-                     <p className="text-xs text-muted-foreground">Stay tuned - new templates rolling out soon!</p>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     <div className="space-y-2">
-                       <Label>Family situation</Label>
-                       <Select value={templateRequestData.familySituation} onValueChange={(value) => 
-                         setTemplateRequestData(prev => ({ ...prev, familySituation: value }))
-                       }>
-                         <SelectTrigger>
-                           <SelectValue placeholder="Select your family type" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="single-dad">Single Dad</SelectItem>
-                           <SelectItem value="couple-with-kids">Couple with Kids</SelectItem>
-                           <SelectItem value="elderly-care">Family with Elderly Care</SelectItem>
-                           <SelectItem value="special-needs">Family with Special Needs</SelectItem>
-                           <SelectItem value="large-family">Large Family (5+ kids)</SelectItem>
-                           <SelectItem value="blended-family">Blended Family</SelectItem>
-                           <SelectItem value="multigenerational">Multigenerational Household</SelectItem>
-                           <SelectItem value="other">Other</SelectItem>
-                         </SelectContent>
-                       </Select>
-                     </div>
-                     
-                     <div className="space-y-2">
-                       <Label>What makes your situation unique?</Label>
-                       <Textarea
-                         placeholder="Brief description of your family's specific needs..."
-                         value={templateRequestData.description}
-                         onChange={(e) => setTemplateRequestData(prev => ({ ...prev, description: e.target.value }))}
-                         rows={2}
-                       />
-                     </div>
-                     
-                     <div className="space-y-2">
-                       <Label>Biggest budgeting challenges (optional)</Label>
-                       <Textarea
-                         placeholder="What specific challenges do you face with budgeting?"
-                         value={templateRequestData.challenges}
-                         onChange={(e) => setTemplateRequestData(prev => ({ ...prev, challenges: e.target.value }))}
-                         rows={2}
-                       />
-                     </div>
-                   </div>
-                   
-                   <div className="text-center">
-                     <p className="text-xs text-muted-foreground">
-                       💡 We'll notify you when your requested template is ready!
-                     </p>
-                   </div>
-                 </div>
-               )}
-             </div>           </div>
+                </div>
+              </div>
+            </div>
         );
 
       case 1: // Income
