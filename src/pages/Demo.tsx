@@ -172,6 +172,7 @@ const Demo = () => {
                     receiptImage={imagePreview || undefined}
                     onRetry={handleRetry}
                     expenseId={demoExpense?.id}
+                    isDemo={true}
                   />
                 </div>
               )}

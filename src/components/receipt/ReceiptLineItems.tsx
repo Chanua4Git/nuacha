@@ -13,12 +13,13 @@ import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 interface ReceiptLineItemsProps {
   receiptData: OCRResult;
   expenseId?: string;
+  isDemo?: boolean;
 }
 
-const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expenseId }) => {
+const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expenseId, isDemo = false }) => {
   const hasLineItems = receiptData.lineItems && receiptData.lineItems.length > 0;
   const { selectedFamily } = useExpense();
-  const { saveLineItem, lineItems } = useReceiptDetails(expenseId);
+  const { saveLineItem, lineItems } = useReceiptDetails(isDemo ? undefined : expenseId);
   
   // Get unified categories to map suggested budget category IDs to visible category IDs
   const { categories: unifiedCategories, budgetCategories } = useUnifiedCategories({

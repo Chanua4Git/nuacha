@@ -11,13 +11,15 @@ interface DetailedReceiptViewProps {
   receiptImage?: string;
   onRetry?: () => void;
   expenseId?: string;
+  isDemo?: boolean;
 }
 
 const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ 
   receiptData, 
   receiptImage,
   onRetry,
-  expenseId
+  expenseId,
+  isDemo = false
 }) => {
   const isLowConfidence = receiptData.confidence && receiptData.confidence < 0.7;
 
@@ -30,7 +32,7 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({
         <ReceiptSummaryCard receiptData={receiptData} />
       </div>
       
-      <ReceiptLineItems receiptData={receiptData} expenseId={expenseId} />
+      <ReceiptLineItems receiptData={receiptData} expenseId={expenseId} isDemo={isDemo} />
     </div>
   );
 };
