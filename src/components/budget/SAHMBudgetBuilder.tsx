@@ -133,7 +133,8 @@ export default function SAHMBudgetBuilder() {
   const [templateRequestData, setTemplateRequestData] = useState({
     familySituation: '',
     description: '',
-    challenges: ''
+    challenges: '',
+    whatsapp: ''
   });
   
   // Check if we're in edit mode
@@ -337,6 +338,7 @@ export default function SAHMBudgetBuilder() {
         email: budgetData.aboutYou.email,
         name: budgetData.aboutYou.name || 'Anonymous',
         interest_type: 'budget_template_request',
+        whatsapp_number: templateRequestData.whatsapp || null,
         additional_info: JSON.stringify({
           family_situation: templateRequestData.familySituation,
           description: templateRequestData.description,
@@ -382,8 +384,9 @@ export default function SAHMBudgetBuilder() {
     }
 
     // Submit template request if user selected "Request New Template"
-    if (selectedTemplate === 'request-new' && templateRequestData.familySituation) {
+    if (selectedTemplate === 'request-new') {
       await submitTemplateRequest();
+      return; // Exit early for template requests
     }
 
     try {
@@ -439,7 +442,7 @@ export default function SAHMBudgetBuilder() {
         }
         
         navigate('/budget?tab=dashboard');
-      } else if (user && !selectedFamily) {
+      } else if (user && !selectedFamily && selectedTemplate !== 'request-new') {
         toast.error('Please select a family first');
       } else {
         // For demo users, submit to leads
@@ -514,6 +517,18 @@ export default function SAHMBudgetBuilder() {
                           value={templateRequestData.challenges}
                           onChange={(e) => setTemplateRequestData(prev => ({ ...prev, challenges: e.target.value }))}
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>WhatsApp number (optional)</Label>
+                        <Input
+                          type="tel"
+                          placeholder="e.g., +1 868 123 4567"
+                          value={templateRequestData.whatsapp}
+                          onChange={(e) => setTemplateRequestData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          We may contact you via WhatsApp for quick updates about your template
+                        </p>
                       </div>
                       
                       {/* Submit Template Request Button */}
@@ -948,12 +963,16 @@ export default function SAHMBudgetBuilder() {
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    {user ? 'Create Budget Template' : 'Get My Personalized Budget Template'}
+                    {selectedTemplate === 'request-new' ? 'Submit Request' : 
+                     user ? 'Create Budget Template' : 'Get My Personalized Budget Template'}
                   </>
                 )}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
-                Free download • No spam • Used to help other moms too
+                {selectedTemplate === 'request-new' ? 
+                  "We'll email you when your custom template is ready!" :
+                  "Free download • No spam • Used to help other moms too"
+                }
               </p>
             </div>
           </div>
