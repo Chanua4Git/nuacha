@@ -172,7 +172,7 @@ export const useSmartCategorySuggestions = (
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || !familyId || !place || categories.length === 0) {
+    if (!place || categories.length === 0) {
       setSuggestions([]);
       return;
     }
@@ -182,6 +182,35 @@ export const useSmartCategorySuggestions = (
       try {
         // First check baseline intelligence for vendors and line items
         const baselineSuggestions = getBaselineSuggestions(place, lineItems, categories);
+        
+        // For demo users or users without family, return baseline suggestions only
+        if (!user || !familyId) {
+          if (baselineSuggestions.length > 0) {
+            const baselineOnlySuggestions = baselineSuggestions.map(bs => ({
+              categoryId: bs.categoryId,
+              category: bs.category,
+              confidence: Math.round((bs.merchantScore + bs.lineItemScore) * 50), // Convert to percentage
+              score: bs.merchantScore + bs.lineItemScore,
+              reasons: [
+                ...(bs.merchantScore > 0 ? [`Smart match for "${place}"`] : []),
+                ...(bs.lineItemScore > 0 ? ['Based on item analysis'] : [])
+              ].slice(0, 1),
+              factors: {
+                merchant: bs.merchantScore,
+                lineItem: bs.lineItemScore,
+                frequency: 0,
+                recency: 0,
+                temporal: 0
+              }
+            }));
+            
+            setSuggestions(baselineOnlySuggestions.slice(0, 3)); // Limit to top 3
+          } else {
+            setSuggestions([]);
+          }
+          setIsLoading(false);
+          return;
+        }
         
         // Fetch recent expense history for the family (last 6 months)
         const sixMonthsAgo = new Date();
