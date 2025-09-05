@@ -14,7 +14,7 @@ import ExpenseCard from "@/components/ExpenseCard";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import DetailedReceiptView from "@/components/DetailedReceiptView";
 import DemoExpenseForm from "@/components/demo/DemoExpenseForm";
-import HeroUploadSection from "@/components/HeroUploadSection";
+
 
 const Demo = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -125,32 +125,6 @@ const Demo = () => {
             </p>
           </div>
 
-          {/* Hero Upload Section */}
-          <HeroUploadSection 
-            onCameraClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*';
-              input.capture = 'environment';
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) handleImageUpload(file);
-              };
-              input.click();
-            }}
-            onUploadClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*';
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) handleImageUpload(file);
-              };
-              input.click();
-            }}
-            onFileSelect={handleImageUpload}
-            isDemo={true}
-          />
 
           <Alert>
             <Info className="h-4 w-4" />
