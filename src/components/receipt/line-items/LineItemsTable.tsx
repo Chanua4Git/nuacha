@@ -10,6 +10,8 @@ interface LineItemsTableProps {
   onSaveLineItem?: (item: ReceiptLineItem) => Promise<void>;
   familyId?: string;
   expenseId?: string;
+  vendorName?: string;
+  allLineItems?: ReceiptLineItem[];
 }
 
 const LineItemsTable: React.FC<LineItemsTableProps> = ({
@@ -17,7 +19,9 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   formatCurrency,
   onSaveLineItem,
   familyId,
-  expenseId
+  expenseId,
+  vendorName,
+  allLineItems
 }) => {
   return (
     <Table>
@@ -37,6 +41,8 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
         onSaveLineItem={onSaveLineItem}
         familyId={familyId}
         expenseId={expenseId}
+        vendorName={vendorName}
+        allLineItems={allLineItems}
       />
     </Table>
   );

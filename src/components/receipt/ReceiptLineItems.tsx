@@ -47,6 +47,40 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     
     console.log('Mapping suggested category ID:', suggestedId);
     
+    // Handle sample categories from OCR processing
+    if (suggestedId.startsWith('sample-')) {
+      console.log('Handling sample category:', suggestedId);
+      const sampleMapping = {
+        'sample-dining': ['dining', 'dining out', 'restaurant', 'takeout', 'entertainment'],
+        'sample-groceries': ['groceries', 'food', 'grocery'],
+        'sample-transport': ['transport', 'transportation', 'travel', 'fuel', 'gas'],
+        'sample-shopping': ['shopping', 'retail', 'clothing', 'personal care'],
+        'sample-entertainment': ['entertainment', 'leisure', 'recreation', 'hobbies'],
+        'sample-healthcare': ['healthcare', 'medical', 'health', 'pharmacy'],
+        'sample-utilities': ['utilities', 'bills', 'electricity', 'water', 'internet']
+      };
+
+      const searchTerms = sampleMapping[suggestedId as keyof typeof sampleMapping];
+      if (searchTerms) {
+        for (const term of searchTerms) {
+          const matchedCategory = unifiedCategories.find(c => 
+            c.name.toLowerCase().includes(term.toLowerCase())
+          );
+          if (matchedCategory) {
+            console.log('Mapped sample category', suggestedId, 'to', matchedCategory.name);
+            return matchedCategory.id;
+          }
+        }
+      }
+      
+      // Fallback for unhandled sample categories
+      const wantsCategory = unifiedCategories.find(c => c.groupType === 'wants');
+      if (wantsCategory) {
+        console.log('Using wants category as sample fallback:', wantsCategory.name);
+        return wantsCategory.id;
+      }
+    }
+    
     // Handle special fallback category IDs from the backend
     if (suggestedId === 'groceries-fallback') {
       console.log('Handling groceries fallback - looking for Groceries category');
@@ -162,6 +196,8 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
           onSaveLineItem={expenseId ? handleSaveLineItem : undefined}
           familyId={selectedFamily?.id}
           expenseId={expenseId}
+          vendorName={receiptData.place || receiptData.storeDetails?.name}
+          allLineItems={displayLineItems}
         />
         <LowConfidenceLineItemsAlert lineItems={receiptData.lineItems} />
         

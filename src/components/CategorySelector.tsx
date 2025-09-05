@@ -11,7 +11,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { useSmartCategorySuggestions } from '@/hooks/useSmartCategorySuggestions';
 import { Tag, RefreshCw, Sparkles, TrendingUp, Clock, Calendar } from 'lucide-react';
-import { CategoryWithCamelCase, ReceiptLineItem } from '@/types/expense';
+import { CategoryWithCamelCase } from '@/types/expense';
+import { ReceiptLineItem } from '@/types/receipt';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getAllDemoCategories, findDemoCategory, comprehensiveCategories } from '@/data/comprehensiveCategories';
@@ -24,7 +25,7 @@ interface CategorySelectorProps {
   suggestedCategoryId?: string;
   includeAllOption?: boolean; // Add this prop for Reports page
   place?: string; // For smart suggestions
-  lineItems?: ReceiptLineItem[]; // For smart suggestions
+  lineItems?: ReceiptLineItem[]; // For smart suggestions - using receipt type
 }
 
 const CategorySelector = ({ value, onChange, className, suggestedCategoryId, includeAllOption, place, lineItems }: CategorySelectorProps) => {
@@ -57,7 +58,10 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   // Get smart suggestions based on place and line items
   const { suggestions, isLoading: suggestionsLoading } = useSmartCategorySuggestions(
     place,
-    lineItems,
+    lineItems ? lineItems.map(item => ({ 
+      description: item.description, 
+      confidence: 0.8 // Default confidence for type compatibility
+    } as any)) : undefined,
     selectedFamily?.id,
     allCategories
   );
@@ -463,7 +467,7 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
             {renderSelectedCategory()}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-background border-border max-h-80 overflow-y-auto z-50">
+        <SelectContent className="bg-background border-border max-h-80 overflow-y-auto z-[100] shadow-lg">
           {includeAllOption && (
             <>
               <SelectItem value="all" className="font-medium">

@@ -15,6 +15,8 @@ interface LineItemsTableBodyProps {
   onSaveLineItem?: (item: ReceiptLineItem) => Promise<void>;
   familyId?: string;
   expenseId?: string;
+  vendorName?: string;
+  allLineItems?: ReceiptLineItem[];
 }
 
 const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({ 
@@ -22,7 +24,9 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
   formatCurrency, 
   onSaveLineItem,
   familyId,
-  expenseId 
+  expenseId,
+  vendorName,
+  allLineItems 
 }) => {
   const [editingItems, setEditingItems] = useState<Record<string | number, ReceiptLineItem>>({});
   
@@ -168,6 +172,8 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                     }
                   }}
                   suggestedCategoryId={item.suggestedCategoryId}
+                  place={vendorName}
+                  lineItems={allLineItems}
                   className="mb-0"
                 />
               )}

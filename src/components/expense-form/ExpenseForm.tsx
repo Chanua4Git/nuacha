@@ -552,7 +552,10 @@ const ExpenseForm = () => {
             value={category}
             onChange={setCategory}
             place={place || ocrResult?.storeDetails?.name}
-            lineItems={ocrResult?.lineItems}
+            lineItems={ocrResult?.lineItems ? ocrResult.lineItems.map(item => ({ 
+              description: item.description, 
+              confidence: 0.8 // Default confidence for type compatibility
+            } as any)) : undefined}
           />
           
           <RecurringDateSelector
