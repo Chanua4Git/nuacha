@@ -161,7 +161,7 @@ export default function DemoBudget() {
       {/* Main Content */}
       {mode === 'demo' ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 h-auto py-2 mb-4">
             <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
               {isMobile ? 'Dashboard' : 'Dashboard'}
             </TabsTrigger>
