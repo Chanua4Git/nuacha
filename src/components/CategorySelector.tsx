@@ -65,6 +65,14 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
     selectedFamily?.id,
     allCategories
   );
+
+  console.log('📋 CategorySelector - Smart suggestions received:', {
+    suggestionsCount: suggestions.length,
+    suggestions: suggestions.map(s => ({ name: s.category.name, confidence: s.confidence })),
+    isLoading: suggestionsLoading,
+    place,
+    lineItemsCount: lineItems?.length || 0
+  });
   
   const getCategory = (id: string): CategoryWithCamelCase | any => {
     if (!user) {
@@ -131,7 +139,11 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
 
   // Render smart suggestions section
   const renderSmartSuggestions = () => {
-    if (suggestions.length === 0) return null;
+    console.log('🎯 renderSmartSuggestions called, suggestions length:', suggestions.length);
+    if (suggestions.length === 0) {
+      console.log('❌ No suggestions to render');
+      return null;
+    }
 
     const getReasonIcon = (reason: string) => {
       if (reason.includes('purchases')) return <TrendingUp className="w-3 h-3 text-primary/60" />;

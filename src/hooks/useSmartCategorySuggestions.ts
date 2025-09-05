@@ -172,7 +172,17 @@ export const useSmartCategorySuggestions = (
   const { user } = useAuth();
 
   useEffect(() => {
+    console.log('🔍 Smart Suggestions Hook called with:', {
+      place,
+      lineItemsCount: lineItems?.length || 0,
+      lineItems: lineItems?.map(item => item.description),
+      familyId,
+      categoriesCount: categories.length,
+      user: !!user
+    });
+
     if (!place || categories.length === 0) {
+      console.log('❌ Early return - missing place or categories:', { place, categoriesCount: categories.length });
       setSuggestions([]);
       return;
     }
@@ -182,9 +192,11 @@ export const useSmartCategorySuggestions = (
       try {
         // First check baseline intelligence for vendors and line items
         const baselineSuggestions = getBaselineSuggestions(place, lineItems, categories);
+        console.log('📊 Baseline suggestions:', baselineSuggestions);
         
         // For demo users or users without family, return baseline suggestions only
         if (!user || !familyId) {
+          console.log('👤 Demo user or no family - using baseline only');
           if (baselineSuggestions.length > 0) {
             const baselineOnlySuggestions = baselineSuggestions.map(bs => ({
               categoryId: bs.categoryId,
@@ -204,8 +216,10 @@ export const useSmartCategorySuggestions = (
               }
             }));
             
+            console.log('✅ Generated baseline suggestions for demo user:', baselineOnlySuggestions);
             setSuggestions(baselineOnlySuggestions.slice(0, 3)); // Limit to top 3
           } else {
+            console.log('❌ No baseline suggestions found');
             setSuggestions([]);
           }
           setIsLoading(false);
@@ -393,9 +407,20 @@ function getBaselineSuggestions(
   lineItems?: ReceiptLineItem[], 
   categories: CategoryWithCamelCase[] = []
 ): Array<{categoryId: string; category: CategoryWithCamelCase; merchantScore: number; lineItemScore: number}> {
+  console.log('🧠 getBaselineSuggestions called with:', {
+    place,
+    lineItemsCount: lineItems?.length || 0,
+    lineItems: lineItems?.map(item => item.description),
+    categoriesCount: categories.length,
+    categoryNames: categories.map(c => c.name).slice(0, 5) // First 5 for brevity
+  });
+
   const suggestions: Array<{categoryId: string; category: CategoryWithCamelCase; merchantScore: number; lineItemScore: number}> = [];
   
-  if (!categories.length) return suggestions;
+  if (!categories.length) {
+    console.log('❌ No categories provided to getBaselineSuggestions');
+    return suggestions;
+  }
   
   // Check vendor patterns
   if (place) {
@@ -421,16 +446,20 @@ function getBaselineSuggestions(
   
   // Check line item patterns
   if (lineItems && lineItems.length > 0) {
+    console.log('🏷️ Checking line item patterns...');
     for (const lineItem of lineItems) {
       const descLower = lineItem.description.toLowerCase();
+      console.log('🔍 Processing line item:', descLower);
       for (const [itemPattern, { category: categoryName, confidence }] of Object.entries(LINE_ITEM_PATTERNS)) {
         if (descLower.includes(itemPattern)) {
+          console.log(`✅ Found line item match: "${itemPattern}" -> "${categoryName}" (${confidence})`);
           const matchingCategory = categories.find(cat => 
             cat.name.toLowerCase().includes(categoryName.toLowerCase()) || 
             cat.name.toLowerCase() === categoryName.toLowerCase() ||
             (categoryName === 'Dining out' && (cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('restaurant')))
           );
           if (matchingCategory) {
+            console.log(`✅ Found matching category: "${matchingCategory.name}" (id: ${matchingCategory.id})`);
             const existing = suggestions.find(s => s.categoryId === matchingCategory.id);
             if (existing) {
               existing.lineItemScore = Math.max(existing.lineItemScore, confidence);
@@ -442,11 +471,14 @@ function getBaselineSuggestions(
                 lineItemScore: confidence
               });
             }
+          } else {
+            console.log(`❌ No matching category found for: "${categoryName}"`);
           }
         }
       }
     }
   }
   
+  console.log('🎯 Final baseline suggestions:', suggestions);
   return suggestions;
 }
