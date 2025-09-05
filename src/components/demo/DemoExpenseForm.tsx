@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import CategorySelector from '@/components/CategorySelector';
@@ -32,11 +32,11 @@ const DemoExpenseForm = ({
   imagePreview,
   extractedData
 }: DemoExpenseFormProps) => {
-  const [amount, setAmount] = useState(extractedData?.amount || '');
-  const [description, setDescription] = useState(extractedData?.description || '');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [date, setDate] = useState<Date | undefined>(extractedData?.date || new Date());
-  const [place, setPlace] = useState(extractedData?.place || '');
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [place, setPlace] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [budgetCategoryId, setBudgetCategoryId] = useState<string | null>(null);
@@ -48,6 +48,29 @@ const DemoExpenseForm = ({
     name: cat.name,
     group_type: cat.group
   }));
+
+  // Update form fields when OCR data is extracted
+  useEffect(() => {
+    if (extractedData) {
+      // Prioritize total.amount over amount field
+      const extractedAmount = extractedData.total?.amount || extractedData.amount || '';
+      if (extractedAmount && !amount) {
+        setAmount(extractedAmount.toString());
+      }
+      
+      if (extractedData.description && !description) {
+        setDescription(extractedData.description);
+      }
+      
+      if (extractedData.place && !place) {
+        setPlace(extractedData.place);
+      }
+      
+      if (extractedData.date) {
+        setDate(extractedData.date);
+      }
+    }
+  }, [extractedData, amount, description, place]);
 
   const handleDataExtracted = (data: OCRResult) => {
     console.log('🎯 Demo mode: Data extracted, checking for line items:', data);
@@ -155,6 +178,7 @@ const DemoExpenseForm = ({
                     receiptData={extractedData}
                     receiptImage={imagePreview}
                     onRetry={handleRetry}
+                    isDemo={true}
                   />
                 </div>
               )}
