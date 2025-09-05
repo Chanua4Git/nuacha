@@ -18,7 +18,7 @@ const HeroUploadSection = ({
   const navigate = useNavigate();
 
   const handleCameraAction = () => {
-    if (isDemo && onCameraClick) {
+    if (onCameraClick) {
       onCameraClick();
     } else {
       navigate('/demo');
@@ -26,7 +26,7 @@ const HeroUploadSection = ({
   };
 
   const handleUploadAction = () => {
-    if (isDemo && onUploadClick) {
+    if (onUploadClick) {
       onUploadClick();
     } else {
       navigate('/demo');

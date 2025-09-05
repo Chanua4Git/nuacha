@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
 import HeroUploadSection from "@/components/HeroUploadSection";
@@ -10,8 +11,19 @@ import { useTimeBasedLeadCapture } from "@/hooks/useTimeBasedLeadCapture";
 import { useLeadCaptureManager } from "@/hooks/useLeadCaptureManager";
 import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
 import TimeBasedLeadCaptureBanner from "@/components/lead-capture/TimeBasedLeadCaptureBanner";
+import { OCRResult } from "@/types/expense";
+import { toast } from "sonner";
+import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
+import { processReceiptWithEdgeFunction } from "@/utils/receipt/ocrProcessing";
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Receipt processing state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  
   // Initialize the unified lead capture manager
   const {
     shouldEnableExitIntent,
@@ -31,12 +43,97 @@ const Landing = () => {
     inactivityThreshold: 3 * 60 * 1000, // 3 minutes
     enabled: shouldEnableTimeBased
   });
+
+  // Camera click handler
+  const handleCameraClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('capture', 'environment');
+      fileInputRef.current.click();
+    }
+  };
+
+  // Upload click handler
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  };
+
+  // File processing handler
+  const handleFileSelect = async (file: File) => {
+    if (!file) return;
+    
+    setCurrentFile(file);
+    setIsProcessing(true);
+    
+    try {
+      toast("Processing your receipt...", {
+        description: "We're extracting the details for you. This might take a moment."
+      });
+
+      // Upload the receipt
+      const receiptUrl = await handleReceiptUpload(file);
+      
+      if (!receiptUrl) {
+        throw new Error('Failed to upload receipt');
+      }
+
+      // Process with OCR
+      const ocrResult = await processReceiptWithEdgeFunction(receiptUrl);
+      
+      if (ocrResult.error) {
+        throw new Error(ocrResult.error);
+      }
+
+      // Navigate to demo with processed data
+      navigate('/demo', {
+        state: {
+          extractedData: ocrResult,
+          receiptUrl: receiptUrl,
+          preProcessed: true
+        }
+      });
+
+      toast.success("Receipt processed successfully!", {
+        description: "Redirecting you to complete your expense entry."
+      });
+
+    } catch (error) {
+      console.error('Error processing receipt:', error);
+      toast.error("Couldn't process your receipt", {
+        description: "Let's try that again, or you can enter details manually.",
+        action: {
+          label: "Try Demo",
+          onClick: () => navigate('/demo')
+        }
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   return <>
       <DemoBreadcrumbs currentPage="home" />
       <div className="min-h-screen bg-background py-12 px-4">
         {/* Hero Upload Section */}
         <section className="relative">
-          <HeroUploadSection />
+          <HeroUploadSection 
+            onCameraClick={handleCameraClick}
+            onUploadClick={handleUploadClick}
+            onFileSelect={handleFileSelect}
+            isDemo={true}
+          />
+          {/* Hidden file input for camera/upload */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+            }}
+            className="hidden"
+          />
         </section>
 
         {/* Hero Section */}

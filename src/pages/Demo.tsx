@@ -3,9 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button as UIButton } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OCRResult } from "@/types/expense";
 import LeadCaptureForm from "@/components/demo/LeadCaptureForm";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,9 @@ import DemoExpenseForm from "@/components/demo/DemoExpenseForm";
 
 
 const Demo = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [demoComplete, setDemoComplete] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
@@ -24,7 +27,18 @@ const Demo = () => {
   const [extractedData, setExtractedData] = useState<OCRResult | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [demoExpense, setDemoExpense] = useState<any>(null);
-  const navigate = useNavigate();
+
+  // Handle incoming data from Landing page
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.extractedData && state?.receiptUrl && state?.preProcessed) {
+      setExtractedData(state.extractedData);
+      setImagePreview(state.receiptUrl);
+      toast.success("Receipt data loaded!", {
+        description: "Your receipt has been processed. Complete the expense entry below."
+      });
+    }
+  }, [location.state]);
 
   const handleImageUpload = (file: File) => {
     setCurrentFile(file);
