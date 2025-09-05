@@ -4,6 +4,7 @@ import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, Trending
 import { Link } from "react-router-dom";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
+import HeroUploadSection from "@/components/HeroUploadSection";
 import { useExitIntent } from "@/hooks/useExitIntent";
 import { useTimeBasedLeadCapture } from "@/hooks/useTimeBasedLeadCapture";
 import { useLeadCaptureManager } from "@/hooks/useLeadCaptureManager";
@@ -65,6 +66,11 @@ const Landing = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Hero Upload Section */}
+        <section className="relative">
+          <HeroUploadSection />
         </section>
 
         {/* Who is Nuacha For Section */}
