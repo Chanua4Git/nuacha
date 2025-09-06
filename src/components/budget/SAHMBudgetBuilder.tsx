@@ -205,9 +205,10 @@ export default function SAHMBudgetBuilder() {
         try {
           const templateData = template.template_data;
           console.log('SAHMBudgetBuilder - Loading template data:', templateData);
+          console.log('SAHMBudgetBuilder - includeUnpaidLabor from template:', templateData.includeUnpaidLabor);
 
           // Pre-populate form with existing data
-          setBudgetData({
+          const newBudgetData = {
             aboutYou: {
               name: templateData.aboutYou?.name || '',
               location: templateData.aboutYou?.location || '',
@@ -238,7 +239,10 @@ export default function SAHMBudgetBuilder() {
             unpaidLabor: templateData.unpaidLabor || {},
             includeUnpaidLabor: templateData.includeUnpaidLabor || false,
             notes: templateData.notes || ''
-          });
+          };
+          
+          console.log('SAHMBudgetBuilder - Setting budget data with includeUnpaidLabor:', newBudgetData.includeUnpaidLabor);
+          setBudgetData(newBudgetData);
           toast.success(`Loaded template: ${template.name}`);
         } catch (error) {
           console.error('Error loading template data:', error);
@@ -309,12 +313,31 @@ export default function SAHMBudgetBuilder() {
     title: 'Review',
     description: 'Your personalized budget'
   }];
+  // Determine family type based on household composition
+  const getFamilyType = (): string => {
+    const { householdSize, dependents } = budgetData.aboutYou;
+    
+    // Single parent with children
+    if (dependents > 0 && householdSize <= dependents + 1) {
+      return 'single-mother';
+    }
+    
+    // Two-parent household
+    if (householdSize > dependents + 1) {
+      return 'two-parent';
+    }
+    
+    // Default to single-mother for consistency
+    return 'single-mother';
+  };
+
   const getTotalByCategory = (category: 'needs' | 'wants' | 'savings' | 'unpaidLabor'): number => {
     const categoryData = budgetData[category];
     
     // For unpaid labor, use default values when checkbox is checked but no values entered
     if (category === 'unpaidLabor' && budgetData.includeUnpaidLabor) {
-      const unpaidLaborCats = getUnpaidLaborForFamilyType('single-mother');
+      const familyType = getFamilyType();
+      const unpaidLaborCats = getUnpaidLaborForFamilyType(familyType);
       return unpaidLaborCats.reduce((sum, cat) => {
         return sum + (budgetData.unpaidLabor[cat.id] ?? cat.defaultValue);
       }, 0);
@@ -356,7 +379,51 @@ export default function SAHMBudgetBuilder() {
       }
     }));
   };
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Auto-save changes when in edit mode and navigating between steps
+    if (isEditMode && templateId && user && selectedFamily) {
+      try {
+        const totalIncome = Object.values(budgetData.income).reduce((sum, income) => {
+          const frequency = income.frequency;
+          const amount = income.amount;
+          if (frequency === 'weekly') return sum + amount * 52 / 12;
+          if (frequency === 'yearly') return sum + amount / 12;
+          return sum + amount; // monthly
+        }, 0);
+
+        const transformedIncome: Record<string, number> = {};
+        Object.entries(budgetData.income).forEach(([key, income]) => {
+          if (income.amount > 0) {
+            let monthlyAmount = income.amount;
+            if (income.frequency === 'weekly') monthlyAmount = income.amount * 52 / 12;
+            if (income.frequency === 'yearly') monthlyAmount = income.amount / 12;
+            transformedIncome[key] = monthlyAmount;
+          }
+        });
+
+        const templateData = {
+          aboutYou: budgetData.aboutYou,
+          income: transformedIncome,
+          needs: budgetData.needs,
+          wants: budgetData.wants,
+          savings: budgetData.savings,
+          unpaidLabor: budgetData.unpaidLabor,
+          includeUnpaidLabor: budgetData.includeUnpaidLabor,
+          notes: budgetData.notes
+        };
+
+        await updateTemplate(templateId, {
+          template_data: templateData,
+          total_monthly_income: totalIncome,
+        });
+        
+        console.log('Auto-saved template data on step navigation');
+      } catch (error) {
+        // Silent fail for auto-save to not interrupt user flow
+        console.error('Auto-save failed:', error);
+      }
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -809,10 +876,11 @@ export default function SAHMBudgetBuilder() {
           </div>;
       case 5:
         // Unpaid Labor
-        const unpaidLaborCategories = getUnpaidLaborForFamilyType('single-mother');
+        const familyType = getFamilyType();
+        const unpaidLaborCategories = getUnpaidLaborForFamilyType(familyType);
         return <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">Value Your Care Work 🤝</h3>
+              <h3 className="text-lg font-semibold">Value your care and household work</h3>
               <p className="text-muted-foreground">
                 Your unpaid work has real economic value! Add these to see the full picture of your household's economy.
               </p>
@@ -827,13 +895,17 @@ export default function SAHMBudgetBuilder() {
                       checked={budgetData.includeUnpaidLabor}
                       onChange={(e) => {
                         const checked = e.target.checked;
+                        console.log('Checkbox changed:', checked, 'Current state:', budgetData.includeUnpaidLabor);
                         setBudgetData(prev => {
                           const newData = {...prev, includeUnpaidLabor: checked};
                           // Initialize unpaid labor with default values when checked
                           if (checked) {
                             const defaultValues = {};
                             unpaidLaborCategories.forEach(cat => {
-                              defaultValues[cat.id] = cat.defaultValue;
+                              // Only set default if no value exists
+                              if (!prev.unpaidLabor[cat.id]) {
+                                defaultValues[cat.id] = cat.defaultValue;
+                              }
                             });
                             newData.unpaidLabor = {...prev.unpaidLabor, ...defaultValues};
                           }
@@ -1008,12 +1080,14 @@ export default function SAHMBudgetBuilder() {
             
             <div className="text-center">
               <Button onClick={handleDownload} size="lg" className="w-full md:w-auto" disabled={!budgetData.aboutYou.email || isSubmitting}>
-                {isSubmitting ? <>
+                  {isSubmitting ? <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving Your Budget...
+                    {isEditMode ? 'Updating Template...' : 'Saving Your Budget...'}
                   </> : <>
                     <Download className="h-4 w-4 mr-2" />
-                    {selectedTemplate === 'request-new' ? 'Submit Request' : user ? 'Create Budget Template' : 'Get My Personalized Budget Template'}
+                    {selectedTemplate === 'request-new' ? 'Submit Request' : 
+                     user ? (isEditMode ? 'Update Budget Template' : 'Create Budget Template') : 
+                     'Get My Personalized Budget Template'}
                   </>}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
