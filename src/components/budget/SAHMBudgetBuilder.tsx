@@ -311,6 +311,15 @@ export default function SAHMBudgetBuilder() {
   }];
   const getTotalByCategory = (category: 'needs' | 'wants' | 'savings' | 'unpaidLabor'): number => {
     const categoryData = budgetData[category];
+    
+    // For unpaid labor, use default values when checkbox is checked but no values entered
+    if (category === 'unpaidLabor' && budgetData.includeUnpaidLabor) {
+      const unpaidLaborCats = getUnpaidLaborForFamilyType('single-mother');
+      return unpaidLaborCats.reduce((sum, cat) => {
+        return sum + (budgetData.unpaidLabor[cat.id] ?? cat.defaultValue);
+      }, 0);
+    }
+    
     return Object.values(categoryData).reduce((sum, value) => sum + value, 0);
   };
   const getTotalBudget = (): number => {
@@ -810,16 +819,30 @@ export default function SAHMBudgetBuilder() {
             </div>
             
             <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <input 
-                    type="checkbox" 
-                    id="includeUnpaidLabor"
-                    checked={budgetData.includeUnpaidLabor}
-                    onChange={(e) => setBudgetData(prev => ({...prev, includeUnpaidLabor: e.target.checked}))}
-                    className="mt-1"
-                  />
-                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <input 
+                      type="checkbox" 
+                      id="includeUnpaidLabor"
+                      checked={budgetData.includeUnpaidLabor}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBudgetData(prev => {
+                          const newData = {...prev, includeUnpaidLabor: checked};
+                          // Initialize unpaid labor with default values when checked
+                          if (checked) {
+                            const defaultValues = {};
+                            unpaidLaborCategories.forEach(cat => {
+                              defaultValues[cat.id] = cat.defaultValue;
+                            });
+                            newData.unpaidLabor = {...prev.unpaidLabor, ...defaultValues};
+                          }
+                          return newData;
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
                 <div className="flex-1">
                   <label htmlFor="includeUnpaidLabor" className="font-medium cursor-pointer">
                     Include unpaid labor valuation in my budget
@@ -835,20 +858,26 @@ export default function SAHMBudgetBuilder() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {unpaidLaborCategories.map(category => (
-                    <div key={category.id} className="space-y-2">
+                    <div key={category.id} className="space-y-2 p-4 border rounded-lg bg-white">
                       <Label className="text-sm font-medium">
                         {category.name}
                       </Label>
                       <p className="text-xs text-muted-foreground">
                         {category.description}
                       </p>
+                      {category.relatedExpenseCategory && (
+                        <div className="flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          <span className="mr-1">💰</span>
+                          Related expense: {category.relatedExpenseCategory}
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2">
                         <span className="text-sm">$</span>
                         <Input 
                           type="number" 
                           min="0" 
                           step="0.01" 
-                          value={budgetData.unpaidLabor[category.id] || category.defaultValue} 
+                          value={budgetData.unpaidLabor[category.id] ?? category.defaultValue} 
                           onChange={e => updateCategory('unpaidLabor', category.id, parseFloat(e.target.value) || 0)} 
                           placeholder={category.defaultValue.toString()} 
                           className="flex-1" 
