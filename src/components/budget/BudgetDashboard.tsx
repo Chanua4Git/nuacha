@@ -471,8 +471,8 @@ export default function BudgetDashboard() {
         <CardContent className="space-y-4">
           {Object.entries(summary.ruleComparison).map(([group, comparison]) => {
             const status = getVarianceStatus(comparison.variance);
-            const actualPercentage = ((comparison.actual / summary.totalIncome) * 100).toFixed(0);
-            const targetPercentage = (comparison.target * 100).toFixed(0);
+            const actualPercentage = comparison.actual.toFixed(0);
+            const targetPercentage = comparison.target.toFixed(0);
             
             return (
               <div key={group} className="flex items-center justify-between p-3 border rounded-lg">
