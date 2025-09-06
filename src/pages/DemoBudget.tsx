@@ -11,11 +11,12 @@ import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 import { BudgetSummary, FrequencyType } from '@/types/budget';
 
-// Demo components with mock data
-import DemoBudgetDashboard from '@/components/budget/DemoBudgetDashboard';
-import DemoIncomeManager from '@/components/budget/DemoIncomeManager';
+// Full components with demo context
+import { DemoBudgetProvider } from '@/context/DemoBudgetContext';
+import DemoAwareBudgetDashboard from '@/components/budget/DemoAwareBudgetDashboard';
+import DemoAwareIncomeManager from '@/components/budget/DemoAwareIncomeManager';
 import DemoExpenseManager from '@/components/budget/DemoExpenseManager';
-import DemoRulesManager from '@/components/budget/DemoRulesManager';
+import DemoAwareRulesManager from '@/components/budget/DemoAwareRulesManager';
 import DemoScenarioPlanner from '@/components/budget/DemoScenarioPlanner';
 import HowToUse from '@/components/budget/HowToUse';
 import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
@@ -139,7 +140,7 @@ export default function DemoBudget() {
           <Info className="h-4 w-4" />
           <AlertDescription>
             {mode === 'demo' 
-              ? (previewData ? "You're viewing your budget preview based on the builder. Sign up to save and track over time." : "This is a demo of our Budget & Planning Pro module. In the full app, this connects to your actual income and expense data.")
+              ? "You're experiencing the complete Budget & Planning Pro module with full functionality. All features work exactly like the authenticated app - try adding income sources, creating budget rules, and exploring scenarios!"
               : "Create your personalized SAHM budget template. We'll help you build a realistic budget that actually works for your family."
             }
           </AlertDescription>
@@ -147,11 +148,11 @@ export default function DemoBudget() {
 
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">
-            {mode === 'demo' ? 'Budget & Planning Pro Demo' : 'Build Your Personal SAHM Budget'}
+            {mode === 'demo' ? 'Budget & Planning Pro - Full Experience' : 'Build Your Personal SAHM Budget'}
           </h1>
           <p className="text-muted-foreground">
             {mode === 'demo' 
-              ? "Experience intelligent budgeting with the 50/30/20 rule and scenario planning"
+              ? "Complete budget management with real-time calculations, custom rules, and scenario planning - exactly as you'd experience in the full app"
               : "A personalized, step-by-step budget builder designed specifically for stay-at-home moms"
             }
           </p>
@@ -160,52 +161,54 @@ export default function DemoBudget() {
 
       {/* Main Content */}
       {mode === 'demo' ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 h-auto py-2 mb-4">
-            <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
-              {isMobile ? 'Dashboard' : 'Dashboard'}
-            </TabsTrigger>
-            <TabsTrigger value="income" className="text-xs sm:text-sm">
-              {isMobile ? 'Income' : 'Income'}
-            </TabsTrigger>
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm">
-              {isMobile ? 'Expenses' : 'Expenses'}
-            </TabsTrigger>
-            <TabsTrigger value="rules" className="text-xs sm:text-sm">
-              {isMobile ? 'Rules' : 'Rules'}
-            </TabsTrigger>
-            <TabsTrigger value="scenarios" className="text-xs sm:text-sm">
-              {isMobile ? 'Scenarios' : 'Scenarios'}
-            </TabsTrigger>
-            <TabsTrigger value="help" className="text-xs sm:text-sm">
-              {isMobile ? 'Help' : 'How to Use'}
-            </TabsTrigger>
-          </TabsList>
+        <DemoBudgetProvider>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 h-auto py-2 mb-4">
+              <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
+                {isMobile ? 'Dashboard' : 'Dashboard'}
+              </TabsTrigger>
+              <TabsTrigger value="income" className="text-xs sm:text-sm">
+                {isMobile ? 'Income' : 'Income'}
+              </TabsTrigger>
+              <TabsTrigger value="expenses" className="text-xs sm:text-sm">
+                {isMobile ? 'Expenses' : 'Expenses'}
+              </TabsTrigger>
+              <TabsTrigger value="rules" className="text-xs sm:text-sm">
+                {isMobile ? 'Rules' : 'Rules'}
+              </TabsTrigger>
+              <TabsTrigger value="scenarios" className="text-xs sm:text-sm">
+                {isMobile ? 'Scenarios' : 'Scenarios'}
+              </TabsTrigger>
+              <TabsTrigger value="help" className="text-xs sm:text-sm">
+                {isMobile ? 'Help' : 'How to Use'}
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            <DemoBudgetDashboard summary={summaryOverride} />
-          </TabsContent>
+            <TabsContent value="dashboard" className="space-y-6">
+              <DemoAwareBudgetDashboard />
+            </TabsContent>
 
-          <TabsContent value="income" className="space-y-6">
-            <DemoIncomeManager incomeSources={incomeSourcesOverride} />
-          </TabsContent>
+            <TabsContent value="income" className="space-y-6">
+              <DemoAwareIncomeManager />
+            </TabsContent>
 
-          <TabsContent value="expenses" className="space-y-6">
-            <DemoExpenseManager categoriesByGroupOverride={categoriesByGroupOverride} />
-          </TabsContent>
+            <TabsContent value="expenses" className="space-y-6">
+              <DemoExpenseManager categoriesByGroupOverride={categoriesByGroupOverride} />
+            </TabsContent>
 
-          <TabsContent value="rules" className="space-y-6">
-            <DemoRulesManager />
-          </TabsContent>
+            <TabsContent value="rules" className="space-y-6">
+              <DemoAwareRulesManager />
+            </TabsContent>
 
-          <TabsContent value="scenarios" className="space-y-6">
-            <DemoScenarioPlanner />
-          </TabsContent>
+            <TabsContent value="scenarios" className="space-y-6">
+              <DemoScenarioPlanner />
+            </TabsContent>
 
-          <TabsContent value="help" className="space-y-6">
-            <HowToUse />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="help" className="space-y-6">
+              <HowToUse />
+            </TabsContent>
+          </Tabs>
+        </DemoBudgetProvider>
       ) : (
         <SAHMBudgetBuilder />
       )}
