@@ -17,6 +17,7 @@ export interface BudgetTemplateData {
     name?: string;
     email?: string;
     household_size?: number;
+    householdSize?: number; // Legacy compatibility
     dependents?: number;
     location?: string;
   };

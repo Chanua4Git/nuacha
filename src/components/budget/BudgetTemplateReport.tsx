@@ -125,10 +125,10 @@ export default function BudgetTemplateReport() {
                   </p>
                 </div>
               )}
-              {templateData.aboutYou.household_size && (
+              {(templateData.aboutYou.household_size || templateData.aboutYou.householdSize) && (
                 <div>
                   <p className="font-medium">Household Size</p>
-                  <p className="text-muted-foreground">{templateData.aboutYou.household_size}</p>
+                  <p className="text-muted-foreground">{templateData.aboutYou.household_size || templateData.aboutYou.householdSize}</p>
                 </div>
               )}
               {templateData.aboutYou.dependents && (

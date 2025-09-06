@@ -212,7 +212,7 @@ export default function SAHMBudgetBuilder() {
             aboutYou: {
               name: templateData.aboutYou?.name || '',
               location: templateData.aboutYou?.location || '',
-              householdSize: templateData.aboutYou?.household_size || 2,
+              householdSize: templateData.aboutYou?.household_size || templateData.aboutYou?.householdSize || 2,
               dependents: templateData.aboutYou?.dependents || 0,
               email: templateData.aboutYou?.email || user?.email || ''
             },
@@ -402,7 +402,13 @@ export default function SAHMBudgetBuilder() {
         });
 
         const templateData = {
-          aboutYou: budgetData.aboutYou,
+          aboutYou: {
+            name: budgetData.aboutYou.name,
+            email: budgetData.aboutYou.email,
+            location: budgetData.aboutYou.location,
+            household_size: budgetData.aboutYou.householdSize,
+            dependents: budgetData.aboutYou.dependents
+          },
           income: transformedIncome,
           needs: budgetData.needs,
           wants: budgetData.wants,
@@ -536,7 +542,13 @@ export default function SAHMBudgetBuilder() {
           }
         });
         const templateData = {
-          aboutYou: budgetData.aboutYou,
+          aboutYou: {
+            name: budgetData.aboutYou.name,
+            email: budgetData.aboutYou.email,
+            location: budgetData.aboutYou.location,
+            household_size: budgetData.aboutYou.householdSize,
+            dependents: budgetData.aboutYou.dependents
+          },
           income: transformedIncome,
           needs: budgetData.needs,
           wants: budgetData.wants,
