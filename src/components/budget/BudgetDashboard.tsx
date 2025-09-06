@@ -463,48 +463,33 @@ export default function BudgetDashboard() {
         </Card>
       </div>
 
-      {/* Budget Variance Alerts */}
-      <div className="space-y-4">
-        {Object.entries(summary.ruleComparison).map(([group, comparison]) => {
-          const status = getVarianceStatus(comparison.variance);
-          if (status === 'on-track') return null;
-          
-          return (
-            <Card key={group} className={status === 'over' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  {status === 'over' ? (
-                    <TrendingUp className="h-5 w-5 text-red-600" />
-                  ) : (
-                    <TrendingDown className="h-5 w-5 text-yellow-600" />
-                  )}
+      {/* 50/30/20 Rule Compliance */}
+      <Card>
+        <CardHeader>
+          <CardTitle>50/30/20 Rule Compliance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {Object.entries(summary.ruleComparison).map(([group, comparison]) => {
+            const status = getVarianceStatus(comparison.variance);
+            const actualPercentage = ((comparison.actual / summary.totalIncome) * 100).toFixed(0);
+            const targetPercentage = (comparison.target * 100).toFixed(0);
+            
+            return (
+              <div key={group} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
                   <span className="font-medium capitalize">{group}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {status === 'over' ? 'over budget by' : 'under budget by'} {Math.abs(comparison.variance).toFixed(1)}%
-                  </span>
-                  <Badge variant="outline" className="ml-auto text-xs">
-                    Cash Budget Rule
+                  <Badge variant="outline" className="text-xs">
+                    {actualPercentage}% (target: {targetPercentage}%)
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-7">
-                  This variance is based on cash expenses only and does not include unpaid labor contributions.
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-        
-        {Object.entries(summary.ruleComparison).every(([_, comparison]) => getVarianceStatus(comparison.variance) === 'on-track') && (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-green-600" />
-                <span className="font-medium text-green-800">Great job! Your cash spending is on track with your budget rules.</span>
+                <div className="text-sm font-medium">
+                  {status === 'over' ? 'over' : status === 'under' ? 'under' : 'on'} budget by {Math.abs(comparison.variance).toFixed(1)}%
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            );
+          })}
+        </CardContent>
+      </Card>
       </>
       )}
     </div>
