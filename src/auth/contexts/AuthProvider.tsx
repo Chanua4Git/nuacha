@@ -149,8 +149,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             
             // Default fallback
-            console.log('🔐 Auth: fallback navigation to root');
-            safeNavigate("/", { replace: true });
+            console.log('🔐 Auth: fallback navigation to app home');
+            safeNavigate("/app", { replace: true });
           }
         }
       }
