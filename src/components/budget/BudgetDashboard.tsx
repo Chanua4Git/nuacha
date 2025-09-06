@@ -92,9 +92,9 @@ export default function BudgetDashboard() {
 
   // Prepare chart data
   const pieData = [
-    { name: 'Needs', value: summary.byGroup.needs.total, color: '#ef4444' },
-    { name: 'Wants', value: summary.byGroup.wants.total, color: '#f59e0b' },
-    { name: 'Savings', value: summary.byGroup.savings.total, color: '#10b981' }
+    { name: 'Needs', value: summary.byGroup.needs.total, color: 'hsl(var(--chart-1))' },
+    { name: 'Wants', value: summary.byGroup.wants.total, color: 'hsl(var(--chart-2))' },
+    { name: 'Savings', value: summary.byGroup.savings.total, color: 'hsl(var(--chart-3))' }
   ];
 
   const barData = [
@@ -454,9 +454,9 @@ export default function BudgetDashboard() {
                 <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
                 <Tooltip formatter={(value) => formatTTD(value as number)} />
                 <Legend />
-                <Bar dataKey="needs" stackId="a" fill="#ef4444" name="Needs" />
-                <Bar dataKey="wants" stackId="a" fill="#f59e0b" name="Wants" />
-                <Bar dataKey="savings" stackId="a" fill="#10b981" name="Savings" />
+                <Bar dataKey="needs" stackId="a" fill="hsl(var(--chart-1))" name="Needs" />
+                <Bar dataKey="wants" stackId="a" fill="hsl(var(--chart-2))" name="Wants" />
+                <Bar dataKey="savings" stackId="a" fill="hsl(var(--chart-3))" name="Savings" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
