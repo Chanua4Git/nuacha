@@ -381,6 +381,22 @@ export default function SAHMBudgetBuilder() {
       } = await supabase.from('demo_leads').insert([leadData]);
       if (error) {
         console.error('Error submitting template request:', error);
+        
+        // Handle duplicate email error specifically
+        if (error.code === '23505') {
+          toast.info("Budget request already exists!", {
+            description: "You already have a budget in the system. This request conflicts with existing data. Stay tuned for our upcoming subscription feature that will allow multiple Custom Templates!"
+          });
+          
+          // Redirect to budget page after showing the message
+          setTimeout(() => {
+            navigate('/budget');
+          }, 2500);
+          
+          return false;
+        }
+        
+        // Handle other errors
         toast.error("Something went wrong", {
           description: "We couldn't submit your request right now. Please try again."
         });
