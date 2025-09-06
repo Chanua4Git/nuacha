@@ -7,7 +7,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useBudgetVariance } from '@/hooks/useBudgetVariance';
 import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target, PlusCircle, Edit, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target, PlusCircle, Edit, Eye, FileText } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
@@ -247,7 +247,16 @@ export default function BudgetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatTTD(summary.totalIncome)}</div>
-            <p className="text-xs text-muted-foreground">Monthly equivalent</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              {templates.length > 0 ? (
+                <>
+                  <FileText className="h-3 w-3" />
+                  From Budget Template
+                </>
+              ) : (
+                'Monthly equivalent'
+              )}
+            </p>
           </CardContent>
         </Card>
 
