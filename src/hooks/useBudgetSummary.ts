@@ -232,9 +232,9 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       setSummary({
         totalIncome,
-        totalExpenses: totalExpenses, // Cash expenses only - DO NOT include unpaid labor
+        totalExpenses: totalWithUnpaidLabor,
         byGroup,
-        surplus: totalIncome - totalExpenses, // Surplus based on cash flow only
+        surplus: totalIncome - totalExpenses, // Keep surplus calculation without unpaid labor
         ruleComparison,
         unpaidLaborValue: templateUnpaidLabor
       });

@@ -26,8 +26,8 @@ export const unpaidLaborCategories: UnpaidLaborCategory[] = [
   },
   {
     id: 'administrative-work',
-    name: 'Household Admin',
-    description: 'Scheduling repairs, bills, budgeting, supervising workers, making appointments',
+    name: 'Administrative Work',
+    description: 'Bills, scheduling, appointments, budgeting',
     defaultValue: 800,
     familyTypes: ['single-mother', 'two-parent', 'elderly-care', 'multi-generational'],
     relatedExpenseCategory: 'Administrative services'
@@ -43,15 +43,15 @@ export const unpaidLaborCategories: UnpaidLaborCategory[] = [
   {
     id: 'educational-support',
     name: 'Tutoring & Homework Help',
-    description: 'Reading, writing, test prep (SCA, CSEC)',
+    description: 'Tutoring & Homework Help (required/IEP support)',
     defaultValue: 1600,
     familyTypes: ['single-mother', 'two-parent'],
     relatedExpenseCategory: 'Extracurricular activities'
   },
   {
     id: 'emotional-mental-load',
-    name: 'Emotional Support / Mental Load',
-    description: 'Being a sounding board, nurturing relationships, managing invisible labor',
+    name: 'Mental/Emotional Load',
+    description: 'Planning, organizing, relationship management',
     defaultValue: 1000,
     familyTypes: ['single-mother', 'two-parent', 'elderly-care', 'multi-generational'],
     relatedExpenseCategory: 'Mental health services'
