@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin, Loader2, FileText } from 'lucide-react';
 import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategories';
+import { getUnpaidLaborForFamilyType, UnpaidLaborCategory } from '@/data/unpaidLaborCategories';
 import { formatTTD } from '@/utils/budgetUtils';
 import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
 import { toast } from 'sonner';
@@ -46,6 +47,8 @@ interface BudgetData {
   needs: Record<string, number>;
   wants: Record<string, number>;
   savings: Record<string, number>;
+  unpaidLabor: Record<string, number>;
+  includeUnpaidLabor: boolean;
   notes: string;
 }
 interface CategoryInputProps {
@@ -182,6 +185,8 @@ export default function SAHMBudgetBuilder() {
     needs: {},
     wants: {},
     savings: {},
+    unpaidLabor: {},
+    includeUnpaidLabor: false,
     notes: ''
   });
 
@@ -230,6 +235,8 @@ export default function SAHMBudgetBuilder() {
             needs: templateData.needs || {},
             wants: templateData.wants || {},
             savings: templateData.savings || {},
+            unpaidLabor: templateData.unpaidLabor || {},
+            includeUnpaidLabor: templateData.includeUnpaidLabor || false,
             notes: templateData.notes || ''
           });
           toast.success(`Loaded template: ${template.name}`);
@@ -296,15 +303,19 @@ export default function SAHMBudgetBuilder() {
     title: 'Savings',
     description: 'Future planning and goals'
   }, {
+    title: 'Unpaid Labor',
+    description: 'Value your care and household work'
+  }, {
     title: 'Review',
     description: 'Your personalized budget'
   }];
-  const getTotalByCategory = (category: 'needs' | 'wants' | 'savings'): number => {
+  const getTotalByCategory = (category: 'needs' | 'wants' | 'savings' | 'unpaidLabor'): number => {
     const categoryData = budgetData[category];
     return Object.values(categoryData).reduce((sum, value) => sum + value, 0);
   };
   const getTotalBudget = (): number => {
-    return getTotalByCategory('needs') + getTotalByCategory('wants') + getTotalByCategory('savings');
+    const baseBudget = getTotalByCategory('needs') + getTotalByCategory('wants') + getTotalByCategory('savings');
+    return budgetData.includeUnpaidLabor ? baseBudget + getTotalByCategory('unpaidLabor') : baseBudget;
   };
   const updateAboutYou = (field: keyof BudgetData['aboutYou'], value: string | number) => {
     setBudgetData(prev => ({
@@ -327,7 +338,7 @@ export default function SAHMBudgetBuilder() {
       }
     }));
   };
-  const updateCategory = (category: 'needs' | 'wants' | 'savings', categoryId: string, value: number) => {
+  const updateCategory = (category: 'needs' | 'wants' | 'savings' | 'unpaidLabor', categoryId: string, value: number) => {
     setBudgetData(prev => ({
       ...prev,
       [category]: {
@@ -454,6 +465,8 @@ export default function SAHMBudgetBuilder() {
           needs: budgetData.needs,
           wants: budgetData.wants,
           savings: budgetData.savings,
+          unpaidLabor: budgetData.unpaidLabor,
+          includeUnpaidLabor: budgetData.includeUnpaidLabor,
           notes: budgetData.notes
         };
         if (isEditMode && templateId) {
@@ -786,14 +799,88 @@ export default function SAHMBudgetBuilder() {
             </div>
           </div>;
       case 5:
+        // Unpaid Labor
+        const unpaidLaborCategories = getUnpaidLaborForFamilyType('single-mother');
+        return <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold">Value Your Care Work 🤝</h3>
+              <p className="text-muted-foreground">
+                Your unpaid work has real economic value! Add these to see the full picture of your household's economy.
+              </p>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <input 
+                    type="checkbox" 
+                    id="includeUnpaidLabor"
+                    checked={budgetData.includeUnpaidLabor}
+                    onChange={(e) => setBudgetData(prev => ({...prev, includeUnpaidLabor: e.target.checked}))}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="includeUnpaidLabor" className="font-medium cursor-pointer">
+                    Include unpaid labor valuation in my budget
+                  </label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This helps you see the total economic value you provide and ensures fair financial planning.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {budgetData.includeUnpaidLabor && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {unpaidLaborCategories.map(category => (
+                    <div key={category.id} className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        {category.name}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {category.description}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">$</span>
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={budgetData.unpaidLabor[category.id] || category.defaultValue} 
+                          onChange={e => updateCategory('unpaidLabor', category.id, parseFloat(e.target.value) || 0)} 
+                          placeholder={category.defaultValue.toString()} 
+                          className="flex-1" 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Total Monthly Unpaid Labor Value:</span>
+                    <span className="text-lg font-bold text-purple-600">{formatTTD(getTotalByCategory('unpaidLabor'))}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This represents the economic value of your unpaid care and household work
+                  </p>
+                </div>
+              </>
+            )}
+          </div>;
+      case 6:
         // Review
         const totalNeeds = getTotalByCategory('needs');
         const totalWants = getTotalByCategory('wants');
         const totalSavings = getTotalByCategory('savings');
+        const totalUnpaidLabor = budgetData.includeUnpaidLabor ? getTotalByCategory('unpaidLabor') : 0;
         const totalBudget = getTotalBudget();
-        const needsPercentage = totalBudget > 0 ? totalNeeds / totalBudget * 100 : 0;
-        const wantsPercentage = totalBudget > 0 ? totalWants / totalBudget * 100 : 0;
-        const savingsPercentage = totalBudget > 0 ? totalSavings / totalBudget * 100 : 0;
+        const baseBudget = totalNeeds + totalWants + totalSavings;
+        const needsPercentage = baseBudget > 0 ? totalNeeds / baseBudget * 100 : 0;
+        const wantsPercentage = baseBudget > 0 ? totalWants / baseBudget * 100 : 0;
+        const savingsPercentage = baseBudget > 0 ? totalSavings / baseBudget * 100 : 0;
         return <div className="space-y-6">
             <div className="text-center space-y-2">
               <h3 className="text-lg font-semibold">Your Personalized Budget 🎯</h3>
@@ -811,7 +898,7 @@ export default function SAHMBudgetBuilder() {
                 <CardContent>
                   <div className="text-2xl font-bold">{formatTTD(totalNeeds)}</div>
                   <div className="text-sm text-muted-foreground">
-                    {needsPercentage.toFixed(1)}% of total
+                    {needsPercentage.toFixed(1)}% of cash budget
                   </div>
                   <Progress value={needsPercentage} className="mt-2" />
                 </CardContent>
@@ -824,7 +911,7 @@ export default function SAHMBudgetBuilder() {
                 <CardContent>
                   <div className="text-2xl font-bold">{formatTTD(totalWants)}</div>
                   <div className="text-sm text-muted-foreground">
-                    {wantsPercentage.toFixed(1)}% of total
+                    {wantsPercentage.toFixed(1)}% of cash budget
                   </div>
                   <Progress value={wantsPercentage} className="mt-2" />
                 </CardContent>
@@ -837,20 +924,51 @@ export default function SAHMBudgetBuilder() {
                 <CardContent>
                   <div className="text-2xl font-bold">{formatTTD(totalSavings)}</div>
                   <div className="text-sm text-muted-foreground">
-                    {savingsPercentage.toFixed(1)}% of total
+                    {savingsPercentage.toFixed(1)}% of cash budget
                   </div>
                   <Progress value={savingsPercentage} className="mt-2" />
                 </CardContent>
               </Card>
             </div>
             
+            {budgetData.includeUnpaidLabor && (
+              <Card className="bg-purple-50 border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-purple-600 flex items-center">
+                    🤝 Unpaid Labor Value
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">{formatTTD(totalUnpaidLabor)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Economic value of your care work
+                  </div>
+                  <div className="text-xs text-purple-600 mt-2">
+                    Total household economic value: {formatTTD(totalBudget)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <div className="bg-primary/5 p-6 rounded-lg space-y-4">
               <h4 className="font-semibold">Your Budget Summary</h4>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span>Total Monthly Budget:</span>
-                  <span className="font-bold text-lg">{formatTTD(totalBudget)}</span>
+                  <span>Cash Budget Total:</span>
+                  <span className="font-bold text-lg">{formatTTD(baseBudget)}</span>
                 </div>
+                {budgetData.includeUnpaidLabor && (
+                  <>
+                    <div className="flex justify-between text-purple-600">
+                      <span>+ Unpaid Labor Value:</span>
+                      <span className="font-bold">{formatTTD(totalUnpaidLabor)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between">
+                      <span className="font-semibold">Total Economic Value:</span>
+                      <span className="font-bold text-xl text-purple-600">{formatTTD(totalBudget)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="text-sm text-muted-foreground">
                   For a household of {budgetData.aboutYou.householdSize} 
                   {budgetData.aboutYou.dependents > 0 && ` with ${budgetData.aboutYou.dependents} dependents`}

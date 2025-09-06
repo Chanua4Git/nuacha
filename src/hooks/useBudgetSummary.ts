@@ -37,8 +37,9 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       if (templateError && templateError.code !== 'PGRST116') throw templateError;
 
-      // Extract template expenses by group
+      // Extract template expenses by group and unpaid labor
       let templateExpensesByGroup = { needs: 0, wants: 0, savings: 0 };
+      let templateUnpaidLabor = 0;
       
       if (activeTemplate?.template_data) {
         // Calculate total income from template
@@ -62,6 +63,12 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
         if (templateData?.savings && typeof templateData.savings === 'object') {
           const savingsValues = Object.values(templateData.savings);
           templateExpensesByGroup.savings = savingsValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
+        }
+        
+        // Extract unpaid labor if included
+        if (templateData?.includeUnpaidLabor && templateData?.unpaidLabor && typeof templateData.unpaidLabor === 'object') {
+          const unpaidLaborValues = Object.values(templateData.unpaidLabor);
+          templateUnpaidLabor = unpaidLaborValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
         }
       }
 
@@ -187,6 +194,7 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
       expensesByGroup.savings += templateExpensesByGroup.savings;
 
       const totalExpenses = Object.values(expensesByGroup).reduce((sum, amount) => sum + amount, 0);
+      const totalWithUnpaidLabor = totalExpenses + templateUnpaidLabor;
 
       // Calculate percentages and variances
       const byGroup = {
@@ -224,10 +232,11 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       setSummary({
         totalIncome,
-        totalExpenses,
+        totalExpenses: totalWithUnpaidLabor,
         byGroup,
-        surplus: totalIncome - totalExpenses,
-        ruleComparison
+        surplus: totalIncome - totalExpenses, // Keep surplus calculation without unpaid labor
+        ruleComparison,
+        unpaidLaborValue: templateUnpaidLabor
       });
 
     } catch (err) {

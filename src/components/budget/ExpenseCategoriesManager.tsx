@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { comprehensiveCategories } from '@/data/comprehensiveCategories';
 import QuickAddExpenseModal from './QuickAddExpenseModal';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
+import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 
 export const ExpenseCategoriesManager = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -21,6 +22,7 @@ export const ExpenseCategoriesManager = () => {
   
   const { selectedFamily, expenses, categories } = useExpense();
   const { getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id || '');
+  const { summary: budgetSummary } = useBudgetSummary(startOfMonth(selectedMonth), endOfMonth(selectedMonth), selectedFamily?.id);
   
   // Filter expenses by selected month using string comparison (avoids timezone issues)
   
@@ -401,7 +403,7 @@ export const ExpenseCategoriesManager = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-destructive">${combinedTotals.needs.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">🔴 Needs (Essential)</div>
@@ -424,6 +426,18 @@ export const ExpenseCategoriesManager = () => {
               <div className="text-xs text-muted-foreground space-y-1">
                 <div>🎯 Template: ${templateExpenses.savings.toFixed(2)}</div>
                 <div>📱 Manual: ${groupTotals.savings.toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">
+                ${budgetSummary?.unpaidLaborValue ? budgetSummary.totalExpenses.toFixed(2) : (combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}
+              </div>
+              <div className="text-sm text-muted-foreground">💰 Total Value</div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>💵 Cash: ${(combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}</div>
+                {budgetSummary?.unpaidLaborValue && (
+                  <div className="text-purple-600">🤝 Unpaid Labor: ${budgetSummary.unpaidLaborValue.toFixed(2)}</div>
+                )}
               </div>
             </div>
           </div>
