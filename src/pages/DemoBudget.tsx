@@ -238,25 +238,6 @@ export default function DemoBudget() {
         <SAHMBudgetBuilder />
       )}
 
-      {/* CTA Section - Only show in demo mode */}
-      {mode === 'demo' && (
-        <Card className="mt-8">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-xl font-semibold mb-2">Ready to take control of your finances?</h3>
-            <p className="text-muted-foreground mb-4">
-              Sign up now to connect your real income and expenses for personalized budget planning.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link to="/signup">Start Free Trial</Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link to="/options">View All Solutions</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
