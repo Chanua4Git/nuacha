@@ -7,9 +7,11 @@ import { OCRResult } from '@/types/expense';
 interface DemoAwareExpenseFormProps {
   initialOcrData?: OCRResult;
   receiptUrl?: string;
+  requireLeadCaptureInDemo?: boolean;
+  onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
 }
 
-const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl }: DemoAwareExpenseFormProps) => {
+const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete }: DemoAwareExpenseFormProps) => {
   return (
     <div className="space-y-4">
       <Alert>
@@ -23,6 +25,8 @@ const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl }: DemoAwareExpenseFo
       <ExpenseForm 
         initialOcrData={initialOcrData}
         receiptUrl={receiptUrl}
+        requireLeadCaptureInDemo={requireLeadCaptureInDemo}
+        onScanComplete={onScanComplete}
       />
     </div>
   );

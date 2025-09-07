@@ -202,10 +202,15 @@ const Demo = () => {
                     <DemoAwareExpenseList />
                   </TabsContent>
                   <TabsContent value="add-expense" className="mt-0">
-                    <DemoAwareExpenseForm 
-                      initialOcrData={receiptOcrData?.extractedData}
-                      receiptUrl={receiptOcrData?.receiptUrl}
-                    />
+                  <DemoAwareExpenseForm 
+                    initialOcrData={receiptOcrData?.extractedData}
+                    receiptUrl={receiptOcrData?.receiptUrl}
+                    requireLeadCaptureInDemo={true}
+                    onScanComplete={(data, url) => {
+                      setReceiptOcrData({ extractedData: data, receiptUrl: url || '' });
+                      setShowReceiptScanLeadCapture(true);
+                    }}
+                  />
                   </TabsContent>
                 </Tabs>
               </div>

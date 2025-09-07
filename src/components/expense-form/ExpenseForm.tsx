@@ -31,10 +31,12 @@ import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 interface ExpenseFormProps {
   initialOcrData?: OCRResult;
   receiptUrl?: string;
+  requireLeadCaptureInDemo?: boolean;
+  onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
 }
 
-const ExpenseForm = ({ initialOcrData, receiptUrl }: ExpenseFormProps) => {
-  const { selectedFamily, createExpense } = useContextAwareExpense();
+const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete }: ExpenseFormProps) => {
+  const { selectedFamily, createExpense, isDemo } = useContextAwareExpense();
   
   // Get current user for storage organization
   const [user, setUser] = useState<any>(null);
@@ -126,8 +128,16 @@ const ExpenseForm = ({ initialOcrData, receiptUrl }: ExpenseFormProps) => {
     handleImageRemove();
   };
 
-  const handleOcrData = (data: OCRResult) => {
+  const handleOcrData = (data: OCRResult, receiptImageUrl?: string) => {
     console.log('🔄 handleOcrData called with:', data);
+    
+    // Check if we need to gate this with lead capture in demo mode
+    if (requireLeadCaptureInDemo && isDemo && onScanComplete) {
+      console.log('🚪 Gating OCR data for lead capture in demo mode');
+      onScanComplete(data, receiptImageUrl);
+      return;
+    }
+    
     setOcrResult(data);
 
     // Set amount (OCRResult.amount is string type)
@@ -547,6 +557,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl }: ExpenseFormProps) => {
                   <DetailedReceiptView
                     receiptData={ocrResult}
                     receiptImage={imagePreview}
+                    isDemo={isDemo}
                     onRetry={() => {
                       setOcrResult(null);
                       setShowDetailedReceiptView(false);
