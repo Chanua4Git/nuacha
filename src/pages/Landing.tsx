@@ -301,8 +301,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Call to Action Section */}
-        
 
         {/* Footer */}
         <footer className="py-12 px-4 md:px-6 lg:px-8 bg-background">
