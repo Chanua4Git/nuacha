@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronRight, ChevronLeft, Download, Heart, Users, MapPin, Loader2, FileText } from 'lucide-react';
-import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategories';
-import { getUnpaidLaborForFamilyType, UnpaidLaborCategory } from '@/data/unpaidLaborCategories';
-import { formatTTD } from '@/utils/budgetUtils';
-import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
-import { toast } from 'sonner';
-import { useBudgetPreview } from '@/context/BudgetPreviewContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, Download, Send, Plus } from "lucide-react";
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
+import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
+import { useBudgetPreview } from '@/context/BudgetPreviewContext';
+import BudgetLeadCaptureModal from './BudgetLeadCaptureModal';
 interface BudgetData {
   aboutYou: {
     name: string;
@@ -48,6 +42,7 @@ interface BudgetData {
   wants: Record<string, number>;
   savings: Record<string, number>;
   unpaidLabor: Record<string, number>;
+  customUnpaidLabor: Array<{ id: string; name: string; value: number }>;
   includeUnpaidLabor: boolean;
   notes: string;
 }
@@ -142,6 +137,7 @@ export default function SAHMBudgetBuilder() {
   } = useBudgetPreview();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLeadModal, setShowLeadModal] = useState(false);
 
   // Template selection and lead capture state
   const [selectedTemplate, setSelectedTemplate] = useState('single-mom');
@@ -186,6 +182,7 @@ export default function SAHMBudgetBuilder() {
     wants: {},
     savings: {},
     unpaidLabor: {},
+    customUnpaidLabor: [],
     includeUnpaidLabor: false,
     notes: ''
   });
@@ -237,6 +234,7 @@ export default function SAHMBudgetBuilder() {
             wants: templateData.wants || {},
             savings: templateData.savings || {},
             unpaidLabor: templateData.unpaidLabor || {},
+            customUnpaidLabor: [],
             includeUnpaidLabor: templateData.includeUnpaidLabor || false,
             notes: templateData.notes || ''
           };
@@ -883,9 +881,14 @@ export default function SAHMBudgetBuilder() {
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Monthly Savings:</span>
                 <span className="text-lg font-bold">{formatTTD(getTotalByCategory('savings'))}</span>
-              </div>
-            </div>
-          </div>;
+        </div>
+      </div>
+      
+      <BudgetLeadCaptureModal 
+        open={showLeadModal} 
+        onOpenChange={setShowLeadModal} 
+      />
+    </div>;
       case 5:
         // Unpaid Labor
         const familyType = getFamilyType();
@@ -958,20 +961,56 @@ export default function SAHMBudgetBuilder() {
                       </div>
                     </div>
                   ))}
-                </div>
-                
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Total Monthly Unpaid Labor Value:</span>
-                    <span className="text-lg font-bold text-purple-600">{formatTTD(getTotalByCategory('unpaidLabor'))}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    This represents the economic value of your unpaid care and household work
-                  </p>
-                </div>
-              </>
-            )}
-          </div>;
+                 </div>
+                 
+                 {/* Custom Unpaid Labor Section */}
+                 <div className="mt-6">
+                   <Card className="p-4 border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer" 
+                         onClick={() => setShowLeadModal(true)}>
+                     <div className="text-center space-y-3">
+                       <div className="flex items-center justify-center w-12 h-12 mx-auto bg-primary/10 rounded-full">
+                         <Plus className="w-6 h-6 text-primary" />
+                       </div>
+                       <div>
+                         <h3 className="font-medium text-foreground">Add Custom Unpaid Labor</h3>
+                         <p className="text-sm text-muted-foreground mt-1">
+                           Track custom categories like pet care, elderly care, or community work
+                         </p>
+                       </div>
+                       <Badge variant="secondary" className="text-xs">
+                         Subscription Required
+                       </Badge>
+                     </div>
+                   </Card>
+                   
+                   {/* Display added custom categories */}
+                   {budgetData.customUnpaidLabor.length > 0 && (
+                     <div className="mt-4 space-y-2">
+                       <h4 className="text-sm font-medium text-muted-foreground">Custom Categories:</h4>
+                       {budgetData.customUnpaidLabor.map((category) => (
+                         <div key={category.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                           <span className="font-medium">{category.name}</span>
+                           <span className="text-sm text-muted-foreground">
+                             ${category.value.toLocaleString()}
+                           </span>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+                 
+                 <div className="bg-muted/50 p-4 rounded-lg">
+                   <div className="flex justify-between items-center">
+                     <span className="font-medium">Total Monthly Unpaid Labor Value:</span>
+                     <span className="text-lg font-bold text-purple-600">{formatTTD(getTotalByCategory('unpaidLabor'))}</span>
+                   </div>
+                   <p className="text-xs text-muted-foreground mt-1">
+                     This represents the economic value of your unpaid care and household work
+                   </p>
+                 </div>
+               </>
+             )}
+           </div>;
       case 6:
         // Review
         const totalNeeds = getTotalByCategory('needs');
