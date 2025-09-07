@@ -950,7 +950,7 @@ export default function SAHMBudgetBuilder() {
                           type="number" 
                           min="0" 
                           step="0.01" 
-                          value={budgetData.unpaidLabor[category.id] ?? category.defaultValue} 
+                          value={budgetData.unpaidLabor[category.id] ?? 0} 
                           onChange={e => updateCategory('unpaidLabor', category.id, parseFloat(e.target.value) || 0)} 
                           placeholder={category.defaultValue.toString()} 
                           className="flex-1" 
