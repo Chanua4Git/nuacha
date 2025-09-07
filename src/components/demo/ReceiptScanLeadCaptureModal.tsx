@@ -21,7 +21,7 @@ export default function ReceiptScanLeadCaptureModal({
     setIsLoading(true);
     
     toast.success("Thank you for your interest!", {
-      description: "Now let's show you what our OCR technology found...",
+      description: "Redirecting you to unlock the full Nuacha experience...",
       icon: <CheckCircle className="h-4 w-4" />
     });
 
@@ -38,11 +38,11 @@ export default function ReceiptScanLeadCaptureModal({
         <DialogHeader>
           <DialogTitle className="mb-1 text-center flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Your Receipt Was Scanned Perfectly!
+            Love What You See? Unlock the Full Experience!
           </DialogTitle>
           <DialogDescription className="mb-5 text-center">
-            🎉 Our OCR technology extracted all the details automatically. Before we show you the amazing results, we'd love to understand your needs better.<br />
-            <span className="text-xs text-muted-foreground">(This helps us improve! Takes just 30 seconds.)</span>
+            🎉 Our OCR just automatically filled your form perfectly! Ready to save this data permanently and unlock all features?<br />
+            <span className="text-xs text-muted-foreground">(Quick signup - takes just 30 seconds to unlock everything!)</span>
           </DialogDescription>
         </DialogHeader>
         <ReceiptScanLeadCaptureForm onSubmit={handleSubmit} isLoading={isLoading} />
