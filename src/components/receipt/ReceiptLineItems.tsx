@@ -9,7 +9,6 @@ import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { useReceiptDetails } from '@/hooks/useReceiptDetails';
 import ExpenseMembersDisplay from '@/components/ExpenseMembersDisplay';
 import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
-import { useDemoCategories } from '@/hooks/useDemoCategories';
 
 interface ReceiptLineItemsProps {
   receiptData: OCRResult;
@@ -22,19 +21,15 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
   const { selectedFamily, isDemo: contextIsDemo } = useContextAwareExpense();
   const { saveLineItem, lineItems } = useReceiptDetails(isDemo ? undefined : expenseId);
   
-  // Use demo categories when in demo mode, otherwise use unified categories
+  // Use unified categories which handles both demo and regular modes
   const { categories: unifiedCategories, budgetCategories } = useUnifiedCategories({
     familyId: selectedFamily?.id,
     mode: 'unified',
     includeDemo: isDemo || contextIsDemo
   });
   
-  const { categories: demoCategories } = useDemoCategories();
-  
-  // Choose category source based on demo status
-  const availableCategories = (isDemo || contextIsDemo) && unifiedCategories.length === 0 
-    ? demoCategories 
-    : unifiedCategories;
+  // Use unified categories as the single source of truth
+  const availableCategories = unifiedCategories;
   
   const formatCurrency = (amount: string | undefined) => {
     if (!amount) return '-';
