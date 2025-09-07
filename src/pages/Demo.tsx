@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
 import { DemoExpenseProvider } from '@/context/DemoExpenseContext';
 import { DemoExpenseProvider as DemoExpenseContextProvider } from '@/components/demo/DemoExpenseContext';
-import DemoAwareExpenseForm from '@/components/demo/DemoAwareExpenseForm';
+import DemoReceiptUploadSection from '@/components/demo/DemoReceiptUploadSection';
 import DemoAwareExpenseList from '@/components/demo/DemoAwareExpenseList';
 import DemoAwareFamilySelector from '@/components/demo/DemoAwareFamilySelector';
 import DemoAwareRemindersList from '@/components/demo/DemoAwareRemindersList';
@@ -202,15 +202,15 @@ const Demo = () => {
                     <DemoAwareExpenseList />
                   </TabsContent>
                   <TabsContent value="add-expense" className="mt-0">
-                  <DemoAwareExpenseForm 
-                    initialOcrData={receiptOcrData?.extractedData}
-                    receiptUrl={receiptOcrData?.receiptUrl}
-                    requireLeadCaptureInDemo={true}
-                    onScanComplete={(data, url) => {
-                      setReceiptOcrData({ extractedData: data, receiptUrl: url || '' });
-                      setShowReceiptScanLeadCapture(true);
-                    }}
-                  />
+                   <DemoReceiptUploadSection 
+                     initialOcrData={receiptOcrData?.extractedData}
+                     receiptUrl={receiptOcrData?.receiptUrl}
+                     requireLeadCaptureInDemo={true}
+                     onScanComplete={(data, url) => {
+                       setReceiptOcrData({ extractedData: data, receiptUrl: url || '' });
+                       setShowReceiptScanLeadCapture(true);
+                     }}
+                   />
                   </TabsContent>
                 </Tabs>
               </div>
