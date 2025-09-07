@@ -345,7 +345,7 @@ export default function SAHMBudgetBuilder() {
       const familyType = getFamilyType();
       const unpaidLaborCats = getUnpaidLaborForFamilyType(familyType);
       return unpaidLaborCats.reduce((sum, cat) => {
-        return sum + (budgetData.unpaidLabor[cat.id] ?? cat.defaultValue);
+        return sum + (budgetData.unpaidLabor[cat.id] ?? 0);
       }, 0);
     }
     
