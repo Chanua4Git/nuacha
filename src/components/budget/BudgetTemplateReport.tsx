@@ -1,321 +1,337 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Edit, Printer, Calendar, MapPin, Users } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatTTD } from '@/utils/budgetUtils';
-import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
-import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useExpense } from '@/context/ExpenseContext';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Separator } from '@/components/ui/separator';
+import { Info, Download, FileText, Users, MapPin, Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface DemoTemplateData {
+  id: string;
+  name: string;
+  created_at: string;
+  budget_data: {
+    aboutYou: {
+      name: string;
+      location: string;
+      householdSize: number;
+      dependents: number;
+      email: string;
+    };
+    income: {
+      primaryIncome: { amount: number; frequency: string; source: string; };
+      secondaryIncome: { amount: number; frequency: string; source: string; };
+      otherIncome: { amount: number; frequency: string; source: string; };
+    };
+    needs: Record<string, number>;
+    wants: Record<string, number>;
+    savings: Record<string, number>;
+    totalBudget: number;
+    totalMonthlyIncome: number;
+  };
+}
 
 export default function BudgetTemplateReport() {
-  const { user } = useAuth();
-  const { selectedFamily } = useExpense();
-  const { templates } = useBudgetTemplates(selectedFamily?.id);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  
-  const templateId = searchParams.get('templateId');
-  const template = templates.find(t => t.id === templateId);
+  const [templateData, setTemplateData] = useState<DemoTemplateData | null>(null);
 
-  if (!template) {
+  useEffect(() => {
+    // Load demo template from localStorage
+    const storedTemplate = localStorage.getItem('demo-budget-template');
+    if (storedTemplate) {
+      try {
+        const parsed = JSON.parse(storedTemplate);
+        setTemplateData(parsed);
+      } catch (error) {
+        console.error('Error parsing demo template:', error);
+      }
+    }
+  }, []);
+
+  if (!templateData) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground">Template not found.</p>
+        <CardContent className="p-6 text-center">
+          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Budget Template Found</h3>
+          <p className="text-muted-foreground mb-4">
+            Create your personalized budget template using our SAHM Budget Builder.
+          </p>
+          <Button asChild>
+            <Link to="/demo/budget?mode=builder">Build Your Budget</Link>
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const templateData = template.template_data;
+  const { budget_data } = templateData;
   
-  // Calculate totals
-  const totalIncome = (templateData.income ? Object.values(templateData.income).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0);
-  const totalNeeds = (templateData.needs ? Object.values(templateData.needs).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0);
-  const totalWants = (templateData.wants ? Object.values(templateData.wants).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0);
-  const totalSavings = (templateData.savings ? Object.values(templateData.savings).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0);
+  // Calculate totals and percentages
+  const totalNeeds = Object.values(budget_data.needs).reduce((sum, val) => sum + val, 0);
+  const totalWants = Object.values(budget_data.wants).reduce((sum, val) => sum + val, 0);
+  const totalSavings = Object.values(budget_data.savings).reduce((sum, val) => sum + val, 0);
   const totalBudget = totalNeeds + totalWants + totalSavings;
-  const surplus = totalIncome - totalBudget;
+  
+  const needsPercentage = totalBudget ? (totalNeeds / totalBudget) * 100 : 0;
+  const wantsPercentage = totalBudget ? (totalWants / totalBudget) * 100 : 0;
+  const savingsPercentage = totalBudget ? (totalSavings / totalBudget) * 100 : 0;
+  
+  // 50/30/20 rule compliance
+  const needsVariance = needsPercentage - 50;
+  const wantsVariance = wantsPercentage - 30;
+  const savingsVariance = savingsPercentage - 20;
+  
+  // Chart data
+  const pieData = [
+    { name: 'Needs', value: totalNeeds, color: 'hsl(var(--chart-1))' },
+    { name: 'Wants', value: totalWants, color: 'hsl(var(--chart-2))' },
+    { name: 'Savings', value: totalSavings, color: 'hsl(var(--chart-3))' }
+  ];
+  
+  const barData = [
+    { name: 'Needs', actual: needsPercentage, target: 50 },
+    { name: 'Wants', actual: wantsPercentage, target: 30 },
+    { name: 'Savings', actual: savingsPercentage, target: 20 }
+  ];
 
-  // Calculate percentages
-  const needsPercentage = totalIncome > 0 ? (totalNeeds / totalIncome) * 100 : 0;
-  const wantsPercentage = totalIncome > 0 ? (totalWants / totalIncome) * 100 : 0;
-  const savingsPercentage = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
-
-  const handleEdit = () => {
-    navigate(`/budget?tab=builder&mode=edit&templateId=${templateId}`);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
+  const surplus = budget_data.totalMonthlyIncome - totalBudget;
 
   return (
-    <div className="space-y-6 print:space-y-4">
-      {/* Header Actions - Hidden in print */}
-      <div className="flex items-center justify-between print:hidden">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/budget?tab=dashboard')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print Report
-          </Button>
-          <Button onClick={handleEdit}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Template
-          </Button>
-        </div>
-      </div>
-
-      {/* Report Header */}
-      <Card className="print:shadow-none print:border-0">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl print:text-3xl">Budget Template Report</CardTitle>
-          <div className="space-y-2 text-muted-foreground">
-            <h2 className="text-xl font-semibold">{template.name}</h2>
-            {template.description && <p>{template.description}</p>}
-            <div className="flex items-center justify-center gap-4 text-sm print:text-base">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Created: {new Date(template.created_at).toLocaleDateString()}
-              </div>
-              <div className="flex items-center gap-1">
-                <Edit className="h-4 w-4" />
-                Updated: {new Date(template.updated_at).toLocaleDateString()}
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                {templateData.name}
+              </CardTitle>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Household of {budget_data.aboutYou.householdSize}
+                </div>
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {budget_data.aboutYou.location || 'Location not specified'}
+                </div>
               </div>
             </div>
+            <Badge variant="secondary">Demo Template</Badge>
           </div>
         </CardHeader>
       </Card>
 
-      {/* About You Section */}
-      {templateData.aboutYou && (
-        <Card className="print:shadow-none print:border">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-primary">{formatTTD(budget_data.totalMonthlyIncome)}</div>
+            <p className="text-xs text-muted-foreground">Total Monthly Income</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{formatTTD(totalBudget)}</div>
+            <p className="text-xs text-muted-foreground">Total Budget</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className={`text-2xl font-bold ${surplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatTTD(surplus)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {surplus >= 0 ? 'Surplus' : 'Deficit'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">
+              {Math.abs(needsVariance) < 5 && Math.abs(wantsVariance) < 5 && Math.abs(savingsVariance) < 5 ? '✅' : '⚠️'}
+            </div>
+            <p className="text-xs text-muted-foreground">50/30/20 Rule</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Spending Distribution */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              About You
-            </CardTitle>
+            <CardTitle>Spending Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4 print:grid-cols-4">
-              {templateData.aboutYou.name && (
-                <div>
-                  <p className="font-medium">Name</p>
-                  <p className="text-muted-foreground">{templateData.aboutYou.name}</p>
-                </div>
-              )}
-              {templateData.aboutYou.location && (
-                <div>
-                  <p className="font-medium">Location</p>
-                  <p className="text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {templateData.aboutYou.location}
-                  </p>
-                </div>
-              )}
-              {(templateData.aboutYou.household_size || templateData.aboutYou.householdSize) && (
-                <div>
-                  <p className="font-medium">Household Size</p>
-                  <p className="text-muted-foreground">{templateData.aboutYou.household_size || templateData.aboutYou.householdSize}</p>
-                </div>
-              )}
-              {templateData.aboutYou.dependents && (
-                <div>
-                  <p className="font-medium">Dependents</p>
-                  <p className="text-muted-foreground">{templateData.aboutYou.dependents}</p>
-                </div>
-              )}
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatTTD(value as number)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Budget vs 50/30/20 Rule */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Budget vs 50/30/20 Rule</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
+                <Bar dataKey="actual" fill="hsl(var(--primary))" name="Your Budget" />
+                <Bar dataKey="target" fill="hsl(var(--muted))" name="50/30/20 Target" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Budget Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Needs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-green-700">Needs ({needsPercentage.toFixed(1)}%)</CardTitle>
+            <Progress value={needsPercentage} className="h-2" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {Object.entries(budget_data.needs).map(([key, value]) => (
+              <div key={key} className="flex justify-between text-sm">
+                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <span>{formatTTD(value)}</span>
+              </div>
+            ))}
+            <div className="pt-2 border-t font-semibold flex justify-between">
+              <span>Total Needs</span>
+              <span>{formatTTD(totalNeeds)}</span>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Budget Summary */}
-      <Card className="print:shadow-none print:border">
+        {/* Wants */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-blue-700">Wants ({wantsPercentage.toFixed(1)}%)</CardTitle>
+            <Progress value={wantsPercentage} className="h-2" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {Object.entries(budget_data.wants).map(([key, value]) => (
+              <div key={key} className="flex justify-between text-sm">
+                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <span>{formatTTD(value)}</span>
+              </div>
+            ))}
+            <div className="pt-2 border-t font-semibold flex justify-between">
+              <span>Total Wants</span>
+              <span>{formatTTD(totalWants)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Savings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-purple-700">Savings ({savingsPercentage.toFixed(1)}%)</CardTitle>
+            <Progress value={savingsPercentage} className="h-2" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {Object.entries(budget_data.savings).map(([key, value]) => (
+              <div key={key} className="flex justify-between text-sm">
+                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <span>{formatTTD(value)}</span>
+              </div>
+            ))}
+            <div className="pt-2 border-t font-semibold flex justify-between">
+              <span>Total Savings</span>
+              <span>{formatTTD(totalSavings)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 50/30/20 Rule Compliance */}
+      <Card>
         <CardHeader>
-          <CardTitle>Budget Summary</CardTitle>
+          <CardTitle>50/30/20 Budget Rule Compliance</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{formatTTD(totalIncome)}</p>
-              <p className="text-sm text-muted-foreground">Total Income</p>
+              <div className="text-2xl font-bold text-green-700">{needsPercentage.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground">Needs (Target: 50%)</div>
+              <Badge variant={Math.abs(needsVariance) < 5 ? "default" : "destructive"}>
+                {needsVariance >= 0 ? '+' : ''}{needsVariance.toFixed(1)}%
+              </Badge>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-destructive">{formatTTD(totalNeeds)}</p>
-              <p className="text-sm text-muted-foreground">Needs ({needsPercentage.toFixed(1)}%)</p>
+              <div className="text-2xl font-bold text-blue-700">{wantsPercentage.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground">Wants (Target: 30%)</div>
+              <Badge variant={Math.abs(wantsVariance) < 5 ? "default" : "destructive"}>
+                {wantsVariance >= 0 ? '+' : ''}{wantsVariance.toFixed(1)}%
+              </Badge>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-amber-600">{formatTTD(totalWants)}</p>
-              <p className="text-sm text-muted-foreground">Wants ({wantsPercentage.toFixed(1)}%)</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{formatTTD(totalSavings)}</p>
-              <p className="text-sm text-muted-foreground">Savings ({savingsPercentage.toFixed(1)}%)</p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${surplus >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                {formatTTD(surplus)}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {surplus >= 0 ? 'Surplus' : 'Deficit'}
-              </p>
+              <div className="text-2xl font-bold text-purple-700">{savingsPercentage.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground">Savings (Target: 20%)</div>
+              <Badge variant={Math.abs(savingsVariance) < 5 ? "default" : "destructive"}>
+                {savingsVariance >= 0 ? '+' : ''}{savingsVariance.toFixed(1)}%
+              </Badge>
             </div>
           </div>
-
-          {/* 50/30/20 Rule Comparison */}
-          <div className="space-y-3">
-            <h4 className="font-semibold">Budget Allocation vs 50/30/20 Rule</h4>
-            <div className="space-y-2">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Needs: {needsPercentage.toFixed(1)}% (Target: 50%)</span>
-                  <Badge variant={needsPercentage <= 55 ? "default" : "destructive"}>
-                    {needsPercentage <= 55 ? "On Track" : "Over Budget"}
-                  </Badge>
-                </div>
-                <Progress value={Math.min(needsPercentage, 100)} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Wants: {wantsPercentage.toFixed(1)}% (Target: 30%)</span>
-                  <Badge variant={wantsPercentage <= 35 ? "default" : "destructive"}>
-                    {wantsPercentage <= 35 ? "On Track" : "Over Budget"}
-                  </Badge>
-                </div>
-                <Progress value={Math.min(wantsPercentage, 100)} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Savings: {savingsPercentage.toFixed(1)}% (Target: 20%)</span>
-                  <Badge variant={savingsPercentage >= 15 ? "default" : "secondary"}>
-                    {savingsPercentage >= 15 ? "Good" : "Could Improve"}
-                  </Badge>
-                </div>
-                <Progress value={Math.min(savingsPercentage, 100)} className="h-2" />
-              </div>
-            </div>
-          </div>
+          
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {Math.abs(needsVariance) < 5 && Math.abs(wantsVariance) < 5 && Math.abs(savingsVariance) < 5
+                ? "🎉 Excellent! Your budget closely follows the 50/30/20 rule for balanced financial health."
+                : "Consider adjusting your allocations to better align with the 50/30/20 rule for optimal financial balance."
+              }
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
-      {/* Income Details */}
-      {templateData.income && Object.keys(templateData.income).length > 0 && (
-        <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <CardTitle>Income Sources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {Object.entries(templateData.income).map(([key, value]) => (
-                Number(value) > 0 && (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                    <span className="font-semibold">{formatTTD(Number(value))}</span>
-                  </div>
-                )
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Needs Categories */}
-      {templateData.needs && Object.keys(templateData.needs).length > 0 && (
-        <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <CardTitle className="text-destructive">Needs ({formatTTD(totalNeeds)})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {Object.entries(templateData.needs).map(([key, value]) => (
-                Number(value) > 0 && (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="capitalize">{key.replace(/[-_]/g, ' ')}</span>
-                    <span className="font-semibold">{formatTTD(Number(value))}</span>
-                  </div>
-                )
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Wants Categories */}
-      {templateData.wants && Object.keys(templateData.wants).length > 0 && (
-        <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <CardTitle className="text-amber-600">Wants ({formatTTD(totalWants)})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {Object.entries(templateData.wants).map(([key, value]) => (
-                Number(value) > 0 && (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="capitalize">{key.replace(/[-_]/g, ' ')}</span>
-                    <span className="font-semibold">{formatTTD(Number(value))}</span>
-                  </div>
-                )
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Savings Categories */}
-      {templateData.savings && Object.keys(templateData.savings).length > 0 && (
-        <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <CardTitle className="text-green-600">Savings & Investments ({formatTTD(totalSavings)})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {Object.entries(templateData.savings).map(([key, value]) => (
-                Number(value) > 0 && (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="capitalize">{key.replace(/[-_]/g, ' ')}</span>
-                    <span className="font-semibold">{formatTTD(Number(value))}</span>
-                  </div>
-                )
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Notes */}
-      {templateData.notes && (
-        <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap">{templateData.notes}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      <Separator className="print:hidden" />
-
-      {/* Footer - Hidden in print */}
-      <div className="flex justify-center print:hidden pb-6">
-        <Button onClick={handleEdit} size="lg">
-          <Edit className="h-4 w-4 mr-2" />
-          Edit This Template
-        </Button>
-      </div>
+      {/* CTA Section */}
+      <Card className="border-primary">
+        <CardContent className="p-6 text-center">
+          <h3 className="text-xl font-semibold mb-2">Love your personalized budget?</h3>
+          <p className="text-muted-foreground mb-4">
+            Sign up now to save your template, track real expenses, and access advanced budgeting tools.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button size="lg" asChild>
+              <Link to="/signup">Start Free Trial</Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <Link to="/demo/budget?mode=builder">Modify Budget</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

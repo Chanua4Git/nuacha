@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import BudgetTemplateReport from '@/components/budget/BudgetTemplateReport';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, Eye, PenTool } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
@@ -24,8 +25,25 @@ import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
 export default function DemoBudget() {
   const [mode, setMode] = useState<'demo' | 'builder'>('demo');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams] = useSearchParams();
   const { previewData } = useBudgetPreview();
   const isMobile = useIsMobile();
+
+  // Handle URL parameters for deep linking
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const viewMode = searchParams.get('view');
+    const templateId = searchParams.get('templateId');
+    
+    if (tab) {
+      setActiveTab(tab);
+    }
+    
+    if (templateId === 'demo-generated') {
+      setMode('demo');
+      setActiveTab('templates');
+    }
+  }, [searchParams]);
 
   const incomeSourcesOverride = useMemo(() => {
     if (!previewData) return undefined;
@@ -163,7 +181,7 @@ export default function DemoBudget() {
       {mode === 'demo' ? (
         <DemoBudgetProvider>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 h-auto py-2 mb-4">
+            <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 h-auto py-2 mb-4">
               <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
                 {isMobile ? 'Dashboard' : 'Dashboard'}
               </TabsTrigger>
@@ -175,6 +193,9 @@ export default function DemoBudget() {
               </TabsTrigger>
               <TabsTrigger value="rules" className="text-xs sm:text-sm">
                 {isMobile ? 'Rules' : 'Rules'}
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="text-xs sm:text-sm">
+                {isMobile ? 'Templates' : 'Templates'}
               </TabsTrigger>
               <TabsTrigger value="scenarios" className="text-xs sm:text-sm">
                 {isMobile ? 'Scenarios' : 'Scenarios'}
@@ -198,6 +219,10 @@ export default function DemoBudget() {
 
             <TabsContent value="rules" className="space-y-6">
               <DemoAwareRulesManager />
+            </TabsContent>
+
+            <TabsContent value="templates" className="space-y-6">
+              <BudgetTemplateReport />
             </TabsContent>
 
             <TabsContent value="scenarios" className="space-y-6">

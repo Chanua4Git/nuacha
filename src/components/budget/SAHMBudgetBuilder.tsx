@@ -908,21 +908,10 @@ export default function SAHMBudgetBuilder() {
                       onChange={(e) => {
                         const checked = e.target.checked;
                         console.log('Checkbox changed:', checked, 'Current state:', budgetData.includeUnpaidLabor);
-                        setBudgetData(prev => {
-                          const newData = {...prev, includeUnpaidLabor: checked};
-                          // Initialize unpaid labor with default values when checked
-                          if (checked) {
-                            const defaultValues = {};
-                            unpaidLaborCategories.forEach(cat => {
-                              // Only set default if no value exists
-                              if (!prev.unpaidLabor[cat.id]) {
-                                defaultValues[cat.id] = cat.defaultValue;
-                              }
-                            });
-                            newData.unpaidLabor = {...prev.unpaidLabor, ...defaultValues};
-                          }
-                          return newData;
-                        });
+                        setBudgetData(prev => ({
+                          ...prev, 
+                          includeUnpaidLabor: checked
+                        }));
                       }}
                       className="mt-1"
                     />
