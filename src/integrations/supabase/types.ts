@@ -338,6 +338,7 @@ export type Database = {
           receipt_data: Json | null
           source: string | null
           user_agent: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           additional_info?: string | null
@@ -355,6 +356,7 @@ export type Database = {
           receipt_data?: Json | null
           source?: string | null
           user_agent?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           additional_info?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           receipt_data?: Json | null
           source?: string | null
           user_agent?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }

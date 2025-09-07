@@ -17,6 +17,7 @@ export interface BudgetTemplateData {
     name?: string;
     email?: string;
     household_size?: number;
+    householdSize?: number; // Legacy compatibility
     dependents?: number;
     location?: string;
   };
@@ -24,6 +25,8 @@ export interface BudgetTemplateData {
   needs?: Record<string, number>;
   wants?: Record<string, number>;
   savings?: Record<string, number>;
+  unpaidLabor?: Record<string, number>;
+  includeUnpaidLabor?: boolean;
   notes?: string;
 }
 

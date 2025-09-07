@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LineItemsTable from './line-items/LineItemsTable';
 import LowConfidenceLineItemsAlert from './line-items/LowConfidenceLineItemsAlert';
 import { ReceiptLineItem } from '@/types/receipt';
-import { useExpense } from '@/context/ExpenseContext';
+import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { useReceiptDetails } from '@/hooks/useReceiptDetails';
 import ExpenseMembersDisplay from '@/components/ExpenseMembersDisplay';
 import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
@@ -18,14 +18,18 @@ interface ReceiptLineItemsProps {
 
 const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expenseId, isDemo = false }) => {
   const hasLineItems = receiptData.lineItems && receiptData.lineItems.length > 0;
-  const { selectedFamily } = useExpense();
+  const { selectedFamily, isDemo: contextIsDemo } = useContextAwareExpense();
   const { saveLineItem, lineItems } = useReceiptDetails(isDemo ? undefined : expenseId);
   
-  // Get unified categories to map suggested budget category IDs to visible category IDs
+  // Use unified categories which handles both demo and regular modes
   const { categories: unifiedCategories, budgetCategories } = useUnifiedCategories({
     familyId: selectedFamily?.id,
     mode: 'unified',
+    includeDemo: isDemo || contextIsDemo
   });
+  
+  // Use unified categories as the single source of truth
+  const availableCategories = unifiedCategories;
   
   const formatCurrency = (amount: string | undefined) => {
     if (!amount) return '-';
@@ -63,7 +67,7 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       const searchTerms = sampleMapping[suggestedId as keyof typeof sampleMapping];
       if (searchTerms) {
         for (const term of searchTerms) {
-          const matchedCategory = unifiedCategories.find(c => 
+          const matchedCategory = availableCategories.find(c => 
             c.name.toLowerCase().includes(term.toLowerCase())
           );
           if (matchedCategory) {
@@ -74,7 +78,9 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       }
       
       // Fallback for unhandled sample categories
-      const wantsCategory = unifiedCategories.find(c => c.groupType === 'wants');
+      const wantsCategory = availableCategories.find(c => 'groupType' in c && c.groupType === 'wants') || 
+                           availableCategories.find(c => c.name.toLowerCase().includes('want')) ||
+                           availableCategories[0]; // Ultimate fallback
       if (wantsCategory) {
         console.log('Using wants category as sample fallback:', wantsCategory.name);
         return wantsCategory.id;
@@ -84,7 +90,7 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     // Handle special fallback category IDs from the backend
     if (suggestedId === 'groceries-fallback') {
       console.log('Handling groceries fallback - looking for Groceries category');
-      const groceriesCategory = unifiedCategories.find(c => 
+      const groceriesCategory = availableCategories.find(c => 
         c.name.toLowerCase().includes('groceries') || 
         c.name.toLowerCase() === 'groceries'
       );
@@ -96,7 +102,7 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     
     if (suggestedId === 'dining-out-fallback') {
       console.log('Handling dining out fallback - looking for Dining out category');
-      const diningCategory = unifiedCategories.find(c => 
+      const diningCategory = availableCategories.find(c => 
         c.name.toLowerCase().includes('dining') || 
         c.name.toLowerCase() === 'dining out' ||
         c.name.toLowerCase().includes('dining out / takeout') ||
@@ -108,9 +114,11 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
         console.log('Found Dining out category for fallback:', diningCategory.name, diningCategory.id);
         return diningCategory.id;
       } else {
-        console.log('No dining out category found in unified categories, using first wants category');
-        // Ultimate fallback - use any "wants" category
-        const wantsCategory = unifiedCategories.find(c => c.groupType === 'wants');
+        console.log('No dining out category found in available categories, using first wants category');
+        // Ultimate fallback - use any "wants" category or first available
+        const wantsCategory = availableCategories.find(c => 'groupType' in c && c.groupType === 'wants') ||
+                             availableCategories.find(c => c.name.toLowerCase().includes('want')) ||
+                             availableCategories[0]; // Ultimate fallback
         if (wantsCategory) {
           console.log('Using wants category as ultimate fallback:', wantsCategory.name);
           return wantsCategory.id;
@@ -118,34 +126,34 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
       }
     }
     
-    // First, check if the suggested ID exists in unified categories
-    const directMatch = unifiedCategories.find(c => c.id === suggestedId);
+    // First, check if the suggested ID exists in available categories
+    const directMatch = availableCategories.find(c => c.id === suggestedId);
     if (directMatch) {
-      console.log('Direct match found in unified categories:', directMatch.name);
+      console.log('Direct match found in available categories:', directMatch.name);
       return suggestedId;
     }
     
-    // If not found directly, find the budget category and look for a matching name in unified
+    // If not found directly, find the budget category and look for a matching name in available
     const budgetCategory = budgetCategories.find(c => c.id === suggestedId);
     if (budgetCategory) {
       console.log('Budget category found:', budgetCategory.name);
       
-      // Look for a unified category with the same name (case insensitive)
-      const nameMatch = unifiedCategories.find(c => 
+      // Look for an available category with the same name (case insensitive)
+      const nameMatch = availableCategories.find(c => 
         c.name.toLowerCase() === budgetCategory.name.toLowerCase()
       );
       
       if (nameMatch) {
-        console.log('Found unified category with same name:', nameMatch.name, nameMatch.id);
+        console.log('Found available category with same name:', nameMatch.name, nameMatch.id);
         return nameMatch.id;
       } else {
-        console.log('No unified category found with name:', budgetCategory.name);
+        console.log('No available category found with name:', budgetCategory.name);
       }
     }
     
     // Additional safety net: check if it's a plain category name and find by name
     if (typeof suggestedId === 'string') {
-      const plainNameMatch = unifiedCategories.find(c => 
+      const plainNameMatch = availableCategories.find(c => 
         c.name.toLowerCase() === suggestedId.toLowerCase()
       );
       if (plainNameMatch) {
@@ -165,7 +173,7 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
         const mappedCategoryId = mapSuggestedCategoryId(item.suggestedCategoryId);
         
         // Validate that the mapped category actually exists in available categories
-        const categoryExists = mappedCategoryId && unifiedCategories.some(c => c.id === mappedCategoryId);
+        const categoryExists = mappedCategoryId && availableCategories.some(c => c.id === mappedCategoryId);
         const finalCategoryId = categoryExists ? mappedCategoryId : undefined;
         
         console.log('Line item:', item.description, 'original suggested:', item.suggestedCategoryId, 'mapped to:', mappedCategoryId, 'exists:', categoryExists, 'final:', finalCategoryId);

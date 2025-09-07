@@ -73,6 +73,7 @@ export interface BudgetSummary {
     wants: { actual: number; target: number; variance: number };
     savings: { actual: number; target: number; variance: number };
   };
+  unpaidLaborValue?: number;
 }
 
 export interface CategoryWithExpenses extends BudgetCategory {
