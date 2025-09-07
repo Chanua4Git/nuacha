@@ -461,7 +461,40 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   useEffect(() => {
     if (initialOcrData) {
       console.log('🎯 Using initial OCR data from props:', initialOcrData);
-      handleOcrData(initialOcrData);
+      console.log('🔍 Demo CategorySelector debug - place:', initialOcrData.place, 'lineItems:', initialOcrData.lineItems?.length || 0);
+      
+      // Bypass gating logic and directly set OCR result and form fields
+      setOcrResult(initialOcrData);
+
+      // Set form fields from OCR data
+      if (initialOcrData.amount) {
+        console.log('💰 Setting amount from initial data:', initialOcrData.amount);
+        setAmount(initialOcrData.amount);
+      }
+      
+      if (initialOcrData.description) {
+        console.log('📝 Setting description from initial data:', initialOcrData.description);
+        setDescription(initialOcrData.description);
+      }
+      
+      if (initialOcrData.place) {
+        console.log('📍 Setting place from initial data:', initialOcrData.place);
+        setPlace(initialOcrData.place);
+      }
+      
+      if (initialOcrData.date) {
+        console.log('📅 Setting date from initial data:', initialOcrData.date);
+        setSingleDate(initialOcrData.date);
+      }
+
+      // Auto-show detailed view if line items are detected or structured data exists
+      if (initialOcrData.lineItems && initialOcrData.lineItems.length > 0) {
+        console.log('📋 Showing detailed receipt view - line items found:', initialOcrData.lineItems.length);
+        setShowDetailedReceiptView(true);
+      } else if (initialOcrData.storeDetails || initialOcrData.total || initialOcrData.tax) {
+        console.log('📋 Showing detailed receipt view - structured data found');
+        setShowDetailedReceiptView(true);
+      }
       
       // Set receipt image preview if URL provided
       if (receiptUrl) {
