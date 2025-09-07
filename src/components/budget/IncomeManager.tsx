@@ -7,20 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { useIncomeSource } from '@/hooks/useIncomeSource';
-import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { formatTTD, toMonthly, getFrequencyDisplay } from '@/utils/budgetUtils';
 import { IncomeSource, FrequencyType } from '@/types/budget';
-import { Plus, Edit, Trash2, DollarSign, FileText, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useExpense } from '@/context/ExpenseContext';
 
 export default function IncomeManager() {
   const { selectedFamily } = useExpense();
   const { incomeSources, loading, createIncomeSource, updateIncomeSource, deleteIncomeSource } = useIncomeSource(selectedFamily?.id);
-  const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,9 +25,6 @@ export default function IncomeManager() {
     amount_ttd: 0,
     notes: ''
   });
-
-  const activeTemplate = getDefaultTemplate();
-  const hasTemplateIncome = activeTemplate?.template_data?.income && Object.keys(activeTemplate.template_data.income).length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,17 +89,9 @@ export default function IncomeManager() {
     });
   };
 
-  // Calculate template income if available
-  const templateIncome = hasTemplateIncome 
-    ? Object.values(activeTemplate!.template_data!.income!).reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0)
-    : 0;
-
-  const manualIncome = incomeSources.reduce((sum, source) => {
+  const totalMonthlyIncome = incomeSources.reduce((sum, source) => {
     return sum + toMonthly(source.amount_ttd, source.frequency);
   }, 0);
-
-  // Show template income as primary source
-  const totalMonthlyIncome = hasTemplateIncome ? templateIncome : manualIncome;
 
   return (
     <div className="space-y-6">
@@ -120,111 +105,31 @@ export default function IncomeManager() {
         </Card>
       ) : (
         <>
-          {/* Template Income Alert */}
-          {hasTemplateIncome && (
-            <Alert>
-              <FileText className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Income is managed via Budget Template</strong>
-                <br />
-                Your income is currently set through your budget template "{activeTemplate?.name}". 
-                Template income takes priority over manual entries.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Summary Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Income Summary - {selectedFamily.name}
-                {hasTemplateIncome && (
-                  <Badge variant="secondary" className="ml-2">
-                    <FileText className="h-3 w-3 mr-1" />
-                    From Template
-                  </Badge>
-                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{formatTTD(totalMonthlyIncome)}</div>
-              <p className="text-xs text-muted-foreground">
-                {hasTemplateIncome ? (
-                  <>Template income • {Object.keys(activeTemplate!.template_data!.income!).length} source{Object.keys(activeTemplate!.template_data!.income!).length !== 1 ? 's' : ''}</>
-                ) : (
-                  <>Manual income sources • {incomeSources.length} source{incomeSources.length !== 1 ? 's' : ''}</>
-                )}
-              </p>
-              {hasTemplateIncome && manualIncome > 0 && (
-                <div className="mt-2 p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">
-                    <Info className="h-3 w-3 inline mr-1" />
-                    Additional manual sources ({formatTTD(manualIncome)}) are available but not used in calculations
-                  </p>
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground">Total monthly income from {incomeSources.length} sources</p>
             </CardContent>
           </Card>
-
-      {/* Template Income Display */}
-      {hasTemplateIncome && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Template Income Sources
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(activeTemplate!.template_data!.income!).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                    <p className="text-xs text-muted-foreground">Managed via template</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{formatTTD(Number(value))}</div>
-                    <div className="text-xs text-muted-foreground">Monthly</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 p-3 border-t">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => window.open('/budget?tab=builder', '_blank')}
-                className="w-full"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Template Income
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Income Sources Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            {hasTemplateIncome ? 'Additional Income Sources' : 'Income Sources'}
-            {hasTemplateIncome && (
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                (For reference only - template income is used in calculations)
-              </span>
-            )}
-          </CardTitle>
-          {!hasTemplateIncome && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => resetForm()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Income Source
-                </Button>
-              </DialogTrigger>
+          <CardTitle>Income Sources</CardTitle>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => resetForm()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Income Source
+              </Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
@@ -301,13 +206,6 @@ export default function IncomeManager() {
               </form>
             </DialogContent>
           </Dialog>
-          )}
-          {hasTemplateIncome && (
-            <Button variant="outline" size="sm" onClick={() => resetForm()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Reference Source
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -316,13 +214,8 @@ export default function IncomeManager() {
             </div>
           ) : incomeSources.length === 0 ? (
             <div className="text-center p-8 text-muted-foreground">
-              <p>{hasTemplateIncome ? 'No additional income sources.' : 'No income sources yet.'}</p>
-              <p className="text-sm">
-                {hasTemplateIncome 
-                  ? 'Your template income is being used for calculations.' 
-                  : 'Add your first income source to get started.'
-                }
-              </p>
+              <p>No income sources yet.</p>
+              <p className="text-sm">Add your first income source to get started.</p>
             </div>
           ) : (
             <Table>

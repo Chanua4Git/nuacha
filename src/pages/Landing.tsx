@@ -155,27 +155,6 @@ const Landing = () => {
           />
         </section>
 
-        {/* Budget CTA Section */}
-        <section className="py-12 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="bg-gradient-to-r from-[#F4E8D3]/30 via-[#C3DCD1]/20 to-[#F1CBC7]/30 rounded-3xl p-8 md:p-12 backdrop-blur border border-white/20">
-              <PieChart className="w-16 h-16 text-[#5A7684] mx-auto mb-6" />
-              <h2 className="text-3xl md:text-4xl font-playfair mb-4 text-foreground">
-                Want to plan your budget too?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Create your personalized budget with our 50/30/20 builder. Perfect for families and stay-at-home parents planning their finances.
-              </p>
-              <Link to="/demo/budget">
-                <Button size="lg" className="bg-[#5A7684] hover:bg-[#5A7684]/90 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl">
-                  Create Your Budget Plan
-                  <ArrowRight className="ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
         {/* Hero Section */}
         <section className="relative py-20 px-4 md:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
@@ -301,6 +280,8 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* Call to Action Section */}
+        
 
         {/* Footer */}
         <footer className="py-12 px-4 md:px-6 lg:px-8 bg-background">

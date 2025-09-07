@@ -9,8 +9,6 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns
 import { Badge } from '@/components/ui/badge';
 import { comprehensiveCategories } from '@/data/comprehensiveCategories';
 import QuickAddExpenseModal from './QuickAddExpenseModal';
-import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
-import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 
 export const ExpenseCategoriesManager = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -21,8 +19,6 @@ export const ExpenseCategoriesManager = () => {
   } | null>(null);
   
   const { selectedFamily, expenses, categories } = useExpense();
-  const { getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id || '');
-  const { summary: budgetSummary } = useBudgetSummary(startOfMonth(selectedMonth), endOfMonth(selectedMonth), selectedFamily?.id);
   
   // Filter expenses by selected month using string comparison (avoids timezone issues)
   
@@ -203,41 +199,13 @@ export const ExpenseCategoriesManager = () => {
     return Object.values(categoriesByType[groupType]).flat();
   };
 
-  // Get template expenses
-  const defaultTemplate = getDefaultTemplate();
-  const templateExpenses: { needs: number; wants: number; savings: number } = React.useMemo(() => {
-    if (!defaultTemplate?.template_data) return { needs: 0, wants: 0, savings: 0 };
-    
-    const templateData = defaultTemplate.template_data as any;
-    
-    const needsTotal = templateData?.needs ? 
-      Object.values(templateData.needs).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0;
-    const wantsTotal = templateData?.wants ? 
-      Object.values(templateData.wants).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0;
-    const savingsTotal = templateData?.savings ? 
-      Object.values(templateData.savings).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) : 0;
-    
-    return {
-      needs: needsTotal as number,
-      wants: wantsTotal as number,
-      savings: savingsTotal as number
-    };
-  }, [defaultTemplate]);
-
   const groupTotals = {
     needs: getAllCategoriesInGroup('needs').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0),
     wants: getAllCategoriesInGroup('wants').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0),
     savings: getAllCategoriesInGroup('savings').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0)
   };
 
-  // Combined totals (template + manual)
-  const combinedTotals = {
-    needs: groupTotals.needs + templateExpenses.needs,
-    wants: groupTotals.wants + templateExpenses.wants,
-    savings: groupTotals.savings + templateExpenses.savings
-  };
-
-  const totalSpending = combinedTotals.needs + combinedTotals.wants + combinedTotals.savings;
+  const totalSpending = groupTotals.needs + groupTotals.wants + groupTotals.savings;
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setSelectedMonth(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
@@ -399,55 +367,25 @@ export const ExpenseCategoriesManager = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            Combined expenses for {format(selectedMonth, 'MMMM yyyy')} - {selectedFamily.name}
+            Total spending by category for {format(selectedMonth, 'MMMM yyyy')} - {selectedFamily.name}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">${combinedTotals.needs.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-destructive">${groupTotals.needs.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">🔴 Needs (Essential)</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.needs.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.needs.toFixed(2)}</div>
-              </div>
+              <div className="text-xs text-muted-foreground">{getAllCategoriesInGroup('needs').length} categories</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">${combinedTotals.wants.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-orange-600">${groupTotals.wants.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">🟡 Wants (Lifestyle)</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.wants.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.wants.toFixed(2)}</div>
-              </div>
+              <div className="text-xs text-muted-foreground">{getAllCategoriesInGroup('wants').length} categories</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">${combinedTotals.savings.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-600">${groupTotals.savings.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">💚 Savings & Investments</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.savings.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.savings.toFixed(2)}</div>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                ${budgetSummary?.unpaidLaborValue ? budgetSummary.totalExpenses.toFixed(2) : (combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}
-              </div>
-              <div className="text-sm text-muted-foreground">💰 Total Value</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>💵 Cash: ${(combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}</div>
-                {budgetSummary?.unpaidLaborValue && (
-                  <div className="text-purple-600">🤝 Unpaid Labor: ${budgetSummary.unpaidLaborValue.toFixed(2)}</div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Total Summary */}
-          <div className="mt-6 pt-4 border-t text-center">
-            <div className="text-lg font-semibold">Total Combined: ${totalSpending.toFixed(2)}</div>
-            <div className="text-sm text-muted-foreground mt-1">
-              🎯 Template Planned: ${(templateExpenses.needs + templateExpenses.wants + templateExpenses.savings).toFixed(2)} | 
-              📱 Manual Entry: ${(groupTotals.needs + groupTotals.wants + groupTotals.savings).toFixed(2)}
+              <div className="text-xs text-muted-foreground">{getAllCategoriesInGroup('savings').length} categories</div>
             </div>
           </div>
         </CardContent>

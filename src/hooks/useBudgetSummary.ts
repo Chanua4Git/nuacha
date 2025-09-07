@@ -37,38 +37,12 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       if (templateError && templateError.code !== 'PGRST116') throw templateError;
 
-      // Extract template expenses by group and unpaid labor
-      let templateExpensesByGroup = { needs: 0, wants: 0, savings: 0 };
-      let templateUnpaidLabor = 0;
-      
       if (activeTemplate?.template_data) {
         // Calculate total income from template
         const templateData = activeTemplate.template_data as any;
         if (templateData?.income && typeof templateData.income === 'object') {
           const incomeValues = Object.values(templateData.income);
           templateIncome = incomeValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
-        }
-        
-        // Extract template expenses from needs, wants, savings
-        if (templateData?.needs && typeof templateData.needs === 'object') {
-          const needsValues = Object.values(templateData.needs);
-          templateExpensesByGroup.needs = needsValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
-        }
-        
-        if (templateData?.wants && typeof templateData.wants === 'object') {
-          const wantsValues = Object.values(templateData.wants);
-          templateExpensesByGroup.wants = wantsValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
-        }
-        
-        if (templateData?.savings && typeof templateData.savings === 'object') {
-          const savingsValues = Object.values(templateData.savings);
-          templateExpensesByGroup.savings = savingsValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
-        }
-        
-        // Extract unpaid labor if included
-        if (templateData?.includeUnpaidLabor && templateData?.unpaidLabor && typeof templateData.unpaidLabor === 'object') {
-          const unpaidLaborValues = Object.values(templateData.unpaidLabor);
-          templateUnpaidLabor = unpaidLaborValues.reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0) as number;
         }
       }
 
@@ -188,13 +162,7 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
         }
       });
 
-      // Combine template expenses with regular expenses
-      expensesByGroup.needs += templateExpensesByGroup.needs;
-      expensesByGroup.wants += templateExpensesByGroup.wants;
-      expensesByGroup.savings += templateExpensesByGroup.savings;
-
       const totalExpenses = Object.values(expensesByGroup).reduce((sum, amount) => sum + amount, 0);
-      const totalWithUnpaidLabor = totalExpenses + templateUnpaidLabor;
 
       // Calculate percentages and variances
       const byGroup = {
@@ -232,11 +200,10 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       setSummary({
         totalIncome,
-        totalExpenses: totalExpenses, // Cash expenses only - DO NOT include unpaid labor
+        totalExpenses,
         byGroup,
-        surplus: totalIncome - totalExpenses, // Surplus based on cash flow only
-        ruleComparison,
-        unpaidLaborValue: templateUnpaidLabor
+        surplus: totalIncome - totalExpenses,
+        ruleComparison
       });
 
     } catch (err) {

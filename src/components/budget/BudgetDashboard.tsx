@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useBudgetVariance } from '@/hooks/useBudgetVariance';
 import { formatTTD, getVarianceStatus } from '@/utils/budgetUtils';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target, PlusCircle, Edit, Eye, FileText, Info, Heart, Banknote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, Target, PlusCircle, Edit, Eye } from 'lucide-react';
 import PeriodSelector, { PeriodSelection } from './PeriodSelector';
 import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
@@ -24,7 +22,6 @@ export default function BudgetDashboard() {
     endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
     displayName: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   });
-  const [showCombinedView, setShowCombinedView] = useState(false);
   
   const { selectedFamily } = useExpense();
   const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate, selectedFamily?.id);
@@ -92,9 +89,9 @@ export default function BudgetDashboard() {
 
   // Prepare chart data
   const pieData = [
-    { name: 'Needs', value: summary.byGroup.needs.total, color: 'hsl(var(--chart-1))' },
-    { name: 'Wants', value: summary.byGroup.wants.total, color: 'hsl(var(--chart-2))' },
-    { name: 'Savings', value: summary.byGroup.savings.total, color: 'hsl(var(--chart-3))' }
+    { name: 'Needs', value: summary.byGroup.needs.total, color: '#ef4444' },
+    { name: 'Wants', value: summary.byGroup.wants.total, color: '#f59e0b' },
+    { name: 'Savings', value: summary.byGroup.savings.total, color: '#10b981' }
   ];
 
   const barData = [
@@ -241,7 +238,7 @@ export default function BudgetDashboard() {
         </CardContent>
       </Card>
 
-      {/* Cash Flow Summary */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -250,26 +247,14 @@ export default function BudgetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatTTD(summary.totalIncome)}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {templates.length > 0 ? (
-                <>
-                  <FileText className="h-3 w-3" />
-                  From Budget Template
-                </>
-              ) : (
-                'Monthly equivalent'
-              )}
-            </p>
+            <p className="text-xs text-muted-foreground">Monthly equivalent</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-1">
-              Cash Expenses
-              <Info className="h-3 w-3 text-muted-foreground" />
-            </CardTitle>
-            <Banknote className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatTTD(summary.totalExpenses)}</div>
@@ -281,10 +266,7 @@ export default function BudgetDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-1">
-              Cash Flow Balance
-              <Info className="h-3 w-3 text-muted-foreground" />
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Surplus</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -327,91 +309,11 @@ export default function BudgetDashboard() {
         </Card>
       </div>
 
-      {/* Unpaid Labor Value Section */}
-      {summary.unpaidLaborValue && summary.unpaidLaborValue > 0 && (
-        <div className="space-y-4">
-          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-purple-600" />
-                  <CardTitle className="text-lg text-purple-900">Unpaid Labor Value</CardTitle>
-                </div>
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                  Non-Cash Contribution
-                </Badge>
-              </div>
-              <p className="text-sm text-purple-700">
-                The economic worth of your care and household work — not money spent, but value created.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-3xl font-bold text-purple-900">
-                    {formatTTD(summary.unpaidLaborValue)}
-                  </div>
-                  <p className="text-sm text-purple-600 mt-1">
-                    Monthly care economy contribution
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Switch
-                      id="combined-view"
-                      checked={showCombinedView}
-                      onCheckedChange={setShowCombinedView}
-                    />
-                    <Label htmlFor="combined-view" className="text-sm text-purple-700">
-                      Show total household economy
-                    </Label>
-                  </div>
-                  {showCombinedView && (
-                    <div className="bg-white/60 rounded-lg p-3 border border-purple-200">
-                      <div className="text-lg font-semibold text-purple-900">
-                        {formatTTD(summary.totalExpenses + summary.unpaidLaborValue)}
-                      </div>
-                      <div className="text-xs text-purple-600">
-                        Combined household value
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-purple-100">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-purple-600 mt-0.5" />
-                <div className="text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Why this matters:</p>
-                  <p>
-                    Your household spends <strong>{formatTTD(summary.totalExpenses)}</strong> in cash, 
-                    but you also contribute <strong>{formatTTD(summary.unpaidLaborValue)}</strong> worth of care work. 
-                    {showCombinedView && (
-                      <> Together, your household economy is worth <strong>{formatTTD(summary.totalExpenses + summary.unpaidLaborValue)}</strong> monthly.</>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Cash Spending Distribution
-              <Badge variant="outline" className="text-xs">Cash Only</Badge>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              How your cash expenses break down across needs, wants, and savings
-            </p>
+            <CardTitle>Spending Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -438,13 +340,7 @@ export default function BudgetDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Budget vs Actual Cash Spending
-              <Badge variant="outline" className="text-xs">50/30/20 Rule</Badge>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Planned budget allocation compared to actual cash expenses
-            </p>
+            <CardTitle>Budget vs Actual</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -454,42 +350,40 @@ export default function BudgetDashboard() {
                 <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
                 <Tooltip formatter={(value) => formatTTD(value as number)} />
                 <Legend />
-                <Bar dataKey="needs" stackId="a" fill="hsl(var(--chart-1))" name="Needs" />
-                <Bar dataKey="wants" stackId="a" fill="hsl(var(--chart-2))" name="Wants" />
-                <Bar dataKey="savings" stackId="a" fill="hsl(var(--chart-3))" name="Savings" />
+                <Bar dataKey="needs" stackId="a" fill="#ef4444" name="Needs" />
+                <Bar dataKey="wants" stackId="a" fill="#f59e0b" name="Wants" />
+                <Bar dataKey="savings" stackId="a" fill="#10b981" name="Savings" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* 50/30/20 Rule Compliance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>50/30/20 Rule Compliance</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(summary.ruleComparison).map(([group, comparison]) => {
-            const status = getVarianceStatus(comparison.variance);
-            const actualPercentage = comparison.actual.toFixed(0);
-            const targetPercentage = comparison.target.toFixed(0);
-            
-            return (
-              <div key={group} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
+      {/* Alerts */}
+      <div className="space-y-4">
+        {Object.entries(summary.ruleComparison).map(([group, comparison]) => {
+          const status = getVarianceStatus(comparison.variance);
+          if (status === 'on-track') return null;
+          
+          return (
+            <Card key={group} className={status === 'over' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  {status === 'over' ? (
+                    <TrendingUp className="h-5 w-5 text-red-600" />
+                  ) : (
+                    <TrendingDown className="h-5 w-5 text-yellow-600" />
+                  )}
                   <span className="font-medium capitalize">{group}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {actualPercentage}% (target: {targetPercentage}%)
-                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {status === 'over' ? 'over budget by' : 'under budget by'} {Math.abs(comparison.variance).toFixed(1)}%
+                  </span>
                 </div>
-                <div className="text-sm font-medium">
-                  {status === 'over' ? 'over' : status === 'under' ? 'under' : 'on'} budget by {Math.abs(comparison.variance).toFixed(1)}%
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
       </>
       )}
     </div>

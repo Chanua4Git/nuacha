@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface SAHMBudgetData {
   aboutYou: {
@@ -24,7 +23,6 @@ interface SAHMBudgetData {
 
 export const useSAHMBudgetSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
 
   const submitBudget = async (budgetData: SAHMBudgetData) => {
     setIsSubmitting(true);
@@ -102,32 +100,9 @@ export const useSAHMBudgetSubmission = () => {
         .from('demo_leads')
         .insert([leadData]);
 
-      // Store demo template data in localStorage for budget report
-      const demoTemplateData = {
-        id: 'demo-generated',
-        name: `${budgetData.aboutYou.name}'s Personalized Budget`,
-        created_at: new Date().toISOString(),
-        budget_data: {
-          aboutYou: budgetData.aboutYou,
-          income: budgetData.income,
-          needs: budgetData.needs,
-          wants: budgetData.wants,
-          savings: budgetData.savings,
-          totalBudget,
-          totalMonthlyIncome
-        }
-      };
-      
-      localStorage.setItem('demo-budget-template', JSON.stringify(demoTemplateData));
-
       toast.success("Budget saved successfully!", {
-        description: "Redirecting to your personalized budget report...",
+        description: "Your personalized budget template will be emailed to you shortly. Check your inbox!",
       });
-
-      // Navigate to demo budget with template view
-      setTimeout(() => {
-        navigate('/demo/budget?tab=templates&view=report&templateId=demo-generated');
-      }, 1000);
 
       return true;
     } catch (error) {
