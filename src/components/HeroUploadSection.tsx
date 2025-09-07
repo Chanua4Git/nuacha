@@ -2,43 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Camera, Upload, Leaf } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface HeroUploadSectionProps {
-  onCameraClick?: () => void;
-  onUploadClick?: () => void;
-  onFileSelect?: (file: File) => void;
-  isDemo?: boolean;
-}
-
-const HeroUploadSection = ({ 
-  onCameraClick, 
-  onUploadClick, 
-  onFileSelect, 
-  isDemo = false 
-}: HeroUploadSectionProps) => {
+const HeroUploadSection = () => {
   const navigate = useNavigate();
-
-  const handleCameraAction = () => {
-    if (onCameraClick) {
-      onCameraClick();
-    } else {
-      navigate('/demo');
-    }
-  };
-
-  const handleUploadAction = () => {
-    if (onUploadClick) {
-      onUploadClick();
-    } else {
-      navigate('/demo');
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
-    }
-  };
 
   return (
     <div className="relative py-16 px-4 md:px-6 lg:px-8">
@@ -66,7 +31,7 @@ const HeroUploadSection = ({
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Button
               size="lg"
-              onClick={handleCameraAction}
+              onClick={() => navigate('/demo?tab=add-expense')}
               className="group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#5A7684]/80 to-[#5A7684] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -83,31 +48,22 @@ const HeroUploadSection = ({
 
             <div className="text-[#5C5C5C] font-light">or</div>
 
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                id="hero-file-upload"
-              />
-              <Button
-                size="lg"
-                onClick={handleUploadAction}
-                variant="outline"
-                className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
-              >
-                <div className="relative flex items-center space-x-3">
-                  <div className="p-2 rounded-full bg-[#5A7684]/10 group-hover:bg-white/20 transition-colors duration-300">
-                    <Upload className="h-8 w-8" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-lg font-medium">Upload Receipt</div>
-                    <div className="text-sm opacity-80 group-hover:opacity-90">Upload from your device</div>
-                  </div>
+            <Button
+              size="lg"
+              onClick={() => navigate('/demo?tab=add-expense')}
+              variant="outline"
+              className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
+            >
+              <div className="relative flex items-center space-x-3">
+                <div className="p-2 rounded-full bg-[#5A7684]/10 group-hover:bg-white/20 transition-colors duration-300">
+                  <Upload className="h-8 w-8" />
                 </div>
-              </Button>
-            </div>
+                <div className="text-left">
+                  <div className="text-lg font-medium">Upload Receipt</div>
+                  <div className="text-sm opacity-80 group-hover:opacity-90">Upload from your device</div>
+                </div>
+              </div>
+            </Button>
           </div>
 
           {/* Reassuring message */}

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, PlusCircle, ListFilter, Tag, Calculator, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
@@ -14,58 +14,24 @@ import DemoReceiptUploadSection from '@/components/demo/DemoReceiptUploadSection
 import DemoAwareExpenseList from '@/components/demo/DemoAwareExpenseList';
 import DemoAwareFamilySelector from '@/components/demo/DemoAwareFamilySelector';
 import DemoAwareRemindersList from '@/components/demo/DemoAwareRemindersList';
-import { OCRResult } from '@/types/expense';
 import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
-import ReceiptScanLeadCaptureModal from '@/components/demo/ReceiptScanLeadCaptureModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 
 const Demo = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'expenses';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showLeadCaptureModal, setShowLeadCaptureModal] = useState(false);
-  const [showReceiptScanLeadCapture, setShowReceiptScanLeadCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [receiptOcrData, setReceiptOcrData] = useState<{extractedData: OCRResult, receiptUrl: string} | null>(null);
-  const [showPostMagicLeadCapture, setShowPostMagicLeadCapture] = useState(false);
-  const [ocrProcessedAt, setOcrProcessedAt] = useState<number | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'expenses';
     setActiveTab(tab);
   }, [searchParams]);
 
-  // Handle incoming data from Landing page - show magic first, then lead capture
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.extractedData && state?.receiptUrl && state?.preProcessed) {
-      // Store OCR data and show it immediately
-      setReceiptOcrData({
-        extractedData: state.extractedData,
-        receiptUrl: state.receiptUrl
-      });
-      // Set the tab to show the populated form immediately  
-      setActiveTab('add-expense');
-      setSearchParams({ tab: 'add-expense' });
-      // Trigger post-magic lead capture after user sees the magic
-      setOcrProcessedAt(Date.now());
-    }
-  }, [location.state]);
-
-  // Trigger post-magic lead capture 4 seconds after OCR processing
-  useEffect(() => {
-    if (ocrProcessedAt && !showPostMagicLeadCapture && !showReceiptScanLeadCapture) {
-      const timer = setTimeout(() => {
-        setShowPostMagicLeadCapture(true);
-      }, 4000); // 4 seconds to let user see the magic
-      
-      return () => clearTimeout(timer);
-    }
-  }, [ocrProcessedAt, showPostMagicLeadCapture, showReceiptScanLeadCapture]);
 
   const handleTabChange = (value: string) => {
     if (value === 'budget') {
@@ -134,14 +100,6 @@ const Demo = () => {
     }
   };
 
-  const handleReceiptScanLeadCaptureComplete = () => {
-    // After lead capture is complete, show the populated form
-    setActiveTab('add-expense');
-    setSearchParams({ tab: 'add-expense' });
-    toast.success("Receipt data loaded!", {
-      description: "Your receipt has been processed. Complete the expense entry below."
-    });
-  };
 
   return (
     <DemoExpenseProvider>
@@ -219,14 +177,7 @@ const Demo = () => {
                   </TabsContent>
                    <TabsContent value="add-expense" className="mt-0">
                     <DemoReceiptUploadSection 
-                      initialOcrData={receiptOcrData?.extractedData}
-                      receiptUrl={receiptOcrData?.receiptUrl}
-                      requireLeadCaptureInDemo={false}
-                      onScanComplete={(data, url) => {
-                        // Store the OCR data and trigger post-magic lead capture
-                        setReceiptOcrData({ extractedData: data, receiptUrl: url || '' });
-                        setOcrProcessedAt(Date.now());
-                      }}
+                      requireLeadCaptureInDemo={true}
                     />
                    </TabsContent>
                 </Tabs>
@@ -297,24 +248,6 @@ const Demo = () => {
             </div>
           )}
 
-          {/* Receipt Scan Lead Capture Modal - Post Magic */}
-          <ReceiptScanLeadCaptureModal
-            open={showPostMagicLeadCapture}
-            onOpenChange={setShowPostMagicLeadCapture}
-            onComplete={() => {
-              setShowPostMagicLeadCapture(false);
-              toast.success("Thanks! Continue exploring Nuacha's magic!", {
-                description: "Your form data is ready. Try adding more expenses or explore other features."
-              });
-            }}
-          />
-
-          {/* Original Receipt Scan Lead Capture Modal for legacy flows */}
-          <ReceiptScanLeadCaptureModal
-            open={showReceiptScanLeadCapture}
-            onOpenChange={setShowReceiptScanLeadCapture}
-            onComplete={handleReceiptScanLeadCaptureComplete}
-          />
         </div>
       </DemoExpenseContextProvider>
     </DemoExpenseProvider>
