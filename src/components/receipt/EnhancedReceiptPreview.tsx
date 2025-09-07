@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Loader2, RefreshCw, Sparkles, Check } from 'lucide-react';
+import ReceiptProcessingLoader from '@/components/demo/ReceiptProcessingLoader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -91,12 +92,7 @@ const EnhancedReceiptPreview: React.FC<EnhancedReceiptPreviewProps> = ({
         />
         
         {isProcessing && (
-          <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
-            <div className="bg-white p-4 rounded-md flex flex-col items-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <p className="text-sm font-medium">Reading your receipt...</p>
-            </div>
-          </div>
+          <ReceiptProcessingLoader />
         )}
       </div>
     </div>
