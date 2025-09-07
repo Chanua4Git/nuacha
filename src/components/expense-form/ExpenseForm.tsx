@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import React from 'react';
-import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
+import { useExpense } from '@/context/ExpenseContext';
 import { format } from 'date-fns';
 import CategorySelector from '../CategorySelector';
 import ReceiptUpload from '../ReceiptUpload';
@@ -28,15 +27,8 @@ import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
 import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 
-interface ExpenseFormProps {
-  initialOcrData?: OCRResult;
-  receiptUrl?: string;
-  requireLeadCaptureInDemo?: boolean;
-  onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
-}
-
-const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete }: ExpenseFormProps) => {
-  const { selectedFamily, createExpense, isDemo } = useContextAwareExpense();
+const ExpenseForm = () => {
+  const { selectedFamily, createExpense } = useExpense();
   
   // Get current user for storage organization
   const [user, setUser] = useState<any>(null);
@@ -128,16 +120,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     handleImageRemove();
   };
 
-  const handleOcrData = (data: OCRResult, receiptImageUrl?: string) => {
+  const handleOcrData = (data: OCRResult) => {
     console.log('🔄 handleOcrData called with:', data);
-    
-    // Check if we need to gate this with lead capture in demo mode
-    if (requireLeadCaptureInDemo && isDemo && onScanComplete) {
-      console.log('🚪 Gating OCR data for lead capture in demo mode');
-      onScanComplete(data, receiptImageUrl);
-      return;
-    }
-    
     setOcrResult(data);
 
     // Set amount (OCRResult.amount is string type)
@@ -457,19 +441,6 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     });
   };
 
-  // Handle initial OCR data from props (e.g., from Demo page)
-  useEffect(() => {
-    if (initialOcrData) {
-      console.log('🎯 Using initial OCR data from props:', initialOcrData);
-      handleOcrData(initialOcrData);
-      
-      // Set receipt image preview if URL provided
-      if (receiptUrl) {
-        setImagePreview(receiptUrl);
-      }
-    }
-  }, [initialOcrData, receiptUrl]);
-
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
@@ -557,7 +528,6 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                   <DetailedReceiptView
                     receiptData={ocrResult}
                     receiptImage={imagePreview}
-                    isDemo={isDemo}
                     onRetry={() => {
                       setOcrResult(null);
                       setShowDetailedReceiptView(false);

@@ -3,12 +3,6 @@ import { useExpenses } from './useExpenses';
 import { detectDuplicates, DuplicateGroup } from '@/utils/duplicateDetection';
 import { OCRResult, Expense } from '@/types/expense';
 
-// Helper to check if a string is a valid UUID
-const isValidUUID = (uuid: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
-
 export interface ReceiptDuplicateCheck {
   hasDuplicates: boolean;
   duplicateGroups: DuplicateGroup[];
@@ -16,9 +10,7 @@ export interface ReceiptDuplicateCheck {
 }
 
 export const useReceiptDuplicateDetection = (familyId?: string) => {
-  // Only fetch expenses if familyId is a valid UUID (skip for demo)
-  const shouldFetchExpenses = familyId && isValidUUID(familyId);
-  const { expenses } = useExpenses({ familyId: shouldFetchExpenses ? familyId : undefined });
+  const { expenses } = useExpenses({ familyId });
   const [isChecking, setIsChecking] = useState(false);
 
   const checkForReceiptDuplicates = useCallback(async (

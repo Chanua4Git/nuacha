@@ -1,8 +1,6 @@
 
-import React from 'react';
-import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
-import { useExpense } from '@/context/ExpenseContext';
-import type { ExpenseFilters } from '@/hooks/useFilters';
+import { useMemo, useState } from 'react';
+import { useExpense, ExpenseFilters } from '@/context/ExpenseContext';
 import ExpenseCard from './ExpenseCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,10 +16,8 @@ import CategorySelector from './CategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
-import { useMemo, useState } from 'react';
 
 const ExpenseList = () => {
-  const expenseContext = useContextAwareExpense();
   const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   
   const [filters, setFilters] = useState<ExpenseFilters>({});
@@ -74,14 +70,7 @@ const ExpenseList = () => {
     }
   }, [searchTerm]);
   
-  const expenses = filteredExpenses({
-    categoryId: filters.categoryIds?.[0],
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-    minAmount: filters.minAmount,
-    maxAmount: filters.maxAmount,
-    searchTerm: filters.searchTerm
-  });
+  const expenses = filteredExpenses(filters);
   const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
   const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
@@ -254,8 +243,8 @@ const ExpenseList = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <CategorySelector
-                  value={filters.categoryIds?.[0]}
-                  onChange={(value) => updateFilter('categoryIds', value ? [value] : undefined)}
+                  value={filters.categoryId}
+                  onChange={(value) => updateFilter('categoryId', value)}
                 />
               </div>
               

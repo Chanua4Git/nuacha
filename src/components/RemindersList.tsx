@@ -1,13 +1,12 @@
 
-import React from 'react';
-import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
+import { useExpense } from '@/context/ExpenseContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, AlarmClock, Tag, ArrowRightCircle } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
 const RemindersList = () => {
-  const { upcomingReminders } = useContextAwareExpense();
+  const { upcomingReminders } = useExpense();
   
   const reminders = upcomingReminders();
   

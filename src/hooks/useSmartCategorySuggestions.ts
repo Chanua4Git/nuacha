@@ -161,12 +161,6 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'paper towel': { category: 'Paper goods', confidence: 0.8 },
 };
 
-// Helper to check if a string is a valid UUID
-const isValidUUID = (uuid: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
-
 export const useSmartCategorySuggestions = (
   place?: string,
   lineItems?: ReceiptLineItem[],
@@ -200,8 +194,8 @@ export const useSmartCategorySuggestions = (
         const baselineSuggestions = getBaselineSuggestions(place, lineItems, categories);
         console.log('📊 Baseline suggestions:', baselineSuggestions);
         
-        // For demo users or users without valid family UUID, return baseline suggestions only
-        if (!user || !familyId || !isValidUUID(familyId)) {
+        // For demo users or users without family, return baseline suggestions only
+        if (!user || !familyId) {
           console.log('👤 Demo user or no family - using baseline only');
           if (baselineSuggestions.length > 0) {
             const baselineOnlySuggestions = baselineSuggestions.map(bs => ({

@@ -27,26 +27,16 @@ export async function preprocessReceiptImage(
       try {
         // Calculate optimal dimensions while maintaining aspect ratio
         let { width, height } = img;
-        let shouldRotate = false;
-        
-        // Check if this is a long receipt that needs rotation
-        const aspectRatio = height / width;
-        if (aspectRatio > 2.5) {
-          console.log(`📐 Detected long receipt (aspect ratio: ${aspectRatio.toFixed(2)}), rotating 90° for better OCR`);
-          shouldRotate = true;
-          // Swap dimensions for rotation
-          [width, height] = [height, width];
-        }
         
         if (width > maxWidth || height > maxHeight) {
-          const currentAspectRatio = width / height;
+          const aspectRatio = width / height;
           
           if (width > height) {
             width = Math.min(width, maxWidth);
-            height = width / currentAspectRatio;
+            height = width / aspectRatio;
           } else {
             height = Math.min(height, maxHeight);
-            width = height * currentAspectRatio;
+            width = height * aspectRatio;
           }
         }
 
@@ -63,15 +53,8 @@ export async function preprocessReceiptImage(
           ctx.filter = 'contrast(1.1) brightness(1.05)';
         }
 
-        // Draw the image with preprocessing and optional rotation
-        if (shouldRotate) {
-          // Rotate 90 degrees clockwise for long receipts
-          ctx.translate(width, 0);
-          ctx.rotate(Math.PI / 2);
-          ctx.drawImage(img, 0, 0, height, width);
-        } else {
-          ctx.drawImage(img, 0, 0, width, height);
-        }
+        // Draw the image with preprocessing
+        ctx.drawImage(img, 0, 0, width, height);
 
         // Convert back to blob
         canvas.toBlob(

@@ -4,7 +4,6 @@ import { processReceiptImage } from '@/utils/receipt';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import { removeBackground, loadImage } from '@/utils/receipt/backgroundRemoval';
-import { preprocessReceiptImage } from '@/utils/receipt/imagePreprocessing';
 import UploadArea from './UploadArea';
 import EnhancedReceiptPreview from './EnhancedReceiptPreview';
 
@@ -104,26 +103,21 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   const processReceipt = async (file: File, isRetry = false, withBackgroundRemoval = false) => {
     setCurrentFile(file);
     
+    // Check if this is a long receipt and warn user
+    if (!isRetry) {
+      const isLongReceipt = await checkIfLongReceipt(file);
+      if (isLongReceipt) {
+        toast('📏 Long receipt detected', {
+          description: 'For better results, consider using Long Receipt Mode to split into sections.',
+          duration: 5000,
+        });
+      }
+    }
+    
     setIsProcessing(true);
     try {
       let fileToProcess = file;
       let fileToSave = file; // This will be the file we pass to onImageUpload
-
-      // Apply image preprocessing (includes auto-rotation for long receipts)
-      try {
-        const preprocessedFile = await preprocessReceiptImage(file, {
-          maxWidth: 1920,
-          maxHeight: 1920,
-          quality: 0.9,
-          enableEnhancement: true
-        });
-        fileToProcess = preprocessedFile;
-        fileToSave = preprocessedFile; // Use preprocessed for both processing and saving
-        console.log('✅ Image preprocessing completed');
-      } catch (error) {
-        console.error('Image preprocessing failed, using original:', error);
-        // Continue with original file
-      }
 
       // Apply background removal if enabled
       if (withBackgroundRemoval || removeBackgroundEnabled) {
