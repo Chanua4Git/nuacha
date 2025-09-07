@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,12 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Download, Send, Plus } from "lucide-react";
+import { Progress } from '@/components/ui/progress';
+import { ChevronLeft, ChevronRight, Download, Heart, Users, MapPin, Loader2, FileText, Plus, Send } from "lucide-react";
+import { getCategoriesByGroup, DemoCategory } from '@/data/comprehensiveCategories';
+import { getUnpaidLaborForFamilyType, UnpaidLaborCategory } from '@/data/unpaidLaborCategories';
+import { formatTTD } from '@/utils/budgetUtils';
+import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
+import { toast } from 'sonner';
+import { useBudgetPreview } from '@/context/BudgetPreviewContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
-import { useSAHMBudgetSubmission } from '@/hooks/useSAHMBudgetSubmission';
-import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
-import { useBudgetPreview } from '@/context/BudgetPreviewContext';
+import { supabase } from '@/integrations/supabase/client';
 import BudgetLeadCaptureModal from './BudgetLeadCaptureModal';
 interface BudgetData {
   aboutYou: {
@@ -1174,5 +1182,7 @@ export default function SAHMBudgetBuilder() {
             <ChevronRight className="h-4 w-4 ml-2" />
           </Button>}
       </div>
+
+      <BudgetLeadCaptureModal open={showLeadModal} onOpenChange={setShowLeadModal} />
     </div>;
 }
