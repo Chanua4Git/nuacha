@@ -1,6 +1,6 @@
 
-import { useMemo, useState } from 'react';
-import { useExpense, ExpenseFilters } from '@/context/ExpenseContext';
+import React from 'react';
+import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import ExpenseCard from './ExpenseCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,10 @@ import CategorySelector from './CategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
+import { useMemo, useState } from 'react';
 
 const ExpenseList = () => {
+  const expenseContext = useContextAwareExpense();
   const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   
   const [filters, setFilters] = useState<ExpenseFilters>({});

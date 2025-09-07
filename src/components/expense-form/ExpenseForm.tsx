@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useExpense } from '@/context/ExpenseContext';
+import React from 'react';
+import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { format } from 'date-fns';
 import CategorySelector from '../CategorySelector';
 import ReceiptUpload from '../ReceiptUpload';
@@ -28,7 +29,7 @@ import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetecti
 import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 
 const ExpenseForm = () => {
-  const { selectedFamily, createExpense } = useExpense();
+  const { selectedFamily, createExpense } = useContextAwareExpense();
   
   // Get current user for storage organization
   const [user, setUser] = useState<any>(null);
