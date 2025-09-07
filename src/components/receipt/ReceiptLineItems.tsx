@@ -50,13 +50,14 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
     if (!suggestedId) return undefined;
     
     console.log('Mapping suggested category ID:', suggestedId);
+    console.log('Available categories for mapping:', availableCategories.map(c => ({ id: c.id, name: c.name })));
     
     // Handle sample categories from OCR processing
     if (suggestedId.startsWith('sample-')) {
       console.log('Handling sample category:', suggestedId);
       const sampleMapping = {
         'sample-dining': ['dining', 'dining out', 'restaurant', 'takeout', 'entertainment'],
-        'sample-groceries': ['groceries', 'food', 'grocery'],
+        'sample-groceries': ['groceries', 'food', 'grocery', 'household'],
         'sample-transport': ['transport', 'transportation', 'travel', 'fuel', 'gas'],
         'sample-shopping': ['shopping', 'retail', 'clothing', 'personal care'],
         'sample-entertainment': ['entertainment', 'leisure', 'recreation', 'hobbies'],
@@ -66,17 +67,31 @@ const ReceiptLineItems: React.FC<ReceiptLineItemsProps> = ({ receiptData, expens
 
       const searchTerms = sampleMapping[suggestedId as keyof typeof sampleMapping];
       if (searchTerms) {
+        console.log('Searching for terms:', searchTerms);
         for (const term of searchTerms) {
-          const matchedCategory = availableCategories.find(c => 
+          // Try exact word match first, then partial match
+          const exactMatch = availableCategories.find(c => {
+            const categoryWords = c.name.toLowerCase().split(/[\s&/]+/);
+            return categoryWords.includes(term.toLowerCase());
+          });
+          
+          if (exactMatch) {
+            console.log('Found exact word match:', term, '->', exactMatch.name, '(', exactMatch.id, ')');
+            return exactMatch.id;
+          }
+          
+          // Fallback to partial match
+          const partialMatch = availableCategories.find(c => 
             c.name.toLowerCase().includes(term.toLowerCase())
           );
-          if (matchedCategory) {
-            console.log('Mapped sample category', suggestedId, 'to', matchedCategory.name);
-            return matchedCategory.id;
+          if (partialMatch) {
+            console.log('Found partial match:', term, '->', partialMatch.name, '(', partialMatch.id, ')');
+            return partialMatch.id;
           }
         }
       }
       
+      console.log('No mapping found for sample category, using fallback');
       // Fallback for unhandled sample categories
       const wantsCategory = availableCategories.find(c => 'groupType' in c && c.groupType === 'wants') || 
                            availableCategories.find(c => c.name.toLowerCase().includes('want')) ||
