@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Edit, Save, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
-import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 
 interface LineItemsTableBodyProps {
   lineItems: ReceiptLineItem[];
@@ -31,8 +29,6 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
   allLineItems 
 }) => {
   const [editingItems, setEditingItems] = useState<Record<string | number, ReceiptLineItem>>({});
-  const { selectedFamily, isDemo } = useContextAwareExpense();
-  const { members } = useFamilyMembers(selectedFamily?.id);
   
   const handleEdit = (index: number, item: ReceiptLineItem) => {
     setEditingItems(prev => ({
@@ -183,21 +179,12 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
               )}
             </TableCell>
             <TableCell>
-              {isDemo ? (
-                <div className="text-xs text-muted-foreground italic">
-                  No Family Members<br />
-                  <span className="text-xs">When you're ready, you can add family members to track expenses for specific individuals.</span>
-                </div>
-              ) : familyId ? (
+              {familyId && (
                 <FamilyMemberSelector
                   value={isEditing ? editingItem.memberId : item.memberId}
                   onChange={(value) => handleMemberChange(value, item, isEditing ? index : undefined)}
                   className="mb-0"
                 />
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  {item.memberId || 'Unassigned'}
-                </div>
               )}
             </TableCell>
             <TableCell className="text-right">

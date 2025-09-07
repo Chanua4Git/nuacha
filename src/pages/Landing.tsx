@@ -10,7 +10,6 @@ import { useLeadCaptureManager } from "@/hooks/useLeadCaptureManager";
 import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
 import TimeBasedLeadCaptureBanner from "@/components/lead-capture/TimeBasedLeadCaptureBanner";
 import ExpenseForm from "@/components/expense-form/ExpenseForm";
-import { DemoExpenseProvider } from "@/context/DemoExpenseContext";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -63,15 +62,13 @@ const Landing = () => {
 
                 {/* Expense Form with lead capture */}
                 <div className="max-w-2xl mx-auto">
-                  <DemoExpenseProvider>
-                    <ExpenseForm 
-                      requireLeadCaptureInDemo={true}
-                      onScanComplete={(data, receiptUrl) => {
-                        // After successful OCR, user will see the lead capture
-                        // No need to navigate - everything happens in place
-                      }}
-                    />
-                  </DemoExpenseProvider>
+                  <ExpenseForm 
+                    requireLeadCaptureInDemo={true}
+                    onScanComplete={(data, receiptUrl) => {
+                      // After successful OCR, user will see the lead capture
+                      // No need to navigate - everything happens in place
+                    }}
+                  />
                 </div>
 
                 {/* Reassuring message */}

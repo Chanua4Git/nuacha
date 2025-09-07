@@ -1,5 +1,5 @@
 
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { 
   Select, 
   SelectContent, 
@@ -100,14 +100,6 @@ const CategorySelector = ({ value, onChange, className, suggestedCategoryId, inc
   
   const selectedCategory = value ? getCategory(value) : undefined;
   const suggestedCategory = suggestedCategoryId ? getCategory(suggestedCategoryId) : undefined;
-
-  // Auto-select first smart suggestion if no category is selected
-  useEffect(() => {
-    if (!value && suggestions.length > 0 && suggestions[0].confidence > 70) {
-      console.log('🎯 Auto-selecting top smart suggestion:', suggestions[0].category.name);
-      onChange(suggestions[0].categoryId);
-    }
-  }, [suggestions, value, onChange]);
 
   // Use suggested category if available and no category is selected
   const handleSelect = (categoryId: string) => {
