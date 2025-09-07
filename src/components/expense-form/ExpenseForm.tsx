@@ -28,7 +28,12 @@ import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
 import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 
-const ExpenseForm = () => {
+interface ExpenseFormProps {
+  initialOcrData?: OCRResult;
+  receiptUrl?: string;
+}
+
+const ExpenseForm = ({ initialOcrData, receiptUrl }: ExpenseFormProps) => {
   const { selectedFamily, createExpense } = useContextAwareExpense();
   
   // Get current user for storage organization
@@ -441,6 +446,19 @@ const ExpenseForm = () => {
       description: "You can modify them and try again."
     });
   };
+
+  // Handle initial OCR data from props (e.g., from Demo page)
+  useEffect(() => {
+    if (initialOcrData) {
+      console.log('🎯 Using initial OCR data from props:', initialOcrData);
+      handleOcrData(initialOcrData);
+      
+      // Set receipt image preview if URL provided
+      if (receiptUrl) {
+        setImagePreview(receiptUrl);
+      }
+    }
+  }, [initialOcrData, receiptUrl]);
 
   return (
     <Card className="w-full max-w-xl mx-auto">

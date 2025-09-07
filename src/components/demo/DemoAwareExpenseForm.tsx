@@ -2,8 +2,14 @@ import React from 'react';
 import ExpenseForm from '@/components/expense-form/ExpenseForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { OCRResult } from '@/types/expense';
 
-const DemoAwareExpenseForm = () => {
+interface DemoAwareExpenseFormProps {
+  initialOcrData?: OCRResult;
+  receiptUrl?: string;
+}
+
+const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl }: DemoAwareExpenseFormProps) => {
   return (
     <div className="space-y-4">
       <Alert>
@@ -14,7 +20,10 @@ const DemoAwareExpenseForm = () => {
         </AlertDescription>
       </Alert>
       
-      <ExpenseForm />
+      <ExpenseForm 
+        initialOcrData={initialOcrData}
+        receiptUrl={receiptUrl}
+      />
     </div>
   );
 };

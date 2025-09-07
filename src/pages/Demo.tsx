@@ -16,6 +16,7 @@ import DemoAwareFamilySelector from '@/components/demo/DemoAwareFamilySelector';
 import DemoAwareRemindersList from '@/components/demo/DemoAwareRemindersList';
 import { OCRResult } from '@/types/expense';
 import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
+import ReceiptScanLeadCaptureModal from '@/components/demo/ReceiptScanLeadCaptureModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -27,25 +28,28 @@ const Demo = () => {
   const initialTab = searchParams.get('tab') || 'expenses';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showLeadCaptureModal, setShowLeadCaptureModal] = useState(false);
+  const [showReceiptScanLeadCapture, setShowReceiptScanLeadCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [receiptOcrData, setReceiptOcrData] = useState<{extractedData: OCRResult, receiptUrl: string} | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'expenses';
     setActiveTab(tab);
   }, [searchParams]);
 
-  // Handle incoming data from Landing page and auto-switch to add-expense tab
+  // Handle incoming data from Landing page - show lead capture first
   useEffect(() => {
     const state = location.state as any;
     if (state?.extractedData && state?.receiptUrl && state?.preProcessed) {
-      // Auto-switch to add-expense tab when receipt data is available
-      setActiveTab('add-expense');
-      setSearchParams({ tab: 'add-expense' });
-      toast.success("Receipt data loaded!", {
-        description: "Your receipt has been processed. Complete the expense entry below."
+      // Store OCR data for later use
+      setReceiptOcrData({
+        extractedData: state.extractedData,
+        receiptUrl: state.receiptUrl
       });
+      // Show receipt scan lead capture modal first
+      setShowReceiptScanLeadCapture(true);
     }
-  }, [location.state, setSearchParams]);
+  }, [location.state]);
 
   const handleTabChange = (value: string) => {
     if (value === 'budget') {
@@ -112,6 +116,15 @@ const Demo = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleReceiptScanLeadCaptureComplete = () => {
+    // After lead capture is complete, show the populated form
+    setActiveTab('add-expense');
+    setSearchParams({ tab: 'add-expense' });
+    toast.success("Receipt data loaded!", {
+      description: "Your receipt has been processed. Complete the expense entry below."
+    });
   };
 
   return (
@@ -189,7 +202,10 @@ const Demo = () => {
                     <DemoAwareExpenseList />
                   </TabsContent>
                   <TabsContent value="add-expense" className="mt-0">
-                    <DemoAwareExpenseForm />
+                    <DemoAwareExpenseForm 
+                      initialOcrData={receiptOcrData?.extractedData}
+                      receiptUrl={receiptOcrData?.receiptUrl}
+                    />
                   </TabsContent>
                 </Tabs>
               </div>
@@ -258,6 +274,13 @@ const Demo = () => {
               </Card>
             </div>
           )}
+
+          {/* Receipt Scan Lead Capture Modal */}
+          <ReceiptScanLeadCaptureModal
+            open={showReceiptScanLeadCapture}
+            onOpenChange={setShowReceiptScanLeadCapture}
+            onComplete={handleReceiptScanLeadCaptureComplete}
+          />
         </div>
       </DemoExpenseContextProvider>
     </DemoExpenseProvider>
