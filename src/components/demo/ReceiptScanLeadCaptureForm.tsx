@@ -51,28 +51,69 @@ export default function ReceiptScanLeadCaptureForm({ onSubmit, isLoading = false
     };
 
     try {
-      // Use upsert to handle duplicate emails gracefully
-      const { error } = await supabase
+      // First check if email already exists
+      const { data: existingLead, error: checkError } = await supabase
         .from('demo_leads')
-        .upsert([leadData], { 
-          onConflict: 'email',
-          ignoreDuplicates: false 
-        });
-      
-      if (error) {
-        console.error('Error saving lead:', error);
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 is "not found" - anything else is a real error
+        console.error('Error checking existing lead:', checkError);
         toast({
           title: "Something went wrong",
           description: "We couldn't save your information. Please try again.",
           variant: "destructive",
         });
-        return; // Don't proceed with onSubmit if there's an error
+        return;
       }
 
-      toast({
-        title: "Perfect! Your information is saved",
-        description: "Get ready to see the amazing results!",
-      });
+      const isExistingUser = !!existingLead;
+
+      // Insert or update based on whether user exists
+      if (isExistingUser) {
+        // Update existing user's information
+        const { error } = await supabase
+          .from('demo_leads')
+          .update(leadData)
+          .eq('email', email);
+        
+        if (error) {
+          console.error('Error updating lead:', error);
+          toast({
+            title: "Something went wrong",
+            description: "We couldn't save your information. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Thanks! We already have your info",
+          description: "Continue exploring the magic!",
+        });
+      } else {
+        // Insert new user
+        const { error } = await supabase
+          .from('demo_leads')
+          .insert([leadData]);
+        
+        if (error) {
+          console.error('Error inserting lead:', error);
+          toast({
+            title: "Something went wrong",
+            description: "We couldn't save your information. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Perfect! Your information is saved",
+          description: "Get ready to see the amazing results!",
+        });
+      }
     } catch (error) {
       console.error('Error submitting lead:', error);
       toast({
@@ -80,7 +121,7 @@ export default function ReceiptScanLeadCaptureForm({ onSubmit, isLoading = false
         description: "We couldn't save your information. Please try again.",
         variant: "destructive",
       });
-      return; // Don't proceed with onSubmit if there's an error
+      return;
     }
     
     onSubmit({
