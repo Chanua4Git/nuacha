@@ -31,8 +31,6 @@ const Demo = () => {
   const [showReceiptScanLeadCapture, setShowReceiptScanLeadCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptOcrData, setReceiptOcrData] = useState<{extractedData: OCRResult, receiptUrl: string} | null>(null);
-  const [showPostMagicLeadCapture, setShowPostMagicLeadCapture] = useState(false);
-  const [ocrProcessedAt, setOcrProcessedAt] = useState<number | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'expenses';
@@ -62,25 +60,19 @@ const Demo = () => {
       setActiveTab('add-expense');
       setSearchParams({ tab: 'add-expense' });
       
-      // Trigger post-magic lead capture after user sees the magic
-      setOcrProcessedAt(Date.now());
-      
       console.log('🎉 Demo: Setup complete - form should now be populated with OCR data');
     } else {
       console.log('ℹ️ Demo: No OCR data in navigation state');
     }
   }, [location.state]);
 
-  // Trigger post-magic lead capture 4 seconds after OCR processing
-  useEffect(() => {
-    if (ocrProcessedAt && !showPostMagicLeadCapture && !showReceiptScanLeadCapture) {
-      const timer = setTimeout(() => {
-        setShowPostMagicLeadCapture(true);
-      }, 4000); // 4 seconds to let user see the magic
-      
-      return () => clearTimeout(timer);
-    }
-  }, [ocrProcessedAt, showPostMagicLeadCapture, showReceiptScanLeadCapture]);
+  // Handle expense creation success - show lead capture after user sees receipt report
+  const handleExpenseCreated = (ocrData?: OCRResult, receiptUrl?: string) => {
+    // Brief delay to let user see the success message and receipt report
+    setTimeout(() => {
+      setShowReceiptScanLeadCapture(true);
+    }, 1500); // 1.5 seconds to appreciate the success
+  };
 
   const handleTabChange = (value: string) => {
     if (value === 'budget') {
@@ -238,10 +230,10 @@ const Demo = () => {
                       receiptUrl={receiptOcrData?.receiptUrl}
                       requireLeadCaptureInDemo={false}
                       onScanComplete={(data, url) => {
-                        // Store the OCR data and trigger post-magic lead capture
+                        // Store the OCR data for form population
                         setReceiptOcrData({ extractedData: data, receiptUrl: url || '' });
-                        setOcrProcessedAt(Date.now());
                       }}
+                      onExpenseCreated={handleExpenseCreated}
                     />
                    </TabsContent>
                 </Tabs>
@@ -312,19 +304,7 @@ const Demo = () => {
             </div>
           )}
 
-          {/* Receipt Scan Lead Capture Modal - Post Magic */}
-          <ReceiptScanLeadCaptureModal
-            open={showPostMagicLeadCapture}
-            onOpenChange={setShowPostMagicLeadCapture}
-            onComplete={() => {
-              setShowPostMagicLeadCapture(false);
-              toast.success("Thanks! Continue exploring Nuacha's magic!", {
-                description: "Your form data is ready. Try adding more expenses or explore other features."
-              });
-            }}
-          />
-
-          {/* Original Receipt Scan Lead Capture Modal for legacy flows */}
+          {/* Receipt Scan Lead Capture Modal */}
           <ReceiptScanLeadCaptureModal
             open={showReceiptScanLeadCapture}
             onOpenChange={setShowReceiptScanLeadCapture}

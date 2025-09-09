@@ -7,13 +7,15 @@ interface DemoReceiptUploadSectionProps {
   receiptUrl?: string;
   requireLeadCaptureInDemo?: boolean;
   onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
+  onExpenseCreated?: (ocrData?: OCRResult, receiptUrl?: string) => void;
 }
 
 const DemoReceiptUploadSection = ({ 
   initialOcrData, 
   receiptUrl, 
   requireLeadCaptureInDemo, 
-  onScanComplete 
+  onScanComplete,
+  onExpenseCreated
 }: DemoReceiptUploadSectionProps) => {
   return (
     <ExpenseForm 
@@ -21,6 +23,7 @@ const DemoReceiptUploadSection = ({
       receiptUrl={receiptUrl}
       requireLeadCaptureInDemo={requireLeadCaptureInDemo}
       onScanComplete={onScanComplete}
+      onExpenseCreated={onExpenseCreated}
     />
   );
 };

@@ -9,9 +9,10 @@ interface DemoAwareExpenseFormProps {
   receiptUrl?: string;
   requireLeadCaptureInDemo?: boolean;
   onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
+  onExpenseCreated?: (ocrData?: OCRResult, receiptUrl?: string) => void;
 }
 
-const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete }: DemoAwareExpenseFormProps) => {
+const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete, onExpenseCreated }: DemoAwareExpenseFormProps) => {
   return (
     <div className="space-y-4">
       <Alert>
@@ -27,6 +28,7 @@ const DemoAwareExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureIn
         receiptUrl={receiptUrl}
         requireLeadCaptureInDemo={requireLeadCaptureInDemo}
         onScanComplete={onScanComplete}
+        onExpenseCreated={onExpenseCreated}
       />
     </div>
   );

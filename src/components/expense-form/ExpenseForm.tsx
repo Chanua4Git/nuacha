@@ -33,9 +33,10 @@ interface ExpenseFormProps {
   receiptUrl?: string;
   requireLeadCaptureInDemo?: boolean;
   onScanComplete?: (data: OCRResult, receiptUrl?: string) => void;
+  onExpenseCreated?: (ocrData?: OCRResult, receiptUrl?: string) => void;
 }
 
-const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete }: ExpenseFormProps) => {
+const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete, onExpenseCreated }: ExpenseFormProps) => {
   const { selectedFamily, createExpense, isDemo } = useContextAwareExpense();
   
   // Get current user for storage organization
@@ -420,6 +421,11 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
       const expenseCount = createdExpenses.length;
       toast.success(`${expenseCount} expense${expenseCount > 1 ? 's' : ''} added successfully${payrollLink.enabled ? ' and payroll logged' : ''}`);
+
+      // Call the callback after successful expense creation
+      if (onExpenseCreated) {
+        onExpenseCreated(initialOcrData, receiptUrl);
+      }
 
     } catch (error) {
       console.error('Error adding expense:', error);
