@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ReceiptScanLeadCaptureData {
   email: string;
@@ -21,6 +22,7 @@ interface ReceiptScanLeadCaptureFormProps {
 }
 
 export default function ReceiptScanLeadCaptureForm({ onSubmit, isLoading = false }: ReceiptScanLeadCaptureFormProps) {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [businessType, setBusinessType] = useState("");
@@ -49,15 +51,36 @@ export default function ReceiptScanLeadCaptureForm({ onSubmit, isLoading = false
     };
 
     try {
+      // Use upsert to handle duplicate emails gracefully
       const { error } = await supabase
         .from('demo_leads')
-        .insert([leadData]);
+        .upsert([leadData], { 
+          onConflict: 'email',
+          ignoreDuplicates: false 
+        });
       
       if (error) {
         console.error('Error saving lead:', error);
+        toast({
+          title: "Something went wrong",
+          description: "We couldn't save your information. Please try again.",
+          variant: "destructive",
+        });
+        return; // Don't proceed with onSubmit if there's an error
       }
+
+      toast({
+        title: "Perfect! Your information is saved",
+        description: "Get ready to see the amazing results!",
+      });
     } catch (error) {
       console.error('Error submitting lead:', error);
+      toast({
+        title: "Something went wrong",
+        description: "We couldn't save your information. Please try again.",
+        variant: "destructive",
+      });
+      return; // Don't proceed with onSubmit if there's an error
     }
     
     onSubmit({
