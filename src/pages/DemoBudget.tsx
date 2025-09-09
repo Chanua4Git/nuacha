@@ -12,6 +12,12 @@ import { useBudgetPreview } from '@/context/BudgetPreviewContext';
 import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 import { BudgetSummary, FrequencyType } from '@/types/budget';
 
+// Onboarding
+import { OnboardingProvider } from '@/context/OnboardingContext';
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
+import { useOnboarding as useOnboardingHook } from '@/hooks/useOnboarding';
+import { OnboardingStep } from '@/services/OnboardingService';
+
 // Full components with demo context
 import { DemoBudgetProvider } from '@/context/DemoBudgetContext';
 import DemoAwareBudgetDashboard from '@/components/budget/DemoAwareBudgetDashboard';
@@ -22,12 +28,20 @@ import DemoScenarioPlanner from '@/components/budget/DemoScenarioPlanner';
 import HowToUse from '@/components/budget/HowToUse';
 import SAHMBudgetBuilder from '@/components/budget/SAHMBudgetBuilder';
 
-export default function DemoBudget() {
+function DemoBudgetContent() {
   const [mode, setMode] = useState<'demo' | 'builder'>('demo');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchParams] = useSearchParams();
   const { previewData } = useBudgetPreview();
   const isMobile = useIsMobile();
+
+  // Onboarding hook for the "Build Your Budget" button
+  useOnboardingHook({
+    step: OnboardingStep.GUIDE_TO_BUILDER,
+    target: '[data-onboarding="build-button"]',
+    enabled: mode === 'demo',
+    dependencies: [mode]
+  });
 
   // Handle URL parameters for deep linking
   useEffect(() => {
@@ -147,6 +161,7 @@ export default function DemoBudget() {
               size="sm"
               onClick={() => setMode('builder')}
               className="flex items-center gap-2"
+              data-onboarding="build-button"
             >
               <PenTool className="h-4 w-4" />
               Build Your Budget
@@ -239,5 +254,14 @@ export default function DemoBudget() {
       )}
 
     </div>
+  );
+}
+
+export default function DemoBudget() {
+  return (
+    <OnboardingProvider>
+      <DemoBudgetContent />
+      <OnboardingFlow />
+    </OnboardingProvider>
   );
 }

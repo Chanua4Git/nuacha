@@ -21,6 +21,10 @@ import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
 import { supabase } from '@/integrations/supabase/client';
 import BudgetLeadCaptureModal from './BudgetLeadCaptureModal';
+
+// Onboarding
+import { useOnboarding as useOnboardingHook } from '@/hooks/useOnboarding';
+import { OnboardingStep } from '@/services/OnboardingService';
 interface BudgetData {
   aboutYou: {
     name: string;
@@ -154,6 +158,21 @@ export default function SAHMBudgetBuilder() {
     description: '',
     challenges: '',
     whatsapp: ''
+  });
+
+  // Onboarding hooks for template selection
+  useOnboardingHook({
+    step: OnboardingStep.TEMPLATE_SELECTION,
+    target: '[data-onboarding="template-dropdown"]',
+    enabled: currentStep === 0,
+    dependencies: [currentStep]
+  });
+
+  useOnboardingHook({
+    step: OnboardingStep.TEMPLATE_ENCOURAGEMENT,
+    target: '[data-onboarding="template-selected"]',
+    enabled: currentStep === 0 && selectedTemplate !== '',
+    dependencies: [currentStep, selectedTemplate]
   });
 
   // Check if we're in edit mode
@@ -613,11 +632,11 @@ export default function SAHMBudgetBuilder() {
               <CardContent>
                 <div className="space-y-4">
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger>
+                    <SelectTrigger data-onboarding="template-dropdown">
                       <SelectValue placeholder="Select a template type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single-mom">Single Mom Template</SelectItem>
+                      <SelectItem value="single-mom" data-onboarding="template-selected">Single Mom Template</SelectItem>
                       <SelectItem value="request-new">Request New Template</SelectItem>
                     </SelectContent>
                   </Select>
