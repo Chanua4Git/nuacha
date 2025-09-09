@@ -41,18 +41,33 @@ const Demo = () => {
 
   // Handle incoming data from Landing page - show magic first, then lead capture
   useEffect(() => {
+    console.log('🎯 Demo: Checking for incoming navigation state...', location.state);
+    
     const state = location.state as any;
     if (state?.extractedData && state?.receiptUrl && state?.preProcessed) {
+      console.log('✨ Demo: OCR data received from Landing page:', {
+        extractedData: state.extractedData,
+        receiptUrl: state.receiptUrl,
+        preProcessed: state.preProcessed
+      });
+      
       // Store OCR data and show it immediately
       setReceiptOcrData({
         extractedData: state.extractedData,
         receiptUrl: state.receiptUrl
       });
+      
+      console.log('🔄 Demo: Switching to add-expense tab and updating URL');
       // Set the tab to show the populated form immediately  
       setActiveTab('add-expense');
       setSearchParams({ tab: 'add-expense' });
+      
       // Trigger post-magic lead capture after user sees the magic
       setOcrProcessedAt(Date.now());
+      
+      console.log('🎉 Demo: Setup complete - form should now be populated with OCR data');
+    } else {
+      console.log('ℹ️ Demo: No OCR data in navigation state');
     }
   }, [location.state]);
 

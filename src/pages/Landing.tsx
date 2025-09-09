@@ -76,7 +76,12 @@ const Landing = () => {
 
   // File processing handler
   const handleFileSelect = async (file: File) => {
-    if (!file) return;
+    console.log('🚀 Landing: File selected for processing', file);
+    
+    if (!file) {
+      console.log('❌ Landing: No file provided');
+      return;
+    }
     
     // Immediate feedback that system is working
     toast("System is working for you! 🚀", {
@@ -87,25 +92,40 @@ const Landing = () => {
     setIsProcessing(true);
     
     try {
+      console.log('📸 Landing: Starting OCR processing...');
       toast("Processing your receipt...", {
         description: "We're extracting the details for you. This might take a moment."
       });
 
       // Upload the receipt
+      console.log('📤 Landing: Uploading receipt to storage...');
       const receiptUrl = await handleReceiptUpload(file);
       
       if (!receiptUrl) {
+        console.log('❌ Landing: Failed to upload receipt');
         throw new Error('Failed to upload receipt');
       }
 
+      console.log('✅ Landing: Receipt uploaded successfully', receiptUrl);
+
       // Process with OCR
+      console.log('🔍 Landing: Processing with OCR...');
       const ocrResult = await processReceiptWithEdgeFunction(receiptUrl);
       
       if (ocrResult.error) {
+        console.log('❌ Landing: OCR processing error:', ocrResult.error);
         throw new Error(ocrResult.error);
       }
 
+      console.log('✅ Landing: OCR processing successful:', ocrResult);
+
       // Navigate to demo with processed data
+      console.log('🧭 Landing: Navigating to /demo with state:', {
+        extractedData: ocrResult,
+        receiptUrl: receiptUrl,
+        preProcessed: true
+      });
+      
       navigate('/demo', {
         state: {
           extractedData: ocrResult,
@@ -119,7 +139,7 @@ const Landing = () => {
       });
 
     } catch (error) {
-      console.error('Error processing receipt:', error);
+      console.error('❌ Landing: Error processing receipt:', error);
       toast.error("Couldn't process your receipt", {
         description: "Let's try that again, or you can enter details manually.",
         action: {
