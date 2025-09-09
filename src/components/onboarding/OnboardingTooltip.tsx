@@ -109,13 +109,13 @@ export function OnboardingTooltip({
     
     switch (position) {
       case 'bottom':
-        return cn(baseClasses, "border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-[hsl(var(--primary))] -top-2 left-1/2 transform -translate-x-1/2");
+        return cn(baseClasses, "border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-[#5A7684] -top-2 left-1/2 transform -translate-x-1/2");
       case 'top':
-        return cn(baseClasses, "border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-[hsl(var(--primary))] -bottom-2 left-1/2 transform -translate-x-1/2");
+        return cn(baseClasses, "border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-[#5A7684] -bottom-2 left-1/2 transform -translate-x-1/2");
       case 'left':
-        return cn(baseClasses, "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-[hsl(var(--primary))] -right-2 top-1/2 transform -translate-y-1/2");
+        return cn(baseClasses, "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-[#5A7684] -right-2 top-1/2 transform -translate-y-1/2");
       case 'right':
-        return cn(baseClasses, "border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-[hsl(var(--primary))] -left-2 top-1/2 transform -translate-y-1/2");
+        return cn(baseClasses, "border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-[#5A7684] -left-2 top-1/2 transform -translate-y-1/2");
       default:
         return "";
     }
@@ -128,12 +128,15 @@ export function OnboardingTooltip({
       <div
         ref={tooltipRef}
         className={cn(
-          "fixed z-[9999] max-w-sm bg-primary text-primary-foreground rounded-lg shadow-lg border border-primary/20 animate-fade-in",
-          "p-4"
+          "fixed z-[9999] max-w-sm rounded-2xl shadow-2xl animate-fade-in backdrop-blur-sm",
+          "p-6 transform transition-all duration-300 ease-out"
         )}
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
+          background: '#5A7684',
+          border: '1px solid rgba(90, 118, 132, 0.3)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px rgba(90, 118, 132, 0.15)',
         }}
       >
         {/* Arrow */}
@@ -145,22 +148,21 @@ export function OnboardingTooltip({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute -top-2 -right-2 h-6 w-6 p-0 text-primary-foreground hover:bg-primary-foreground/20"
+              className="absolute -top-2 -right-2 h-7 w-7 p-0 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-full"
               onClick={onClose}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           )}
           
-          <p className="text-sm leading-relaxed pr-6">{content}</p>
+          <p className="text-base leading-relaxed pr-8 text-white font-medium">{content}</p>
           
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-3 mt-5">
             {onNext && (
               <Button
                 size="sm"
-                variant="secondary"
                 onClick={onNext}
-                className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                className="bg-white text-[#5A7684] hover:bg-white/90 font-semibold px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
               >
                 Got it!
               </Button>
@@ -171,7 +173,7 @@ export function OnboardingTooltip({
                 size="sm"
                 variant="ghost"
                 onClick={onSkip}
-                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                className="text-white/80 hover:text-white hover:bg-white/10 font-medium px-3 py-2 rounded-lg transition-all duration-200"
               >
                 Skip tutorial
               </Button>

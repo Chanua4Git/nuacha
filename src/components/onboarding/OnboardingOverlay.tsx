@@ -89,13 +89,13 @@ export function OnboardingOverlay({
       <div
         className="absolute pointer-events-none animate-pulse"
         style={{
-          top: targetRect.top - 4,
-          left: targetRect.left - 4,
-          width: targetRect.width + 8,
-          height: targetRect.height + 8,
-          borderRadius: '8px',
-          border: '2px solid hsl(var(--primary))',
-          boxShadow: '0 0 20px hsl(var(--primary) / 0.5)'
+          top: targetRect.top - 6,
+          left: targetRect.left - 6,
+          width: targetRect.width + 12,
+          height: targetRect.height + 12,
+          borderRadius: '12px',
+          border: '3px solid #5A7684',
+          boxShadow: '0 0 30px rgba(90, 118, 132, 0.6), 0 0 60px rgba(90, 118, 132, 0.3)'
         }}
       />
     </div>
