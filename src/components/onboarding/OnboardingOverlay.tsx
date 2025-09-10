@@ -58,46 +58,32 @@ export function OnboardingOverlay({
   if (!targetRect) return null;
 
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-[9998] pointer-events-auto",
-        className
-      )}
-      onClick={handleOverlayClick}
-      style={{
-        background: `
-          linear-gradient(to right, 
-            rgba(0, 0, 0, 0.5) 0%, 
-            rgba(0, 0, 0, 0.5) ${targetRect.left}px, 
-            transparent ${targetRect.left}px, 
-            transparent ${targetRect.right}px, 
-            rgba(0, 0, 0, 0.5) ${targetRect.right}px, 
-            rgba(0, 0, 0, 0.5) 100%
-          ),
-          linear-gradient(to bottom, 
-            rgba(0, 0, 0, 0.5) 0%, 
-            rgba(0, 0, 0, 0.5) ${targetRect.top}px, 
-            transparent ${targetRect.top}px, 
-            transparent ${targetRect.bottom}px, 
-            rgba(0, 0, 0, 0.5) ${targetRect.bottom}px, 
-            rgba(0, 0, 0, 0.5) 100%
-          )
-        `
-      }}
-    >
-      {/* Highlighted target area - clickable */}
+    <>
+      {/* Highlighted target area with elegant border */}
       <div
-        className="absolute pointer-events-none animate-pulse"
+        className="fixed z-[9998] pointer-events-none animate-pulse"
         style={{
-          top: targetRect.top - 6,
-          left: targetRect.left - 6,
-          width: targetRect.width + 12,
-          height: targetRect.height + 12,
-          borderRadius: '12px',
-          border: '3px solid #5A7684',
-          boxShadow: '0 0 30px rgba(90, 118, 132, 0.6), 0 0 60px rgba(90, 118, 132, 0.3)'
+          top: targetRect.top - 8,
+          left: targetRect.left - 8,
+          width: targetRect.width + 16,
+          height: targetRect.height + 16,
+          borderRadius: '16px',
+          border: '4px solid #5A7684',
+          boxShadow: '0 0 30px rgba(90, 118, 132, 0.6), 0 0 60px rgba(90, 118, 132, 0.3), 0 4px 20px rgba(0, 0, 0, 0.1)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(1px)'
         }}
       />
-    </div>
+      
+      {/* Invisible clickable overlay for outside clicks */}
+      <div
+        className={cn(
+          "fixed inset-0 z-[9997] pointer-events-auto",
+          className
+        )}
+        onClick={handleOverlayClick}
+        style={{ background: 'transparent' }}
+      />
+    </>
   );
 }
