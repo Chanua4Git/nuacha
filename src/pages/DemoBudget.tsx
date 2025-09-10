@@ -36,12 +36,19 @@ function DemoBudgetContent() {
   const isMobile = useIsMobile();
 
   // Onboarding hook for the "Build Your Budget" button
-  useOnboardingHook({
+  const { nextStep } = useOnboardingHook({
     step: OnboardingStep.GUIDE_TO_BUILDER,
     target: '[data-onboarding="build-button"]',
     enabled: mode === 'demo',
     dependencies: [mode]
   });
+
+  // Auto-advance onboarding when user switches to builder mode
+  useEffect(() => {
+    if (mode === 'builder') {
+      nextStep();
+    }
+  }, [mode, nextStep]);
 
   // Handle URL parameters for deep linking
   useEffect(() => {

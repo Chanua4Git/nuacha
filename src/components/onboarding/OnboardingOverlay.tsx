@@ -19,28 +19,26 @@ export function OnboardingOverlay({
       const targetElement = document.querySelector(target);
       if (targetElement) {
         const rect = targetElement.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
         
-        // Create a rect that includes scroll position
+        // Use viewport coordinates for fixed positioning (no scroll offsets needed)
         setTargetRect({
-          top: rect.top + scrollY,
-          left: rect.left + scrollX,
-          right: rect.right + scrollX,
-          bottom: rect.bottom + scrollY,
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
           width: rect.width,
           height: rect.height,
-          x: rect.x + scrollX,
-          y: rect.y + scrollY,
+          x: rect.x,
+          y: rect.y,
         } as DOMRect);
       }
     };
 
     updateTargetRect();
 
-    // Update on resize and scroll
-    window.addEventListener('resize', updateTargetRect);
-    window.addEventListener('scroll', updateTargetRect);
+    // Update on resize and scroll with passive listeners for better performance
+    window.addEventListener('resize', updateTargetRect, { passive: true });
+    window.addEventListener('scroll', updateTargetRect, { passive: true });
 
     return () => {
       window.removeEventListener('resize', updateTargetRect);
@@ -61,28 +59,54 @@ export function OnboardingOverlay({
     <>
       {/* Highlighted target area with elegant border */}
       <div
-        className="fixed z-[9998] pointer-events-none animate-pulse"
+        className="fixed z-[1001] pointer-events-none animate-pulse"
         style={{
-          top: targetRect.top - 8,
-          left: targetRect.left - 8,
-          width: targetRect.width + 16,
-          height: targetRect.height + 16,
-          borderRadius: '16px',
-          border: '4px solid #5A7684',
-          boxShadow: '0 0 30px rgba(90, 118, 132, 0.6), 0 0 60px rgba(90, 118, 132, 0.3), 0 4px 20px rgba(0, 0, 0, 0.1)',
-          background: 'rgba(255, 255, 255, 0.05)',
+          top: targetRect.top - 6,
+          left: targetRect.left - 6,
+          width: targetRect.width + 12,
+          height: targetRect.height + 12,
+          borderRadius: '12px',
+          border: '3px solid hsl(var(--primary))',
+          boxShadow: '0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2)',
+          background: 'hsl(var(--background) / 0.05)',
           backdropFilter: 'blur(1px)'
         }}
       />
       
-      {/* Invisible clickable overlay for outside clicks */}
+      {/* Target area click-through hole - no click blocking */}
+      <div
+        className="fixed z-[1000] pointer-events-none"
+        style={{
+          top: targetRect.top - 6,
+          left: targetRect.left - 6,
+          width: targetRect.width + 12,
+          height: targetRect.height + 12,
+        }}
+      />
+      
+      {/* Invisible clickable overlay for outside clicks only - with holes cut out */}
       <div
         className={cn(
-          "fixed inset-0 z-[9997] pointer-events-auto",
+          "fixed inset-0 z-[999] pointer-events-auto",
           className
         )}
         onClick={handleOverlayClick}
-        style={{ background: 'transparent' }}
+        style={{ 
+          background: 'transparent',
+          // Create a clip-path that excludes the target area
+          clipPath: `polygon(
+            0% 0%, 
+            0% 100%, 
+            ${targetRect.left - 6}px 100%, 
+            ${targetRect.left - 6}px ${targetRect.top - 6}px, 
+            ${targetRect.right + 6}px ${targetRect.top - 6}px, 
+            ${targetRect.right + 6}px ${targetRect.bottom + 6}px, 
+            ${targetRect.left - 6}px ${targetRect.bottom + 6}px, 
+            ${targetRect.left - 6}px 100%, 
+            100% 100%, 
+            100% 0%
+          )`
+        }}
       />
     </>
   );
