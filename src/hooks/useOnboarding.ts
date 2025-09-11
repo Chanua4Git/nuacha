@@ -26,18 +26,26 @@ export function useOnboarding({
     if (state.currentStep === step) {
       const content = OnboardingService.getStepContent(step);
       
+      console.log('🎯 useOnboarding hook activating for step:', step, 'targeting:', target);
+      
       // Wait for target element to be available
       const checkTarget = () => {
         const targetElement = document.querySelector(target);
+        console.log('🔍 Target element search result:', { target, found: !!targetElement, element: targetElement });
+        
         if (targetElement) {
+          console.log('✅ Setting tooltip for step:', step);
           setTooltip(target, content.content, content.position);
         } else {
+          console.log('⏳ Target element not found, retrying in 100ms...');
           // Retry after a short delay
           setTimeout(checkTarget, 100);
         }
       };
 
       checkTarget();
+    } else {
+      console.log('🚫 Step not current:', { hookStep: step, currentStep: state.currentStep });
     }
 
     return () => {

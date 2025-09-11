@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { OnboardingService, OnboardingStep } from '@/services/OnboardingService';
+import { useLocation } from 'react-router-dom';
 
 interface OnboardingState {
   currentStep: OnboardingStep | null;
@@ -22,6 +23,7 @@ interface OnboardingContextType {
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const [state, setState] = useState<OnboardingState>({
     currentStep: null,
     isActive: false,
@@ -30,20 +32,52 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     position: 'bottom'
   });
 
+  // Debug logging to track onboarding state
   useEffect(() => {
-    // Check if onboarding should be active based on current conditions
+    console.log('🎯 Onboarding Debug:', {
+      currentStep: state.currentStep,
+      isActive: state.isActive,
+      pathname: location.pathname,
+      shouldShow: OnboardingService.shouldShowOnboarding(),
+      nextStep: OnboardingService.getNextStep(),
+      isCompleted: OnboardingService.isOnboardingCompleted(),
+      isSkipped: OnboardingService.isOnboardingSkipped()
+    });
+  }, [state, location.pathname]);
+
+  // Check onboarding state whenever route changes or component mounts
+  useEffect(() => {
+    console.log('🔄 Checking onboarding conditions for route:', location.pathname);
+    
     const shouldStart = OnboardingService.shouldShowOnboarding();
-    if (shouldStart && !state.isActive) {
-      const nextStep = OnboardingService.getNextStep();
-      if (nextStep !== null) {
+    const nextStep = OnboardingService.getNextStep();
+    
+    console.log('📋 Onboarding check result:', { shouldStart, nextStep, currentlyActive: state.isActive });
+
+    if (shouldStart && nextStep !== null) {
+      // Start or update onboarding
+      if (!state.isActive || state.currentStep !== nextStep) {
+        console.log('✅ Starting/updating onboarding to step:', nextStep);
         setState(prev => ({
           ...prev,
           currentStep: nextStep,
-          isActive: true
+          isActive: true,
+          targetElement: null,
+          tooltipContent: null
         }));
       }
+    } else if (!shouldStart && state.isActive) {
+      // Stop onboarding
+      console.log('❌ Stopping onboarding');
+      setState(prev => ({
+        ...prev,
+        currentStep: null,
+        isActive: false,
+        targetElement: null,
+        tooltipContent: null
+      }));
     }
-  }, []);
+  }, [location.pathname, location.search]); // React to route changes
 
   const startOnboarding = () => {
     const nextStep = OnboardingService.getNextStep();

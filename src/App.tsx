@@ -28,6 +28,9 @@ import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 
+// Import onboarding helpers for development debugging
+import '@/utils/onboardingHelpers';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -20,7 +20,16 @@ export class OnboardingService {
 
     // Only show onboarding on demo/budget routes
     const currentPath = window.location.pathname;
-    return currentPath.includes('/demo') || currentPath === '/';
+    const isOnBudgetRoute = currentPath.includes('/demo/budget') || currentPath.includes('/budget') || currentPath === '/';
+    
+    console.log('🎯 OnboardingService shouldShowOnboarding:', {
+      currentPath,
+      isOnBudgetRoute,
+      isCompleted: this.isOnboardingCompleted(),
+      isSkipped: this.isOnboardingSkipped()
+    });
+    
+    return isOnBudgetRoute;
   }
 
   /**
