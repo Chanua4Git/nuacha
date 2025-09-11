@@ -27,6 +27,7 @@ import Budget from "./pages/Budget";
 import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
+import { OnboardingProvider } from "./context/OnboardingContext";
 
 // Import onboarding helpers for development debugging
 import '@/utils/onboardingHelpers';
@@ -83,6 +84,7 @@ const App = () => {
         <AuthDemoProvider>
           <ExpenseProvider>
             <TooltipProvider>
+              <OnboardingProvider>
               <Toaster
                 position="top-center"
                 toastOptions={{
@@ -140,6 +142,7 @@ const App = () => {
                 </main>
                 <AuthDemoDebugPanel visible={showDebugPanel} />
               </div>
+            </OnboardingProvider>
             </TooltipProvider>
           </ExpenseProvider>
         </AuthDemoProvider>

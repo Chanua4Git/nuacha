@@ -13,7 +13,6 @@ import { getCategoriesByGroup } from '@/data/comprehensiveCategories';
 import { BudgetSummary, FrequencyType } from '@/types/budget';
 
 // Onboarding
-import { OnboardingProvider } from '@/context/OnboardingContext';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { useOnboarding as useOnboardingHook } from '@/hooks/useOnboarding';
 import { OnboardingStep } from '@/services/OnboardingService';
@@ -266,9 +265,9 @@ function DemoBudgetContent() {
 
 export default function DemoBudget() {
   return (
-    <OnboardingProvider>
+    <>
       <DemoBudgetContent />
       <OnboardingFlow />
-    </OnboardingProvider>
+    </>
   );
 }
