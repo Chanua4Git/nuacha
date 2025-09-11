@@ -161,19 +161,43 @@ export default function SAHMBudgetBuilder() {
   });
 
   // Onboarding hooks for template selection
-  useOnboardingHook({
+  const { nextStep: nextOnboardingStep, isCurrentStep: isTemplateSelectionStep, isCompleted: isTemplateSelectionCompleted } = useOnboardingHook({
     step: OnboardingStep.TEMPLATE_SELECTION,
     target: '[data-onboarding="template-dropdown"]',
-    enabled: currentStep === 0,
-    dependencies: [currentStep]
+    enabled: true, // Always enabled when this onboarding step is active
+    dependencies: []
   });
 
-  useOnboardingHook({
+  const { nextStep: completeOnboarding, isCurrentStep: isEncouragementStep } = useOnboardingHook({
     step: OnboardingStep.TEMPLATE_ENCOURAGEMENT,
     target: '[data-onboarding="template-selected"]',
-    enabled: currentStep === 0 && selectedTemplate !== '',
-    dependencies: [currentStep, selectedTemplate]
+    enabled: true, // Always enabled when this onboarding step is active
+    dependencies: []
   });
+
+  // Handle template selection and auto-advance onboarding
+  const handleTemplateSelection = (template: string) => {
+    setSelectedTemplate(template);
+    
+    // If we're in the template selection step, advance to encouragement
+    if (isTemplateSelectionStep) {
+      setTimeout(() => {
+        nextOnboardingStep();
+      }, 500); // Small delay to show selection was made
+    }
+  };
+
+  // Auto-complete onboarding after showing encouragement
+  useEffect(() => {
+    if (isEncouragementStep && selectedTemplate) {
+      const timer = setTimeout(() => {
+        completeOnboarding();
+        toast.success("Great choice! You're all set to build your budget.");
+      }, 2000); // Show encouragement for 2 seconds then complete
+
+      return () => clearTimeout(timer);
+    }
+  }, [isEncouragementStep, selectedTemplate, completeOnboarding]);
 
   // Check if we're in edit mode
   const mode = searchParams.get('mode');
@@ -631,7 +655,7 @@ export default function SAHMBudgetBuilder() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelection}>
                     <SelectTrigger data-onboarding="template-dropdown">
                       <SelectValue placeholder="Select a template type" />
                     </SelectTrigger>
@@ -640,6 +664,16 @@ export default function SAHMBudgetBuilder() {
                       <SelectItem value="request-new">Request New Template</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {/* Show encouragement message when template is selected and onboarding is active */}
+                  {selectedTemplate && isEncouragementStep && (
+                    <div data-onboarding="template-selected" className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg animate-in fade-in-0 slide-in-from-top-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">✨</span>
+                        <p className="text-sm font-medium text-primary">Perfect choice! This template is designed specifically for your family situation.</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {selectedTemplate === 'request-new' && <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                       <h4 className="font-medium">Tell us about your family situation</h4>
