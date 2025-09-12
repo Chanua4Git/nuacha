@@ -49,15 +49,26 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     console.log('🔄 Checking onboarding conditions for route:', location.pathname);
     
-    const shouldStart = OnboardingService.shouldShowOnboarding();
+    // Check for force tour parameter
+    const urlParams = new URLSearchParams(location.search);
+    const forceTour = urlParams.get('tour') === '1';
+    
+    const shouldStart = forceTour || OnboardingService.shouldShowOnboarding();
     const nextStep = OnboardingService.getNextStep();
     
-    console.log('📋 Onboarding check result:', { shouldStart, nextStep, currentlyActive: state.isActive });
+    console.log('📋 Onboarding check result:', { 
+      shouldStart, 
+      nextStep, 
+      currentlyActive: state.isActive, 
+      forceTour,
+      pathname: location.pathname,
+      search: location.search
+    });
 
     if (shouldStart && nextStep !== null) {
       // Start or update onboarding
       if (!state.isActive || state.currentStep !== nextStep) {
-        console.log('✅ Starting/updating onboarding to step:', nextStep);
+        console.log('✅ Starting/updating onboarding to step:', nextStep, forceTour ? '(force mode)' : '');
         setState(prev => ({
           ...prev,
           currentStep: nextStep,
@@ -66,8 +77,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           tooltipContent: null
         }));
       }
-    } else if (!shouldStart && state.isActive) {
-      // Stop onboarding
+    } else if (!shouldStart && !forceTour && state.isActive) {
+      // Stop onboarding (but not if forced)
       console.log('❌ Stopping onboarding');
       setState(prev => ({
         ...prev,

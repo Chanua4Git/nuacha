@@ -35,6 +35,14 @@ export function useOnboarding({
         
         if (targetElement) {
           console.log('✅ Setting tooltip for step:', step);
+          
+          // Ensure the target element is visible
+          targetElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+          
           setTooltip(target, content.content, content.position);
         } else {
           console.log('⏳ Target element not found, retrying in 100ms...');

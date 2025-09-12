@@ -186,7 +186,7 @@ const Landing = () => {
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Create your personalized budget with our 50/30/20 builder. Perfect for families and stay-at-home parents planning their finances.
               </p>
-              <Link to="/demo/budget">
+              <Link to="/demo/budget?tour=1">
                 <Button size="lg" className="bg-[#5A7684] hover:bg-[#5A7684]/90 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl">
                   Create Your Budget Plan
                   <ArrowRight className="ml-2" />
@@ -213,7 +213,7 @@ const Landing = () => {
                     <ArrowRight className="ml-2" />
                   </Button>
                 </Link>
-                <Link to="/demo/budget">
+                <Link to="/demo/budget?tour=1">
                   <Button size="lg" variant="outline" className="rounded-full px-8 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white transition-all duration-300">
                     Build Your Budget
                     <PieChart className="ml-2" />
@@ -293,7 +293,7 @@ const Landing = () => {
                   <p className="text-muted-foreground mb-6">
                     Create personalized budgets with the 50/30/20 rule. Perfect for families and SAHM (Stay-at-Home Moms) financial planning.
                   </p>
-                  <Link to="/demo/budget">
+                  <Link to="/demo/budget?tour=1">
                     <Button variant="outline" className="w-full border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white">
                       Build Your Budget
                       <PieChart className="ml-2" />

@@ -28,6 +28,7 @@ import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import { OnboardingProvider } from "@/context/OnboardingContext";
+import ScrollToTop from "@/components/navigation/ScrollToTop";
 
 // Import onboarding helpers for development debugging
 import '@/utils/onboardingHelpers';
@@ -94,6 +95,7 @@ const App = () => {
                 }}
               />
               <div className="min-h-screen flex flex-col">
+                <ScrollToTop />
                 <Navbar />
                 <main className="flex-1">
                   <Routes>
