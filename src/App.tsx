@@ -27,7 +27,7 @@ import Budget from "./pages/Budget";
 import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
-import { OnboardingProvider } from "./context/OnboardingContext";
+import { OnboardingProvider } from "@/context/OnboardingContext";
 
 // Import onboarding helpers for development debugging
 import '@/utils/onboardingHelpers';
