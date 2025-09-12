@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OnboardingOverlayProps {
   target: string;
@@ -13,6 +14,7 @@ export function OnboardingOverlay({
   className 
 }: OnboardingOverlayProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const updateTargetRect = () => {
@@ -53,21 +55,35 @@ export function OnboardingOverlay({
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent scrolling when touching the overlay on mobile
+    if (e.target === e.currentTarget) {
+      e.preventDefault();
+    }
+  };
+
   if (!targetRect) return null;
+
+  const highlightPadding = isMobile ? 12 : 6;
+  const borderWidth = isMobile ? 4 : 3;
 
   return (
     <>
       {/* Highlighted target area with elegant border */}
       <div
-        className="fixed z-[1001] pointer-events-none animate-pulse"
+        className={cn(
+          "fixed z-[1001] pointer-events-none animate-pulse",
+          isMobile ? "rounded-2xl" : "rounded-xl"
+        )}
         style={{
-          top: targetRect.top - 6,
-          left: targetRect.left - 6,
-          width: targetRect.width + 12,
-          height: targetRect.height + 12,
-          borderRadius: '12px',
-          border: '3px solid hsl(var(--primary))',
-          boxShadow: '0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2)',
+          top: targetRect.top - highlightPadding,
+          left: targetRect.left - highlightPadding,
+          width: targetRect.width + (highlightPadding * 2),
+          height: targetRect.height + (highlightPadding * 2),
+          border: `${borderWidth}px solid hsl(var(--primary))`,
+          boxShadow: isMobile 
+            ? '0 0 30px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.3)'
+            : '0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2)',
           background: 'hsl(var(--background) / 0.05)',
           backdropFilter: 'blur(1px)'
         }}
@@ -77,37 +93,60 @@ export function OnboardingOverlay({
       <div
         className="fixed z-[1000] pointer-events-none"
         style={{
-          top: targetRect.top - 6,
-          left: targetRect.left - 6,
-          width: targetRect.width + 12,
-          height: targetRect.height + 12,
+          top: targetRect.top - highlightPadding,
+          left: targetRect.left - highlightPadding,
+          width: targetRect.width + (highlightPadding * 2),
+          height: targetRect.height + (highlightPadding * 2),
         }}
       />
       
-      {/* Invisible clickable overlay for outside clicks only - with holes cut out */}
-      <div
-        className={cn(
-          "fixed inset-0 z-[999] pointer-events-auto",
-          className
-        )}
-        onClick={handleOverlayClick}
-        style={{ 
-          background: 'transparent',
-          // Create a clip-path that excludes the target area
-          clipPath: `polygon(
-            0% 0%, 
-            0% 100%, 
-            ${targetRect.left - 6}px 100%, 
-            ${targetRect.left - 6}px ${targetRect.top - 6}px, 
-            ${targetRect.right + 6}px ${targetRect.top - 6}px, 
-            ${targetRect.right + 6}px ${targetRect.bottom + 6}px, 
-            ${targetRect.left - 6}px ${targetRect.bottom + 6}px, 
-            ${targetRect.left - 6}px 100%, 
-            100% 100%, 
-            100% 0%
-          )`
-        }}
-      />
+      {/* Mobile-friendly overlay with touch support */}
+      {isMobile ? (
+        // Mobile: Use semi-transparent overlay instead of complex clip-path
+        <div
+          className={cn(
+            "fixed inset-0 z-[999] pointer-events-auto bg-black/20 backdrop-blur-[0.5px]",
+            className
+          )}
+          onClick={handleOverlayClick}
+          onTouchStart={handleTouchStart}
+          style={{
+            // Create a radial mask to highlight the target area
+            background: `radial-gradient(
+              ellipse ${targetRect.width + 40}px ${targetRect.height + 40}px at 
+              ${targetRect.left + targetRect.width/2}px ${targetRect.top + targetRect.height/2}px,
+              transparent 0%, 
+              transparent 50%, 
+              rgba(0,0,0,0.1) 70%,
+              rgba(0,0,0,0.2) 100%
+            )`
+          }}
+        />
+      ) : (
+        // Desktop: Use clip-path for precise cutout
+        <div
+          className={cn(
+            "fixed inset-0 z-[999] pointer-events-auto",
+            className
+          )}
+          onClick={handleOverlayClick}
+          style={{ 
+            background: 'transparent',
+            clipPath: `polygon(
+              0% 0%, 
+              0% 100%, 
+              ${targetRect.left - highlightPadding}px 100%, 
+              ${targetRect.left - highlightPadding}px ${targetRect.top - highlightPadding}px, 
+              ${targetRect.right + highlightPadding}px ${targetRect.top - highlightPadding}px, 
+              ${targetRect.right + highlightPadding}px ${targetRect.bottom + highlightPadding}px, 
+              ${targetRect.left - highlightPadding}px ${targetRect.bottom + highlightPadding}px, 
+              ${targetRect.left - highlightPadding}px 100%, 
+              100% 100%, 
+              100% 0%
+            )`
+          }}
+        />
+      )}
     </>
   );
 }
