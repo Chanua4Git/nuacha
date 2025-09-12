@@ -53,8 +53,24 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     const urlParams = new URLSearchParams(location.search);
     const forceTour = urlParams.get('tour') === '1';
     
+    // Handle force restart if tour=1 is present
+    if (forceTour) {
+      console.log('🔄 Force tour detected, resetting onboarding...');
+      OnboardingService.resetOnboarding();
+      
+      // Remove tour parameter from URL to clean it up
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('tour');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+    
     const shouldStart = forceTour || OnboardingService.shouldShowOnboarding();
-    const nextStep = OnboardingService.getNextStep();
+    let nextStep = OnboardingService.getNextStep();
+    
+    // If force tour and nextStep is still null (shouldn't happen after reset, but fallback)
+    if (forceTour && nextStep === null) {
+      nextStep = OnboardingStep.GUIDE_TO_BUILDER;
+    }
     
     console.log('📋 Onboarding check result:', { 
       shouldStart, 

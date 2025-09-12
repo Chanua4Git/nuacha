@@ -37,9 +37,11 @@ export function useOnboarding({
           console.log('✅ Setting tooltip for step:', step);
           
           // Ensure the target element is visible
+          // For the first step, scroll to start to avoid jumping to middle
+          const scrollBlock = step === OnboardingStep.GUIDE_TO_BUILDER ? 'start' : 'center';
           targetElement.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'center',
+            block: scrollBlock,
             inline: 'nearest'
           });
           
