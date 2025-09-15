@@ -8,6 +8,8 @@ interface OnboardingTooltipProps {
   target: string;
   content: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  variant?: 'default' | 'subtle';
+  closeBehavior?: 'hide' | 'skip';
   onNext?: () => void;
   onSkip?: () => void;
   onClose?: () => void;
@@ -18,6 +20,8 @@ export function OnboardingTooltip({
   target,
   content,
   position = 'bottom',
+  variant = 'default',
+  closeBehavior = 'skip',
   onNext,
   onSkip,
   onClose,
@@ -183,9 +187,9 @@ export function OnboardingTooltip({
           top: tooltipPosition.top,
           left: isMobile ? 12 : tooltipPosition.left,
           width: isMobile ? 'calc(100vw - 1.5rem)' : 'auto',
-          background: 'hsl(var(--primary))',
-          border: '1px solid hsl(var(--primary) / 0.3)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px hsl(var(--primary) / 0.15)',
+          background: variant === 'subtle' ? 'hsl(var(--popover))' : 'hsl(var(--primary))',
+          border: variant === 'subtle' ? '1px solid hsl(var(--border))' : '1px solid hsl(var(--primary) / 0.3)',
+          boxShadow: variant === 'subtle' ? '0 10px 20px -10px rgba(0,0,0,0.15)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px hsl(var(--primary) / 0.15)',
         }}
       >
         {/* Arrow */}
@@ -193,7 +197,7 @@ export function OnboardingTooltip({
         
         {/* Content */}
         <div className="relative">
-          {onClose && (
+          {onClose && variant !== 'subtle' && (
             <Button
               variant="ghost"
               size={isMobile ? "default" : "sm"}
@@ -208,8 +212,9 @@ export function OnboardingTooltip({
           )}
           
           <p className={cn(
-            "leading-relaxed text-white font-medium",
-            isMobile ? "text-sm pr-6" : "text-base pr-8"
+            "leading-relaxed font-medium",
+            variant === 'subtle' ? "text-popover-foreground" : "text-white",
+            isMobile ? "text-sm pr-6" : variant === 'subtle' ? "text-sm pr-4" : "text-base pr-8"
           )}>
             {content}
           </p>

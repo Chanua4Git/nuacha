@@ -14,17 +14,21 @@ export function OnboardingFlow() {
 
   return (
     <>
-      <OnboardingOverlay
-        target={state.targetElement}
-        onClickOutside={clearTooltip}
-      />
+      {isActionGated ? null : (
+        <OnboardingOverlay
+          target={state.targetElement}
+          onClickOutside={clearTooltip}
+        />
+      )}
       <OnboardingTooltip
         target={state.targetElement}
         content={state.tooltipContent}
         position={state.position}
+        variant={isActionGated ? 'subtle' : 'default'}
         onNext={isActionGated ? undefined : nextStep}
-        onSkip={skipOnboarding}
+        onSkip={clearTooltip}
         onClose={clearTooltip}
+        showSkip={true}
       />
     </>
   );
