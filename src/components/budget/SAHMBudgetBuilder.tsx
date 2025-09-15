@@ -178,15 +178,17 @@ export default function SAHMBudgetBuilder() {
   // Handle template selection and auto-advance onboarding
   const handleTemplateSelection = (template: string) => {
     setSelectedTemplate(template);
-    
-    // If we're in the template selection step, advance to encouragement
-    if (isTemplateSelectionStep) {
+
+    // Advance to encouragement only if Template Selection isn't already completed
+    if (isTemplateSelectionStep && !isTemplateSelectionCompleted) {
       setTimeout(() => {
-        nextOnboardingStep();
-      }, 500); // Small delay to show selection was made
+        // Re-check before advancing to avoid double-advance if user clicked "Got it!" already
+        if (!isTemplateSelectionCompleted) {
+          nextOnboardingStep();
+        }
+      }, 300); // Small delay to show selection was made without racing "Got it!"
     }
   };
-
   // Step 3 encouragement tooltip will be manually dismissed by user
 
   // Debug: ensure encouragement target exists in DOM for step 3
