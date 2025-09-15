@@ -190,7 +190,7 @@ export class OnboardingService {
       case OnboardingStep.TEMPLATE_SELECTION:
         return '[data-onboarding="template-dropdown"]';
       case OnboardingStep.TEMPLATE_ENCOURAGEMENT:
-        return '[data-onboarding="template-selected"]';
+        return '[data-onboarding="template-encouragement"]';
       default:
         return '';
     }

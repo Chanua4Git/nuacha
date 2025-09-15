@@ -46,6 +46,7 @@ export function useOnboarding({
           });
           
           setTooltip(target, content.content, content.position);
+          console.log('🎯 Tooltip successfully set for:', { step, target, element: targetElement });
         } else {
           console.log('⏳ Target element not found, retrying in 100ms...');
           // Retry after a short delay

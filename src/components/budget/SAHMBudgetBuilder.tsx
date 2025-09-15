@@ -660,14 +660,14 @@ export default function SAHMBudgetBuilder() {
                       <SelectValue placeholder="Select a template type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single-mom" data-onboarding="template-selected">Single Mom Template</SelectItem>
+                      <SelectItem value="single-mom">Single Mom Template</SelectItem>
                       <SelectItem value="request-new">Request New Template</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   {/* Show encouragement message when template is selected and onboarding is active */}
                   {selectedTemplate && isEncouragementStep && (
-                    <div data-onboarding="template-selected" className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg animate-in fade-in-0 slide-in-from-top-2">
+                    <div data-onboarding="template-encouragement" className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg animate-in fade-in-0 slide-in-from-top-2">
                       <div className="flex items-center space-x-2">
                         <span className="text-lg">✨</span>
                         <p className="text-sm font-medium text-primary">Perfect choice! This template is designed specifically for your family situation.</p>
