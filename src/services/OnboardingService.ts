@@ -159,7 +159,7 @@ export class OnboardingService {
     switch (step) {
       case OnboardingStep.GUIDE_TO_BUILDER:
         return {
-          content: "👋 Ready to build your personalized budget? Click here to get started!",
+          content: "Click Build Your Budget to continue. I'll stay here until you do.",
           position: 'bottom'
         };
       case OnboardingStep.TEMPLATE_SELECTION:
