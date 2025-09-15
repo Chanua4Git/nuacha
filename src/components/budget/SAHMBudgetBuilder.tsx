@@ -187,17 +187,7 @@ export default function SAHMBudgetBuilder() {
     }
   };
 
-  // Auto-complete onboarding after showing encouragement
-  useEffect(() => {
-    if (isEncouragementStep && selectedTemplate) {
-      const timer = setTimeout(() => {
-        completeOnboarding();
-        toast.success("Great choice! You're all set to build your budget.");
-      }, 2000); // Show encouragement for 2 seconds then complete
-
-      return () => clearTimeout(timer);
-    }
-  }, [isEncouragementStep, selectedTemplate, completeOnboarding]);
+  // Step 3 encouragement tooltip will be manually dismissed by user
 
   // Debug: ensure encouragement target exists in DOM for step 3
   useEffect(() => {
