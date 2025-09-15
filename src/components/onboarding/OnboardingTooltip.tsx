@@ -27,6 +27,7 @@ export function OnboardingTooltip({
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [isVisible, setIsVisible] = useState(false);
   const [actualPosition, setActualPosition] = useState(position);
+  const [isPositioned, setIsPositioned] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -34,76 +35,83 @@ export function OnboardingTooltip({
       const targetElement = document.querySelector(target);
       if (!targetElement || !tooltipRef.current) return;
 
-      const targetRect = targetElement.getBoundingClientRect();
-      const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
-      
-      // Mobile-specific padding and spacing
-      const padding = isMobile ? 12 : 16;
-      const offset = isMobile ? 8 : 12;
-      
-      let top = 0;
-      let left = 0;
-      let currentPosition = position;
-
-      // Smart positioning for mobile - prefer top/bottom over left/right
-      if (isMobile && (position === 'left' || position === 'right')) {
-        currentPosition = targetRect.top > window.innerHeight / 2 ? 'top' : 'bottom';
-      }
-
-      switch (currentPosition) {
-        case 'bottom':
-          top = targetRect.bottom + scrollY + offset;
-          left = targetRect.left + scrollX + (targetRect.width / 2) - (tooltipRect.width / 2);
-          break;
-        case 'top':
-          top = targetRect.top + scrollY - tooltipRect.height - offset;
-          left = targetRect.left + scrollX + (targetRect.width / 2) - (tooltipRect.width / 2);
-          break;
-        case 'left':
-          top = targetRect.top + scrollY + (targetRect.height / 2) - (tooltipRect.height / 2);
-          left = targetRect.left + scrollX - tooltipRect.width - offset;
-          break;
-        case 'right':
-          top = targetRect.top + scrollY + (targetRect.height / 2) - (tooltipRect.height / 2);
-          left = targetRect.right + scrollX + offset;
-          break;
-      }
-
-      // Smart fallback positioning for mobile
-      if (isMobile) {
-        // If tooltip would go off screen horizontally, center it
-        if (left < padding || left + tooltipRect.width > window.innerWidth - padding) {
-          left = padding;
-        }
+      // Use requestAnimationFrame for better measurement timing
+      requestAnimationFrame(() => {
+        if (!tooltipRef.current) return;
         
-        // If tooltip would go off screen vertically, flip position
-        if (currentPosition === 'top' && top < padding + scrollY) {
-          currentPosition = 'bottom';
-          top = targetRect.bottom + scrollY + offset;
-        } else if (currentPosition === 'bottom' && top + tooltipRect.height > window.innerHeight + scrollY - padding) {
-          currentPosition = 'top';
-          top = targetRect.top + scrollY - tooltipRect.height - offset;
-        }
-      } else {
-        // Desktop positioning with bounds checking
-        left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
-        top = Math.max(padding + scrollY, top);
-      }
+        const targetRect = targetElement.getBoundingClientRect();
+        const tooltipRect = tooltipRef.current.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const scrollX = window.scrollX;
+        
+        // Mobile-specific padding and spacing
+        const padding = isMobile ? 12 : 16;
+        const offset = isMobile ? 8 : 12;
+        
+        let top = 0;
+        let left = 0;
+        let currentPosition = position;
 
-      setActualPosition(currentPosition);
-      setTooltipPosition({ top, left });
-      setIsVisible(true);
+        // Smart positioning for mobile - prefer top/bottom over left/right
+        if (isMobile && (position === 'left' || position === 'right')) {
+          currentPosition = targetRect.top > window.innerHeight / 2 ? 'top' : 'bottom';
+        }
+
+        switch (currentPosition) {
+          case 'bottom':
+            top = targetRect.bottom + scrollY + offset;
+            left = targetRect.left + scrollX + (targetRect.width / 2) - (tooltipRect.width / 2);
+            break;
+          case 'top':
+            top = targetRect.top + scrollY - tooltipRect.height - offset;
+            left = targetRect.left + scrollX + (targetRect.width / 2) - (tooltipRect.width / 2);
+            break;
+          case 'left':
+            top = targetRect.top + scrollY + (targetRect.height / 2) - (tooltipRect.height / 2);
+            left = targetRect.left + scrollX - tooltipRect.width - offset;
+            break;
+          case 'right':
+            top = targetRect.top + scrollY + (targetRect.height / 2) - (tooltipRect.height / 2);
+            left = targetRect.right + scrollX + offset;
+            break;
+        }
+
+        // Smart fallback positioning for mobile
+        if (isMobile) {
+          // If tooltip would go off screen horizontally, center it
+          if (left < padding || left + tooltipRect.width > window.innerWidth - padding) {
+            left = padding;
+          }
+          
+          // If tooltip would go off screen vertically, flip position
+          if (currentPosition === 'top' && top < padding + scrollY) {
+            currentPosition = 'bottom';
+            top = targetRect.bottom + scrollY + offset;
+          } else if (currentPosition === 'bottom' && top + tooltipRect.height > window.innerHeight + scrollY - padding) {
+            currentPosition = 'top';
+            top = targetRect.top + scrollY - tooltipRect.height - offset;
+          }
+        } else {
+          // Desktop positioning with bounds checking
+          left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+          top = Math.max(padding + scrollY, top);
+        }
+
+        setActualPosition(currentPosition);
+        setTooltipPosition({ top, left });
+        setIsPositioned(true);
+      });
     };
 
     // Add highlight to target element
     const targetElement = document.querySelector(target);
     if (targetElement) {
       targetElement.classList.add('onboarding-highlight');
+      setIsVisible(true);
     }
 
-    // Calculate position after a brief delay to ensure DOM is ready
+    // Calculate position immediately and after a brief delay for fallback
+    calculatePosition();
     const timer = setTimeout(calculatePosition, 100);
 
     // Recalculate on window resize or scroll
@@ -120,7 +128,7 @@ export function OnboardingTooltip({
         targetElement.classList.remove('onboarding-highlight');
       }
     };
-  }, [target, position]);
+  }, [target, position, isMobile]);
 
   // Handle ESC key
   useEffect(() => {
@@ -164,8 +172,9 @@ export function OnboardingTooltip({
       <div
         ref={tooltipRef}
         className={cn(
-          "fixed z-[9999] rounded-2xl shadow-2xl animate-fade-in backdrop-blur-sm",
+          "fixed z-[9999] rounded-2xl shadow-2xl backdrop-blur-sm transition-opacity duration-300",
           "transform transition-all duration-300 ease-out",
+          isPositioned ? "opacity-100" : "opacity-0",
           isMobile 
             ? "max-w-[calc(100vw-1.5rem)] p-4 mx-3" 
             : "max-w-sm p-6"
