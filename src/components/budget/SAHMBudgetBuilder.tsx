@@ -170,7 +170,7 @@ export default function SAHMBudgetBuilder() {
 
   const { nextStep: completeOnboarding, isCurrentStep: isEncouragementStep } = useOnboardingHook({
     step: OnboardingStep.TEMPLATE_ENCOURAGEMENT,
-    target: '[data-onboarding="template-selected"]',
+    target: '[data-onboarding="template-encouragement"]',
     enabled: true, // Always enabled when this onboarding step is active
     dependencies: []
   });
