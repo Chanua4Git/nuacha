@@ -199,6 +199,12 @@ export default function SAHMBudgetBuilder() {
     }
   }, [isEncouragementStep, selectedTemplate, completeOnboarding]);
 
+  // Debug: ensure encouragement target exists in DOM for step 3
+  useEffect(() => {
+    const el = document.querySelector('[data-onboarding="template-encouragement"]');
+    console.log('🔎 Encouragement target present:', !!el, { isEncouragementStep, selectedTemplate });
+  }, [selectedTemplate, isEncouragementStep]);
+
   // Check if we're in edit mode
   const mode = searchParams.get('mode');
   const templateId = searchParams.get('templateId');
@@ -665,11 +671,15 @@ export default function SAHMBudgetBuilder() {
                     </SelectContent>
                   </Select>
                   
-                  {/* Show encouragement message when template is selected and onboarding is active */}
-                  {selectedTemplate && isEncouragementStep && (
-                    <div data-onboarding="template-encouragement" className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg animate-in fade-in-0 slide-in-from-top-2">
+                  {/* Encouragement message target: always mounted when a template is selected to avoid race conditions */}
+                  {selectedTemplate && (
+                    <div
+                      data-onboarding="template-encouragement"
+                      aria-hidden={!isEncouragementStep}
+                      className={`mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg transition-opacity duration-300 ${isEncouragementStep ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    >
                       <div className="flex items-center space-x-2">
-                        <span className="text-lg">✨</span>
+                        <span className="text-lg" aria-hidden="true">✨</span>
                         <p className="text-sm font-medium text-primary">Perfect choice! This template is designed specifically for your family situation.</p>
                       </div>
                     </div>
