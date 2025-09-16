@@ -197,7 +197,27 @@ export default function SAHMBudgetBuilder() {
       }, 300); // Small delay to show selection was made without racing "Got it!"
     }
   };
-  // Step 3 encouragement tooltip will be manually dismissed by user
+
+  // Auto-advance from template selection step after brief delay
+  const templateSelectionAdvanceRef = React.useRef(false);
+  useEffect(() => {
+    if (isTemplateSelectionStep && !templateSelectionAdvanceRef.current) {
+      templateSelectionAdvanceRef.current = true;
+      console.log('🎯 Auto-advancing from template selection after delay');
+      const timer = setTimeout(() => {
+        if (isTemplateSelectionStep && !isTemplateSelectionCompleted) {
+          console.log('🎯 Executing template selection auto-advance');
+          nextOnboardingStep();
+        }
+      }, 2500); // 2.5 second delay to show dropdown selection
+
+      return () => {
+        clearTimeout(timer);
+      };
+    } else if (!isTemplateSelectionStep) {
+      templateSelectionAdvanceRef.current = false;
+    }
+  }, [isTemplateSelectionStep, isTemplateSelectionCompleted, nextOnboardingStep]);
 
   // Debug: ensure encouragement target exists in DOM for step 3
   useEffect(() => {
@@ -206,20 +226,23 @@ export default function SAHMBudgetBuilder() {
   }, [selectedTemplate, isEncouragementStep]);
 
   // Auto-advance from template encouragement to about you next
-  const autoAdvanceRef = React.useRef(false);
+  const encouragementAdvanceRef = React.useRef(false);
   useEffect(() => {
-    if (isEncouragementStep && !autoAdvanceRef.current) {
-      autoAdvanceRef.current = true;
+    if (isEncouragementStep && !encouragementAdvanceRef.current) {
+      encouragementAdvanceRef.current = true;
       console.log('🎯 Auto-advancing from template encouragement after delay');
       const timer = setTimeout(() => {
-        completeOnboarding();
+        if (isEncouragementStep) {
+          console.log('🎯 Executing encouragement step auto-advance');
+          completeOnboarding();
+        }
       }, 3200); // 3.2 second delay to show encouragement
 
       return () => {
         clearTimeout(timer);
       };
     } else if (!isEncouragementStep) {
-      autoAdvanceRef.current = false;
+      encouragementAdvanceRef.current = false;
     }
   }, [isEncouragementStep, completeOnboarding]);
 

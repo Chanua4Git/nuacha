@@ -28,29 +28,50 @@ export function useOnboarding({
       
       console.log('🎯 useOnboarding hook activating for step:', step, 'targeting:', target);
       
-      // Wait for target element to be available
+      // Wait for target element to be available with persistent retries
+      let retryCount = 0;
+      const maxRetries = step === OnboardingStep.ABOUT_YOU_NEXT ? 50 : 20; // More retries for final step
+      
       const checkTarget = () => {
         const targetElement = document.querySelector(target);
-        console.log('🔍 Target element search result:', { target, found: !!targetElement, element: targetElement });
+        retryCount++;
+        
+        console.log('🔍 Target element search result:', { 
+          target, 
+          found: !!targetElement, 
+          element: targetElement, 
+          retry: retryCount, 
+          step 
+        });
         
         if (targetElement) {
           console.log('✅ Setting tooltip for step:', step);
           
           // Ensure the target element is visible
           // For the first step, scroll to start to avoid jumping to middle
-          const scrollBlock = step === OnboardingStep.GUIDE_TO_BUILDER ? 'start' : 'center';
+          // For ABOUT_YOU_NEXT, use 'start' to position tooltip above
+          const scrollBlock = step === OnboardingStep.GUIDE_TO_BUILDER || step === OnboardingStep.ABOUT_YOU_NEXT ? 'start' : 'center';
           targetElement.scrollIntoView({ 
             behavior: 'smooth', 
             block: scrollBlock,
             inline: 'nearest'
           });
           
-          setTooltip(target, content.content, content.position);
-          console.log('🎯 Tooltip successfully set for:', { step, target, element: targetElement });
+          // Extra delay for final step to ensure DOM is ready
+          if (step === OnboardingStep.ABOUT_YOU_NEXT) {
+            setTimeout(() => {
+              setTooltip(target, content.content, content.position);
+              console.log('🎯 FINAL TOOLTIP successfully set for:', { step, target, element: targetElement });
+            }, 200);
+          } else {
+            setTooltip(target, content.content, content.position);
+            console.log('🎯 Tooltip successfully set for:', { step, target, element: targetElement });
+          }
+        } else if (retryCount < maxRetries) {
+          console.log(`⏳ Target element not found, retrying ${retryCount}/${maxRetries} in 150ms...`);
+          setTimeout(checkTarget, 150);
         } else {
-          console.log('⏳ Target element not found, retrying in 100ms...');
-          // Retry after a short delay
-          setTimeout(checkTarget, 100);
+          console.error('❌ Target element not found after max retries:', { step, target, maxRetries });
         }
       };
 
