@@ -72,15 +72,15 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     
     console.log(`✅ Job enqueued successfully: ${jobId}`);
     
-    // Step 2: Poll for completion
-    const maxPollingAttempts = 30; // 30 attempts with 2-second intervals = 1 minute max
+    // Step 2: Poll for completion or get inference data directly
+    const maxPollingAttempts = 35; // Slightly increased attempts
     const pollingInterval = 2000; // 2 seconds
     let attempts = 0;
     let jobStatus: string | undefined = 'processing';
-    let resultUrl: string | null = null;
     let lastPollData: any = null;
+    let inferenceData: any = null;
     
-    while ((jobStatus || 'processing').toLowerCase() === 'processing' && attempts < maxPollingAttempts) {
+    while (attempts < maxPollingAttempts) {
       attempts++;
       console.log(`🔄 Polling attempt ${attempts}/${maxPollingAttempts}...`);
       
@@ -88,7 +88,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       
       const pollResponse = await fetch(pollingUrl, {
         headers: {
-          'Authorization': apiKey,
+          'Authorization': apiKey.startsWith('Token ') ? apiKey : `Token ${apiKey}`,
         }
       });
       
@@ -104,13 +104,18 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       // Debug: Log the complete polling response to understand structure
       console.log('🔍 Debug: Full polling response:', JSON.stringify(pollData, null, 2));
       
+      // Check if inference data is available directly in the response
+      if (pollData.inference && pollData.inference.result) {
+        console.log('✅ Inference data found directly in polling response');
+        inferenceData = pollData.inference;
+        break;
+      }
+      
       // Try multiple ways to access the job status (API might have different structures)
       jobStatus = pollData.job?.status || pollData.status || pollData.job_status;
-      resultUrl = pollData.job?.result_url || pollData.result_url || resultUrl;
       
       // Debug: Log what we extracted
       console.log('🔍 Debug: Extracted jobStatus:', jobStatus);
-      console.log('🔍 Debug: Extracted resultUrl:', resultUrl);
       
       const normalizedStatus = (jobStatus || '').toLowerCase();
       console.log(`📊 Job status: ${jobStatus}`);
@@ -125,18 +130,23 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       }
     }
     
-    const finalStatus = (jobStatus || '').toLowerCase();
-    if (finalStatus !== 'processed') {
-      throw new Error(`Job did not complete in time. Status: ${jobStatus} after ${attempts} attempts`);
+    // If we got inference data directly, use it
+    if (inferenceData) {
+      console.log('✅ Using inference data from polling response');
+      return mapPredictionToResult(inferenceData, null);
     }
     
-    if (!resultUrl) {
-      // Try to get from last poll payload as a fallback
-      resultUrl = lastPollData?.job?.result_url || null;
+    // If we have lastPollData with inference, use that as fallback
+    if (lastPollData?.inference?.result) {
+      console.log('✅ Using inference data from last poll as fallback');
+      return mapPredictionToResult(lastPollData.inference, null);
     }
     
+    // Traditional flow: check for result URL and fetch
+    const resultUrl = lastPollData?.job?.result_url || lastPollData?.result_url;
+    
     if (!resultUrl) {
-      throw new Error('No result URL provided for completed job');
+      throw new Error('No result URL or inference data available after polling');
     }
     
     console.log(`✅ Job completed, fetching results from: ${resultUrl}`);
@@ -144,8 +154,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     // Step 3: Get the inference result
     const resultResponse = await fetch(resultUrl, {
       headers: {
-        'Authorization': apiKey,
-        // Allow redirects just in case Mindee responds with a 302 to a signed URL
+        'Authorization': apiKey.startsWith('Token ') ? apiKey : `Token ${apiKey}`,
       }
     });
     
