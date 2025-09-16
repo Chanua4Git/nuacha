@@ -6,7 +6,8 @@ import { OnboardingStep } from '@/services/OnboardingService';
 
 export function OnboardingFlow() {
   const { state, nextStep, skipOnboarding, clearTooltip } = useOnboarding();
-  const isActionGated = state.currentStep === OnboardingStep.GUIDE_TO_BUILDER;
+  const isActionGated = state.currentStep === OnboardingStep.GUIDE_TO_BUILDER || 
+                       state.currentStep === OnboardingStep.ABOUT_YOU_NEXT;
 
   if (!state.isActive || !state.targetElement || !state.tooltipContent) {
     return null;

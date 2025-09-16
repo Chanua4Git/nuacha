@@ -175,6 +175,14 @@ export default function SAHMBudgetBuilder() {
     dependencies: []
   });
 
+  // Onboarding hook for About You Next step
+  const { nextStep: completeAboutYouStep, isCurrentStep: isAboutYouNextStep } = useOnboardingHook({
+    step: OnboardingStep.ABOUT_YOU_NEXT,
+    target: '[data-onboarding="about-you-next"]',
+    enabled: currentStep === 0, // Only enabled on About You step
+    dependencies: [currentStep]
+  });
+
   // Handle template selection and auto-advance onboarding
   const handleTemplateSelection = (template: string) => {
     setSelectedTemplate(template);
@@ -427,6 +435,11 @@ export default function SAHMBudgetBuilder() {
     }));
   };
   const handleNext = async () => {
+    // Complete About You onboarding step when moving from step 0
+    if (currentStep === 0 && isAboutYouNextStep) {
+      completeAboutYouStep();
+    }
+
     // Auto-save changes when in edit mode and navigating between steps
     if (isEditMode && templateId && user && selectedFamily) {
       try {
@@ -1232,7 +1245,10 @@ export default function SAHMBudgetBuilder() {
           Previous
         </Button>
         
-        {currentStep < steps.length - 1 && <Button onClick={handleNext}>
+        {currentStep < steps.length - 1 && <Button 
+            onClick={handleNext}
+            data-onboarding={currentStep === 0 ? "about-you-next" : undefined}
+          >
             Next
             <ChevronRight className="h-4 w-4 ml-2" />
           </Button>}

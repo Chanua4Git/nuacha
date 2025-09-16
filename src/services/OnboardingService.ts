@@ -1,7 +1,8 @@
 export enum OnboardingStep {
   GUIDE_TO_BUILDER = 'guide_to_builder',
   TEMPLATE_SELECTION = 'template_selection',
-  TEMPLATE_ENCOURAGEMENT = 'template_encouragement'
+  TEMPLATE_ENCOURAGEMENT = 'template_encouragement',
+  ABOUT_YOU_NEXT = 'about_you_next'
 }
 
 const ONBOARDING_STORAGE_KEY = 'nuacha_onboarding_completed';
@@ -47,7 +48,8 @@ export class OnboardingService {
     const allSteps = [
       OnboardingStep.GUIDE_TO_BUILDER,
       OnboardingStep.TEMPLATE_SELECTION,
-      OnboardingStep.TEMPLATE_ENCOURAGEMENT
+      OnboardingStep.TEMPLATE_ENCOURAGEMENT,
+      OnboardingStep.ABOUT_YOU_NEXT
     ];
 
     for (const step of allSteps) {
@@ -73,7 +75,8 @@ export class OnboardingService {
     const allSteps = [
       OnboardingStep.GUIDE_TO_BUILDER,
       OnboardingStep.TEMPLATE_SELECTION,
-      OnboardingStep.TEMPLATE_ENCOURAGEMENT
+      OnboardingStep.TEMPLATE_ENCOURAGEMENT,
+      OnboardingStep.ABOUT_YOU_NEXT
     ];
 
     if (allSteps.every(s => completedSteps.includes(s))) {
@@ -109,7 +112,8 @@ export class OnboardingService {
     const allSteps = [
       OnboardingStep.GUIDE_TO_BUILDER,
       OnboardingStep.TEMPLATE_SELECTION,
-      OnboardingStep.TEMPLATE_ENCOURAGEMENT
+      OnboardingStep.TEMPLATE_ENCOURAGEMENT,
+      OnboardingStep.ABOUT_YOU_NEXT
     ];
     
     return allSteps.every(step => completedSteps.includes(step));
@@ -122,7 +126,8 @@ export class OnboardingService {
     const allSteps = [
       OnboardingStep.GUIDE_TO_BUILDER,
       OnboardingStep.TEMPLATE_SELECTION,
-      OnboardingStep.TEMPLATE_ENCOURAGEMENT
+      OnboardingStep.TEMPLATE_ENCOURAGEMENT,
+      OnboardingStep.ABOUT_YOU_NEXT
     ];
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(allSteps));
   }
@@ -172,6 +177,11 @@ export class OnboardingService {
           content: "✨ Designed specifically for single parents managing real-world expenses",
           position: 'bottom'
         };
+      case OnboardingStep.ABOUT_YOU_NEXT:
+        return {
+          content: "Complete the form and click Next to continue. I'll stay here until you do.",
+          position: 'bottom'
+        };
       default:
         return {
           content: "",
@@ -191,6 +201,8 @@ export class OnboardingService {
         return '[data-onboarding="template-dropdown"]';
       case OnboardingStep.TEMPLATE_ENCOURAGEMENT:
         return '[data-onboarding="template-encouragement"]';
+      case OnboardingStep.ABOUT_YOU_NEXT:
+        return '[data-onboarding="about-you-next"]';
       default:
         return '';
     }
