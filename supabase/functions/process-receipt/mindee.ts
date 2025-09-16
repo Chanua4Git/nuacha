@@ -100,8 +100,17 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       
       const pollData = await pollResponse.json();
       lastPollData = pollData;
-      jobStatus = pollData.job?.status;
-      resultUrl = pollData.job?.result_url || resultUrl;
+      
+      // Debug: Log the complete polling response to understand structure
+      console.log('🔍 Debug: Full polling response:', JSON.stringify(pollData, null, 2));
+      
+      // Try multiple ways to access the job status (API might have different structures)
+      jobStatus = pollData.job?.status || pollData.status || pollData.job_status;
+      resultUrl = pollData.job?.result_url || pollData.result_url || resultUrl;
+      
+      // Debug: Log what we extracted
+      console.log('🔍 Debug: Extracted jobStatus:', jobStatus);
+      console.log('🔍 Debug: Extracted resultUrl:', resultUrl);
       
       const normalizedStatus = (jobStatus || '').toLowerCase();
       console.log(`📊 Job status: ${jobStatus}`);
