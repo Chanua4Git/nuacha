@@ -24,7 +24,6 @@ export function OnboardingFlow() {
       <OnboardingTooltip
         target={state.targetElement}
         content={state.tooltipContent}
-        position={state.position}
         variant={isActionGated ? 'subtle' : 'default'}
         onNext={isActionGated ? undefined : nextStep}
         onSkip={clearTooltip}

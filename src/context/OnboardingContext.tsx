@@ -7,7 +7,6 @@ interface OnboardingState {
   isActive: boolean;
   targetElement: string | null;
   tooltipContent: string | null;
-  position: 'top' | 'bottom' | 'left' | 'right';
 }
 
 interface OnboardingContextType {
@@ -15,7 +14,7 @@ interface OnboardingContextType {
   startOnboarding: () => void;
   nextStep: () => void;
   skipOnboarding: () => void;
-  setTooltip: (target: string, content: string, position?: 'top' | 'bottom' | 'left' | 'right') => void;
+  setTooltip: (target: string, content: string) => void;
   clearTooltip: () => void;
   isStepCompleted: (step: OnboardingStep) => boolean;
 }
@@ -28,8 +27,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     currentStep: null,
     isActive: false,
     targetElement: null,
-    tooltipContent: null,
-    position: 'bottom'
+    tooltipContent: null
   });
 
   // Debug logging to track onboarding state
@@ -153,17 +151,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       currentStep: null,
       isActive: false,
       targetElement: null,
-      tooltipContent: null,
-      position: 'bottom'
+      tooltipContent: null
     });
   }, []);
 
-  const setTooltip = useCallback((target: string, content: string, position: 'top' | 'bottom' | 'left' | 'right' = 'bottom') => {
+  const setTooltip = useCallback((target: string, content: string) => {
     setState(prev => ({
       ...prev,
       targetElement: target,
-      tooltipContent: content,
-      position
+      tooltipContent: content
     }));
   }, []);
 

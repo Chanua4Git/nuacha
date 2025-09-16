@@ -160,32 +160,27 @@ export class OnboardingService {
   /**
    * Get content for a specific step
    */
-  static getStepContent(step: OnboardingStep): { content: string; position: 'top' | 'bottom' | 'left' | 'right' } {
+  static getStepContent(step: OnboardingStep): { content: string } {
     switch (step) {
       case OnboardingStep.GUIDE_TO_BUILDER:
         return {
-          content: "Click Build Your Budget to continue. I'll stay here until you do.",
-          position: 'bottom'
+          content: "Click Build Your Budget to continue. I'll stay here until you do."
         };
       case OnboardingStep.TEMPLATE_SELECTION:
         return {
-          content: "🎯 Choose the template that best matches your family situation, or request a custom one if needed!",
-          position: 'bottom'
+          content: "🎯 Choose the template that best matches your family situation, or request a custom one if needed!"
         };
       case OnboardingStep.TEMPLATE_ENCOURAGEMENT:
         return {
-          content: "✨ Designed specifically for single parents managing real-world expenses",
-          position: 'bottom'
+          content: "✨ Designed specifically for single parents managing real-world expenses"
         };
       case OnboardingStep.ABOUT_YOU_NEXT:
         return {
-          content: "Complete this form and click Next. Then continue through all sections: Income (household income sources), Needs (essential monthly expenses), Wants (lifestyle spending), Savings (future planning), Unpaid Labor (value your care work), and Review (submit your personalized budget request).",
-          position: 'top'
+          content: "Complete this form and click Next. Then continue through all sections: Income (household income sources), Needs (essential monthly expenses), Wants (lifestyle spending), Savings (future planning), Unpaid Labor (value your care work), and Review (submit your personalized budget request)."
         };
       default:
         return {
-          content: "",
-          position: 'bottom'
+          content: ""
         };
     }
   }

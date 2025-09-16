@@ -60,11 +60,11 @@ export function useOnboarding({
           // Extra delay for final step to ensure DOM is ready
           if (step === OnboardingStep.ABOUT_YOU_NEXT) {
             setTimeout(() => {
-              setTooltip(target, content.content, content.position);
+              setTooltip(target, content.content);
               console.log('🎯 FINAL TOOLTIP successfully set for:', { step, target, element: targetElement });
             }, 200);
           } else {
-            setTooltip(target, content.content, content.position);
+            setTooltip(target, content.content);
             console.log('🎯 Tooltip successfully set for:', { step, target, element: targetElement });
           }
         } else if (retryCount < maxRetries) {
