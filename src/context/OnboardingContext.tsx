@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { OnboardingService, OnboardingStep } from '@/services/OnboardingService';
 import { useLocation } from 'react-router-dom';
 
@@ -106,7 +106,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
   }, [location.pathname, location.search]); // React to route changes
 
-  const startOnboarding = () => {
+  const startOnboarding = useCallback(() => {
     const nextStep = OnboardingService.getNextStep();
     if (nextStep !== null) {
       setState(prev => ({
@@ -115,9 +115,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         isActive: true
       }));
     }
-  };
+  }, []);
 
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (state.currentStep !== null) {
       OnboardingService.completeStep(state.currentStep);
       const next = OnboardingService.getNextStep();
@@ -139,9 +139,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         }));
       }
     }
-  };
+  }, [state.currentStep]);
 
-  const skipOnboarding = () => {
+  const skipOnboarding = useCallback(() => {
     OnboardingService.skipOnboarding();
     setState({
       currentStep: null,
@@ -150,41 +150,41 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       tooltipContent: null,
       position: 'bottom'
     });
-  };
+  }, []);
 
-  const setTooltip = (target: string, content: string, position: 'top' | 'bottom' | 'left' | 'right' = 'bottom') => {
+  const setTooltip = useCallback((target: string, content: string, position: 'top' | 'bottom' | 'left' | 'right' = 'bottom') => {
     setState(prev => ({
       ...prev,
       targetElement: target,
       tooltipContent: content,
       position
     }));
-  };
+  }, []);
 
-  const clearTooltip = () => {
+  const clearTooltip = useCallback(() => {
     setState(prev => ({
       ...prev,
       targetElement: null,
       tooltipContent: null
     }));
-  };
+  }, []);
 
-  const isStepCompleted = (step: OnboardingStep) => {
+  const isStepCompleted = useCallback((step: OnboardingStep) => {
     return OnboardingService.isStepCompleted(step);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    state,
+    startOnboarding,
+    nextStep,
+    skipOnboarding,
+    setTooltip,
+    clearTooltip,
+    isStepCompleted
+  }), [state, startOnboarding, nextStep, skipOnboarding, setTooltip, clearTooltip, isStepCompleted]);
 
   return (
-    <OnboardingContext.Provider
-      value={{
-        state,
-        startOnboarding,
-        nextStep,
-        skipOnboarding,
-        setTooltip,
-        clearTooltip,
-        isStepCompleted
-      }}
-    >
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   );

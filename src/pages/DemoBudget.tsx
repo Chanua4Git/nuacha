@@ -1,5 +1,5 @@
 import BudgetTemplateReport from '@/components/budget/BudgetTemplateReport';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -35,19 +35,23 @@ function DemoBudgetContent() {
   const isMobile = useIsMobile();
 
   // Onboarding hook for the "Build Your Budget" button
-  const { nextStep } = useOnboardingHook({
+  const { nextStep, isCurrentStep: isGuideStep } = useOnboardingHook({
     step: OnboardingStep.GUIDE_TO_BUILDER,
     target: '[data-onboarding="build-button"]',
     enabled: mode === 'demo',
     dependencies: [mode]
   });
 
-  // Auto-advance onboarding when user switches to builder mode
+  // Ensure we advance from GUIDE_TO_BUILDER only once after switching to builder
+  const advancedFromGuideRef = useRef(false);
+
   useEffect(() => {
-    if (mode === 'builder') {
-      nextStep();
-    }
-  }, [mode, nextStep]);
+    if (mode !== 'builder') return;
+    if (advancedFromGuideRef.current) return;
+    if (!isGuideStep) return;
+    advancedFromGuideRef.current = true;
+    nextStep();
+  }, [mode, isGuideStep]);
 
   // Handle URL parameters for deep linking
   useEffect(() => {
