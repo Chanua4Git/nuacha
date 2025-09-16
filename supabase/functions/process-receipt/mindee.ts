@@ -31,7 +31,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     let enqueueResponse = await fetch(enqueueEndpoint, {
       method: 'POST',
       headers: {
-        'Authorization': apiKey,
+        'Authorization': apiKey.startsWith('Token ') ? apiKey : `Token ${apiKey}`,
       },
       body: buildFormData()
     });
@@ -44,7 +44,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       enqueueResponse = await fetch(enqueueEndpoint, {
         method: 'POST',
         headers: {
-          'Authorization': apiKey,
+          'Authorization': apiKey.startsWith('Token ') ? apiKey : `Token ${apiKey}`,
         },
         body: buildFormData()
       });
