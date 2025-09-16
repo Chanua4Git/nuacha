@@ -82,87 +82,46 @@ export const useReceiptDuplicateDetection = (familyId?: string) => {
     setIsChecking(true);
     
     try {
-      const potentialAmount = parseFloat(amount);
-      const potentialDate = date.toISOString().split('T')[0];
-      
-      // Enhanced duplicate detection for receipts
-      const potentialDuplicates = expenses.filter(expense => {
-        // Exact match check
-        if (
-          expense.amount === potentialAmount &&
-          expense.date === potentialDate &&
-          expense.place.toLowerCase() === place.toLowerCase()
-        ) {
-          return true;
-        }
-
-        // Receipt number match (if available)
-        if (
-          ocrResult.receiptNumber?.value &&
-          expense.transactionId === ocrResult.receiptNumber.value
-        ) {
-          return true;
-        }
-
-        // Vendor name + amount + similar date (within 2 days)
-        if (
-          expense.amount === potentialAmount &&
-          ocrResult.storeDetails?.name &&
-          expense.place.toLowerCase().includes(ocrResult.storeDetails.name.toLowerCase())
-        ) {
-          const expenseDate = new Date(expense.date);
-          const potentialDateObj = new Date(potentialDate);
-          const daysDiff = Math.abs((expenseDate.getTime() - potentialDateObj.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 2) {
-            return true;
-          }
-        }
-
-        // Very similar description and amount
-        const descriptionSimilarity = getTextSimilarity(expense.description, description);
-        if (
-          descriptionSimilarity > 0.8 &&
-          Math.abs(expense.amount - potentialAmount) < 0.01
-        ) {
-          return true;
-        }
-
-        return false;
-      });
-
-      if (potentialDuplicates.length > 0) {
-        // Create duplicate groups
-        const duplicateGroup: DuplicateGroup = {
-          id: `receipt-duplicate-${Date.now()}`,
-          expenses: potentialDuplicates,
-          reason: ocrResult.receiptNumber?.value ? 'same_transaction' : 'exact_match',
-          confidence: ocrResult.receiptNumber?.value ? 90 : 85
-        };
-
-        return {
-          hasDuplicates: true,
-          duplicateGroups: [duplicateGroup],
+      if (!expenses.length) {
+        return { 
+          hasDuplicates: false, 
+          duplicateGroups: [], 
           potentialExpense: {
             familyId,
-            amount: potentialAmount,
+            amount: parseFloat(amount),
             description,
             place,
-            date: potentialDate,
+            date: date.toISOString().split('T')[0],
             transactionId: ocrResult.receiptNumber?.value || undefined,
-          }
+          } 
         };
       }
 
+      const potentialExpense: Expense = {
+        id: 'temp-receipt-id',
+        familyId,
+        amount: parseFloat(amount) || 0,
+        description,
+        date: date.toISOString().split('T')[0],
+        place,
+        category: 'general',
+        transactionId: ocrResult.receiptNumber?.value || undefined
+      };
+
+      // Use the enhanced duplicate detection algorithm
+      const allExpensesWithPotential = [...expenses, potentialExpense];
+      const duplicateGroups = detectDuplicates(allExpensesWithPotential)
+        .filter(group => group.expenses.some(exp => exp.id === 'temp-receipt-id'));
+
       return {
-        hasDuplicates: false,
-        duplicateGroups: [],
+        hasDuplicates: duplicateGroups.length > 0,
+        duplicateGroups,
         potentialExpense: {
           familyId,
-          amount: potentialAmount,
+          amount: parseFloat(amount),
           description,
           place,
-          date: potentialDate,
+          date: date.toISOString().split('T')[0],
           transactionId: ocrResult.receiptNumber?.value || undefined,
         }
       };
