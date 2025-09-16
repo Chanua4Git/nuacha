@@ -205,6 +205,24 @@ export default function SAHMBudgetBuilder() {
     console.log('🔎 Encouragement target present:', !!el, { isEncouragementStep, selectedTemplate });
   }, [selectedTemplate, isEncouragementStep]);
 
+  // Auto-advance from template encouragement to about you next
+  const autoAdvanceRef = React.useRef(false);
+  useEffect(() => {
+    if (isEncouragementStep && !autoAdvanceRef.current) {
+      autoAdvanceRef.current = true;
+      console.log('🎯 Auto-advancing from template encouragement after delay');
+      const timer = setTimeout(() => {
+        completeOnboarding();
+      }, 3200); // 3.2 second delay to show encouragement
+
+      return () => {
+        clearTimeout(timer);
+      };
+    } else if (!isEncouragementStep) {
+      autoAdvanceRef.current = false;
+    }
+  }, [isEncouragementStep, completeOnboarding]);
+
   // Check if we're in edit mode
   const mode = searchParams.get('mode');
   const templateId = searchParams.get('templateId');

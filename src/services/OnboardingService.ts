@@ -179,8 +179,8 @@ export class OnboardingService {
         };
       case OnboardingStep.ABOUT_YOU_NEXT:
         return {
-          content: "Complete the form and click Next to continue. I'll stay here until you do.",
-          position: 'bottom'
+          content: "Complete this form and click Next. Then continue through all sections: Income (household income sources), Needs (essential monthly expenses), Wants (lifestyle spending), Savings (future planning), Unpaid Labor (value your care work), and Review (submit your personalized budget request).",
+          position: 'top'
         };
       default:
         return {
