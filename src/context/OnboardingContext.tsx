@@ -93,9 +93,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           tooltipContent: null
         }));
       }
-    } else if (!shouldStart && !forceTour && state.isActive) {
-      // Stop onboarding (but not if forced)
-      console.log('❌ Stopping onboarding');
+    } else if (!shouldStart && !forceTour && state.isActive && !location.pathname.includes('/demo/budget')) {
+      // Only stop onboarding if we're not on a budget route (preserve state during transitions)
+      console.log('❌ Stopping onboarding - not on budget route');
       setState(prev => ({
         ...prev,
         currentStep: null,
@@ -119,17 +119,23 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const nextStep = useCallback(() => {
     if (state.currentStep !== null) {
+      console.log('🎯 Completing step and advancing:', state.currentStep);
       OnboardingService.completeStep(state.currentStep);
       const next = OnboardingService.getNextStep();
       
+      console.log('🎯 Next step after completion:', next);
+      
       if (next !== null) {
+        console.log('🎯 Advancing to next step:', next);
         setState(prev => ({
           ...prev,
           currentStep: next,
+          isActive: true, // Ensure we stay active
           targetElement: null,
           tooltipContent: null
         }));
       } else {
+        console.log('🎯 Onboarding completed, deactivating');
         setState(prev => ({
           ...prev,
           currentStep: null,

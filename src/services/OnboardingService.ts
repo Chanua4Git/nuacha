@@ -19,9 +19,9 @@ export class OnboardingService {
       return false;
     }
 
-    // Only show onboarding on demo/budget routes
+    // Only show onboarding on demo/budget routes (NOT home page)
     const currentPath = window.location.pathname;
-    const isOnBudgetRoute = currentPath.includes('/demo/budget') || currentPath.includes('/budget') || currentPath === '/';
+    const isOnBudgetRoute = currentPath.includes('/demo/budget') || currentPath.includes('/budget');
     
     console.log('🎯 OnboardingService shouldShowOnboarding:', {
       currentPath,
