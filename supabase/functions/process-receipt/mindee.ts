@@ -6,8 +6,8 @@ import { MindeeOCRResult } from './types.ts';
 
 export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<MindeeOCRResult> => {
   try {
-    // Set up Mindee API endpoint for v5
-    const endpoint = 'https://api.mindee.net/v1/products/mindee/expense_receipts/v5/predict';
+    // Set up Mindee API endpoint for v2 platform
+    const endpoint = 'https://platform.mindee.com/v1/products/mindee/expense_receipts/v5/predict';
     
     console.log(`📄 Processing receipt image (${Math.round(imageBlob.size / 1024)}KB)`);
     
