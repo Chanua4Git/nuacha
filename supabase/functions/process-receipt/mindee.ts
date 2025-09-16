@@ -17,22 +17,38 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     // Step 1: Enqueue the inference
     const enqueueEndpoint = 'https://api-v2.mindee.net/v2/inferences/enqueue';
     
-    const formData = new FormData();
-    formData.append('model_id', modelId);
-    formData.append('file', imageBlob, 'receipt.jpg');
-    formData.append('confidence', 'true');  // Enable confidence scores
-    formData.append('raw_text', 'false');   // We don't need raw text
-    formData.append('polygon', 'false');    // We don't need polygons
+    // Build minimal form data (some options are not available on all plans)
+    const buildFormData = () => {
+      const formData = new FormData();
+      formData.append('model_id', modelId);
+      formData.append('file', imageBlob, 'receipt.jpg');
+      return formData;
+    };
     
     console.log('📤 Enqueueing inference with Mindee v2 API...');
     
-    const enqueueResponse = await fetch(enqueueEndpoint, {
+    // Initial enqueue
+    let enqueueResponse = await fetch(enqueueEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': apiKey,
       },
-      body: formData
+      body: buildFormData()
     });
+
+    // Retry once on 402 (Payment Required) or similar plan-related errors
+    if (!enqueueResponse.ok && enqueueResponse.status === 402) {
+      const errorText = await enqueueResponse.text();
+      console.warn('💳 Mindee 402 Payment Required. Retrying with minimal options...', errorText);
+      await new Promise((r) => setTimeout(r, 1000));
+      enqueueResponse = await fetch(enqueueEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': apiKey,
+        },
+        body: buildFormData()
+      });
+    }
     
     if (!enqueueResponse.ok) {
       const errorText = await enqueueResponse.text();
@@ -42,10 +58,16 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     
     const jobData = await enqueueResponse.json();
     const jobId = jobData.job?.id;
+    const pollingUrl: string | null = jobData.job?.polling_url || (jobId ? `https://api-v2.mindee.net/v2/jobs/${jobId}` : null);
     
     if (!jobId) {
       console.error('🚨 No job ID returned from enqueue:', jobData);
       throw new Error('Failed to get job ID from Mindee API');
+    }
+    
+    if (!pollingUrl) {
+      console.error('🚨 No polling URL available for job:', jobData);
+      throw new Error('Failed to determine polling URL for Mindee job');
     }
     
     console.log(`✅ Job enqueued successfully: ${jobId}`);
@@ -54,16 +76,17 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     const maxPollingAttempts = 30; // 30 attempts with 2-second intervals = 1 minute max
     const pollingInterval = 2000; // 2 seconds
     let attempts = 0;
-    let jobStatus = 'Processing';
-    let resultUrl = null;
+    let jobStatus: string | undefined = 'processing';
+    let resultUrl: string | null = null;
+    let lastPollData: any = null;
     
-    while (jobStatus === 'Processing' && attempts < maxPollingAttempts) {
+    while ((jobStatus || 'processing').toLowerCase() === 'processing' && attempts < maxPollingAttempts) {
       attempts++;
       console.log(`🔄 Polling attempt ${attempts}/${maxPollingAttempts}...`);
       
       await new Promise(resolve => setTimeout(resolve, pollingInterval));
       
-      const pollResponse = await fetch(`https://api-v2.mindee.net/v2/jobs/${jobId}`, {
+      const pollResponse = await fetch(pollingUrl, {
         headers: {
           'Authorization': apiKey,
         }
@@ -76,19 +99,31 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       }
       
       const pollData = await pollResponse.json();
+      lastPollData = pollData;
       jobStatus = pollData.job?.status;
-      resultUrl = pollData.job?.result_url;
+      resultUrl = pollData.job?.result_url || resultUrl;
       
+      const normalizedStatus = (jobStatus || '').toLowerCase();
       console.log(`📊 Job status: ${jobStatus}`);
       
       if (pollData.job?.error) {
         console.error('🚨 Job failed with error:', pollData.job.error);
         throw new Error(`Mindee job failed: ${pollData.job.error.detail || 'Unknown error'}`);
       }
+      
+      if (normalizedStatus === 'processed') {
+        break;
+      }
     }
     
-    if (jobStatus !== 'Processed') {
+    const finalStatus = (jobStatus || '').toLowerCase();
+    if (finalStatus !== 'processed') {
       throw new Error(`Job did not complete in time. Status: ${jobStatus} after ${attempts} attempts`);
+    }
+    
+    if (!resultUrl) {
+      // Try to get from last poll payload as a fallback
+      resultUrl = lastPollData?.job?.result_url || null;
     }
     
     if (!resultUrl) {
@@ -101,6 +136,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
     const resultResponse = await fetch(resultUrl, {
       headers: {
         'Authorization': apiKey,
+        // Allow redirects just in case Mindee responds with a 302 to a signed URL
       }
     });
     
