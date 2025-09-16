@@ -47,20 +47,66 @@ export function OnboardingTooltip({
         const tooltipRect = tooltipRef.current.getBoundingClientRect();
         const scrollY = window.scrollY;
         const scrollX = window.scrollX;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
         
-        // Mobile-specific padding and spacing
-        const padding = isMobile ? 12 : 16;
-        const offset = isMobile ? 8 : 12;
+        // Responsive padding and spacing
+        const padding = isMobile ? 16 : 20;
+        const offset = isMobile ? 10 : 12;
         
+        // Calculate available space in each direction
+        const spaceAbove = targetRect.top;
+        const spaceBelow = viewportHeight - targetRect.bottom;
+        const spaceLeft = targetRect.left;
+        const spaceRight = viewportWidth - targetRect.right;
+        
+        // Required space including tooltip and offset
+        const requiredHeight = tooltipRect.height + offset + padding;
+        const requiredWidth = tooltipRect.width + offset + padding;
+        
+        // Smart position selection - choose position with most available space
+        let currentPosition = position;
+        
+        if (isMobile) {
+          // On mobile, only use top/bottom positions
+          if (position === 'left' || position === 'right') {
+            currentPosition = spaceAbove > spaceBelow ? 'top' : 'bottom';
+          } else {
+            // If preferred position doesn't fit, flip to opposite
+            if (currentPosition === 'top' && spaceAbove < requiredHeight && spaceBelow > spaceAbove) {
+              currentPosition = 'bottom';
+            } else if (currentPosition === 'bottom' && spaceBelow < requiredHeight && spaceAbove > spaceBelow) {
+              currentPosition = 'top';
+            }
+          }
+        } else {
+          // Desktop: Choose best position automatically if preferred doesn't fit
+          const canFitTop = spaceAbove >= requiredHeight;
+          const canFitBottom = spaceBelow >= requiredHeight;
+          const canFitLeft = spaceLeft >= requiredWidth;
+          const canFitRight = spaceRight >= requiredWidth;
+          
+          if (currentPosition === 'top' && !canFitTop && canFitBottom) {
+            currentPosition = 'bottom';
+          } else if (currentPosition === 'bottom' && !canFitBottom && canFitTop) {
+            currentPosition = 'top';
+          } else if (currentPosition === 'left' && !canFitLeft && canFitRight) {
+            currentPosition = 'right';
+          } else if (currentPosition === 'right' && !canFitRight && canFitLeft) {
+            currentPosition = 'left';
+          }
+          
+          // If still doesn't fit, choose position with most space
+          if ((currentPosition === 'top' && !canFitTop) || 
+              (currentPosition === 'bottom' && !canFitBottom)) {
+            currentPosition = spaceAbove > spaceBelow ? 'top' : 'bottom';
+          }
+        }
+        
+        // Calculate initial position
         let top = 0;
         let left = 0;
-        let currentPosition = position;
-
-        // Smart positioning for mobile - prefer top/bottom over left/right
-        if (isMobile && (position === 'left' || position === 'right')) {
-          currentPosition = targetRect.top > window.innerHeight / 2 ? 'top' : 'bottom';
-        }
-
+        
         switch (currentPosition) {
           case 'bottom':
             top = targetRect.bottom + scrollY + offset;
@@ -79,26 +125,53 @@ export function OnboardingTooltip({
             left = targetRect.right + scrollX + offset;
             break;
         }
-
-        // Smart fallback positioning for mobile
+        
+        // Mobile-specific adjustments
         if (isMobile) {
-          // If tooltip would go off screen horizontally, center it
-          if (left < padding || left + tooltipRect.width > window.innerWidth - padding) {
-            left = padding;
-          }
+          // Always use full-width with padding on mobile
+          left = padding;
           
-          // If tooltip would go off screen vertically, flip position
-          if (currentPosition === 'top' && top < padding + scrollY) {
-            currentPosition = 'bottom';
-            top = targetRect.bottom + scrollY + offset;
-          } else if (currentPosition === 'bottom' && top + tooltipRect.height > window.innerHeight + scrollY - padding) {
-            currentPosition = 'top';
-            top = targetRect.top + scrollY - tooltipRect.height - offset;
+          // Ensure tooltip doesn't go off top or bottom of screen
+          if (currentPosition === 'top') {
+            // If tooltip would go above viewport, position it within viewport
+            if (top < padding + scrollY) {
+              top = Math.max(padding + scrollY, targetRect.top + scrollY - tooltipRect.height - offset);
+              // If still off-screen, position it below target instead
+              if (top < padding + scrollY) {
+                currentPosition = 'bottom';
+                top = targetRect.bottom + scrollY + offset;
+              }
+            }
+          } else if (currentPosition === 'bottom') {
+            // If tooltip would go below viewport, try to fit above
+            const maxTop = scrollY + viewportHeight - tooltipRect.height - padding;
+            if (top + tooltipRect.height > scrollY + viewportHeight - padding) {
+              if (spaceAbove >= requiredHeight) {
+                currentPosition = 'top';
+                top = targetRect.top + scrollY - tooltipRect.height - offset;
+              } else {
+                // Position at bottom of viewport if nowhere else fits
+                top = Math.min(top, maxTop);
+              }
+            }
           }
         } else {
-          // Desktop positioning with bounds checking
-          left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
-          top = Math.max(padding + scrollY, top);
+          // Desktop bounds checking
+          // Horizontal bounds
+          const minLeft = padding + scrollX;
+          const maxLeft = scrollX + viewportWidth - tooltipRect.width - padding;
+          left = Math.max(minLeft, Math.min(left, maxLeft));
+          
+          // Vertical bounds  
+          const minTop = padding + scrollY;
+          const maxTop = scrollY + viewportHeight - tooltipRect.height - padding;
+          
+          if (currentPosition === 'top' || currentPosition === 'bottom') {
+            top = Math.max(minTop, Math.min(top, maxTop));
+          } else {
+            // For left/right positions, center vertically within viewport if needed
+            top = Math.max(minTop, Math.min(top, maxTop));
+          }
         }
 
         setActualPosition(currentPosition);
