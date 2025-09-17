@@ -13,12 +13,12 @@ export function handleOCRError(error: OCRError): OCRResult {
   
   switch(error.type) {
     case 'FETCH_ERROR':
-      toast("We're having trouble accessing this image", {
+      toast.error("We're having trouble accessing this image", {
         description: "Could you try uploading it again?"
       });
       break;
     case 'SERVER_ERROR':
-      toast("We're experiencing technical difficulties", {
+      toast.error("We're experiencing technical difficulties", {
         description: "Please try again in a moment."
       });
       break;
@@ -28,14 +28,33 @@ export function handleOCRError(error: OCRError): OCRResult {
       });
       break;
     case 'IMAGE_FORMAT_ERROR':
-      toast("This image format isn't supported", {
+      toast.error("This image format isn't supported", {
         description: "Please upload a JPEG or PNG file."
       });
       break;
     default:
-      toast("Something went wrong while processing your receipt", {
-        description
-      });
+      // Check for specific error messages to provide better feedback
+      if (error.error?.includes('Authentication failed') || error.error?.includes('Invalid API key')) {
+        toast.error("We're having technical difficulties", {
+          description: "Our image processing service is temporarily unavailable. Please try again later."
+        });
+      } else if (error.error?.includes('Payment required')) {
+        toast.error("Service temporarily unavailable", {
+          description: "Please try again in a few minutes."
+        });
+      } else if (error.error?.includes('Too many requests')) {
+        toast.error("Too many requests", {
+          description: "Please wait a moment and try again."
+        });
+      } else if (error.error?.includes('timeout')) {
+        toast.error("Processing took too long", {
+          description: "Please try with a smaller or clearer image."
+        });
+      } else {
+        toast.error("Something went wrong while processing your receipt", {
+          description
+        });
+      }
   }
   
   return {

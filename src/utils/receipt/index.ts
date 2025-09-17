@@ -13,34 +13,54 @@ export async function processReceiptImage(file: File, familyId?: string): Promis
     const loadingToast = toast.loading("Analyzing your receipt...", {
       description: "We're extracting the details with care."
     });
-    
-    // Check image quality and preprocess if needed
+
+    // Step 1: Convert HEIC files to JPEG if needed
+    console.log(`📸 Processing image: ${file.name} (${Math.round(file.size / 1024)}KB, ${file.type})`);
     let processedFile = file;
-    try {
-      const imageAnalysis = await checkImageQuality(file);
-      
-      if (imageAnalysis.recommendPreprocessing) {
-        console.log('🔄 Preprocessing image for better OCR...');
-        processedFile = await preprocessReceiptImage(file, {
-          maxWidth: 1600,
-          maxHeight: 1600,
-          quality: 0.92,
+    
+    // Handle HEIC conversion
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      try {
+        console.log('🔄 Converting HEIC image to JPEG...');
+        const { convertHeicToJpeg } = await import('./imageProcessing');
+        processedFile = await convertHeicToJpeg(file);
+        console.log(`✅ HEIC conversion complete: ${processedFile.name} (${Math.round(processedFile.size / 1024)}KB)`);
+      } catch (heicError) {
+        console.error('❌ HEIC conversion failed:', heicError);
+        toast.dismiss(loadingToast);
+        toast.error("Couldn't convert HEIC image", {
+          description: "Please convert to JPEG or PNG and try again."
+        });
+        return {
+          confidence: 0.1,
+          error: 'HEIC conversion failed',
+          type: 'IMAGE_FORMAT_ERROR'
+        };
+      }
+    }
+
+    // Step 2: Check image quality and determine preprocessing needs
+    const qualityCheck = await checkImageQuality(processedFile);
+    console.log(`📐 Image quality analysis:`, qualityCheck);
+
+    // Step 3: Preprocess image if recommended
+    if (qualityCheck.recommendPreprocessing || qualityCheck.isLongReceipt) {
+      try {
+        console.log('🔧 Preprocessing image for better OCR...');
+        processedFile = await preprocessReceiptImage(processedFile, {
+          maxWidth: 1920,
+          maxHeight: 1920, 
+          quality: 0.9,
           enableEnhancement: true
         });
+        console.log(`✅ Image preprocessing complete: ${Math.round(processedFile.size / 1024)}KB`);
+      } catch (preprocessError) {
+        console.warn('⚠️ Image preprocessing failed, using original:', preprocessError);
+        // Continue with original file if preprocessing fails
       }
-      
-      if (imageAnalysis.isLongReceipt) {
-        console.log('📏 Long receipt detected, using enhanced processing');
-        toast.loading("Processing long receipt...", {
-          description: "This might take a moment for better accuracy.",
-          id: loadingToast
-        });
-      }
-    } catch (preprocessError) {
-      console.warn('⚠️ Image preprocessing failed, using original:', preprocessError);
-      // Continue with original file
     }
     
+    // Step 4: Upload the processed file
     const receiptUrl = await handleReceiptUpload(processedFile);
     if (!receiptUrl) {
       toast.dismiss(loadingToast);
@@ -50,6 +70,7 @@ export async function processReceiptImage(file: File, familyId?: string): Promis
       };
     }
     
+    // Step 5: Process with OCR
     try {
       const result = await processReceiptWithEdgeFunction(receiptUrl, familyId);
       toast.dismiss(loadingToast);
