@@ -142,8 +142,22 @@ serve(async (req) => {
     
     if ('error' in result) {
       console.error('🚨 Error processing receipt:', result.error);
+
+      const errMsg = String(result.error || '');
+
+      // Clearer message when model path is misconfigured
+      if (errMsg.includes('404') || errMsg.toLowerCase().includes('not found')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Our receipt reader needed a quick tune-up',
+            type: 'SERVER_ERROR',
+            message: 'We’ve adjusted the settings. Please try that scan again.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
       
-      if (result.error.includes('fetch image')) {
+      if (errMsg.includes('fetch image')) {
         return new Response(
           JSON.stringify({
             error: "We're having trouble with this image",
@@ -154,7 +168,7 @@ serve(async (req) => {
         );
       }
       
-      if (result.error.includes('format')) {
+      if (errMsg.includes('format')) {
         return new Response(
           JSON.stringify({
             error: "This image format isn't supported",

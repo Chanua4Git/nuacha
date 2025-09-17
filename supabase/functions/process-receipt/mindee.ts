@@ -6,10 +6,11 @@ import { MindeeOCRResult } from './types.ts';
 
 export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<MindeeOCRResult> => {
   try {
-    const modelId = Deno.env.get('MINDEE_MODEL_ID');
-    
-    if (!modelId) {
-      throw new Error('MINDEE_MODEL_ID is not configured');
+    const rawModelId = Deno.env.get('MINDEE_MODEL_ID')?.trim() || '';
+    const ownerModelPattern = /^[a-z0-9_-]+\/[a-z0-9._-]+(@[a-z0-9._-]+)?$/i;
+    const resolvedModelId = ownerModelPattern.test(rawModelId) ? rawModelId : 'mindee/expense_receipts';
+    if (!ownerModelPattern.test(rawModelId)) {
+      console.warn('⚠️ MINDEE_MODEL_ID missing or invalid. Falling back to default model "mindee/expense_receipts".');
     }
     
     // Validate API key format
@@ -18,11 +19,11 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       throw new Error('Invalid API key format. Please check your Mindee API key.');
     }
     
-    console.log(`📄 Processing receipt image (${Math.round(imageBlob.size / 1024)}KB) with model ${modelId}`);
+    console.log(`📄 Processing receipt image (${Math.round(imageBlob.size / 1024)}KB) with model ${resolvedModelId}`);
     console.log(`🔑 API Key format: ${apiKey.substring(0, 10)}...`);
     
     // Step 1: Enqueue the inference using the correct API endpoint
-    const enqueueEndpoint = `https://api.mindee.net/v1/products/${modelId}/predict_async`;
+    const enqueueEndpoint = `https://api.mindee.net/v1/products/${resolvedModelId}/predict_async`;
     
     // Build form data with the image
     const buildFormData = () => {
@@ -84,7 +85,7 @@ export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<Min
       
       await new Promise(resolve => setTimeout(resolve, pollingInterval));
       
-      const statusUrl = `https://api.mindee.net/v1/products/${modelId}/predict_async/${jobId}`;
+      const statusUrl = `https://api.mindee.net/v1/products/${resolvedModelId}/predict_async/${jobId}`;
       const pollResponse = await fetch(statusUrl, {
         headers: {
           'Authorization': authHeader,
