@@ -7,10 +7,23 @@ import { MindeeOCRResult } from './types.ts';
 export const mindeeClient = async (apiKey: string, imageBlob: Blob): Promise<MindeeOCRResult> => {
   try {
     const rawModelId = Deno.env.get('MINDEE_MODEL_ID')?.trim() || '';
+    
+    // Check if it's a valid UUID format (legacy app.mindee.com) 
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    // Check if it's owner/model format (new platform.mindee.com)
     const ownerModelPattern = /^[a-z0-9_-]+\/[a-z0-9._-]+(@[a-z0-9._-]+)?$/i;
-    const resolvedModelId = ownerModelPattern.test(rawModelId) ? rawModelId : 'mindee/expense_receipts';
-    if (!ownerModelPattern.test(rawModelId)) {
-      console.warn('⚠️ MINDEE_MODEL_ID missing or invalid. Falling back to default model "mindee/expense_receipts".');
+    
+    let resolvedModelId = rawModelId;
+    
+    if (!rawModelId || (!uuidPattern.test(rawModelId) && !ownerModelPattern.test(rawModelId))) {
+      // Default to versioned model for better compatibility
+      resolvedModelId = 'mindee/expense_receipts@v5.3';
+      console.warn('⚠️ MINDEE_MODEL_ID missing or invalid. Falling back to default model "mindee/expense_receipts@v5.3".');
+    } else if (ownerModelPattern.test(rawModelId) && !rawModelId.includes('@')) {
+      // Add version if missing for owner/model format
+      resolvedModelId = `${rawModelId}@v5.3`;
+      console.log(`📝 Added version to model ID: ${resolvedModelId}`);
     }
     
     // Validate API key format
