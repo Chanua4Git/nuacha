@@ -47,6 +47,7 @@ async function callMindeePredict(
   let r: Response | null = null;
   try {
     r = await fetch(`${base}/predict_async`, { method: "POST", headers, body: bytes });
+    console.log("🔍 Mindee response (async)", r?.status);
   } catch (_) {
     // network error → treat as backend unavailable and try sync
   }
@@ -55,6 +56,7 @@ async function callMindeePredict(
   if (!r || !r.ok && [404, 405, 501].includes(r.status)) {
     console.log("Mindee: async unsupported, falling back to /predict");
     const rs = await fetch(`${base}/predict`, { method: "POST", headers, body: bytes });
+    console.log("🔍 Mindee response (sync)", rs.status);
     const data = await rs.json().catch(() => ({}));
     if (!rs.ok) return mkErr(rs.status, data);
     return data;
