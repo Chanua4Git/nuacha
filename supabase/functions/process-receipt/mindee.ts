@@ -26,8 +26,9 @@ function modelBase(id: ModelId): string {
 }
 
 function mkErr(status: number, data: any) {
-  const msg = (data?.message || data?.error || "Mindee request failed").toString();
-  return { error: `${status} ${msg}` };
+  const snippet = (data?.message || data?.error || "").toString().slice(0, 120);
+  console.log("❌ Mindee error", status, snippet);
+  return { error: `${status} ${snippet || "Mindee request failed"}` };
 }
 
 async function callMindeePredict(
@@ -37,10 +38,12 @@ async function callMindeePredict(
 ) {
   const rawModel = Deno.env.get("MINDEE_MODEL_ID"); // e.g. "mindee/expense_receipts@v5.3" or UUID
   const base = modelBase(parseModelId(rawModel));
+  console.log('🌐 Mindee base:', base);
 
   const headers: Record<string, string> = {
     Authorization: `Token ${apiKey}`,
     "Content-Type": contentType || "application/octet-stream",
+    "Accept": "application/json",
   };
 
   // Try async first
@@ -49,12 +52,12 @@ async function callMindeePredict(
     r = await fetch(`${base}/predict_async`, { method: "POST", headers, body: bytes });
     console.log("🔍 Mindee response (async)", r?.status);
   } catch (_) {
-    // network error → treat as backend unavailable and try sync
+    console.log("⚠️ Mindee async request network error; will try sync");
   }
 
   // If async not supported/allowed → fall back to sync
   if (!r || !r.ok && [404, 405, 501].includes(r.status)) {
-    console.log("Mindee: async unsupported, falling back to /predict");
+    console.log("↩️ Mindee: async unsupported, falling back to /predict");
     const rs = await fetch(`${base}/predict`, { method: "POST", headers, body: bytes });
     console.log("🔍 Mindee response (sync)", rs.status);
     const data = await rs.json().catch(() => ({}));
