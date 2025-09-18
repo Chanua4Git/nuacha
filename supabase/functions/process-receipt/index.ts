@@ -145,6 +145,18 @@ serve(async (req) => {
 
       const errMsg = String(result.error || '');
 
+      // Check for 401 errors (authentication issues)
+      if (errMsg.includes('401') || errMsg.toLowerCase().includes('unauthorized')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Secure connection hiccup with our OCR',
+            type: 'SERVER_ERROR',
+            message: 'We refreshed the connection—please try that receipt again.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
       // Clearer message when model path is misconfigured
       if (errMsg.includes('404') || errMsg.toLowerCase().includes('not found')) {
         return new Response(
