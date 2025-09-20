@@ -31,10 +31,10 @@ function modelBase(id: ModelId): string {
     : `${apiBase}/v1/products/${id.owner}/${id.model}/${id.version ?? "v5.3"}`;
 }
 
-function mkErr(status: number, data: any) {
-  const snippet = (data?.message || data?.error || "").toString().slice(0, 120);
-  console.log("❌ Mindee error", status, snippet);
-  return { error: `${status} ${snippet || "Mindee request failed"}` };
+function mkErr(prefix: string, status?: number, bodyText?: string) {
+  const msg = `${prefix} (status=${status ?? "?"}) ${bodyText ? `: ${bodyText.slice(0, 120)}` : ""}`;
+  console.log("❌ Mindee error:", msg);
+  return { error: msg };
 }
 
 async function callMindeePredict(
@@ -42,48 +42,38 @@ async function callMindeePredict(
   bytes: Uint8Array,
   contentType: string,
 ) {
-  const rawModel = Deno.env.get("MINDEE_MODEL_ID"); // e.g. "mindee/expense_receipts@v5.3" or UUID
+  const rawModel = Deno.env.get("MINDEE_MODEL_ID");
   const base = modelBase(parseModelId(rawModel));
-  console.log('🌐 Mindee base:', base);
-
+  
   // Convert bytes to base64 for JSON request (as per Mindee docs)
   const base64Data = btoa(String.fromCharCode(...bytes));
   
-  const headers: Record<string, string> = {
-    "Authorization": `Token ${apiKey}`,
-    "Accept": "application/json",
+  const headers = {
+    Authorization: `Token ${apiKey}`,   // NOTE: Token, not Bearer
+    Accept: "application/json",
     "Content-Type": "application/json",
   };
 
-  const body = JSON.stringify({
-    document: base64Data
-  });
-
-  // Try async first
-  let r: Response | null = null;
+  const body = JSON.stringify({ document: base64Data }); // no data URL prefix, just pure base64
+  const url = `${base}/predict`;
+  
+  console.log("🌐 Mindee JSON predict:", url);
+  
   try {
-    r = await fetch(`${base}/predict_async`, { method: "POST", headers, body });
-    console.log("🔍 Mindee response (async)", r?.status);
-  } catch (_) {
-    console.log("⚠️ Mindee async request network error; will try sync");
+    const r = await fetch(url, { method: "POST", headers, body });
+    const responseText = await r.text();
+    
+    console.log("🔍 Mindee response (sync)", r.status, responseText.slice(0, 200));
+    
+    if (!r.ok) {
+      return mkErr("mindee_predict_failed", r.status, responseText);
+    }
+    
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error("🚨 Network error calling Mindee:", error);
+    return mkErr("mindee_network_error", undefined, error instanceof Error ? error.message : "Network request failed");
   }
-
-  // If async not supported/allowed → fall back to sync
-  if (!r || !r.ok && [404, 405, 501].includes(r.status)) {
-    console.log("↩️ Mindee: async unsupported, falling back to /predict");
-    const rs = await fetch(`${base}/predict`, { method: "POST", headers, body });
-    console.log("🔍 Mindee response (sync)", rs.status);
-    const data = await rs.json().catch(() => ({}));
-    if (!rs.ok) return mkErr(rs.status, data);
-    return data;
-  }
-
-  if (!r.ok) {
-    const data = await r.json().catch(() => ({}));
-    return mkErr(r.status, data);
-  }
-
-  return await r.json().catch(() => ({}));
 }
 
 /** Extracts a compact, Nuacha-friendly result from Mindee's receipts response */

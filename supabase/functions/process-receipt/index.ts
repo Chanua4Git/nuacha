@@ -150,7 +150,75 @@ serve(async (req) => {
 
       const errMsg = String(result.error || '');
 
-      // Check for 401 errors (authentication issues)
+      // Map specific HTTP status codes to user-friendly messages
+      if (errMsg.includes('status=401')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Authentication issue with our OCR service',
+            type: 'SERVER_ERROR',
+            message: 'We refreshed the connection—please try that receipt again.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
+      if (errMsg.includes('status=404')) {
+        return new Response(
+          JSON.stringify({
+            error: 'OCR service configuration issue',
+            type: 'SERVER_ERROR',
+            message: 'We've adjusted the settings. Please try that scan again.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
+      if (errMsg.includes('status=415')) {
+        return new Response(
+          JSON.stringify({
+            error: "This image format isn't supported",
+            type: 'IMAGE_FORMAT_ERROR',
+            message: 'Please upload a JPEG or PNG file'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
+      if (errMsg.includes('status=429')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Too many requests right now',
+            type: 'SERVER_ERROR',
+            message: 'Please wait a moment and try again'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
+      if (errMsg.match(/status=5\d\d/)) {
+        return new Response(
+          JSON.stringify({
+            error: 'Temporary service issue',
+            type: 'SERVER_ERROR',
+            message: 'Our OCR service is experiencing issues. Please try again in a moment.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      // Network errors
+      if (errMsg.includes('mindee_network_error')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Network connection issue',
+            type: 'SERVER_ERROR',
+            message: 'Please check your connection and try again'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      // Legacy error message handling for backwards compatibility
       if (errMsg.includes('401') || errMsg.toLowerCase().includes('unauthorized')) {
         return new Response(
           JSON.stringify({
