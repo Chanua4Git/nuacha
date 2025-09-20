@@ -46,16 +46,23 @@ async function callMindeePredict(
   const base = modelBase(parseModelId(rawModel));
   console.log('🌐 Mindee base:', base);
 
+  // Convert bytes to base64 for JSON request (as per Mindee docs)
+  const base64Data = btoa(String.fromCharCode(...bytes));
+  
   const headers: Record<string, string> = {
-    Authorization: `Token ${apiKey}`,
-    "Content-Type": contentType || "application/octet-stream",
+    "Authorization": `Token ${apiKey}`,
     "Accept": "application/json",
+    "Content-Type": "application/json",
   };
+
+  const body = JSON.stringify({
+    document: base64Data
+  });
 
   // Try async first
   let r: Response | null = null;
   try {
-    r = await fetch(`${base}/predict_async`, { method: "POST", headers, body: bytes });
+    r = await fetch(`${base}/predict_async`, { method: "POST", headers, body });
     console.log("🔍 Mindee response (async)", r?.status);
   } catch (_) {
     console.log("⚠️ Mindee async request network error; will try sync");
@@ -64,7 +71,7 @@ async function callMindeePredict(
   // If async not supported/allowed → fall back to sync
   if (!r || !r.ok && [404, 405, 501].includes(r.status)) {
     console.log("↩️ Mindee: async unsupported, falling back to /predict");
-    const rs = await fetch(`${base}/predict`, { method: "POST", headers, body: bytes });
+    const rs = await fetch(`${base}/predict`, { method: "POST", headers, body });
     console.log("🔍 Mindee response (sync)", rs.status);
     const data = await rs.json().catch(() => ({}));
     if (!rs.ok) return mkErr(rs.status, data);
