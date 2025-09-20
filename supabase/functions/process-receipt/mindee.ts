@@ -8,6 +8,12 @@ function parseModelId(raw?: string): ModelId {
   const fallback = { kind: "owner_model", owner: "mindee", model: "expense_receipts", version: "v5.3" } as const;
   if (!raw || !raw.trim()) return fallback;
 
+  // If someone mistakenly puts an API key here (starts with md_), ignore it.
+  if (/^md_[A-Za-z0-9]/.test(raw)) {
+    console.log("⚠️ MINDEE_MODEL_ID looks like an API key; using default receipts model.");
+    return fallback;
+  }
+
   // UUID form (custom model on legacy app)
   if (/^[0-9a-fA-F-]{36}$/.test(raw)) return { kind: "uuid", uuid: raw };
 
