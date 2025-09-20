@@ -28,7 +28,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    console.log('🔑 Mindee key present:', !!mindeeApiKey, 'len:', mindeeApiKey.length);
+    const mask = mindeeApiKey ? `${mindeeApiKey.slice(0,4)}…${mindeeApiKey.slice(-4)} (len:${mindeeApiKey.length})` : 'missing';
+    console.log('🔑 Mindee key:', mask);
     console.log('🔧 Using model (env):', Deno.env.get('MINDEE_MODEL_ID') || 'mindee/expense_receipts@v5.3');
 
     if (!mindeeApiKey || !supabaseUrl || !supabaseServiceKey) {
