@@ -167,7 +167,7 @@ serve(async (req) => {
           JSON.stringify({
             error: 'OCR service configuration issue',
             type: 'SERVER_ERROR',
-            message: 'We've adjusted the settings. Please try that scan again.'
+            message: "We've adjusted the settings. Please try that scan again."
           } as ErrorResponse),
           { status: 200, headers: corsHeaders }
         );
