@@ -1,175 +1,198 @@
-// process-receipt/mindee.ts
-type ModelId =
-  | { kind: "uuid"; uuid: string }
-  | { kind: "owner_model"; owner: string; model: string; version?: string };
+// supabase/functions/process-receipt/mindee.ts
+// Mindee v2 client: enqueue -> poll -> fetch result -> normalize
+// Uses multipart/form-data as required by v2. No Bearer prefix for Authorization.
 
-function parseModelId(raw?: string): ModelId {
-  // Safe default: official Mindee receipts model v5.3
-  const fallback = { kind: "owner_model", owner: "mindee", model: "expense_receipts", version: "v5.3" } as const;
-  if (!raw || !raw.trim()) return fallback;
+type NormalizedLineItem = {
+  description?: string | null;
+  quantity?: number | null;
+  unitPrice?: number | null;
+  total?: number | null;
+  suggestedCategoryId?: string | null;
+  categoryConfidence?: number | null;
+};
 
-  // If someone mistakenly puts an API key here (starts with md_), ignore it.
-  if (/^md_[A-Za-z0-9]/.test(raw)) {
-    console.log("⚠️ MINDEE_MODEL_ID looks like an API key; using default receipts model.");
-    return fallback;
+type NormalizedResult = {
+  amount?: number | null;
+  date?: Date | null;
+  description?: string | null;
+  supplier?: { value?: string | null } | null;
+  place?: string | null;
+  storeDetails?: { name?: string | null } | null;
+  confidence?: number | null;
+  lineItems?: NormalizedLineItem[];
+  raw?: any;
+} | { error: string; status?: number; details?: any };
+
+const V2_BASE = "https://api-v2.mindee.net";
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function getModelId(): string {
+  const raw = (globalThis as any).Deno?.env?.get('MINDEE_MODEL_ID') ?? '';
+  const modelId = raw.trim();
+  if (!modelId) {
+    throw new Error(
+      "MINDEE_MODEL_ID is missing. For v2 you must set a model UUID from the Mindee console."
+    );
+  }
+  return modelId;
+}
+
+function mkErr(message: string, status?: number, details?: any) {
+  return { error: message, status, details };
+}
+
+async function enqueue(apiKey: string, file: Blob, modelId: string) {
+  const fd = new FormData();
+  fd.set("model_id", modelId);
+  fd.set("file", new File([file], "receipt.jpg", { type: file.type || "image/jpeg" }));
+
+  const r = await fetch(`${V2_BASE}/v2/inferences/enqueue`, {
+    method: "POST",
+    headers: {
+      "Authorization": apiKey,
+      "Accept": "application/json",
+    },
+    body: fd,
+  });
+
+  const txt = await r.text();
+  let json: any = null;
+  try { json = txt ? JSON.parse(txt) : null; } catch {}
+
+  if (!r.ok) {
+    return mkErr("Mindee enqueue failed", r.status, json || txt);
   }
 
-  // UUID form (custom model on legacy app)
-  if (/^[0-9a-fA-F-]{36}$/.test(raw)) return { kind: "uuid", uuid: raw };
-
-  // owner/model[@vX[.Y]]
-  const m = raw.match(/^([^/]+)\/([^@]+)(?:@v?([\d.]+))?$/);
-  if (!m) return fallback;
-  const [, owner, model, ver] = m;
-  return { kind: "owner_model", owner, model, version: ver ? `v${ver}` : "v5.3" };
+  return json;
 }
 
-function modelBase(id: ModelId): string {
-  const apiBase = "https://api.mindee.net";
-  return id.kind === "uuid"
-    ? `${apiBase}/v1/products/${id.uuid}`
-    : `${apiBase}/v1/products/${id.owner}/${id.model}/${id.version ?? "v5.3"}`;
-}
-
-function mkErr(prefix: string, status?: number, bodyText?: string) {
-  const msg = `${prefix} (status=${status ?? "?"}) ${bodyText ? `: ${bodyText.slice(0, 120)}` : ""}`;
-  console.log("❌ Mindee error:", msg);
-  return { error: msg };
-}
-
-async function callMindeePredict(
-  apiKey: string,
-  bytes: Uint8Array,
-  contentType: string,
-) {
-  const rawModel = Deno.env.get("MINDEE_MODEL_ID");
-  const base = modelBase(parseModelId(rawModel));
-  
-  // Convert bytes to base64 for JSON request (as per Mindee docs)
-  const base64Data = btoa(String.fromCharCode(...bytes));
-  
-  const headers = {
-    Authorization: `Token ${apiKey}`,   // NOTE: Token, not Bearer
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
-
-  const body = JSON.stringify({ document: base64Data }); // no data URL prefix, just pure base64
-  const url = `${base}/predict`;
-  
-  console.log("🌐 Mindee JSON predict:", url);
-  
-  try {
-    const r = await fetch(url, { method: "POST", headers, body });
-    const responseText = await r.text();
-    
-    console.log("🔍 Mindee response (sync)", r.status, responseText.slice(0, 200));
-    
-    if (!r.ok) {
-      return mkErr("mindee_predict_failed", r.status, responseText);
-    }
-    
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("🚨 Network error calling Mindee:", error);
-    return mkErr("mindee_network_error", undefined, error instanceof Error ? error.message : "Network request failed");
-  }
-}
-
-/** Extracts a compact, Nuacha-friendly result from Mindee's receipts response */
-function normalizePrediction(json: any) {
-  // Mindee V2 receipts structure:
-  // json.document.inference.prediction.{total_amount,date,locale,supplier, ...}
-  const pred = json?.document?.inference?.prediction ?? {};
-
-  const toNumber = (v: any) => (typeof v === "number" ? v : (typeof v?.value === "number" ? v.value : undefined));
-  const toString = (v: any) => (typeof v === "string" ? v : (typeof v?.value === "string" ? v.value : undefined));
-
-  // Amount/date
-  const amount = toNumber(pred.total_amount ?? pred.total_incl ?? pred.total_excl);
-  const dateStr = toString(pred.date);
-  const date = dateStr ? new Date(dateStr) : undefined;
-
-  // Supplier / place
-  const supplier = pred?.supplier ?? pred?.supplier_name ?? {};
-  const supplierName = toString(supplier) || toString(pred?.company_name) || undefined;
-
-  // Description – best effort
-  const description =
-    toString(pred?.category) ||
-    toString(pred?.document_type) ||
-    undefined;
-
-  // Confidence (Mindee gives per-field confidence; take a simple average of a few)
-  const confidences: number[] = []
-    .concat(pred?.total_amount?.confidence ?? pred?.total_incl?.confidence ?? [])
-    .concat(pred?.date?.confidence ?? [])
-    .concat(supplier?.confidence ?? []);
-  const confidence =
-    confidences.length > 0
-      ? confidences.reduce((a, b) => a + (typeof b === "number" ? b : 0), 0) / confidences.length
-      : undefined;
-
-  // Line items (if available)
-  const items = Array.isArray(pred?.line_items) ? pred.line_items : [];
-  const lineItems = items.map((it: any) => ({
-    description: toString(it?.description) || "",
-    quantity: toNumber(it?.quantity),
-    unitPrice: toNumber(it?.unit_price),
-    total: toNumber(it?.total_amount ?? it?.amount),
-  }));
-
-  return {
-    amount,
-    date,
-    description,
-    place: undefined, // not always provided separately by Mindee
-    supplier: supplierName ? { value: supplierName } : undefined,
-    confidence,
-    lineItems,
-    storeDetails: supplierName ? { name: supplierName } : undefined,
-  };
-}
-
-/** Public API used by the handler */
-export async function mindeeClient(apiKey: string, image: Blob): Promise<
-  | {
-      amount?: number;
-      date?: Date;
-      description?: string;
-      place?: string;
-      supplier?: { value: string };
-      confidence?: number;
-      lineItems?: Array<{ description: string; quantity?: number; unitPrice?: number; total?: number }>;
-      storeDetails?: { name?: string };
-    }
-  | { error: string }
-> {
-  try {
-    const bytes = new Uint8Array(await image.arrayBuffer());
-    const contentType = image.type || "application/octet-stream";
-
-    const raw = await callMindeePredict(apiKey, bytes, contentType);
-    if (raw && "error" in raw) {
-      // Pass through for the handler's existing `'error' in result` checks.
-      return raw;
+async function pollForResult(apiKey: string, jobId: string, timeoutMs = 120000, intervalMs = 1200) {
+  const start = Date.now();
+  while (true) {
+    if (Date.now() - start > timeoutMs) {
+      return mkErr("Mindee polling timed out");
     }
 
-    const normalized = normalizePrediction(raw);
-
-    console.log("🔧 Using model:", Deno.env.get("MINDEE_MODEL_ID") || "mindee/expense_receipts@v5.3 (defaulted)");
-    console.log("🔍 Raw OCR result from Mindee (condensed):", {
-      date: normalized.date,
-      amount: normalized.amount,
-      description: normalized.description,
-      supplier: normalized.supplier?.value,
-      confidence: normalized.confidence,
-      lineItems: normalized.lineItems?.length ?? 0,
+    const url = `${V2_BASE}/v2/jobs/${jobId}`;
+    const r = await fetch(url, {
+      headers: {
+        "Authorization": apiKey,
+        "Accept": "application/json",
+      },
+      redirect: "manual",
     });
 
-    return normalized;
-  } catch (e: any) {
-    const msg = (e?.message || "Unexpected error calling Mindee").toString();
-    return { error: `500 ${msg}` };
+    if (r.status === 302) {
+      const loc = r.headers.get("Location");
+      if (!loc) return mkErr("Mindee returned 302 without Location");
+      return await fetchResult(apiKey, loc);
+    }
+
+    const bodyText = await r.text();
+    let json: any = null;
+    try { json = bodyText ? JSON.parse(bodyText) : null; } catch {}
+
+    if (!r.ok) {
+      return mkErr("Mindee job status error", r.status, json || bodyText);
+    }
+
+    const status = json?.status;
+    if (status === "Failed") {
+      return mkErr("Mindee job failed", r.status, json);
+    }
+    
+    await sleep(intervalMs);
+  }
+}
+
+async function fetchResult(apiKey: string, resultUrl: string) {
+  const rr = await fetch(resultUrl, {
+    headers: {
+      "Authorization": apiKey,
+      "Accept": "application/json",
+    },
+  });
+  const txt = await rr.text();
+  let json: any = null;
+  try { json = txt ? JSON.parse(txt) : null; } catch {}
+
+  if (!rr.ok) return mkErr("Mindee result fetch failed", rr.status, json || txt);
+  return json;
+}
+
+function normalizePrediction(v2json: any): NormalizedResult {
+  const pred = v2json?.inference?.prediction ?? v2json?.document?.inference?.prediction ?? v2json?.prediction;
+
+  if (!pred) {
+    return { error: "Unexpected Mindee v2 response shape", details: { keys: Object.keys(v2json || {}) } };
+  }
+
+  const total =
+    Number(pred?.total_amount?.value ?? pred?.total_incl?.value ?? pred?.amount?.value ?? pred?.total?.value) || null;
+
+  const dateStr = pred?.date?.value ?? pred?.invoice_date?.value ?? pred?.document_date?.value ?? null;
+  const date = dateStr ? new Date(dateStr) : null;
+
+  const supplierName =
+    pred?.supplier_name?.value ?? pred?.merchant_name?.value ?? pred?.supplier?.value ?? null;
+
+  const lineItemsRaw = Array.isArray(pred?.line_items) ? pred?.line_items : pred?.items;
+  const lineItems: NormalizedLineItem[] = Array.isArray(lineItemsRaw)
+    ? lineItemsRaw.map((it: any) => ({
+        description: it?.description?.value ?? it?.product_code?.value ?? null,
+        quantity: it?.quantity?.value ? Number(it.quantity.value) : null,
+        unitPrice: it?.unit_price?.value ? Number(it.unit_price.value) : null,
+        total: it?.total_amount?.value ? Number(it.total_amount.value) : null,
+      }))
+    : [];
+
+  const confs: number[] = [];
+  const pushConf = (c: any) => { 
+    const n = typeof c === "number" ? c : (c?.value ?? c); 
+    if (typeof n === "number") confs.push(n); 
+  };
+  pushConf(pred?.total_amount?.confidence);
+  pushConf(pred?.date?.confidence);
+  pushConf(pred?.supplier_name?.confidence);
+  const confidence = confs.length ? confs.reduce((a,b)=>a+b,0)/confs.length : null;
+
+  return {
+    amount: total,
+    date,
+    description: null,
+    supplier: supplierName ? { value: supplierName } : null,
+    place: null,
+    storeDetails: supplierName ? { name: supplierName } : null,
+    confidence,
+    lineItems,
+    raw: v2json
+  };
+}
+
+export async function mindeeClient(apiKey: string, imageData: Blob): Promise<NormalizedResult> {
+  try {
+    const key = (apiKey || "").trim();
+    if (!key) return mkErr("Missing Mindee API key");
+
+    const modelId = getModelId();
+    console.log("🔧 (v2) Using model_id:", modelId);
+    console.log("🌐 (v2) Base:", V2_BASE);
+
+    const enq = await enqueue(key, imageData, modelId);
+    if ("error" in enq) return enq as any;
+
+    const jobId = enq?.job_id || enq?.id;
+    if (!jobId) return mkErr("Mindee enqueue did not return job_id", undefined, enq);
+
+    const res = await pollForResult(key, jobId);
+    if ("error" in res) return res as any;
+
+    const norm = normalizePrediction(res);
+    return norm;
+  } catch (err: any) {
+    return mkErr(err?.message || "Mindee v2 unexpected error");
   }
 }

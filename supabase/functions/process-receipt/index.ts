@@ -23,21 +23,25 @@ serve(async (req) => {
   }
 
   try {
-    const rawKey = (Deno.env.get('MINDEE_API_KEY') ?? '').trim();
-    const mindeeApiKey = rawKey; // use this everywhere below
+    const mindeeApiKey = (Deno.env.get('MINDEE_API_KEY') ?? '').trim();
+    const v2ModelId = (Deno.env.get('MINDEE_MODEL_ID') ?? '').trim();
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     const mask = mindeeApiKey ? `${mindeeApiKey.slice(0,4)}…${mindeeApiKey.slice(-4)} (len:${mindeeApiKey.length})` : 'missing';
-    console.log('🔑 Mindee key:', mask);
-    console.log('🔧 Using model (env):', Deno.env.get('MINDEE_MODEL_ID') || 'mindee/expense_receipts@v5.3');
+    console.log('🔑 Mindee v2 key:', mask);
+    console.log('🔧 Using v2 model_id:', v2ModelId || 'NOT SET');
 
-    if (!mindeeApiKey || !supabaseUrl || !supabaseServiceKey) {
+    if (!mindeeApiKey || !v2ModelId || !supabaseUrl || !supabaseServiceKey) {
       return new Response(
         JSON.stringify({
           error: "We're experiencing technical difficulties",
           type: 'SERVER_ERROR',
-          message: 'Configuration error: Missing required credentials'
+          message: !mindeeApiKey
+            ? 'Configuration error: Missing MINDEE_API_KEY (v2)'
+            : !v2ModelId
+            ? 'Configuration error: Missing MINDEE_MODEL_ID (v2 model UUID)'
+            : 'Configuration error: Missing required credentials'
         } as ErrorResponse),
         { status: 200, headers: corsHeaders }
       );
