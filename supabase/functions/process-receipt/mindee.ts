@@ -59,13 +59,19 @@ async function enqueue(apiKey: string, file: Blob, modelId: string) {
   });
 
   const txt = await r.text();
+  console.log("📥 Mindee enqueue raw response:", txt);
+  
   let json: any = null;
   try { json = txt ? JSON.parse(txt) : null; } catch {}
 
   if (!r.ok) {
+    console.error("❌ Mindee enqueue failed:", r.status, json || txt);
     return mkErr("Mindee enqueue failed", r.status, json || txt);
   }
 
+  console.log("✅ Mindee enqueue parsed JSON:", JSON.stringify(json, null, 2));
+  console.log("🔍 Response keys:", Object.keys(json || {}));
+  
   return json;
 }
 
@@ -184,8 +190,15 @@ export async function mindeeClient(apiKey: string, imageData: Blob): Promise<Nor
     const enq = await enqueue(key, imageData, modelId);
     if ("error" in enq) return enq as any;
 
-    const jobId = enq?.job_id || enq?.id;
-    if (!jobId) return mkErr("Mindee enqueue did not return job_id", undefined, enq);
+    console.log("🔍 Enqueue result:", JSON.stringify(enq, null, 2));
+    
+    const jobId = enq?.job_id || enq?.id || enq?.job?.id;
+    console.log("🔍 Extracted jobId:", jobId);
+    
+    if (!jobId) {
+      console.error("❌ No job ID found. Full enqueue response:", JSON.stringify(enq, null, 2));
+      return mkErr("Mindee enqueue did not return job_id", undefined, enq);
+    }
 
     const res = await pollForResult(key, jobId);
     if ("error" in res) return res as any;
