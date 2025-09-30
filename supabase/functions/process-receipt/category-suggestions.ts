@@ -310,8 +310,8 @@ function suggestCategoryForItem(
     'drinks': ['beverages', 'groceries'],
     'juice': ['beverages', 'groceries'],
     'soda': ['beverages', 'groceries'],
-    'water': ['beverages', 'groceries'],
-    'coffee': ['beverages', 'groceries'],
+    // 'water' defined later for utilities
+    // 'coffee' defined later for dining context
     'tea': ['beverages', 'groceries'],
     'beer': ['beverages', 'groceries'],
     'wine': ['beverages', 'groceries'],
@@ -576,25 +576,11 @@ function suggestCategoryForItem(
     }
     
     if (matchedCategory) {
-      // Validate the category before returning it
-      const validatedCategoryName = validateCategory(matchedCategory.name);
-      if (validatedCategoryName) {
-        console.log(`Found and validated category: ${validatedCategoryName} (${matchedCategory.id})`);
-        return {
-          categoryId: matchedCategory.id,
-          confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
-        };
-      } else {
-        console.log(`Category ${matchedCategory.name} failed validation, falling back to groceries`);
-        // If validation fails, try to find groceries as fallback
-        const groceriesCategory = categories.find(cat => cat.name.toLowerCase() === 'groceries');
-        if (groceriesCategory) {
-          return {
-            categoryId: groceriesCategory.id,
-            confidence: 0.6
-          };
-        }
-      }
+      console.log(`Found category: ${matchedCategory.name} (${matchedCategory.id})`);
+      return {
+        categoryId: matchedCategory.id,
+        confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
+      };
     }
   }
 

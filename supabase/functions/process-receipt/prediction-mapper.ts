@@ -141,7 +141,15 @@ export function mapPredictionToResult(inference: any, document: any): MindeeOCRR
 
     // Extract line items if present - v2 format
     const lineItemsField = fields.line_items || fields.items || [];
-    let lineItems = [];
+    let lineItems: Array<{
+      description: string;
+      quantity: number;
+      unit_price: number | null;
+      total_amount: number | null;
+      confidence: number;
+      discount: boolean;
+      product_code?: { value: string };
+    }> = [];
     
     if (Array.isArray(lineItemsField)) {
       lineItems = lineItemsField.map((item: any, index: number) => {
@@ -157,10 +165,9 @@ export function mapPredictionToResult(inference: any, document: any): MindeeOCRR
           product_code: item.product_code?.value ? { value: item.product_code.value } : undefined
         };
       });
-    } else {
-      // Handle case where line_items might be processed by the existing line-items processor
-      lineItems = processLineItems(lineItemsField || []);
     }
+    // Note: Removed else block with processLineItems fallback as it returns wrong type for v2
+
 
     // Calculate overall confidence score
     const confidenceScores = [totalConfidence, dateValidation.confidence, supplierConfidence]

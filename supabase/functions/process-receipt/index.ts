@@ -132,23 +132,7 @@ serve(async (req) => {
     console.log('📊 Starting OCR processing...');
     const result = await mindeeClient(mindeeApiKey, imageData);
     
-    // Debug logging for date validation
-    console.log('🔍 Raw OCR result from Mindee:', {
-      date: result.date,
-      amount: result.amount,
-      description: result.description,
-      place: result.place,
-      supplier: result.supplier,
-      confidence: result.confidence
-    });
-    
-    // Implement fallback date handling if date is undefined
-    if (!result.date && imageData) {
-      console.log('⚠️ Date is undefined, using current timestamp as fallback');
-      result.date = new Date();
-      console.log('📅 Fallback date set to:', result.date);
-    }
-    
+    // Check for errors first
     if ('error' in result) {
       console.error('🚨 Error processing receipt:', result.error);
 
@@ -278,6 +262,23 @@ serve(async (req) => {
       );
     }
     
+    // Debug logging for successful result
+    console.log('🔍 OCR result:', {
+      date: result.date,
+      amount: result.amount,
+      description: result.description,
+      place: result.place,
+      supplier: result.supplier,
+      confidence: result.confidence
+    });
+    
+    // Implement fallback date handling if date is undefined
+    if (!result.date && imageData) {
+      console.log('⚠️ Date is undefined, using current timestamp as fallback');
+      result.date = new Date();
+      console.log('📅 Fallback date set to:', result.date);
+    }
+    
     if (result.confidence && result.confidence < 0.3) {
       return new Response(
         JSON.stringify({
@@ -374,7 +375,9 @@ serve(async (req) => {
           const categoryMap = new Map();
           allCategories.forEach(cat => {
             const existing = categoryMap.get(cat.name.toLowerCase());
-            if (!existing || cat.family_id) { // Family categories take precedence
+            // Family categories take precedence (check if cat has family_id property)
+            const catFamilyId = (cat as any).family_id;
+            if (!existing || catFamilyId) {
               categoryMap.set(cat.name.toLowerCase(), cat);
             }
           });
@@ -410,9 +413,20 @@ serve(async (req) => {
         if (categories && categories.length > 0) {
           console.log(`🎯 Starting categorization with ${categories.length} categories and ${rules.length} rules`);
           
+          // Convert NormalizedLineItem[] to ReceiptLineItem[] format expected by suggestCategories
+          const formattedLineItems = result.lineItems.map(item => ({
+            description: item.description || '',
+            quantity: item.quantity ?? undefined,
+            unitPrice: item.unitPrice?.toString(),
+            totalPrice: item.total?.toString() || '0',
+            confidence: 0.5,
+            suggestedCategoryId: item.suggestedCategoryId ?? undefined,
+            categoryConfidence: item.categoryConfidence ?? undefined
+          }));
+          
           // Process line items and suggest categories
           const enhancedLineItems = await suggestCategories(
-            result.lineItems,
+            formattedLineItems,
             vendorName,
             categories,
             rules

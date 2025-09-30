@@ -13,7 +13,7 @@ export interface ReceiptLineItem {
   matchedRuleId?: string;
 }
 
-interface MindeeLineItem {
+export interface MindeeLineItem {
   description: string;
   quantity: number | null;
   unit_price: number | null;
