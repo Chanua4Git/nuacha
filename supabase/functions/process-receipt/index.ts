@@ -139,6 +139,17 @@ serve(async (req) => {
       const errMsg = String(result.error || '');
 
       // Map specific HTTP status codes to user-friendly messages
+      if (errMsg.includes('status=402')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Subscription required',
+            type: 'SERVER_ERROR',
+            message: 'Mindee requires an active subscription to process receipts. Please check your plan and billing status.'
+          } as ErrorResponse),
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      
       if (errMsg.includes('status=401')) {
         return new Response(
           JSON.stringify({

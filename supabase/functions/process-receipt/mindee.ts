@@ -40,8 +40,9 @@ function getModelId(): string {
   return modelId;
 }
 
-function mkErr(message: string, status?: number, details?: any) {
-  return { error: message, status, details };
+function mkErr(message: string, status?: number, details?: any): NormalizedResult {
+  const errorMessage = status ? `${message} (status=${status})` : message;
+  return { error: errorMessage, status, details };
 }
 
 async function enqueue(apiKey: string, file: Blob, modelId: string) {
