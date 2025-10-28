@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { convertHeicToJpeg } from './imageProcessing';
+import { uploadReceiptToDrive, DriveStorageMetadata } from './driveStorage';
 
 /**
  * Enhanced storage utilities for organized receipt management
@@ -156,6 +157,55 @@ export async function getReceiptsForFamilyCategory(
     console.error('Error getting receipts:', error);
     return [];
   }
+}
+
+/**
+ * Upload receipt to both Supabase and Google Drive (dual storage)
+ * Drive upload is optional - failure won't break the main flow
+ */
+export async function uploadReceiptWithDualStorage(
+  file: File, 
+  userId: string, 
+  metadata: StorageMetadata,
+  familyName?: string
+): Promise<{
+  supabaseUrl: string | null;
+  driveUrl: string | null;
+  driveFileId: string | null;
+}> {
+  // Upload to Supabase (existing)
+  const supabaseUrl = await uploadReceiptToOrganizedStorage(file, userId, metadata);
+  
+  // Upload to Drive (new - optional)
+  let driveUrl = null;
+  let driveFileId = null;
+  
+  if (familyName) {
+    try {
+      const driveMetadata: DriveStorageMetadata = {
+        familyId: metadata.familyId,
+        familyName: familyName,
+        categoryName: metadata.categoryName,
+        description: metadata.description,
+        amount: metadata.amount,
+        date: metadata.date
+      };
+      
+      const driveResult = await uploadReceiptToDrive(file, driveMetadata);
+      
+      if (driveResult) {
+        driveUrl = driveResult.url;
+        driveFileId = driveResult.fileId;
+        console.log('✅ Dual storage complete:', { supabaseUrl, driveUrl });
+        toast.success('Receipt saved to both storage locations');
+      }
+    } catch (error) {
+      console.warn('⚠️ Drive upload failed, continuing with Supabase only:', error);
+      // Don't fail the whole upload if Drive fails
+    }
+  }
+  
+  return { supabaseUrl, driveUrl, driveFileId };
 }
 
 /**

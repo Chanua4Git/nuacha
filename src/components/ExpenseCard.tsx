@@ -9,6 +9,7 @@ import { useExpense } from '@/context/ExpenseContext';
 import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExpenseTypeBadge from './ExpenseTypeBadge';
+import { DriveLinkButton } from './DriveLinkButton';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -122,6 +123,8 @@ const ExpenseCard = ({
               Next: {format(parseISO(expense.nextReplacementDate || ''), 'MMM d, yyyy')}
             </div>
           )}
+          
+          <DriveLinkButton driveUrl={expense.driveUrl} />
         </div>
       </CardContent>
     </Card>

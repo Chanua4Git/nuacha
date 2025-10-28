@@ -331,7 +331,7 @@ export type Database = {
           employee_count: string | null
           id: string
           interest_type: string | null
-          ip_address: unknown | null
+          ip_address: unknown
           last_contact: string | null
           name: string
           phone: string | null
@@ -349,7 +349,7 @@ export type Database = {
           employee_count?: string | null
           id?: string
           interest_type?: string | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_contact?: string | null
           name: string
           phone?: string | null
@@ -367,7 +367,7 @@ export type Database = {
           employee_count?: string | null
           id?: string
           interest_type?: string | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_contact?: string | null
           name?: string
           phone?: string | null
@@ -556,6 +556,9 @@ export type Database = {
           created_at: string | null
           date: string
           description: string
+          drive_file_id: string | null
+          drive_folder_id: string | null
+          drive_url: string | null
           expense_type: string
           family_id: string
           id: string
@@ -582,6 +585,9 @@ export type Database = {
           created_at?: string | null
           date: string
           description: string
+          drive_file_id?: string | null
+          drive_folder_id?: string | null
+          drive_url?: string | null
           expense_type?: string
           family_id: string
           id?: string
@@ -608,6 +614,9 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string
+          drive_file_id?: string | null
+          drive_folder_id?: string | null
+          drive_url?: string | null
           expense_type?: string
           family_id?: string
           id?: string
@@ -655,6 +664,8 @@ export type Database = {
         Row: {
           color: string
           created_at: string | null
+          drive_folder_id: string | null
+          drive_shared_emails: string[] | null
           id: string
           name: string
           user_id: string
@@ -662,6 +673,8 @@ export type Database = {
         Insert: {
           color: string
           created_at?: string | null
+          drive_folder_id?: string | null
+          drive_shared_emails?: string[] | null
           id?: string
           name: string
           user_id: string
@@ -669,6 +682,8 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string | null
+          drive_folder_id?: string | null
+          drive_shared_emails?: string[] | null
           id?: string
           name?: string
           user_id?: string
@@ -1391,7 +1406,7 @@ export type Database = {
           email: string
           household_size: number | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           location: string | null
           name: string | null
           needs_data: Json
@@ -1411,7 +1426,7 @@ export type Database = {
           email: string
           household_size?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           location?: string | null
           name?: string | null
           needs_data?: Json
@@ -1431,7 +1446,7 @@ export type Database = {
           email?: string
           household_size?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           location?: string | null
           name?: string | null
           needs_data?: Json
@@ -1537,16 +1552,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      clean_duplicate_families: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_duplicate_budget_categories: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      clean_duplicate_families: { Args: never; Returns: undefined }
+      cleanup_duplicate_budget_categories: { Args: never; Returns: undefined }
       cleanup_duplicate_categories_advanced: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           categories_updated: number
           duplicates_removed: number
@@ -1569,35 +1578,26 @@ export type Database = {
         Args: { category_name: string; family_uuid: string; user_uuid: string }
         Returns: string
       }
-      map_all_expenses_to_budget_categories: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      map_expenses_to_budget_categories: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      map_all_expenses_to_budget_categories: { Args: never; Returns: undefined }
+      map_expenses_to_budget_categories: { Args: never; Returns: undefined }
       reclassify_categories: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           categories_reclassified: number
           message: string
         }[]
       }
-      seed_comprehensive_categories_for_user: {
-        Args:
-          | { family_uuid?: string; user_uuid: string }
-          | { user_uuid: string }
-        Returns: undefined
-      }
+      seed_comprehensive_categories_for_user:
+        | {
+            Args: { family_uuid?: string; user_uuid: string }
+            Returns: undefined
+          }
+        | { Args: { user_uuid: string }; Returns: undefined }
       seed_user_comprehensive_categories: {
         Args: { user_uuid: string }
         Returns: undefined
       }
-      sync_comprehensive_budget_categories: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      sync_comprehensive_budget_categories: { Args: never; Returns: undefined }
       update_payroll_period_totals: {
         Args: { period_id: string }
         Returns: undefined

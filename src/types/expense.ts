@@ -4,6 +4,8 @@ export interface Family {
   id: string;
   name: string;
   color: string;
+  driveFolderId?: string; // Google Drive folder ID
+  driveSharedEmails?: string[]; // Emails with access to Drive folder
 }
 
 // Category type
@@ -73,6 +75,9 @@ export interface Expense {
   budgetCategoryId?: string;
   members?: FamilyMember[]; // Array of family members associated with this expense
   expenseType?: 'actual' | 'planned' | 'budgeted'; // New: expense type for planning vs real
+  driveFileId?: string; // Google Drive file ID
+  driveUrl?: string; // Google Drive shareable URL
+  driveFolderId?: string; // Google Drive folder ID
 }
 
 // For backward compatibility and consistent casing in our application
