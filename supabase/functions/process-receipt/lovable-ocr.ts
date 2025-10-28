@@ -5,7 +5,7 @@ type NormalizedLineItem = {
   description?: string | null;
   quantity?: number | null;
   unitPrice?: number | null;
-  total?: number | null;
+  totalPrice?: string | null; // Changed from 'total' to 'totalPrice' to match expected format
   suggestedCategoryId?: string | null;
   categoryConfidence?: number | null;
 };
@@ -58,24 +58,25 @@ export async function lovableOCR(imageData: string): Promise<NormalizedResult> {
                 type: 'text',
                 text: `You are an expert receipt data extraction system. Analyze this receipt image and extract all relevant information with high accuracy.
 
-Extract the following data:
-- Merchant/store name
-- Total amount (the final total paid)
-- Transaction date (in YYYY-MM-DD format)
-- Individual line items with:
-  * Item description
-  * Quantity (if visible)
-  * Unit price (if visible)
-  * Total price for that line item
-- Tax amount (if visible)
-- Subtotal (if visible)
+CRITICAL REQUIREMENTS:
+1. MERCHANT NAME: Extract the EXACT store/business name as it appears at the top of the receipt
+2. TOTAL AMOUNT: Extract the FINAL TOTAL paid (look for "TOTAL", "AMOUNT DUE", "GRAND TOTAL", or similar labels - usually at the bottom after tax)
+3. TRANSACTION DATE: Extract the date in YYYY-MM-DD format (commonly found near the top or bottom of the receipt)
+4. LINE ITEMS: For EACH product/service purchased, extract:
+   - Full item description/name (exactly as printed)
+   - Quantity (if visible, otherwise assume 1)
+   - Individual item's TOTAL PRICE (this is MANDATORY - look on the right side of each line)
+   - Unit price (if visible separately from total)
 
-Important guidelines:
-- Be precise with numbers - double-check decimal places
-- For dates, use YYYY-MM-DD format
-- If a field is unclear or not visible, omit it rather than guessing
-- Focus on accuracy over completeness
-- Line items should capture individual products/services purchased`
+EXTRACTION TIPS:
+- Line item prices are typically right-aligned on each product line
+- The TOTAL at the bottom is different from individual line item totals
+- Dates may be in various formats (DD/MM/YYYY, MM/DD/YYYY, etc.) - convert to YYYY-MM-DD
+- If a line shows a discount or package deal, still include the adjusted price
+- Tax and subtotal are separate from line items
+- If you cannot clearly read a number, omit it rather than guess
+
+Be extremely precise with decimal points and currency amounts. Each line item MUST have a total_price.`
               },
               {
                 type: 'image_url',
@@ -117,7 +118,7 @@ Important guidelines:
                   },
                   line_items: {
                     type: 'array',
-                    description: 'Individual items purchased',
+                    description: 'Individual items purchased - MUST include total_price for each item',
                     items: {
                       type: 'object',
                       properties: {
@@ -127,18 +128,18 @@ Important guidelines:
                         },
                         quantity: {
                           type: 'number',
-                          description: 'Quantity purchased'
+                          description: 'Quantity purchased (default to 1 if not visible)'
                         },
                         unit_price: {
                           type: 'number',
-                          description: 'Price per unit'
+                          description: 'Price per unit (optional if only total is visible)'
                         },
                         total_price: {
                           type: 'number',
-                          description: 'Total price for this line item'
+                          description: 'REQUIRED: Total price for this line item - look on the right side of each product line'
                         }
                       },
-                      required: ['description']
+                      required: ['description', 'total_price']
                     }
                   },
                   confidence_notes: {
@@ -212,9 +213,17 @@ function normalizeExtractedData(data: any): NormalizedResult {
           description: item.description || null,
           quantity: item.quantity || null,
           unitPrice: item.unit_price || null,
-          total: item.total_price || null,
+          totalPrice: item.total_price ? String(item.total_price) : '0.00', // Convert to string and provide default
         }))
       : [];
+
+    console.log("📦 Processed line items:", {
+      count: lineItems.length,
+      sample: lineItems.slice(0, 3).map(item => ({
+        desc: item.description,
+        total: item.totalPrice
+      }))
+    });
 
     // Calculate confidence based on completeness of data
     let confidenceFactors = 0;
@@ -239,12 +248,21 @@ function normalizeExtractedData(data: any): NormalizedResult {
 
     const confidence = confidenceFactors > 0 ? confidenceTotal / confidenceFactors : 0.5;
 
+    // Log the normalized result for debugging
+    console.log("📊 Normalized result:", {
+      merchant: data.merchant_name,
+      amount: data.total_amount,
+      date: parsedDate?.toISOString(),
+      lineItemCount: lineItems.length,
+      confidence
+    });
+
     return {
       amount: data.total_amount || null,
       date: parsedDate,
       description: null,
       supplier: data.merchant_name ? { value: data.merchant_name } : null,
-      place: null,
+      place: data.merchant_name || null, // FIX: Map merchant_name to place field
       storeDetails: data.merchant_name ? { name: data.merchant_name } : null,
       confidence,
       lineItems,

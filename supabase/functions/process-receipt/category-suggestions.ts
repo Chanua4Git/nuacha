@@ -198,10 +198,15 @@ function suggestCategoryForItem(
 
   // PRIORITY 2: If it's a grocery vendor, prioritize grocery category
   if (isGroceryVendor) {
-    const groceryCategory = categories.find(cat => 
-      cat.name.toLowerCase().includes('groceries') || 
-      cat.name.toLowerCase() === 'groceries'
-    );
+    // Try multiple variations of grocery category names
+    const groceryCategory = categories.find(cat => {
+      const catName = cat.name.toLowerCase();
+      return catName.includes('groceries') || 
+             catName.includes('grocery') ||
+             catName === 'food' ||
+             catName.includes('food shopping') ||
+             catName.includes('supermarket');
+    });
     
     if (groceryCategory) {
       console.log(`✅ Grocery vendor detected - using category: ${groceryCategory.name}`);
@@ -211,11 +216,38 @@ function suggestCategoryForItem(
       };
     }
     
-    // Fallback: If no "Groceries" category found, create a fallback suggestion
-    console.log(`⚠️ Grocery vendor but no Groceries category found - creating fallback`);
+    // Enhanced fallback: Try to find the most suitable category
+    // Look for food-related, household, or general expense categories
+    const fallbackCategory = categories.find(cat => {
+      const catName = cat.name.toLowerCase();
+      return catName.includes('household') ||
+             catName.includes('household operations') ||
+             catName.includes('general') ||
+             catName.includes('miscellaneous');
+    });
+    
+    if (fallbackCategory) {
+      console.log(`⚠️ No Groceries category - using fallback: ${fallbackCategory.name}`);
+      return {
+        categoryId: fallbackCategory.id,
+        confidence: 0.65 // Lower confidence for fallback
+      };
+    }
+    
+    // Last resort: Use the first available category
+    if (categories.length > 0) {
+      console.log(`⚠️ Using first available category: ${categories[0].name}`);
+      return {
+        categoryId: categories[0].id,
+        confidence: 0.5 // Low confidence
+      };
+    }
+    
+    // Only use fallback ID if absolutely no categories exist
+    console.log(`⚠️ No categories found - creating system fallback`);
     return {
       categoryId: 'groceries-fallback',
-      confidence: 0.75
+      confidence: 0.4
     };
   }
 
