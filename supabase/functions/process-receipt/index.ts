@@ -17,6 +17,23 @@ type ErrorResponse = {
   confidence?: number;
 };
 
+/**
+ * Converts an ArrayBuffer to base64 using chunked processing
+ * to avoid stack overflow errors with large images
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192; // Process in 8KB chunks
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  return btoa(binary);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -43,12 +60,16 @@ serve(async (req) => {
 
     const requestBody = await req.json();
     let imageData: Blob;
+    let originalBase64: string | null = null;
     
     // Handle demo mode/direct base64 upload (for unauthenticated users)
     if (requestBody.receiptBase64 && requestBody.contentType) {
       console.log('🧾 Processing receipt from base64 data (demo mode)');
       
-      // Convert base64 to Blob
+      // Store original base64 to avoid redundant conversion
+      originalBase64 = requestBody.receiptBase64;
+      
+      // Convert base64 to Blob for size checking
       const binaryString = atob(requestBody.receiptBase64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -56,8 +77,8 @@ serve(async (req) => {
       }
       
       imageData = new Blob([bytes], { type: requestBody.contentType });
-      console.log(`📄 Converted base64 to Blob (${Math.round(imageData.size / 1024)}KB)`);
-    } 
+      console.log(`📄 Using original base64 (${Math.round(imageData.size / 1024)}KB)`);
+    }
     // Handle standard storage-based processing (for authenticated users)
     else if (requestBody.receiptUrl) {
       const receiptUrl = requestBody.receiptUrl;
@@ -125,9 +146,16 @@ serve(async (req) => {
     
     console.log('📊 Starting OCR processing with Lovable AI...');
     
-    // Convert blob to base64
-    const arrayBuffer = await imageData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Use original base64 if available (demo mode), otherwise convert with chunked processing
+    let base64: string;
+    if (originalBase64) {
+      console.log('✨ Using original base64 (no conversion needed)');
+      base64 = originalBase64;
+    } else {
+      console.log('🔄 Converting to base64 with chunked processing...');
+      const arrayBuffer = await imageData.arrayBuffer();
+      base64 = arrayBufferToBase64(arrayBuffer);
+    }
     
     const result = await lovableOCR(base64);
     
