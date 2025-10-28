@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { mindeeClient } from './mindee.ts';
+import { lovableOCR } from './lovable-ocr.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { suggestCategories } from './category-suggestions.ts';
 
@@ -23,25 +23,19 @@ serve(async (req) => {
   }
 
   try {
-    const mindeeApiKey = (Deno.env.get('MINDEE_API_KEY') ?? '').trim();
-    const v2ModelId = (Deno.env.get('MINDEE_MODEL_ID') ?? '').trim();
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    const mask = mindeeApiKey ? `${mindeeApiKey.slice(0,4)}…${mindeeApiKey.slice(-4)} (len:${mindeeApiKey.length})` : 'missing';
-    console.log('🔑 Mindee v2 key:', mask);
-    console.log('🔧 Using v2 model_id:', v2ModelId || 'NOT SET');
+    console.log('🤖 Using Lovable AI (Gemini 2.5 Flash) for OCR');
+    console.log('🔑 API key configured:', lovableApiKey ? 'Yes' : 'No');
 
-    if (!mindeeApiKey || !v2ModelId || !supabaseUrl || !supabaseServiceKey) {
+    if (!lovableApiKey || !supabaseUrl || !supabaseServiceKey) {
       return new Response(
         JSON.stringify({
           error: "We're experiencing technical difficulties",
           type: 'SERVER_ERROR',
-          message: !mindeeApiKey
-            ? 'Configuration error: Missing MINDEE_API_KEY (v2)'
-            : !v2ModelId
-            ? 'Configuration error: Missing MINDEE_MODEL_ID (v2 model UUID)'
-            : 'Configuration error: Missing required credentials'
+          message: 'OCR service is not properly configured'
         } as ErrorResponse),
         { status: 200, headers: corsHeaders }
       );
@@ -129,8 +123,13 @@ serve(async (req) => {
       );
     }
     
-    console.log('📊 Starting OCR processing...');
-    const result = await mindeeClient(mindeeApiKey, imageData);
+    console.log('📊 Starting OCR processing with Lovable AI...');
+    
+    // Convert blob to base64
+    const arrayBuffer = await imageData.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    const result = await lovableOCR(base64);
     
     // Check for errors first
     if ('error' in result) {
@@ -142,42 +141,9 @@ serve(async (req) => {
       if (errMsg.includes('status=402')) {
         return new Response(
           JSON.stringify({
-            error: 'Subscription required',
+            error: 'Payment required',
             type: 'SERVER_ERROR',
-            message: 'Mindee requires an active subscription to process receipts. Please check your plan and billing status.'
-          } as ErrorResponse),
-          { status: 200, headers: corsHeaders }
-        );
-      }
-      
-      if (errMsg.includes('status=401')) {
-        return new Response(
-          JSON.stringify({
-            error: 'Authentication issue with our OCR service',
-            type: 'SERVER_ERROR',
-            message: 'We refreshed the connection—please try that receipt again.'
-          } as ErrorResponse),
-          { status: 200, headers: corsHeaders }
-        );
-      }
-      
-      if (errMsg.includes('status=404')) {
-        return new Response(
-          JSON.stringify({
-            error: 'OCR service configuration issue',
-            type: 'SERVER_ERROR',
-            message: "We've adjusted the settings. Please try that scan again."
-          } as ErrorResponse),
-          { status: 200, headers: corsHeaders }
-        );
-      }
-      
-      if (errMsg.includes('status=415')) {
-        return new Response(
-          JSON.stringify({
-            error: "This image format isn't supported",
-            type: 'IMAGE_FORMAT_ERROR',
-            message: 'Please upload a JPEG or PNG file'
+            message: 'Please add credits to your Lovable workspace to continue processing receipts.'
           } as ErrorResponse),
           { status: 200, headers: corsHeaders }
         );
@@ -186,9 +152,9 @@ serve(async (req) => {
       if (errMsg.includes('status=429')) {
         return new Response(
           JSON.stringify({
-            error: 'Too many requests right now',
+            error: 'Rate limit exceeded',
             type: 'SERVER_ERROR',
-            message: 'Please wait a moment and try again'
+            message: 'Too many requests. Please wait a moment and try again.'
           } as ErrorResponse),
           { status: 200, headers: corsHeaders }
         );
@@ -199,7 +165,7 @@ serve(async (req) => {
           JSON.stringify({
             error: 'Temporary service issue',
             type: 'SERVER_ERROR',
-            message: 'Our OCR service is experiencing issues. Please try again in a moment.'
+            message: 'Our AI service is experiencing issues. Please try again in a moment.'
           } as ErrorResponse),
           { status: 200, headers: corsHeaders }
         );
