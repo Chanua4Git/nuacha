@@ -143,57 +143,73 @@ function handleOcrError(data: { type: string; error: string; message?: string })
   }
 }
 
-function mapOcrResponseToFormData(ocrResponse: MindeeResponse): OCRResult {
+function mapOcrResponseToFormData(ocrResponse: MindeeResponse | any): OCRResult {
   if (import.meta.env.DEV) {
     console.log('OCR Debug:', { 
-      confidence: ocrResponse.confidence,
+      confidence: (ocrResponse as any)?.confidence,
       response: ocrResponse 
     });
   }
 
-  // Enhanced date processing with validation
-  let processedDate: Date | undefined;
-  let dateConfidence = ocrResponse.date?.confidence || 0;
-  
-  if (ocrResponse.date?.value) {
-    const dateValidation = validateAndCorrectDate(ocrResponse.date.value);
-    if (dateValidation.isValid && dateValidation.correctedDate) {
-      processedDate = dateValidation.correctedDate;
-      dateConfidence = Math.min(dateConfidence, dateValidation.confidence);
-      
-      // Show validation warnings to user
-      showDateValidationWarning(dateValidation);
-    }
-  }
+  // Normalize amount
+  const extractAmount = (): string => {
+    const anyResp: any = ocrResponse;
+    if (!anyResp) return '';
+    if (typeof anyResp.amount === 'number') return anyResp.amount.toString();
+    if (typeof anyResp.amount === 'string') return anyResp.amount;
+    if (anyResp.amount?.value) return String(anyResp.amount.value);
+    if (anyResp.total?.amount) return String(anyResp.total.amount);
+    return '';
+  };
 
-  // Enhanced mapping to include all available data
+  // Normalize date
+  const extractDate = (): Date | undefined => {
+    const anyResp: any = ocrResponse;
+    if (anyResp?.date instanceof Date) return anyResp.date;
+    if (typeof anyResp?.date === 'string') {
+      const parsed = new Date(anyResp.date);
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    if (anyResp?.date?.value) {
+      const parsed = new Date(anyResp.date.value);
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    return undefined;
+  };
+
+  const supplierName = (ocrResponse as any)?.supplier?.value;
+  const storeName = (ocrResponse as any)?.storeDetails?.name;
+  const place = (ocrResponse as any)?.place || storeName || supplierName || '';
+
+  const processedDate = extractDate();
+  const amountStr = extractAmount();
+
   return {
-    // Basic fields - prioritize values from the store details if available
-    amount: ocrResponse.amount?.value || (ocrResponse.total?.amount) || '',
+    amount: amountStr,
     date: processedDate,
-    description: ocrResponse.storeDetails?.name || ocrResponse.supplier?.value || 
-      (ocrResponse.lineItems && ocrResponse.lineItems.length > 0 ? ocrResponse.lineItems[0].description : 'Purchase'),
-    place: ocrResponse.storeDetails?.address || ocrResponse.supplier?.value || '',
-    confidence: ocrResponse.confidence || ocrResponse.confidence_summary?.overall || 0.5,
+    description: storeName || supplierName || 'Purchase',
+    place,
+    confidence: (ocrResponse as any)?.confidence || (ocrResponse as any)?.confidence_summary?.overall || 0.5,
     
-    // Enhanced fields
-    lineItems: ocrResponse.lineItems,
-    tax: ocrResponse.tax,
-    total: ocrResponse.total,
-    subtotal: ocrResponse.subtotal,
-    discount: ocrResponse.discount,
-    paymentMethod: ocrResponse.paymentMethod,
-    storeDetails: ocrResponse.storeDetails,
-    receiptNumber: ocrResponse.receiptNumber,
-    transactionTime: ocrResponse.transactionTime,
-    currency: ocrResponse.currency,
-    confidence_summary: ocrResponse.confidence_summary ? {
-      overall: ocrResponse.confidence_summary.overall,
-      line_items: ocrResponse.confidence_summary.line_items,
-      total: ocrResponse.confidence_summary.total,
-      date: dateConfidence, // Use processed date confidence
-      merchant: ocrResponse.confidence_summary.merchant
-    } : undefined
+    lineItems: (ocrResponse as any)?.lineItems,
+    tax: (ocrResponse as any)?.tax,
+    total: (ocrResponse as any)?.total,
+    subtotal: (ocrResponse as any)?.subtotal,
+    discount: (ocrResponse as any)?.discount,
+    paymentMethod: (ocrResponse as any)?.paymentMethod,
+    storeDetails: (ocrResponse as any)?.storeDetails,
+    receiptNumber: (ocrResponse as any)?.receiptNumber,
+    transactionTime: (ocrResponse as any)?.transactionTime,
+    currency: (ocrResponse as any)?.currency,
+    confidence_summary: (ocrResponse as any)?.confidence_summary
+      ? {
+          overall: (ocrResponse as any).confidence_summary.overall,
+          line_items: (ocrResponse as any).confidence_summary.line_items,
+          total: (ocrResponse as any).confidence_summary.total,
+          date: (ocrResponse as any).confidence_summary.date,
+          merchant: (ocrResponse as any).confidence_summary.merchant
+        }
+      : undefined,
   };
 }
 
@@ -317,12 +333,14 @@ export async function saveReceiptDetailsAndLineItems(
       const lineItemsToInsert = ocrResult.lineItems.map((item: OCRReceiptLineItem) => ({
         expense_id: expenseId,
         description: item.description,
-        quantity: item.quantity,
-        total_price: parseFloat(item.totalPrice),
-        suggested_category_id: item.suggestedCategoryId,
-        category_confidence: item.categoryConfidence,
-        sku: item.sku,
-        discount: item.discounted
+        quantity: item.quantity ?? 1,
+        unit_price: item.unitPrice ?? undefined,
+        total_price: parseFloat(item.totalPrice || '0'),
+        category_id: (item as any).categoryId ?? item.suggestedCategoryId ?? null,
+        suggested_category_id: item.suggestedCategoryId ?? null,
+        category_confidence: item.categoryConfidence ?? null,
+        sku: item.sku ?? null,
+        discount: (item as any).discount ?? (item as any).discounted ?? null
       }));
       
       const { data: lineItemsData, error: lineItemsError } = await supabase

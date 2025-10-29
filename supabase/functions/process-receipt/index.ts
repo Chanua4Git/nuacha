@@ -422,8 +422,9 @@ serve(async (req) => {
           const formattedLineItems = result.lineItems.map(item => ({
             description: item.description || '',
             quantity: item.quantity ?? undefined,
-            unitPrice: item.unitPrice?.toString(),
-            totalPrice: item.total?.toString() || '0',
+            // Be resilient to different shapes coming from OCR
+            unitPrice: (item.unitPrice ?? (item as any).unit_price)?.toString(),
+            totalPrice: (item.totalPrice ?? (item as any).total_price)?.toString() || '0',
             confidence: 0.5,
             suggestedCategoryId: item.suggestedCategoryId ?? undefined,
             categoryConfidence: item.categoryConfidence ?? undefined
