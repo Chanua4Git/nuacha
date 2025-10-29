@@ -333,13 +333,13 @@ export async function saveReceiptDetailsAndLineItems(
       const lineItemsToInsert = ocrResult.lineItems.map((item: OCRReceiptLineItem) => ({
         expense_id: expenseId,
         description: item.description,
-        quantity: item.quantity ?? 1,
-        unit_price: item.unitPrice ?? undefined,
-        total_price: parseFloat(item.totalPrice || '0'),
-        category_id: (item as any).categoryId ?? item.suggestedCategoryId ?? null,
-        suggested_category_id: item.suggestedCategoryId ?? null,
-        category_confidence: item.categoryConfidence ?? null,
-        sku: item.sku ?? null,
+        quantity: (item as any).quantity ?? 1,
+        unit_price: (item as any).unitPrice ?? (item as any).unit_price ?? undefined,
+        total_price: parseFloat(String((item as any).totalPrice ?? (item as any).total_price ?? 0)),
+        category_id: (item as any).categoryId ?? (item as any).suggestedCategoryId ?? null,
+        suggested_category_id: (item as any).suggestedCategoryId ?? null,
+        category_confidence: (item as any).categoryConfidence ?? null,
+        sku: (item as any).sku ?? null,
         discount: (item as any).discount ?? (item as any).discounted ?? null
       }));
       
