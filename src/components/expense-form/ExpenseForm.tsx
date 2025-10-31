@@ -23,10 +23,14 @@ import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
-import { Camera, Image, Images } from 'lucide-react';
+import { Camera, Image, Images, Layers, Check, AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
 import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
+import { detectPartialReceipt, isReceiptComplete, mergeReceiptPages, calculateLineItemsSubtotal, type ReceiptPage } from '@/utils/receipt/mergeReceipts';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface ExpenseFormProps {
   initialOcrData?: OCRResult;
@@ -69,6 +73,10 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<any>(null);
   const [pendingSubmission, setPendingSubmission] = useState<any>(null);
+  
+  // Multi-page receipt state
+  const [receiptPages, setReceiptPages] = useState<ReceiptPage[]>([]);
+  const [isMultiPageMode, setIsMultiPageMode] = useState(false);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -127,6 +135,58 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const handleImagesRemove = () => {
     setReceiptImages([]);
     handleImageRemove();
+  };
+  
+  // Multi-page receipt helpers
+  const addCurrentPage = () => {
+    if (!imagePreview || !ocrResult) return;
+    
+    const newPage: ReceiptPage = {
+      pageNumber: receiptPages.length + 1,
+      imageUrl: imagePreview,
+      ocrResult: ocrResult,
+      isPartial: detectPartialReceipt(ocrResult).isPartial
+    };
+    
+    setReceiptPages([...receiptPages, newPage]);
+    setIsMultiPageMode(true);
+    
+    // Clear current image to prepare for next scan
+    handleImageRemove();
+    
+    toast.success(`Page ${newPage.pageNumber} saved`, {
+      description: "Ready to scan the next section of your receipt"
+    });
+  };
+  
+  const finalizeMerge = () => {
+    const allPages: ReceiptPage[] = [...receiptPages];
+    
+    // Add current page if there is one
+    if (imagePreview && ocrResult) {
+      allPages.push({
+        pageNumber: allPages.length + 1,
+        imageUrl: imagePreview,
+        ocrResult: ocrResult,
+        isPartial: detectPartialReceipt(ocrResult).isPartial
+      });
+    }
+    
+    if (allPages.length === 0) return;
+    
+    // Merge all pages
+    const mergedResult = mergeReceiptPages(allPages);
+    
+    // Update form with merged data
+    handleOcrData(mergedResult, allPages[0].imageUrl);
+    
+    // Reset multi-page state
+    setReceiptPages([]);
+    setIsMultiPageMode(false);
+    
+    toast.success("Receipt merged successfully", {
+      description: `Combined ${allPages.length} pages with ${mergedResult.lineItems?.length || 0} items`
+    });
   };
 
   const handleOcrData = (data: OCRResult, receiptImageUrl?: string) => {
@@ -508,6 +568,21 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       }
     }
   }, [initialOcrData, receiptUrl]);
+  
+  // Auto-detect partial receipts and enter multi-page mode
+  useEffect(() => {
+    if (ocrResult && !isMultiPageMode) {
+      const partialCheck = detectPartialReceipt(ocrResult);
+      if (partialCheck.isPartial) {
+        setIsMultiPageMode(true);
+      }
+    }
+  }, [ocrResult]);
+  
+  // Calculate receipt completion status
+  const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
+  const isComplete = ocrResult ? isReceiptComplete(ocrResult) : false;
+  const totalPages = receiptPages.length + (imagePreview && ocrResult ? 1 : 0);
 
   return (
     <Card className="w-full max-w-xl mx-auto">
@@ -581,7 +656,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
           {/* Detailed Receipt View */}
           {ocrResult && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button
                 type="button"
                 variant="outline"
@@ -602,6 +677,74 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                       setShowDetailedReceiptView(false);
                     }}
                   />
+                </div>
+              )}
+              
+              {/* Multi-page receipt CTAs */}
+              {isMultiPageMode && (
+                <div className="space-y-3">
+                  {/* Page counter */}
+                  {receiptPages.length > 0 && (
+                    <div className="text-center">
+                      <Badge variant="outline" className="gap-2">
+                        <Layers className="h-3 w-3" />
+                        Scanning page {receiptPages.length + 1} • {receiptPages.length} saved
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Partial receipt alert with CTA */}
+                  {partialDetection?.isPartial && !isComplete && (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertTitle className="text-yellow-900">Partial Receipt Detected</AlertTitle>
+                      <AlertDescription className="text-yellow-800 space-y-3">
+                        <p>{partialDetection.reason}</p>
+                        {ocrResult?.lineItems && ocrResult.lineItems.length > 0 && (
+                          <p className="text-sm">
+                            Running subtotal: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)} 
+                            ({ocrResult.lineItems.length} items so far)
+                          </p>
+                        )}
+                        <Button
+                          type="button"
+                          onClick={addCurrentPage}
+                          className="w-full"
+                          size="sm"
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          Scan Next Page of Receipt
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Complete receipt alert */}
+                  {isComplete && receiptPages.length > 0 && (
+                    <Alert className="bg-green-50 border-green-200">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-900">Receipt Complete!</AlertTitle>
+                      <AlertDescription className="text-green-800">
+                        This page shows the final total. Ready to finalize your {totalPages}-page receipt.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Finalize button */}
+                  {totalPages > 1 && (
+                    <Button
+                      type="button"
+                      onClick={finalizeMerge}
+                      className={cn(
+                        "w-full",
+                        isComplete && "bg-green-600 hover:bg-green-700"
+                      )}
+                      size="lg"
+                    >
+                      <Layers className="h-4 w-4 mr-2" />
+                      Finalize Receipt ({totalPages} pages)
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -698,6 +841,38 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
         onConfirm={handleDuplicateConfirm}
         onCancel={handleDuplicateCancel}
       />
+      
+      {/* Mobile sticky footer for multi-page actions */}
+      {isMultiPageMode && imagePreview && ocrResult && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:hidden z-50 space-y-2">
+          {!isComplete && partialDetection?.isPartial && (
+            <Button
+              type="button"
+              onClick={addCurrentPage}
+              className="w-full"
+              size="lg"
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              Scan Next Page
+            </Button>
+          )}
+          {totalPages > 1 && (
+            <Button
+              type="button"
+              onClick={finalizeMerge}
+              variant={isComplete ? "default" : "outline"}
+              className={cn(
+                "w-full",
+                isComplete && "bg-green-600 hover:bg-green-700"
+              )}
+              size="lg"
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              Finalize ({totalPages} pages)
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 };
