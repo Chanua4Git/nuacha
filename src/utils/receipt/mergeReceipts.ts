@@ -13,6 +13,24 @@ export interface ReceiptPage {
 }
 
 /**
+ * Check if receipt is complete (has all required information)
+ */
+export function isReceiptComplete(ocrResult: OCRResult): boolean {
+  const hasTotal = !!(ocrResult.total || ocrResult.amount);
+  const hasStoreName = !!(ocrResult.place || ocrResult.storeDetails?.name);
+  
+  // Check for completion indicators in line items or payment info
+  const hasPaymentInfo = !!ocrResult.paymentMethod;
+  const hasCompletionIndicators = 
+    hasPaymentInfo ||
+    (ocrResult.lineItems?.some(item => 
+      /total|balance|thank you|paid|change due|amount due/i.test(item.description || '')
+    )) || false;
+  
+  return hasTotal && hasStoreName && hasCompletionIndicators;
+}
+
+/**
  * Detect if a receipt scan is partial (missing header or footer information)
  */
 export function detectPartialReceipt(ocrResult: OCRResult): {
@@ -21,6 +39,16 @@ export function detectPartialReceipt(ocrResult: OCRResult): {
   missingFooter: boolean;
   reason: string;
 } {
+  // First check if receipt is COMPLETE
+  if (isReceiptComplete(ocrResult)) {
+    return {
+      isPartial: false,
+      missingHeader: false,
+      missingFooter: false,
+      reason: 'Receipt appears complete'
+    };
+  }
+
   const hasTotal = ocrResult.amount && parseFloat(ocrResult.amount) > 0;
   const hasMerchant = Boolean(ocrResult.place || ocrResult.storeDetails?.name);
   const hasLineItems = ocrResult.lineItems && ocrResult.lineItems.length > 0;
@@ -66,19 +94,55 @@ export function calculateLineItemsSubtotal(lineItems: ReceiptLineItem[]): number
 }
 
 /**
- * Deduplicate line items based on description and price
+ * Calculate string similarity using Jaccard index
+ */
+function calculateStringSimilarity(str1: string, str2: string): number {
+  const words1 = new Set(str1.toLowerCase().split(/\s+/));
+  const words2 = new Set(str2.toLowerCase().split(/\s+/));
+  
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+
+/**
+ * Check if two line items are similar (likely duplicates)
+ */
+function areLineItemsSimilar(item1: ReceiptLineItem, item2: ReceiptLineItem): boolean {
+  const desc1 = item1.description.toLowerCase().trim();
+  const desc2 = item2.description.toLowerCase().trim();
+  
+  // Exact match
+  if (desc1 === desc2) return true;
+  
+  // Fuzzy match (80% similarity)
+  const similarity = calculateStringSimilarity(desc1, desc2);
+  if (similarity > 0.8) return true;
+  
+  // Price + description match (strong indicator)
+  if (item1.totalPrice === item2.totalPrice && similarity > 0.6) return true;
+  
+  return false;
+}
+
+/**
+ * Deduplicate line items based on description and price similarity
  */
 function deduplicateLineItems(items: ReceiptLineItem[]): ReceiptLineItem[] {
-  const seen = new Map<string, ReceiptLineItem>();
+  const unique: ReceiptLineItem[] = [];
   
-  items.forEach(item => {
-    const key = `${item.description.trim().toLowerCase()}-${item.totalPrice}`;
-    if (!seen.has(key)) {
-      seen.set(key, item);
+  for (const item of items) {
+    const isDuplicate = unique.some(existingItem => 
+      areLineItemsSimilar(item, existingItem)
+    );
+    
+    if (!isDuplicate) {
+      unique.push(item);
     }
-  });
+  }
   
-  return Array.from(seen.values());
+  return unique;
 }
 
 /**
