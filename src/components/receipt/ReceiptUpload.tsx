@@ -5,6 +5,9 @@ import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 import { removeBackground, loadImage } from '@/utils/receipt/backgroundRemoval';
 import { preprocessReceiptImage } from '@/utils/receipt/imagePreprocessing';
+import { mergeReceiptPages, detectPartialReceipt } from '@/utils/receipt/mergeReceipts';
+import { Button } from '@/components/ui/button';
+import { Check, Layers } from 'lucide-react';
 import UploadArea from './UploadArea';
 import EnhancedReceiptPreview from './EnhancedReceiptPreview';
 
@@ -30,6 +33,14 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   const [removeBackgroundEnabled, setRemoveBackgroundEnabled] = useState(true);
   const [wasProcessedWithBackground, setWasProcessedWithBackground] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  
+  // Multi-page receipt support
+  const [receiptPages, setReceiptPages] = useState<Array<{
+    pageNumber: number;
+    imageUrl: string;
+    ocrResult: OCRResult;
+  }>>([]);
+  const [isMultiPageMode, setIsMultiPageMode] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -84,6 +95,68 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
       await processReceipt(currentFile, true, true);
     } else if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleAddAnotherPage = () => {
+    // Save current scan as a page
+    if (imagePreview && ocrResult) {
+      const pageNumber = receiptPages.length + 1;
+      setReceiptPages(prev => [...prev, { 
+        pageNumber,
+        imageUrl: imagePreview, 
+        ocrResult 
+      }]);
+      setIsMultiPageMode(true);
+      
+      // Clear current scan to allow new upload
+      onImageRemove();
+      setOcrResult(null);
+      
+      toast.info(`Page ${pageNumber} saved`, {
+        description: 'Ready to scan the next section of your receipt'
+      });
+    }
+  };
+
+  const handleFinalizeMultiPage = () => {
+    if (receiptPages.length === 0) return;
+
+    try {
+      // Add current page if there is one
+      const allPages = [...receiptPages];
+      if (imagePreview && ocrResult) {
+        allPages.push({
+          pageNumber: allPages.length + 1,
+          imageUrl: imagePreview,
+          ocrResult
+        });
+      }
+
+      // Merge all pages
+      const mergedResult = mergeReceiptPages(allPages.map(p => ({
+        pageNumber: p.pageNumber,
+        ocrResult: p.ocrResult,
+        imageUrl: p.imageUrl,
+        isPartial: detectPartialReceipt(p.ocrResult).isPartial
+      })));
+
+      // Pass merged data to parent
+      onDataExtracted(mergedResult);
+      
+      toast.success(`Receipt finalized with ${allPages.length} pages`, {
+        description: 'All sections have been merged into one expense'
+      });
+
+      // Reset multi-page state
+      setReceiptPages([]);
+      setIsMultiPageMode(false);
+      setOcrResult(null);
+    } catch (error) {
+      console.error('Error finalizing multi-page receipt:', error);
+      toast.error('Failed to merge receipt pages', {
+        description: 'Please try scanning again'
+      });
     }
   };
 
@@ -189,7 +262,32 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Multi-page progress indicator */}
+      {isMultiPageMode && receiptPages.length > 0 && (
+        <div className="bg-muted/50 rounded-lg p-3 border">
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Multi-Page Receipt Mode</span>
+          </div>
+          <div className="space-y-1">
+            {receiptPages.map((page) => (
+              <div key={page.pageNumber} className="text-xs text-muted-foreground flex items-center gap-2">
+                <Check className="h-3 w-3 text-green-600" />
+                Page {page.pageNumber}: {page.ocrResult.place || 'Receipt'} 
+                {page.ocrResult.lineItems?.length ? ` (${page.ocrResult.lineItems.length} items)` : ''}
+              </div>
+            ))}
+            {imagePreview && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <span className="h-3 w-3" />
+                Page {receiptPages.length + 1}: Current scan
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {!imagePreview ? (
         <UploadArea
           onDragOver={handleDragOver}
@@ -212,7 +310,20 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
           onToggleBackgroundRemoval={setRemoveBackgroundEnabled}
           wasProcessedWithBackground={wasProcessedWithBackground}
           ocrResult={ocrResult}
+          onAddAnotherPage={handleAddAnotherPage}
         />
+      )}
+
+      {/* Finalize button for multi-page receipts */}
+      {(receiptPages.length > 0 || (isMultiPageMode && imagePreview)) && (
+        <Button 
+          onClick={handleFinalizeMultiPage} 
+          className="w-full"
+          size="lg"
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Finalize Receipt ({receiptPages.length + (imagePreview ? 1 : 0)} page{receiptPages.length + (imagePreview ? 1 : 0) !== 1 ? 's' : ''})
+        </Button>
       )}
     </div>
   );

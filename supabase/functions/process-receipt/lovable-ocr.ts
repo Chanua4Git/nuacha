@@ -63,9 +63,13 @@ CRITICAL REQUIREMENTS:
 2. TOTAL AMOUNT: Extract the FINAL TOTAL paid (look for "TOTAL", "AMOUNT DUE", "GRAND TOTAL", or similar labels - usually at the bottom after tax)
    - If this is ONLY A PARTIAL RECEIPT (middle section without the final total), set total_amount to 0
 3. TRANSACTION DATE: Extract the date and convert to YYYY-MM-DD format
-   - CRITICAL DATE RULE: For ambiguous dates like "8/11/2025", interpret as DD/MM/YYYY (August 11, 2025, NOT November 8)
-   - Most receipts use DD/MM/YYYY format internationally
-   - If you see a date that would be in the future, it's likely misinterpreted - use DD/MM instead
+   - CRITICAL DATE RULE: ALWAYS interpret slash/dash-separated dates as DD/MM/YYYY format
+   - Examples that MUST be correct:
+     * "8/7/2025" → "2025-08-07" (August 7, 2025, NOT July 8 or November 7)
+     * "8/11/2025" → "2025-08-11" (August 11, 2025, NOT November 8)
+     * "15/3/2024" → "2024-03-15" (March 15, 2024)
+   - DOUBLE-CHECK: If the date you extracted is more than tomorrow, you made a mistake - use DD/MM/YYYY interpretation
+   - Most receipts worldwide use DD/MM/YYYY format
    - Common formats: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
 4. LINE ITEMS: For EACH product/service purchased, extract:
    - Full item description/name (exactly as printed)
@@ -74,15 +78,17 @@ CRITICAL REQUIREMENTS:
    - Unit price per item (if visible separately)
 
 EXTRACTION TIPS:
-- Line item prices are RIGHT-ALIGNED on each product line - look carefully at the right edge
-- Each line item MUST have its individual price extracted from the right column
+- Line item prices are RIGHT-ALIGNED on each product line - look at the FAR RIGHT EDGE
+- MANDATORY: Each line item MUST have its individual price extracted (this is critical!)
+- Look for prices in this typical format: [Item Description] .............. [Price]
+- Prices are usually formatted as: $X.XX or X.XX
 - The TOTAL at the bottom is separate from individual line item prices
 - If this is a PARTIAL RECEIPT (top or middle section):
-  - Still extract all visible line items with their prices
+  - Still extract ALL visible line items with their prices from the right side
   - Set total_amount to 0 to indicate the total is not visible
   - The user will scan additional pages to capture the complete receipt
 - Tax and subtotal are separate from line items
-- If you cannot clearly read a price, set it to 0 rather than guess
+- If you truly cannot read a price for an item, set it to 0.00 (but look harder first!)
 
 Be extremely precise with decimal points and currency amounts. Each line item MUST have a total_price extracted.`
               },
@@ -219,21 +225,41 @@ function normalizeExtractedData(data: any): NormalizedResult {
         
         if (parsedDate > tomorrow) {
           console.warn(`⚠️ Date ${data.date} is in the future, likely misinterpreted`);
-          // Try to parse as DD/MM/YYYY instead
-          const parts = data.date.split(/[-\/\.]/);
-          if (parts.length === 3) {
-            // Swap day and month: DD/MM/YYYY -> YYYY-MM-DD
-            const potentialDay = parts[0];
-            const potentialMonth = parts[1];
-            const year = parts[2];
+          
+          // Check if the date is already in YYYY-MM-DD format
+          if (data.date.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
+            // Input is YYYY-MM-DD, AI may have swapped day/month
+            const parts = data.date.split('-');
+            const year = parts[0];
+            const firstNum = parts[1];  // Could be month or day
+            const secondNum = parts[2];  // Could be day or month
             
-            if (parseInt(potentialDay) <= 31 && parseInt(potentialMonth) <= 12) {
-              const correctedDateStr = `${year}-${potentialMonth.padStart(2, '0')}-${potentialDay.padStart(2, '0')}`;
+            // Try swapping: YYYY-MM-DD → YYYY-DD-MM (interpret as DD/MM input)
+            if (parseInt(firstNum) <= 31 && parseInt(secondNum) <= 12) {
+              const correctedDateStr = `${year}-${secondNum.padStart(2, '0')}-${firstNum.padStart(2, '0')}`;
               const correctedDate = new Date(correctedDateStr);
               
               if (!isNaN(correctedDate.getTime()) && correctedDate <= tomorrow) {
-                console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr}`);
+                console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr} (swapped day/month)`);
                 parsedDate = correctedDate;
+              }
+            }
+          } else {
+            // Input might be in DD/MM/YYYY format, parse it correctly
+            const parts = data.date.split(/[-\/\.]/);
+            if (parts.length === 3) {
+              const potentialDay = parts[0];
+              const potentialMonth = parts[1];
+              const year = parts[2];
+              
+              if (parseInt(potentialDay) <= 31 && parseInt(potentialMonth) <= 12) {
+                const correctedDateStr = `${year}-${potentialMonth.padStart(2, '0')}-${potentialDay.padStart(2, '0')}`;
+                const correctedDate = new Date(correctedDateStr);
+                
+                if (!isNaN(correctedDate.getTime()) && correctedDate <= tomorrow) {
+                  console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr}`);
+                  parsedDate = correctedDate;
+                }
               }
             }
           }
@@ -251,8 +277,20 @@ function normalizeExtractedData(data: any): NormalizedResult {
         }))
       : [];
 
+    // Log warning for items without prices
+    const itemsWithoutPrices = lineItems.filter(item => 
+      !item.totalPrice || parseFloat(item.totalPrice) === 0
+    );
+    if (itemsWithoutPrices.length > 0) {
+      console.warn(`⚠️ ${itemsWithoutPrices.length} items extracted without prices:`, 
+        itemsWithoutPrices.map(i => i.description).slice(0, 5)
+      );
+    }
+
     console.log("📦 Processed line items:", {
       count: lineItems.length,
+      withPrices: lineItems.length - itemsWithoutPrices.length,
+      withoutPrices: itemsWithoutPrices.length,
       sample: lineItems.slice(0, 3).map(item => ({
         desc: item.description,
         total: item.totalPrice
