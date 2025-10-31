@@ -61,22 +61,30 @@ export async function lovableOCR(imageData: string): Promise<NormalizedResult> {
 CRITICAL REQUIREMENTS:
 1. MERCHANT NAME: Extract the EXACT store/business name as it appears at the top of the receipt
 2. TOTAL AMOUNT: Extract the FINAL TOTAL paid (look for "TOTAL", "AMOUNT DUE", "GRAND TOTAL", or similar labels - usually at the bottom after tax)
-3. TRANSACTION DATE: Extract the date in YYYY-MM-DD format (commonly found near the top or bottom of the receipt)
+   - If this is ONLY A PARTIAL RECEIPT (middle section without the final total), set total_amount to 0
+3. TRANSACTION DATE: Extract the date and convert to YYYY-MM-DD format
+   - CRITICAL DATE RULE: For ambiguous dates like "8/11/2025", interpret as DD/MM/YYYY (August 11, 2025, NOT November 8)
+   - Most receipts use DD/MM/YYYY format internationally
+   - If you see a date that would be in the future, it's likely misinterpreted - use DD/MM instead
+   - Common formats: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
 4. LINE ITEMS: For EACH product/service purchased, extract:
    - Full item description/name (exactly as printed)
    - Quantity (if visible, otherwise assume 1)
-   - Individual item's TOTAL PRICE (this is MANDATORY - look on the right side of each line)
-   - Unit price (if visible separately from total)
+   - Individual item's TOTAL PRICE (this is MANDATORY - look on the RIGHT SIDE of each product line)
+   - Unit price per item (if visible separately)
 
 EXTRACTION TIPS:
-- Line item prices are typically right-aligned on each product line
-- The TOTAL at the bottom is different from individual line item totals
-- Dates may be in various formats (DD/MM/YYYY, MM/DD/YYYY, etc.) - convert to YYYY-MM-DD
-- If a line shows a discount or package deal, still include the adjusted price
+- Line item prices are RIGHT-ALIGNED on each product line - look carefully at the right edge
+- Each line item MUST have its individual price extracted from the right column
+- The TOTAL at the bottom is separate from individual line item prices
+- If this is a PARTIAL RECEIPT (top or middle section):
+  - Still extract all visible line items with their prices
+  - Set total_amount to 0 to indicate the total is not visible
+  - The user will scan additional pages to capture the complete receipt
 - Tax and subtotal are separate from line items
-- If you cannot clearly read a number, omit it rather than guess
+- If you cannot clearly read a price, set it to 0 rather than guess
 
-Be extremely precise with decimal points and currency amounts. Each line item MUST have a total_price.`
+Be extremely precise with decimal points and currency amounts. Each line item MUST have a total_price extracted.`
               },
               {
                 type: 'image_url',
@@ -198,12 +206,38 @@ Be extremely precise with decimal points and currency amounts. Each line item MU
 
 function normalizeExtractedData(data: any): NormalizedResult {
   try {
-    // Parse the date
+    // Parse and validate the date
     let parsedDate: Date | null = null;
     if (data.date) {
       parsedDate = new Date(data.date);
       if (isNaN(parsedDate.getTime())) {
         parsedDate = null;
+      } else {
+        // Validate: if date is more than 1 day in the future, it's likely wrong
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        if (parsedDate > tomorrow) {
+          console.warn(`⚠️ Date ${data.date} is in the future, likely misinterpreted`);
+          // Try to parse as DD/MM/YYYY instead
+          const parts = data.date.split(/[-\/\.]/);
+          if (parts.length === 3) {
+            // Swap day and month: DD/MM/YYYY -> YYYY-MM-DD
+            const potentialDay = parts[0];
+            const potentialMonth = parts[1];
+            const year = parts[2];
+            
+            if (parseInt(potentialDay) <= 31 && parseInt(potentialMonth) <= 12) {
+              const correctedDateStr = `${year}-${potentialMonth.padStart(2, '0')}-${potentialDay.padStart(2, '0')}`;
+              const correctedDate = new Date(correctedDateStr);
+              
+              if (!isNaN(correctedDate.getTime()) && correctedDate <= tomorrow) {
+                console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr}`);
+                parsedDate = correctedDate;
+              }
+            }
+          }
+        }
       }
     }
 

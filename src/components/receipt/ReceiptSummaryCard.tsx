@@ -64,6 +64,7 @@ const ReceiptSummaryCard: React.FC<ReceiptSummaryCardProps> = ({ receiptData }) 
             tax={receiptData.tax}
             total={receiptData.amount}
             paymentMethod={receiptData.paymentMethod}
+            lineItems={receiptData.lineItems}
           />
           
           <AddressInfo

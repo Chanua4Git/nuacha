@@ -29,6 +29,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [removeBackgroundEnabled, setRemoveBackgroundEnabled] = useState(true);
   const [wasProcessedWithBackground, setWasProcessedWithBackground] = useState(false);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -156,6 +157,9 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
       const extractedData = await processReceiptImage(fileToProcess, familyId);
       
       if (extractedData) {
+        // Store OCR result for partial detection
+        setOcrResult(extractedData);
+        
         // Log quality indicators for long receipts
         const img = new Image();
         img.onload = () => {
@@ -207,6 +211,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
           removeBackgroundEnabled={removeBackgroundEnabled}
           onToggleBackgroundRemoval={setRemoveBackgroundEnabled}
           wasProcessedWithBackground={wasProcessedWithBackground}
+          ocrResult={ocrResult}
         />
       )}
     </div>

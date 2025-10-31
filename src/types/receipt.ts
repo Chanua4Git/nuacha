@@ -45,6 +45,11 @@ export interface ReceiptDetail {
     merchant: number;
   };
   createdAt?: string;
+  
+  // Multi-page receipt support
+  pageNumber?: number;
+  isPartialReceipt?: boolean;
+  totalPages?: number;
 }
 
 export interface CategorizationRule {

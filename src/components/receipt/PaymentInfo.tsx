@@ -1,8 +1,10 @@
 
 import React from 'react';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, AlertCircle } from 'lucide-react';
 import DataRow from './DataRow';
 import { Separator } from '@/components/ui/separator';
+import { calculateLineItemsSubtotal } from '@/utils/receipt/mergeReceipts';
+import { OCRResult } from '@/types/expense';
 
 interface PaymentInfoProps {
   subtotal?: { amount: string };
@@ -12,13 +14,18 @@ interface PaymentInfoProps {
     type: string;
     lastDigits?: string;
   };
+  lineItems?: OCRResult['lineItems'];
 }
 
-const PaymentInfo: React.FC<PaymentInfoProps> = ({ subtotal, tax, total, paymentMethod }) => {
+const PaymentInfo: React.FC<PaymentInfoProps> = ({ subtotal, tax, total, paymentMethod, lineItems }) => {
   const formatCurrency = (amount: string | undefined) => {
     if (!amount) return '-';
     return `$${parseFloat(amount).toFixed(2)}`;
   };
+
+  // Check if total is missing or zero
+  const isMissingTotal = !total || parseFloat(total) === 0;
+  const calculatedSubtotal = lineItems ? calculateLineItemsSubtotal(lineItems) : 0;
 
   return (
     <>
@@ -38,10 +45,23 @@ const PaymentInfo: React.FC<PaymentInfoProps> = ({ subtotal, tax, total, payment
       
       <Separator />
       
-      <DataRow
-        label="Total"
-        value={formatCurrency(total)}
-      />
+      {isMissingTotal && calculatedSubtotal > 0 ? (
+        <>
+          <DataRow
+            label="Running Subtotal"
+            value={`$${calculatedSubtotal.toFixed(2)}`}
+          />
+          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Scan bottom of receipt to capture final total
+          </div>
+        </>
+      ) : (
+        <DataRow
+          label="Total"
+          value={isMissingTotal ? 'Not captured yet' : formatCurrency(total)}
+        />
+      )}
       
       {paymentMethod && (
         <DataRow

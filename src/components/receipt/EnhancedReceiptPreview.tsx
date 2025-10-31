@@ -1,10 +1,13 @@
 import React from 'react';
-import { X, Loader2, RefreshCw, Sparkles, Check } from 'lucide-react';
+import { X, Loader2, RefreshCw, Sparkles, Check, Plus } from 'lucide-react';
 import ReceiptProcessingLoader from '@/components/demo/ReceiptProcessingLoader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { OCRResult } from '@/types/expense';
+import { detectPartialReceipt, calculateLineItemsSubtotal } from '@/utils/receipt/mergeReceipts';
 
 interface EnhancedReceiptPreviewProps {
   imagePreview: string;
@@ -15,6 +18,8 @@ interface EnhancedReceiptPreviewProps {
   removeBackgroundEnabled: boolean;
   onToggleBackgroundRemoval: (enabled: boolean) => void;
   wasProcessedWithBackground: boolean;
+  ocrResult?: OCRResult | null;
+  onAddAnotherPage?: () => void;
 }
 
 const EnhancedReceiptPreview: React.FC<EnhancedReceiptPreviewProps> = ({
@@ -26,9 +31,29 @@ const EnhancedReceiptPreview: React.FC<EnhancedReceiptPreviewProps> = ({
   removeBackgroundEnabled,
   onToggleBackgroundRemoval,
   wasProcessedWithBackground,
+  ocrResult,
+  onAddAnotherPage,
 }) => {
+  // Detect if this is a partial receipt
+  const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
+  const subtotal = ocrResult?.lineItems ? calculateLineItemsSubtotal(ocrResult.lineItems) : 0;
+
   return (
     <div className="space-y-3">
+      {/* Partial Receipt Alert */}
+      {partialDetection?.isPartial && (
+        <Alert>
+          <AlertDescription className="text-sm">
+            <div className="font-medium mb-1">Partial receipt detected</div>
+            <div className="text-muted-foreground">{partialDetection.reason}</div>
+            {subtotal > 0 && (
+              <div className="mt-2 font-medium">
+                Running subtotal from items: ${subtotal.toFixed(2)}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Background Removal Toggle */}
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
         <div className="flex items-center space-x-2">
@@ -95,6 +120,18 @@ const EnhancedReceiptPreview: React.FC<EnhancedReceiptPreviewProps> = ({
           <ReceiptProcessingLoader />
         )}
       </div>
+
+      {/* Add Another Page Button (for multi-page receipts) */}
+      {partialDetection?.isPartial && onAddAnotherPage && !isProcessing && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={onAddAnotherPage}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Scan Next Page of Receipt
+        </Button>
+      )}
     </div>
   );
 };
