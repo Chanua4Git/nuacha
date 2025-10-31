@@ -1,9 +1,11 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Receipt, X, Loader2, Camera, RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Receipt, X, Loader2, Camera, RefreshCw, Check, Layers, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { processReceiptImage, validateOCRResult } from '@/utils/receipt';
+import { mergeReceiptPages, detectPartialReceipt, calculateLineItemsSubtotal } from '@/utils/receipt/mergeReceipts';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
 
@@ -26,6 +28,13 @@ const ReceiptUpload = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  const [receiptPages, setReceiptPages] = useState<Array<{
+    pageNumber: number;
+    imageUrl: string;
+    ocrResult: OCRResult;
+  }>>([]);
+  const [isMultiPageMode, setIsMultiPageMode] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -75,6 +84,59 @@ const ReceiptUpload = ({
     }
   };
 
+  const handleAddAnotherPage = () => {
+    if (imagePreview && ocrResult) {
+      const pageNumber = receiptPages.length + 1;
+      setReceiptPages(prev => [...prev, { 
+        pageNumber,
+        imageUrl: imagePreview, 
+        ocrResult 
+      }]);
+      setIsMultiPageMode(true);
+      
+      // Clear current scan to allow new upload
+      onImageRemove();
+      setOcrResult(null);
+      
+      toast.info(`Page ${pageNumber} saved`, {
+        description: 'Ready to scan the next section of your receipt'
+      });
+    }
+  };
+
+  const handleFinalizeMultiPage = () => {
+    // Combine current scan with saved pages
+    const allPages = [...receiptPages];
+    if (imagePreview && ocrResult) {
+      allPages.push({
+        pageNumber: allPages.length + 1,
+        imageUrl: imagePreview,
+        ocrResult
+      });
+    }
+
+    if (allPages.length === 0) return;
+
+    // Merge all pages
+    const mergedResult = mergeReceiptPages(allPages.map(p => ({
+      pageNumber: p.pageNumber,
+      ocrResult: p.ocrResult,
+      imageUrl: p.imageUrl,
+      isPartial: detectPartialReceipt(p.ocrResult).isPartial
+    })));
+
+    onDataExtracted(mergedResult);
+    
+    // Reset multi-page state
+    setReceiptPages([]);
+    setIsMultiPageMode(false);
+    setOcrResult(null);
+    
+    toast.success(`${allPages.length} pages merged into complete receipt`, {
+      description: 'All sections have been combined'
+    });
+  };
+
   const processReceipt = async (file: File, isRetry = false) => {
     setCurrentFile(file);
     onImageUpload(file);
@@ -82,6 +144,7 @@ const ReceiptUpload = ({
     setIsProcessing(true);
     try {
       const extractedData = await processReceiptImage(file, familyId);
+      setOcrResult(extractedData); // Store OCR result for multi-page handling
       
       if (validateOCRResult(extractedData)) {
         onDataExtracted(extractedData);
@@ -109,8 +172,49 @@ const ReceiptUpload = ({
     }
   };
 
+  // Detect if current scan is partial
+  const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Multi-page progress indicator */}
+      {isMultiPageMode && receiptPages.length > 0 && (
+        <Alert className="bg-accent/10 border-accent">
+          <Layers className="h-4 w-4" />
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Multi-page receipt in progress</span>
+              <span className="text-sm text-muted-foreground">{receiptPages.length} page{receiptPages.length > 1 ? 's' : ''} saved</span>
+            </div>
+            <div className="mt-2 space-y-1">
+              {receiptPages.map((page, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <Check className="h-3 w-3 text-accent" />
+                  <span>Page {page.pageNumber}: {page.ocrResult.place || 'Receipt'} ({page.ocrResult.lineItems?.length || 0} items)</span>
+                </div>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Partial receipt warning */}
+      {imagePreview && ocrResult && partialDetection?.isPartial && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium text-amber-900">Partial Receipt</p>
+              <p className="text-sm text-amber-800">{partialDetection.reason}</p>
+              {ocrResult.lineItems && ocrResult.lineItems.length > 0 && (
+                <p className="text-sm text-amber-700">
+                  Subtotal from scanned items: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)}
+                </p>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {!imagePreview ? (
         <div
           onDragOver={handleDragOver}
@@ -163,21 +267,37 @@ const ReceiptUpload = ({
         </div>
       ) : (
         <div className="relative rounded-lg border border-gray-200 p-2">
-          <div className="flex justify-between items-start mb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={handleRetry}
-              disabled={isProcessing}
-            >
-              <RefreshCw className="h-3 w-3" />
-              Re-scan
-            </Button>
+          <div className="flex justify-between items-start mb-2 gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={handleRetry}
+                disabled={isProcessing}
+              >
+                <RefreshCw className="h-3 w-3" />
+                Re-scan
+              </Button>
+              
+              {/* Scan Next Page button - appears when partial receipt detected */}
+              {ocrResult && partialDetection?.isPartial && !isProcessing && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={handleAddAnotherPage}
+                >
+                  <Plus className="h-3 w-3" />
+                  Scan Next Page of Receipt
+                </Button>
+              )}
+            </div>
+            
             <Button
               variant="destructive"
               size="icon"
-              className="h-7 w-7"
+              className="h-7 w-7 shrink-0"
               onClick={onImageRemove}
               disabled={isProcessing}
             >
@@ -200,6 +320,19 @@ const ReceiptUpload = ({
             </div>
           )}
         </div>
+      )}
+      
+      {/* Finalize Multi-Page Receipt button */}
+      {(receiptPages.length > 0 || (isMultiPageMode && imagePreview && ocrResult)) && (
+        <Button
+          onClick={handleFinalizeMultiPage}
+          className="w-full"
+          size="lg"
+          disabled={isProcessing}
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Finalize Receipt ({receiptPages.length + (imagePreview && ocrResult ? 1 : 0)} page{receiptPages.length + (imagePreview && ocrResult ? 1 : 0) > 1 ? 's' : ''})
+        </Button>
       )}
     </div>
   );
