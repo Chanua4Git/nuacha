@@ -17,6 +17,7 @@ interface ReceiptUploadProps {
   onDataExtracted: (data: OCRResult) => void;
   imagePreview: string | null;
   familyId?: string;
+  disableInternalCTAs?: boolean; // When true, parent component handles all multi-page CTAs
 }
 
 const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ 
@@ -24,7 +25,8 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   onImageRemove, 
   onDataExtracted,
   imagePreview,
-  familyId
+  familyId,
+  disableInternalCTAs = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -264,7 +266,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   return (
     <div className="space-y-3">
       {/* Multi-page progress indicator */}
-      {isMultiPageMode && receiptPages.length > 0 && (
+      {!disableInternalCTAs && isMultiPageMode && receiptPages.length > 0 && (
         <div className="bg-muted/50 rounded-lg p-3 border">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="h-4 w-4 text-muted-foreground" />
@@ -315,7 +317,7 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
       )}
 
       {/* Finalize button for multi-page receipts */}
-      {(receiptPages.length > 0 || (isMultiPageMode && imagePreview)) && (
+      {!disableInternalCTAs && (receiptPages.length > 0 || (isMultiPageMode && imagePreview)) && (
         <Button 
           onClick={handleFinalizeMultiPage} 
           className="w-full"

@@ -14,20 +14,16 @@ export interface ReceiptPage {
 
 /**
  * Check if receipt is complete (has all required information)
+ * Tightened to reduce false positives that hide CTAs
  */
 export function isReceiptComplete(ocrResult: OCRResult): boolean {
   const hasTotal = !!(ocrResult.total || ocrResult.amount);
   const hasStoreName = !!(ocrResult.place || ocrResult.storeDetails?.name);
-  
-  // Check for completion indicators in line items or payment info
   const hasPaymentInfo = !!ocrResult.paymentMethod;
-  const hasCompletionIndicators = 
-    hasPaymentInfo ||
-    (ocrResult.lineItems?.some(item => 
-      /total|balance|thank you|paid|change due|amount due/i.test(item.description || '')
-    )) || false;
   
-  return hasTotal && hasStoreName && hasCompletionIndicators;
+  // Require explicit total and store name
+  // Payment info is a strong completion signal but not mandatory
+  return hasTotal && hasStoreName && hasPaymentInfo;
 }
 
 /**

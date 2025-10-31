@@ -15,6 +15,7 @@ interface ReceiptUploadProps {
   onDataExtracted: (data: OCRResult) => void;
   imagePreview: string | null;
   familyId?: string;
+  disableInternalCTAs?: boolean; // When true, parent component handles all multi-page CTAs
 }
 
 const ReceiptUpload = ({ 
@@ -22,7 +23,8 @@ const ReceiptUpload = ({
   onImageRemove, 
   onDataExtracted,
   imagePreview,
-  familyId
+  familyId,
+  disableInternalCTAs = false
 }: ReceiptUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -193,7 +195,7 @@ const ReceiptUpload = ({
   return (
     <div className="space-y-3">
       {/* Visual page counter when in multi-page mode */}
-      {isMultiPageMode && imagePreview && (
+      {!disableInternalCTAs && isMultiPageMode && imagePreview && (
         <div className="text-center">
           <span className="inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground px-3 py-1 text-sm font-medium">
             <Layers className="h-3 w-3 mr-1.5" />
@@ -203,7 +205,7 @@ const ReceiptUpload = ({
       )}
 
       {/* Multi-page progress indicator */}
-      {isMultiPageMode && receiptPages.length > 0 && (
+      {!disableInternalCTAs && isMultiPageMode && receiptPages.length > 0 && (
         <Alert className="bg-accent/10 border-accent">
           <Layers className="h-4 w-4" />
           <AlertDescription>
@@ -227,7 +229,7 @@ const ReceiptUpload = ({
       )}
 
       {/* Receipt completion status */}
-      {imagePreview && ocrResult && isComplete && receiptPages.length > 0 && (
+      {!disableInternalCTAs && imagePreview && ocrResult && isComplete && receiptPages.length > 0 && (
         <Alert className="bg-green-50 border-green-200">
           <Check className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
@@ -237,7 +239,7 @@ const ReceiptUpload = ({
       )}
 
       {/* Partial receipt warning with action button - only show if not complete */}
-      {imagePreview && ocrResult && partialDetection?.isPartial && !isComplete && (
+      {!disableInternalCTAs && imagePreview && ocrResult && partialDetection?.isPartial && !isComplete && (
         <Alert className="bg-amber-50 border-amber-200">
           <AlertDescription>
             <div className="space-y-3">
@@ -331,7 +333,7 @@ const ReceiptUpload = ({
               </Button>
               
               {/* Scan Next Page button - appears when partial receipt detected and not complete */}
-              {ocrResult && partialDetection?.isPartial && !isComplete && !isProcessing && (
+              {!disableInternalCTAs && ocrResult && partialDetection?.isPartial && !isComplete && !isProcessing && (
                 <Button
                   variant="default"
                   size="sm"
@@ -373,7 +375,7 @@ const ReceiptUpload = ({
       )}
       
       {/* Finalize Multi-Page Receipt button - emphasize when complete */}
-      {(receiptPages.length > 0 || (isMultiPageMode && imagePreview && ocrResult)) && (
+      {!disableInternalCTAs && (receiptPages.length > 0 || (isMultiPageMode && imagePreview && ocrResult)) && (
         <Button
           onClick={handleFinalizeMultiPage}
           className={cn(
@@ -389,7 +391,7 @@ const ReceiptUpload = ({
       )}
 
       {/* Mobile-friendly sticky footer for multi-page actions - only show if not complete */}
-      {imagePreview && ocrResult && partialDetection?.isPartial && !isComplete && (
+      {!disableInternalCTAs && imagePreview && ocrResult && partialDetection?.isPartial && !isComplete && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-lg md:hidden z-50">
           <div className="flex gap-2 max-w-lg mx-auto">
             <Button
@@ -416,7 +418,7 @@ const ReceiptUpload = ({
       )}
       
       {/* Mobile sticky footer when receipt is complete */}
-      {imagePreview && ocrResult && isComplete && receiptPages.length > 0 && (
+      {!disableInternalCTAs && imagePreview && ocrResult && isComplete && receiptPages.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-lg md:hidden z-50">
           <div className="max-w-lg mx-auto">
             <Button

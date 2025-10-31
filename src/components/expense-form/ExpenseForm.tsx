@@ -640,6 +640,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
               onDataExtracted={handleOcrData}
               imagePreview={imagePreview}
               familyId={selectedFamily?.id}
+              disableInternalCTAs={true}
             />
           )}
 
@@ -680,73 +681,71 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 </div>
               )}
               
-              {/* Multi-page receipt CTAs */}
-              {isMultiPageMode && (
-                <div className="space-y-3">
-                  {/* Page counter */}
-                  {receiptPages.length > 0 && (
-                    <div className="text-center">
-                      <Badge variant="outline" className="gap-2">
-                        <Layers className="h-3 w-3" />
-                        Scanning page {receiptPages.length + 1} • {receiptPages.length} saved
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  {/* Partial receipt alert with CTA */}
-                  {partialDetection?.isPartial && !isComplete && (
-                    <Alert className="bg-yellow-50 border-yellow-200">
-                      <AlertCircle className="h-4 w-4 text-yellow-600" />
-                      <AlertTitle className="text-yellow-900">Partial Receipt Detected</AlertTitle>
-                      <AlertDescription className="text-yellow-800 space-y-3">
-                        <p>{partialDetection.reason}</p>
-                        {ocrResult?.lineItems && ocrResult.lineItems.length > 0 && (
-                          <p className="text-sm">
-                            Running subtotal: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)} 
-                            ({ocrResult.lineItems.length} items so far)
-                          </p>
-                        )}
-                        <Button
-                          type="button"
-                          onClick={addCurrentPage}
-                          className="w-full"
-                          size="sm"
-                        >
-                          <Camera className="h-4 w-4 mr-2" />
-                          Scan Next Page of Receipt
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {/* Complete receipt alert */}
-                  {isComplete && receiptPages.length > 0 && (
-                    <Alert className="bg-green-50 border-green-200">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-900">Receipt Complete!</AlertTitle>
-                      <AlertDescription className="text-green-800">
-                        This page shows the final total. Ready to finalize your {totalPages}-page receipt.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {/* Finalize button */}
-                  {totalPages > 1 && (
-                    <Button
-                      type="button"
-                      onClick={finalizeMerge}
-                      className={cn(
-                        "w-full",
-                        isComplete && "bg-green-600 hover:bg-green-700"
+              {/* Multi-page receipt CTAs - show ALWAYS when partial/complete, not gated by mode */}
+              <div className="space-y-3">
+                {/* Page counter - only show when pages have been saved */}
+                {receiptPages.length > 0 && (
+                  <div className="text-center">
+                    <Badge variant="outline" className="gap-2">
+                      <Layers className="h-3 w-3" />
+                      Scanning page {receiptPages.length + 1} • {receiptPages.length} saved
+                    </Badge>
+                  </div>
+                )}
+                
+                {/* Partial receipt alert with CTA - ALWAYS show when partial, regardless of mode */}
+                {imagePreview && partialDetection?.isPartial && !isComplete && (
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertTitle className="text-yellow-900">Partial Receipt Detected</AlertTitle>
+                    <AlertDescription className="text-yellow-800 space-y-3">
+                      <p>{partialDetection.reason}</p>
+                      {ocrResult?.lineItems && ocrResult.lineItems.length > 0 && (
+                        <p className="text-sm">
+                          Running subtotal: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)} 
+                          ({ocrResult.lineItems.length} items so far)
+                        </p>
                       )}
-                      size="lg"
-                    >
-                      <Layers className="h-4 w-4 mr-2" />
-                      Finalize Receipt ({totalPages} pages)
-                    </Button>
-                  )}
-                </div>
-              )}
+                      <Button
+                        type="button"
+                        onClick={addCurrentPage}
+                        className="w-full"
+                        size="sm"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Scan Next Page of Receipt
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Complete receipt alert */}
+                {isComplete && receiptPages.length > 0 && (
+                  <Alert className="bg-green-50 border-green-200">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-900">Receipt Complete!</AlertTitle>
+                    <AlertDescription className="text-green-800">
+                      This page shows the final total. Ready to finalize your {totalPages}-page receipt.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Finalize button */}
+                {totalPages > 1 && (
+                  <Button
+                    type="button"
+                    onClick={finalizeMerge}
+                    className={cn(
+                      "w-full",
+                      isComplete && "bg-green-600 hover:bg-green-700"
+                    )}
+                    size="lg"
+                  >
+                    <Layers className="h-4 w-4 mr-2" />
+                    Finalize Receipt ({totalPages} pages)
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -842,8 +841,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
         onCancel={handleDuplicateCancel}
       />
       
-      {/* Mobile sticky footer for multi-page actions */}
-      {isMultiPageMode && imagePreview && ocrResult && (
+      {/* Mobile sticky footer for multi-page actions - show when receipt is scanned */}
+      {imagePreview && ocrResult && (partialDetection?.isPartial || totalPages > 1) && (
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:hidden z-50 space-y-2">
           {!isComplete && partialDetection?.isPartial && (
             <Button
