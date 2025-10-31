@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Receipt, X, Loader2, Camera, RefreshCw, Check, Layers, Plus } from 'lucide-react';
@@ -175,6 +175,13 @@ const ReceiptUpload = ({
   // Detect if current scan is partial
   const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
 
+  // Auto-enter multi-page mode when partial receipt is detected
+  useEffect(() => {
+    if (partialDetection?.isPartial && !isMultiPageMode) {
+      setIsMultiPageMode(true);
+    }
+  }, [partialDetection?.isPartial]);
+
   return (
     <div className="space-y-3">
       {/* Multi-page progress indicator */}
@@ -182,11 +189,14 @@ const ReceiptUpload = ({
         <Alert className="bg-accent/10 border-accent">
           <Layers className="h-4 w-4" />
           <AlertDescription>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <span className="font-medium">Multi-page receipt in progress</span>
-              <span className="text-sm text-muted-foreground">{receiptPages.length} page{receiptPages.length > 1 ? 's' : ''} saved</span>
+              <span className="inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground px-2 py-0.5 text-xs font-medium">
+                {receiptPages.length} saved
+              </span>
             </div>
-            <div className="mt-2 space-y-1">
+            <p className="text-xs text-muted-foreground mb-2">Tip: Scan top first, then bottom for totals.</p>
+            <div className="space-y-1">
               {receiptPages.map((page, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-sm">
                   <Check className="h-3 w-3 text-accent" />
@@ -198,17 +208,29 @@ const ReceiptUpload = ({
         </Alert>
       )}
 
-      {/* Partial receipt warning */}
+      {/* Partial receipt warning with action button */}
       {imagePreview && ocrResult && partialDetection?.isPartial && (
         <Alert className="bg-amber-50 border-amber-200">
           <AlertDescription>
-            <div className="space-y-2">
-              <p className="font-medium text-amber-900">Partial Receipt</p>
-              <p className="text-sm text-amber-800">{partialDetection.reason}</p>
-              {ocrResult.lineItems && ocrResult.lineItems.length > 0 && (
-                <p className="text-sm text-amber-700">
-                  Subtotal from scanned items: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)}
-                </p>
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium text-amber-900">Partial Receipt</p>
+                <p className="text-sm text-amber-800 mt-1">{partialDetection.reason}</p>
+                {ocrResult.lineItems && ocrResult.lineItems.length > 0 && (
+                  <p className="text-sm text-amber-700 mt-1">
+                    Subtotal from scanned items: ${calculateLineItemsSubtotal(ocrResult.lineItems).toFixed(2)}
+                  </p>
+                )}
+              </div>
+              {!isProcessing && (
+                <Button
+                  onClick={handleAddAnotherPage}
+                  className="w-full"
+                  size="sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Scan Next Page of Receipt
+                </Button>
               )}
             </div>
           </AlertDescription>
@@ -333,6 +355,33 @@ const ReceiptUpload = ({
           <Check className="mr-2 h-4 w-4" />
           Finalize Receipt ({receiptPages.length + (imagePreview && ocrResult ? 1 : 0)} page{receiptPages.length + (imagePreview && ocrResult ? 1 : 0) > 1 ? 's' : ''})
         </Button>
+      )}
+
+      {/* Mobile-friendly sticky footer for multi-page actions */}
+      {imagePreview && ocrResult && partialDetection?.isPartial && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-lg md:hidden z-50">
+          <div className="flex gap-2 max-w-lg mx-auto">
+            <Button
+              onClick={handleAddAnotherPage}
+              className="flex-1"
+              disabled={isProcessing}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Scan next page
+            </Button>
+            {receiptPages.length > 0 && (
+              <Button
+                onClick={handleFinalizeMultiPage}
+                variant="outline"
+                className="flex-1"
+                disabled={isProcessing}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Finalize ({receiptPages.length + 1})
+              </Button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
