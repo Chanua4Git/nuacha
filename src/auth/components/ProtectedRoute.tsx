@@ -7,8 +7,8 @@ import { Loader2 } from 'lucide-react';
 // Sanitize pathname to defend against open redirects
 function sanitizePath(path: string): string {
   if (!path.startsWith("/")) return "/";
-  // Prevent double slashes, spaces, or dangerous fragments
-  const cleanPath = path.replace(/\/{2,}/g, "/").replace(/[\r\n]/g, "").split("?")[0];
+  // Prevent double slashes, spaces, or dangerous fragments, but preserve query params
+  const cleanPath = path.replace(/\/{2,}/g, "/").replace(/[\r\n]/g, "");
   return cleanPath || "/";
 }
 
