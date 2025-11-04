@@ -32,6 +32,14 @@ const Index = () => {
     setActiveTab(tab);
   }, [searchParams]);
 
+  // If OCR data is present in navigation state, switch to Add Expense tab
+  useEffect(() => {
+    if (locationState?.extractedData && activeTab !== 'add-expense') {
+      setActiveTab('add-expense');
+      setSearchParams({ tab: 'add-expense' });
+    }
+  }, [locationState, activeTab, setSearchParams]);
+
   // Clear location state after reading it once to prevent stale data
   useEffect(() => {
     if (locationState?.preProcessed) {

@@ -22,15 +22,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!user && !isLoading) {
-      // Save a sanitized attempted URL only if not already set
+      // Save a sanitized attempted URL, prefer the most specific (with query) and when state exists
       const current = sanitizePath(location.pathname + location.search);
+      const hasState = !!(location.state && Object.keys(location.state).length > 0);
       const saved = localStorage.getItem('intendedPath');
-      if (!saved && current !== "/login" && current !== "/signup") {
-        localStorage.setItem('intendedPath', current);
+      if (current !== "/login" && current !== "/signup") {
+        if (!saved || hasState || (saved !== current && current.includes('?'))) {
+          localStorage.setItem('intendedPath', current);
+        }
       }
       
       // Preserve location state (OCR data) during authentication redirect
-      if (location.state && Object.keys(location.state).length > 0) {
+      if (hasState) {
         sessionStorage.setItem('pendingUploadState', JSON.stringify(location.state));
       }
     }
