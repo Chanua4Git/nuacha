@@ -134,10 +134,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const intendedPath = safeGetIntendedPath();
             console.log('🔐 Auth: intended path:', intendedPath, 'current path:', location.pathname);
             
+            // Check for pending upload state from sessionStorage
+            const pendingState = sessionStorage.getItem('pendingUploadState');
+            let stateToPass: any = undefined;
+
+            if (pendingState) {
+              try {
+                stateToPass = JSON.parse(pendingState);
+                sessionStorage.removeItem('pendingUploadState');
+                console.log('🔐 Auth: Restored pending upload state:', stateToPass);
+              } catch (e) {
+                sessionStorage.removeItem('pendingUploadState');
+                console.error('Failed to parse pending upload state');
+              }
+            }
+            
             // If user has an intended path, use it regardless of current location
             if (intendedPath !== "/" && localStorage.getItem('intendedPath')) {
               localStorage.removeItem('intendedPath');
-              safeNavigate(intendedPath, { replace: true });
+              navigate(intendedPath, { replace: true, state: stateToPass });
               return;
             }
             

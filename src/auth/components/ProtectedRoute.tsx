@@ -51,22 +51,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Restore any pending upload state after successful authentication
-  const pendingState = sessionStorage.getItem('pendingUploadState');
-  if (pendingState && user) {
-    try {
-      const state = JSON.parse(pendingState);
-      sessionStorage.removeItem('pendingUploadState');
-      const intendedPath = localStorage.getItem('intendedPath');
-      if (intendedPath) {
-        localStorage.removeItem('intendedPath');
-        return <Navigate to={intendedPath} state={state} replace />;
-      }
-    } catch (e) {
-      sessionStorage.removeItem('pendingUploadState');
-    }
-  }
-
   return <>{children}</>;
 };
 

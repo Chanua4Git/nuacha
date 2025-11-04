@@ -120,7 +120,7 @@ const Landing = () => {
       console.log('✅ Landing: OCR processing successful:', ocrResult);
 
       // Navigate to demo with processed data
-      console.log('🧭 Landing: Navigating to /demo with state:', {
+      console.log('🧭 Landing: Navigating to /app?tab=add-expense with state:', {
         extractedData: ocrResult,
         receiptUrl: receiptUrl,
         preProcessed: true
