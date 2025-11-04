@@ -8,23 +8,36 @@ import RemindersList from '@/components/RemindersList';
 import { CategorySyncBanner } from '@/components/CategorySyncBanner';
 import { PlusCircle, ListFilter, Tag, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useExpense } from '@/context/ExpenseContext';
 import { ensureEssentialFamilyCategories } from '@/utils/categorySync';
+import { OCRResult } from '@/types/expense';
+
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedFamily } = useExpense();
   const initialTab = searchParams.get('tab') || 'expenses';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [hasRunAutoSync, setHasRunAutoSync] = useState(false);
+  
+  // Extract location state for pre-filled OCR data
+  const locationState = location.state as { extractedData?: OCRResult; receiptUrl?: string; preProcessed?: boolean } | null;
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'expenses';
     setActiveTab(tab);
   }, [searchParams]);
+
+  // Clear location state after reading it once to prevent stale data
+  useEffect(() => {
+    if (locationState?.preProcessed) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [locationState]);
 
   // Auto-sync essential categories once per session when family is selected
   useEffect(() => {
@@ -100,7 +113,10 @@ const Index = () => {
                 <ExpenseList />
               </TabsContent>
               <TabsContent value="add-expense" className="mt-0">
-                <ExpenseForm />
+                <ExpenseForm 
+                  initialOcrData={locationState?.extractedData}
+                  receiptUrl={locationState?.receiptUrl}
+                />
               </TabsContent>
             </Tabs>
           </div>

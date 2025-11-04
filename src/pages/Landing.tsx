@@ -126,7 +126,7 @@ const Landing = () => {
         preProcessed: true
       });
       
-      navigate('/demo', {
+      navigate('/app?tab=add-expense', {
         state: {
           extractedData: ocrResult,
           receiptUrl: receiptUrl,

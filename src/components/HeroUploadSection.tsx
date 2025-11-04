@@ -21,7 +21,7 @@ const HeroUploadSection = ({
     if (onCameraClick) {
       onCameraClick();
     } else {
-      navigate('/demo');
+      navigate('/app?tab=add-expense');
     }
   };
 
@@ -29,7 +29,7 @@ const HeroUploadSection = ({
     if (onUploadClick) {
       onUploadClick();
     } else {
-      navigate('/demo');
+      navigate('/app?tab=add-expense');
     }
   };
 
