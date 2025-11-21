@@ -29,13 +29,6 @@ const Signup = () => {
   const isAuthDemo = location.search.includes('from=auth-demo');
   const { setVerificationEmail } = useAuthDemo();
 
-  useEffect(() => {
-    if (user && !isAuthDemo) {
-      const intendedPath = localStorage.getItem('intendedPath') || '/';
-      localStorage.removeItem('intendedPath');
-      navigate(intendedPath);
-    }
-  }, [user, navigate, isAuthDemo]);
 
   useEffect(() => {
     setValidations(validatePassword(password, PASSWORD_POLICY));
@@ -61,10 +54,16 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Check if there's OCR data waiting to be restored
+      const hasPendingUpload = sessionStorage.getItem('pendingUploadState');
+      
       // Use our demo service to get the redirect URL if in demo mode
+      // Otherwise, if receipt upload is pending, redirect to add-expense tab
       const redirectTo = isAuthDemo 
         ? AuthDemoService.getVerificationRedirectUrl()
-        : `${window.location.origin}/`;
+        : hasPendingUpload
+          ? `${window.location.origin}/app?tab=add-expense`
+          : `${window.location.origin}/`;
 
       console.log("Signup redirectTo:", redirectTo);
 
