@@ -100,6 +100,33 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [families, selectedFamily]);
 
+  // Auto-create default family for brand new users
+  useEffect(() => {
+    const autoCreateDefaultFamily = async () => {
+      if (user && !familiesLoading && families.length === 0) {
+        const hasTriedAutoCreate = sessionStorage.getItem('hasTriedAutoCreateFamily');
+        
+        if (!hasTriedAutoCreate) {
+          console.log('✨ New user detected - auto-creating default family...');
+          sessionStorage.setItem('hasTriedAutoCreateFamily', 'true');
+          
+          try {
+            const newFamily = await createFamily({
+              name: 'My Household',
+              color: '#5A7684'
+            });
+            
+            console.log('✅ Default family created:', newFamily.name);
+          } catch (error) {
+            console.error('Failed to auto-create default family:', error);
+          }
+        }
+      }
+    };
+    
+    autoCreateDefaultFamily();
+  }, [user, familiesLoading, families.length, createFamily]);
+
   // Persist selected family ID to localStorage
   useEffect(() => {
     if (selectedFamily) {
