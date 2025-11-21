@@ -198,26 +198,27 @@ const Payroll: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="inline-flex h-12 items-center justify-start rounded-xl bg-muted p-1 text-muted-foreground w-full overflow-x-auto scrollbar-none">
-          <TabsTrigger value="about" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1 h-auto p-1 rounded-xl">
+          <TabsTrigger value="about" className="text-xs md:text-sm py-2 px-2 md:px-4">
             About
           </TabsTrigger>
-          <TabsTrigger value="dashboard" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="employees" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="employees" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Employees
           </TabsTrigger>
-          <TabsTrigger value="calculator" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="calculator" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Calculator
           </TabsTrigger>
-          <TabsTrigger value="reports" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
+          <TabsTrigger value="reports" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Reports
           </TabsTrigger>
           {user && (
-            <TabsTrigger value="subscription" className="relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg">
-              <Crown className="h-4 w-4 mr-2" />
-              Subscription
+            <TabsTrigger value="subscription" className="text-xs md:text-sm py-2 px-2 md:px-4">
+              <Crown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Subscription</span>
+              <span className="sm:hidden">Plan</span>
             </TabsTrigger>
           )}
         </TabsList>

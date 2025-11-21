@@ -109,18 +109,25 @@ export default function Budget() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {user ? (
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="add-expense" onClick={() => navigate('/app?tab=add-expense')}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Expense
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 gap-1 h-auto p-1">
+            <TabsTrigger value="add-expense" onClick={() => navigate('/app?tab=add-expense')} className="text-xs md:text-sm py-2 px-2 md:px-3">
+              <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden xs:inline">Add Expense</span>
+              <span className="xs:hidden">Add</span>
             </TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="builder">Budget Builder</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="rules">Rules</TabsTrigger>
-            <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-            <TabsTrigger value="help">How to Use</TabsTrigger>
+            <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2 px-2 md:px-3">Dashboard</TabsTrigger>
+            <TabsTrigger value="builder" className="text-xs md:text-sm py-2 px-2 md:px-3">
+              <span className="hidden sm:inline">Budget Builder</span>
+              <span className="sm:hidden">Builder</span>
+            </TabsTrigger>
+            <TabsTrigger value="income" className="text-xs md:text-sm py-2 px-2 md:px-3">Income</TabsTrigger>
+            <TabsTrigger value="expenses" className="text-xs md:text-sm py-2 px-2 md:px-3">Expenses</TabsTrigger>
+            <TabsTrigger value="rules" className="text-xs md:text-sm py-2 px-2 md:px-3">Rules</TabsTrigger>
+            <TabsTrigger value="scenarios" className="text-xs md:text-sm py-2 px-2 md:px-3">Scenarios</TabsTrigger>
+            <TabsTrigger value="help" className="text-xs md:text-sm py-2 px-2 md:px-3">
+              <span className="hidden sm:inline">How to Use</span>
+              <span className="sm:hidden">Help</span>
+            </TabsTrigger>
           </TabsList>
         ) : (
           <TabsList className="grid w-full grid-cols-2">
