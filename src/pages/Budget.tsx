@@ -21,7 +21,15 @@ export default function Budget() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || (user ? 'dashboard' : 'build-budget');
-  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Persist active tab across app switches
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return sessionStorage.getItem('budget_activeTab') || initialTab;
+    } catch {
+      return initialTab;
+    }
+  });
   
   // Check if we're in view mode for budget template
   const mode = searchParams.get('mode');
@@ -31,12 +39,18 @@ export default function Budget() {
     const tab = searchParams.get('tab');
     if (tab && tab !== activeTab) {
       setActiveTab(tab);
+      try {
+        sessionStorage.setItem('budget_activeTab', tab);
+      } catch {}
     }
   }, [searchParams, activeTab]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });
+    try {
+      sessionStorage.setItem('budget_activeTab', value);
+    } catch {}
   };
 
   return (

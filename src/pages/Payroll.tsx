@@ -45,8 +45,26 @@ const Payroll: React.FC = () => {
   } = useUnifiedPayroll();
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTab] = useState('about');
+  
+  // Persist active tab across app switches
+  const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'reports' | 'subscription'>(() => {
+    try {
+      const savedTab = sessionStorage.getItem('payroll_page_activeTab');
+      return (savedTab as any) || 'about';
+    } catch {
+      return 'about';
+    }
+  });
+  
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+
+  // Save active tab to sessionStorage whenever it changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as any);
+    try {
+      sessionStorage.setItem('payroll_page_activeTab', value);
+    } catch {}
+  };
 
   // Handle PayPal return
   React.useEffect(() => {
@@ -197,7 +215,7 @@ const Payroll: React.FC = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1 h-auto p-1 rounded-xl">
           <TabsTrigger value="about" className="text-xs md:text-sm py-2 px-2 md:px-4">
             About
