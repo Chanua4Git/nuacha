@@ -21,6 +21,7 @@ import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { PayrollPeriodManager } from './PayrollPeriodManager';
 import { PayPalPaymentButton } from './PayPalPaymentButton';
+import { useEffect } from 'react';
 
 interface WeeklyCalculation {
   weekNumber: number;
@@ -69,28 +70,144 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   const [leadCaptureOpen, setLeadCaptureOpen] = useState(false);
   const [leadCaptureAction, setLeadCaptureAction] = useState<'save' | 'load' | 'export' | 'create_period' | 'advanced_features'>('save');
   
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
-  const [periodStart, setPeriodStart] = useState<Date>();
-  const [periodEnd, setPeriodEnd] = useState<Date>();
-  const [payrollPeriod, setPayrollPeriod] = useState<PayrollPeriodData | null>(null);
+  // Persisted state - survives app backgrounding
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('payroll_selectedEmployeeId') || '';
+    } catch { return ''; }
+  });
+  
+  const [periodStart, setPeriodStartRaw] = useState<Date | undefined>(() => {
+    try {
+      const saved = sessionStorage.getItem('payroll_periodStart');
+      return saved ? new Date(saved) : undefined;
+    } catch { return undefined; }
+  });
+  
+  const [periodEnd, setPeriodEndRaw] = useState<Date | undefined>(() => {
+    try {
+      const saved = sessionStorage.getItem('payroll_periodEnd');
+      return saved ? new Date(saved) : undefined;
+    } catch { return undefined; }
+  });
+  
+  const [payrollPeriod, setPayrollPeriodRaw] = useState<PayrollPeriodData | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('payroll_payrollPeriod');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return {
+        ...parsed,
+        startDate: new Date(parsed.startDate),
+        endDate: new Date(parsed.endDate),
+        weeks: parsed.weeks.map((w: any) => ({
+          ...w,
+          weekStart: new Date(w.weekStart),
+          weekEnd: new Date(w.weekEnd),
+          payDay: new Date(w.payDay),
+        }))
+      };
+    } catch { return null; }
+  });
+  
   const [activeWeek, setActiveWeek] = useState<number>(0);
-  const [weeklyInputs, setWeeklyInputs] = useState<Record<number, { 
+  const [weeklyInputs, setWeeklyInputsRaw] = useState<Record<number, { 
     daysWorked: number;
     recordedPay: number;
     otherAllowances: number;
     otherDeductions: number;
-  }>>({});
+  }>>(() => {
+    try {
+      const saved = sessionStorage.getItem('payroll_weeklyInputs');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  
   const [errors, setErrors] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'setup' | 'calculator' | 'summary'>('setup');
+  const [activeTab, setActiveTabRaw] = useState<'setup' | 'calculator' | 'summary'>(() => {
+    try {
+      return (sessionStorage.getItem('payroll_activeTab') as any) || 'setup';
+    } catch { return 'setup'; }
+  });
   
   // Save form state
-  const [saveFormData, setSaveFormData] = useState({
-    notes: '',
-    transactionId: '',
-    enteredDate: format(new Date(), 'yyyy-MM-dd'),
-    paidDate: '',
-    status: 'calculated' as 'draft' | 'calculated' | 'processed' | 'paid'
+  const [saveFormData, setSaveFormDataRaw] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('payroll_saveFormData');
+      return saved ? JSON.parse(saved) : {
+        notes: '',
+        transactionId: '',
+        enteredDate: format(new Date(), 'yyyy-MM-dd'),
+        paidDate: '',
+        status: 'calculated' as 'draft' | 'calculated' | 'processed' | 'paid'
+      };
+    } catch {
+      return {
+        notes: '',
+        transactionId: '',
+        enteredDate: format(new Date(), 'yyyy-MM-dd'),
+        paidDate: '',
+        status: 'calculated' as 'draft' | 'calculated' | 'processed' | 'paid'
+      };
+    }
   });
+
+  // Wrapper functions that save to sessionStorage
+  const setPeriodStart = (date: Date | undefined) => {
+    setPeriodStartRaw(date);
+    try {
+      if (date) sessionStorage.setItem('payroll_periodStart', date.toISOString());
+      else sessionStorage.removeItem('payroll_periodStart');
+    } catch {}
+  };
+
+  const setPeriodEnd = (date: Date | undefined) => {
+    setPeriodEndRaw(date);
+    try {
+      if (date) sessionStorage.setItem('payroll_periodEnd', date.toISOString());
+      else sessionStorage.removeItem('payroll_periodEnd');
+    } catch {}
+  };
+
+  const setPayrollPeriod = (period: PayrollPeriodData | null) => {
+    setPayrollPeriodRaw(period);
+    try {
+      if (period) sessionStorage.setItem('payroll_payrollPeriod', JSON.stringify(period));
+      else sessionStorage.removeItem('payroll_payrollPeriod');
+    } catch {}
+  };
+
+  const setWeeklyInputs = (inputsOrUpdater: Record<number, any> | ((prev: Record<number, any>) => Record<number, any>)) => {
+    setWeeklyInputsRaw(prevInputs => {
+      const newInputs = typeof inputsOrUpdater === 'function' ? inputsOrUpdater(prevInputs) : inputsOrUpdater;
+      try {
+        sessionStorage.setItem('payroll_weeklyInputs', JSON.stringify(newInputs));
+      } catch {}
+      return newInputs;
+    });
+  };
+
+  const setActiveTab = (tab: 'setup' | 'calculator' | 'summary') => {
+    setActiveTabRaw(tab);
+    try {
+      sessionStorage.setItem('payroll_activeTab', tab);
+    } catch {}
+  };
+
+  const setSaveFormData = (data: any) => {
+    setSaveFormDataRaw(data);
+    try {
+      sessionStorage.setItem('payroll_saveFormData', JSON.stringify(data));
+    } catch {}
+  };
+
+  // Auto-save selectedEmployeeId
+  useEffect(() => {
+    try {
+      if (selectedEmployeeId) sessionStorage.setItem('payroll_selectedEmployeeId', selectedEmployeeId);
+      else sessionStorage.removeItem('payroll_selectedEmployeeId');
+    } catch {}
+  }, [selectedEmployeeId]);
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
