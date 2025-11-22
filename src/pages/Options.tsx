@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import CategoryManager from '@/components/accounting/CategoryManager';
 import BudgetManager from '@/components/accounting/BudgetManager';
+import FamiliesManager from '@/components/FamiliesManager';
 import FamilyMembersManager from '@/components/FamilyMembersManager';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import { CategoryCleanupBanner } from '@/components/CategoryCleanupBanner';
@@ -54,12 +55,16 @@ const Options = () => {
         
         <CategoryCleanupBanner />
 
-        <Tabs defaultValue="members">
-          <TabsList className="mb-6">
-            <TabsTrigger value="members">
-              <Users className="h-4 w-4 mr-2" />
-              Family Members
-            </TabsTrigger>
+          <Tabs defaultValue="families">
+            <TabsList className="mb-6">
+              <TabsTrigger value="families">
+                <Users className="h-4 w-4 mr-2" />
+                Families
+              </TabsTrigger>
+              <TabsTrigger value="members">
+                <Users className="h-4 w-4 mr-2" />
+                Family Members
+              </TabsTrigger>
             <TabsTrigger value="categories">
               <Tag className="h-4 w-4 mr-2" />
               Categories
@@ -72,9 +77,13 @@ const Options = () => {
               <Settings className="h-4 w-4 mr-2" />
               Category Management
             </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="members" className="mt-0">
+            </TabsList>
+
+            <TabsContent value="families" className="mt-0">
+              <FamiliesManager />
+            </TabsContent>
+
+            <TabsContent value="members" className="mt-0">
             <FamilyMembersManager />
           </TabsContent>
           
