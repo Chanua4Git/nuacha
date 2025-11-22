@@ -468,11 +468,19 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="setup">Setup Period</TabsTrigger>
-                <TabsTrigger value="calculator" disabled={!payrollPeriod}>Weekly Calculator</TabsTrigger>
-                <TabsTrigger value="summary" disabled={!payrollPeriod}>Summary & Export</TabsTrigger>
-                <TabsTrigger value="manage">Saved Periods</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1 h-auto p-1">
+                <TabsTrigger value="setup" className="text-xs md:text-sm py-2 px-2 md:px-4">
+                  Setup Period
+                </TabsTrigger>
+                <TabsTrigger value="calculator" disabled={!payrollPeriod} className="text-xs md:text-sm py-2 px-2 md:px-4">
+                  Weekly Calculator
+                </TabsTrigger>
+                <TabsTrigger value="summary" disabled={!payrollPeriod} className="text-xs md:text-sm py-2 px-2 md:px-4">
+                  Summary & Export
+                </TabsTrigger>
+                <TabsTrigger value="manage" className="text-xs md:text-sm py-2 px-2 md:px-4">
+                  Saved Periods
+                </TabsTrigger>
               </TabsList>
 
             {/* Setup Tab */}
