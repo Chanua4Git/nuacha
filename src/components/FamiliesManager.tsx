@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useFamilies } from '@/hooks/useFamilies';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Users } from 'lucide-react';
@@ -14,6 +15,13 @@ const FamiliesManager = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingFamily, setEditingFamily] = useState<Family | undefined>();
   const [deletingFamily, setDeletingFamily] = useState<Family | null>(null);
+  const [relatedCounts, setRelatedCounts] = useState<{
+    expenses: number;
+    members: number;
+    categories: number;
+    reminders: number;
+    budgets: number;
+  } | null>(null);
 
   const handleEdit = (family: Family) => {
     setEditingFamily(family);
@@ -25,10 +33,32 @@ const FamiliesManager = () => {
     setIsFormOpen(true);
   };
 
+  const handleDeleteClick = async (family: Family) => {
+    setDeletingFamily(family);
+    
+    // Fetch counts of related data
+    const [expenses, members, categories, reminders, budgets] = await Promise.all([
+      supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('family_id', family.id),
+      supabase.from('family_members').select('id', { count: 'exact', head: true }).eq('family_id', family.id),
+      supabase.from('categories').select('id', { count: 'exact', head: true }).eq('family_id', family.id),
+      supabase.from('reminders').select('id', { count: 'exact', head: true }).eq('family_id', family.id),
+      supabase.from('budgets').select('id', { count: 'exact', head: true }).eq('family_id', family.id),
+    ]);
+
+    setRelatedCounts({
+      expenses: expenses.count || 0,
+      members: members.count || 0,
+      categories: categories.count || 0,
+      reminders: reminders.count || 0,
+      budgets: budgets.count || 0,
+    });
+  };
+
   const handleDelete = async () => {
     if (deletingFamily) {
       await deleteFamily(deletingFamily.id);
       setDeletingFamily(null);
+      setRelatedCounts(null);
     }
   };
 
@@ -114,7 +144,7 @@ const FamiliesManager = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setDeletingFamily(family)}
+                            onClick={() => handleDeleteClick(family)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -135,12 +165,41 @@ const FamiliesManager = () => {
         family={editingFamily}
       />
 
-      <AlertDialog open={!!deletingFamily} onOpenChange={(open) => !open && setDeletingFamily(null)}>
+      <AlertDialog open={!!deletingFamily} onOpenChange={(open) => {
+        if (!open) {
+          setDeletingFamily(null);
+          setRelatedCounts(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the family "{deletingFamily?.name}" and all associated data. This action cannot be undone.
+              <div className="space-y-2">
+                <p>This will permanently delete the family "{deletingFamily?.name}" and all associated data:</p>
+                
+                {relatedCounts && (
+                  <ul className="mt-3 space-y-1 text-sm">
+                    {relatedCounts.expenses > 0 && (
+                      <li>• {relatedCounts.expenses} expense{relatedCounts.expenses !== 1 ? 's' : ''}</li>
+                    )}
+                    {relatedCounts.members > 0 && (
+                      <li>• {relatedCounts.members} family member{relatedCounts.members !== 1 ? 's' : ''}</li>
+                    )}
+                    {relatedCounts.categories > 0 && (
+                      <li>• {relatedCounts.categories} categor{relatedCounts.categories !== 1 ? 'ies' : 'y'}</li>
+                    )}
+                    {relatedCounts.reminders > 0 && (
+                      <li>• {relatedCounts.reminders} reminder{relatedCounts.reminders !== 1 ? 's' : ''}</li>
+                    )}
+                    {relatedCounts.budgets > 0 && (
+                      <li>• {relatedCounts.budgets} budget entr{relatedCounts.budgets !== 1 ? 'ies' : 'y'}</li>
+                    )}
+                  </ul>
+                )}
+                
+                <p className="mt-3 font-medium">This action cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
