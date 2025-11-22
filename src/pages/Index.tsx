@@ -124,6 +124,7 @@ const Index = () => {
                 <ExpenseForm 
                   initialOcrData={locationState?.extractedData}
                   receiptUrl={locationState?.receiptUrl}
+                  onExpenseCreated={() => handleTabChange('expenses')}
                 />
               </TabsContent>
             </Tabs>
