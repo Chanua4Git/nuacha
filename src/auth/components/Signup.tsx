@@ -20,6 +20,7 @@ const PASSWORD_POLICY: PasswordPolicy = {
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ const Signup = () => {
         password,
         options: {
           emailRedirectTo: redirectTo,
+          data: {
+            phone_number: phone
+          }
         }
       });
       
@@ -117,10 +121,12 @@ const Signup = () => {
       <SignupForm
         email={email}
         password={password}
+        phone={phone}
         isLoading={isLoading}
         validations={validations}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
+        onPhoneChange={setPhone}
         onSubmit={handleSignup}
         passwordPolicy={PASSWORD_POLICY}
       />
