@@ -361,10 +361,10 @@ export const useSmartCategorySuggestions = (
 
           const score = (
             factors.merchantScore * 0.30 +
-            factors.lineItemScore * 0.25 +
-            factors.frequencyScore * 0.20 +
-            factors.recencyScore * 0.15 +
-            factors.temporalScore * 0.10
+            factors.lineItemScore * 0.40 +  // 🔥 PRIMARY SIGNAL: Line items now dominate categorization
+            factors.frequencyScore * 0.15 +
+            factors.recencyScore * 0.10 +
+            factors.temporalScore * 0.05
           );
 
           // Only include suggestions with meaningful scores
