@@ -43,8 +43,8 @@ interface ExpenseFormProps {
 }
 
 const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete, onExpenseCreated }: ExpenseFormProps) => {
-  const { selectedFamily, createExpense, isDemo } = useContextAwareExpense();
-  const { families } = useFamilies();
+  const { selectedFamily, setSelectedFamily, createExpense, isDemo } = useContextAwareExpense();
+  const { families, isLoading } = useFamilies();
   
   // Get current user for storage organization
   const [user, setUser] = useState<any>(null);
@@ -584,12 +584,12 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     }
   }, [initialOcrData, receiptUrl]);
   
-  // Check if user needs to create a family before adding expense
+  // Check if user needs to select or create a family before adding expense
   useEffect(() => {
-    if (initialOcrData && !isDemo && families.length === 0 && !showFamilySetupModal) {
+    if (initialOcrData && !isDemo && !selectedFamily && !isLoading && !showFamilySetupModal) {
       setShowFamilySetupModal(true);
     }
-  }, [initialOcrData, isDemo, families.length, showFamilySetupModal]);
+  }, [initialOcrData, isDemo, selectedFamily, isLoading, showFamilySetupModal]);
   
   const handleFamilyCreated = () => {
     setShowFamilySetupModal(false);
@@ -597,6 +597,18 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       description: "You can now save your expense"
     });
   };
+
+  const handleFamilySelected = (familyId: string) => {
+    const selected = families.find(f => f.id === familyId);
+    if (selected) {
+      setSelectedFamily(selected);
+      setShowFamilySetupModal(false);
+      toast.success("Family selected", {
+        description: `Expense will be added to ${selected.name}`
+      });
+    }
+  };
+
   
   // Auto-detect partial receipts and enter multi-page mode
   useEffect(() => {
@@ -617,10 +629,12 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   if (showFamilySetupModal) {
     return (
       <>
-        <FamilySetupModal 
-          open={showFamilySetupModal}
-          onFamilyCreated={handleFamilyCreated}
-        />
+      <FamilySetupModal 
+        open={showFamilySetupModal}
+        families={families}
+        onFamilySelected={handleFamilySelected}
+        onFamilyCreated={handleFamilyCreated} 
+      />
         <Card className="w-full max-w-xl mx-auto">
           <CardHeader>
             <CardTitle className="text-xl font-semibold">Add New Expense</CardTitle>
