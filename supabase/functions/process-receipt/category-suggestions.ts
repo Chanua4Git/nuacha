@@ -449,8 +449,8 @@ function suggestCategoryForItem(
     'pelau': ['dining-out', 'dining'],
     'curry': ['dining-out', 'dining'],
     
-    // Coffee & Café items - SHOULD GO TO DINING when from dining vendor
-    'coffee': isDiningVendor ? ['dining-out', 'dining'] : ['beverages', 'groceries'],
+    // Coffee & Café items - ALWAYS DINING (line items drive categorization)
+    'coffee': ['dining-out', 'dining'],  // 🔥 No conditional logic - coffee is dining regardless of vendor
     'latte': ['dining-out', 'dining'],
     'cappuccino': ['dining-out', 'dining'],
     'espresso': ['dining-out', 'dining'],
