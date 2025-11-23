@@ -580,68 +580,90 @@ function suggestCategoryForItem(
     // Extract the first keyword from category name array (e.g., 'dining-out' from ['dining-out', 'dining'])
     const primaryKeyword = bestCategoryName.toLowerCase();
     
-    // PRIORITY 1: Try exact name match first
+    console.log(`🔍 Matching line item keyword "${primaryKeyword}" for "${cleanItemDesc}"`);
+    console.log(`Available categories: ${categories.map(c => c.name).slice(0, 10).join(', ')}...`);
+    
+    // PRIORITY 1: Try exact match
     let matchedCategory = categories.find(cat => {
       const catName = cat.name.toLowerCase();
-      // Exact match
       if (catName === primaryKeyword) return true;
-      
-      // Handle "dining out" variations
-      if (primaryKeyword.includes('dining')) {
-        return catName === 'dining out' || 
-               catName === 'dining' ||
-               catName.includes('dining out') ||
-               catName.includes('dining / takeout') ||
-               catName.includes('restaurants') ||
-               catName.includes('takeout');
-      }
-      
       return false;
     });
     
-    // PRIORITY 2: Try partial name match
+    // PRIORITY 2: Try normalized match (remove all non-alphanumeric)
+    if (!matchedCategory) {
+      const normalizedKeyword = primaryKeyword.replace(/[^a-z0-9]/g, '');
+      matchedCategory = categories.find(cat => {
+        const normalizedCatName = cat.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalizedCatName === normalizedKeyword;
+      });
+      if (matchedCategory) {
+        console.log(`✅ Normalized match: "${primaryKeyword}" → "${matchedCategory.name}"`);
+      }
+    }
+    
+    // PRIORITY 3: Try starts-with match (handles suffixes like " / takeout")
     if (!matchedCategory) {
       matchedCategory = categories.find(cat => {
         const catName = cat.name.toLowerCase();
-        const searchName = primaryKeyword;
+        const normalizedCatName = catName.replace(/[^a-z0-9]/g, '');
+        const normalizedKeyword = primaryKeyword.replace(/[^a-z0-9]/g, '');
         
-        // Partial match - category name contains search or vice versa
-        if (catName.includes(searchName) || searchName.includes(catName)) return true;
-        
-        // Normalized match (remove hyphens, spaces)
-        const normalizedCatName = catName.replace(/[^a-z]/g, '');
-        const normalizedSearch = searchName.replace(/[^a-z]/g, '');
-        if (normalizedCatName === normalizedSearch) return true;
+        // Check if category name starts with the keyword
+        if (catName.startsWith(primaryKeyword)) return true;
+        if (normalizedCatName.startsWith(normalizedKeyword)) return true;
         
         return false;
       });
+      if (matchedCategory) {
+        console.log(`✅ Starts-with match: "${primaryKeyword}" → "${matchedCategory.name}"`);
+      }
     }
     
-    // PRIORITY 3: Try parent category search for subcategories
-    if (!matchedCategory) {
+    // PRIORITY 4: Dining-specific aggressive matching
+    if (!matchedCategory && (primaryKeyword.includes('dining') || primaryKeyword.includes('restaurant') || primaryKeyword.includes('cafe'))) {
       matchedCategory = categories.find(cat => {
         const catName = cat.name.toLowerCase();
-        // Look for broader category matches
-        return (
-          (primaryKeyword.includes('groceries') && catName.includes('groceries')) ||
-          (primaryKeyword.includes('produce') && catName.includes('produce')) ||
-          (primaryKeyword.includes('dairy') && catName.includes('dairy')) ||
-          (primaryKeyword.includes('meat') && catName.includes('meat')) ||
-          (primaryKeyword.includes('frozen') && catName.includes('frozen')) ||
-          (primaryKeyword.includes('snack') && catName.includes('snack')) ||
-          (primaryKeyword.includes('dining') && catName.includes('dining'))
+        return catName.includes('dine') ||
+               catName.includes('dining') ||
+               catName.includes('restaurant') ||
+               catName.includes('takeout') ||
+               catName.includes('take out') ||
+               catName.includes('eating out') ||
+               catName.includes('food service');
+      });
+      if (matchedCategory) {
+        console.log(`✅ Dining fallback match: "${primaryKeyword}" → "${matchedCategory.name}"`);
+      }
+    }
+    
+    // PRIORITY 5: Word-based partial match
+    if (!matchedCategory) {
+      matchedCategory = categories.find(cat => {
+        const catWords = cat.name.toLowerCase().split(/[\s-_/&]+/);
+        const searchWords = primaryKeyword.split(/[\s-_/&]+/);
+        
+        // Check if all search words appear in category words
+        return searchWords.every(searchWord => 
+          catWords.some(catWord => 
+            catWord.includes(searchWord) || searchWord.includes(catWord)
+          )
         );
       });
+      if (matchedCategory) {
+        console.log(`✅ Word-based match: "${primaryKeyword}" → "${matchedCategory.name}"`);
+      }
     }
     
     if (matchedCategory) {
-      console.log(`✅ Matched "${cleanItemDesc}" → ${matchedCategory.name} (ID: ${matchedCategory.id}, confidence: ${bestConfidence})`);
+      console.log(`✅ FINAL MATCH: "${cleanItemDesc}" → "${matchedCategory.name}" (ID: ${matchedCategory.id}, confidence: ${bestConfidence})`);
       return {
         categoryId: matchedCategory.id,  // 🔥 Return actual category ID from user's database
         confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
       };
     } else {
-      console.log(`⚠️ No category match found for keyword "${primaryKeyword}"`);
+      console.log(`❌ NO MATCH: No category found for keyword "${primaryKeyword}" from item "${cleanItemDesc}"`);
+      console.log(`Tried variations: "${primaryKeyword}", "${primaryKeyword.replace(/[^a-z0-9]/g, '')}"`);
     }
   }
 
