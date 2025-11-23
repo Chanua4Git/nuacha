@@ -575,44 +575,73 @@ function suggestCategoryForItem(
 
   console.log(`Best match: keyword="${matchedKeyword}", category="${bestCategoryName}", confidence=${bestConfidence}`);
 
-  // Enhanced category name matching
+  // 🔥 ENHANCED: Return actual category IDs from user's categories, not pattern names
   if (bestCategoryName) {
-    let matchedCategory = null;
+    // Extract the first keyword from category name array (e.g., 'dining-out' from ['dining-out', 'dining'])
+    const primaryKeyword = bestCategoryName.toLowerCase();
     
-    // Try exact ID match first
-    matchedCategory = categories.find(cat => cat.id === bestCategoryName);
+    // PRIORITY 1: Try exact name match first
+    let matchedCategory = categories.find(cat => {
+      const catName = cat.name.toLowerCase();
+      // Exact match
+      if (catName === primaryKeyword) return true;
+      
+      // Handle "dining out" variations
+      if (primaryKeyword.includes('dining')) {
+        return catName === 'dining out' || 
+               catName === 'dining' ||
+               catName.includes('dining out') ||
+               catName.includes('dining / takeout') ||
+               catName.includes('restaurants') ||
+               catName.includes('takeout');
+      }
+      
+      return false;
+    });
     
-    // Try name match if no ID match
+    // PRIORITY 2: Try partial name match
     if (!matchedCategory) {
       matchedCategory = categories.find(cat => {
         const catName = cat.name.toLowerCase();
-        const searchName = bestCategoryName!.toLowerCase();
-        return catName.includes(searchName) || searchName.includes(catName);
+        const searchName = primaryKeyword;
+        
+        // Partial match - category name contains search or vice versa
+        if (catName.includes(searchName) || searchName.includes(catName)) return true;
+        
+        // Normalized match (remove hyphens, spaces)
+        const normalizedCatName = catName.replace(/[^a-z]/g, '');
+        const normalizedSearch = searchName.replace(/[^a-z]/g, '');
+        if (normalizedCatName === normalizedSearch) return true;
+        
+        return false;
       });
     }
     
-    // Try parent category search for subcategories
+    // PRIORITY 3: Try parent category search for subcategories
     if (!matchedCategory) {
       matchedCategory = categories.find(cat => {
         const catName = cat.name.toLowerCase();
         // Look for broader category matches
         return (
-          (bestCategoryName!.includes('groceries') && catName.includes('groceries')) ||
-          (bestCategoryName!.includes('produce') && catName.includes('produce')) ||
-          (bestCategoryName!.includes('dairy') && catName.includes('dairy')) ||
-          (bestCategoryName!.includes('meat') && catName.includes('meat')) ||
-          (bestCategoryName!.includes('frozen') && catName.includes('frozen')) ||
-          (bestCategoryName!.includes('snack') && catName.includes('snack'))
+          (primaryKeyword.includes('groceries') && catName.includes('groceries')) ||
+          (primaryKeyword.includes('produce') && catName.includes('produce')) ||
+          (primaryKeyword.includes('dairy') && catName.includes('dairy')) ||
+          (primaryKeyword.includes('meat') && catName.includes('meat')) ||
+          (primaryKeyword.includes('frozen') && catName.includes('frozen')) ||
+          (primaryKeyword.includes('snack') && catName.includes('snack')) ||
+          (primaryKeyword.includes('dining') && catName.includes('dining'))
         );
       });
     }
     
     if (matchedCategory) {
-      console.log(`Found category: ${matchedCategory.name} (${matchedCategory.id})`);
+      console.log(`✅ Matched "${cleanItemDesc}" → ${matchedCategory.name} (ID: ${matchedCategory.id}, confidence: ${bestConfidence})`);
       return {
-        categoryId: matchedCategory.id,
+        categoryId: matchedCategory.id,  // 🔥 Return actual category ID from user's database
         confidence: Math.min(bestConfidence + 0.4, 0.85) // Higher confidence cap for enhanced matching
       };
+    } else {
+      console.log(`⚠️ No category match found for keyword "${primaryKeyword}"`);
     }
   }
 

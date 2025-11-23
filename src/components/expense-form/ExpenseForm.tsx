@@ -74,6 +74,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
   const [showDetailedReceiptView, setShowDetailedReceiptView] = useState(false);
+  const [autoSelectCategory, setAutoSelectCategory] = useState(false);  // 🆕 Flag for auto-selection
 
   // Duplicate detection states
   const { checkForReceiptDuplicates, isChecking } = useReceiptDuplicateDetection(selectedFamily?.id);
@@ -236,7 +237,12 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       setShowDetailedReceiptView(true);
     }
 
-    // Don't set category automatically as it needs user judgment
+    // 🔥 NEW: Auto-suggest main category if we have high-confidence smart suggestions
+    // Set flag to trigger auto-selection after CategorySelector renders with suggestions
+    if (data.place && data.lineItems && data.lineItems.length > 0) {
+      console.log('🎯 Enabling auto-category selection for scanned receipt');
+      setAutoSelectCategory(true);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -842,6 +848,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
               description: item.description, 
               confidence: 0.8 // Default confidence for type compatibility
             } as any)) : undefined}
+            autoSelectTopSuggestion={autoSelectCategory}  // 🔥 Pass auto-select flag
           />
           
           <RecurringDateSelector
