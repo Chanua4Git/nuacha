@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart } from "lucide-react";
+import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
@@ -401,6 +401,28 @@ const Landing = () => {
           onCompleted={() => markCompleted('time-based')}
           onDismissed={() => markDismissed('time-based')}
         />
+
+        {/* Processing Overlay - Full screen when uploading/processing receipt */}
+        {isProcessing && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-background rounded-2xl p-8 shadow-2xl max-w-md mx-4 flex flex-col items-center gap-6">
+              <div className="relative">
+                <Loader2 
+                  className="h-16 w-16 animate-spin" 
+                  style={{ color: '#5A7684' }}
+                />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-medium text-foreground">
+                  Processing your receipt...
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  We're extracting the details for you. This might take a moment.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>;
 };
