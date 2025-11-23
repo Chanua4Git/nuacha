@@ -339,9 +339,16 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     setIsSubmitting(true);
 
     try {
-      let receiptUrl: string | undefined;
-      if (receiptImage && user) {
-        // Use organized storage for better management
+      let receiptUrlToUse: string | undefined;
+
+      // Priority 1: Use pre-authenticated receipt URL if available (from landing page scan)
+      if (receiptUrl) {
+        console.log('📎 Using pre-authenticated receipt URL:', receiptUrl);
+        receiptUrlToUse = receiptUrl;
+      } 
+      // Priority 2: Upload new receipt image if user added one directly in the form
+      else if (receiptImage && user) {
+        console.log('📤 Uploading new receipt image to storage');
         const storageMetadata = {
           familyId: selectedFamily?.id || '',
           categoryName: category || 'uncategorized',
@@ -350,11 +357,12 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           date: datesToProcess[0]
         };
         
-        receiptUrl = await uploadReceiptToOrganizedStorage(
+        receiptUrlToUse = await uploadReceiptToOrganizedStorage(
           receiptImage, 
           user.id, 
           storageMetadata
         );
+        console.log('✅ Receipt uploaded:', receiptUrlToUse);
       }
 
       const createdExpenses = [];
@@ -435,8 +443,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           needsReplacement,
           replacementFrequency: replacementFrequency ? parseInt(replacementFrequency) : undefined,
           nextReplacementDate,
-          receiptUrl,
-          receiptImageUrl: receiptUrl || undefined, // Store direct image URL for easy access
+          receiptUrl: receiptUrlToUse,
+          receiptImageUrl: receiptUrlToUse || undefined, // Store direct image URL for easy access
           expenseType,
           budgetCategoryId, // Now properly mapped to budget categories
           // Extra fields supported by backend; types may not include them, so they are passed-through
@@ -491,7 +499,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
       // Call the callback after successful expense creation
       if (onExpenseCreated) {
-        onExpenseCreated(initialOcrData, receiptUrl);
+        onExpenseCreated(initialOcrData, receiptUrlToUse);
       }
 
     } catch (error) {
