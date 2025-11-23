@@ -23,7 +23,7 @@ import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
-import { Camera, Image, Images, Layers, Check, AlertCircle } from 'lucide-react';
+import { Camera, Image, Images, Layers, Check, AlertCircle, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
 import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
@@ -31,6 +31,8 @@ import { detectPartialReceipt, isReceiptComplete, mergeReceiptPages, calculateLi
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import FamilySetupModal from './FamilySetupModal';
+import { useFamilies } from '@/hooks/useFamilies';
 
 interface ExpenseFormProps {
   initialOcrData?: OCRResult;
@@ -42,6 +44,7 @@ interface ExpenseFormProps {
 
 const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onScanComplete, onExpenseCreated }: ExpenseFormProps) => {
   const { selectedFamily, createExpense, isDemo } = useContextAwareExpense();
+  const { families } = useFamilies();
   
   // Get current user for storage organization
   const [user, setUser] = useState<any>(null);
@@ -54,6 +57,10 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     };
     getUser();
   }, []);
+  
+  // Family setup modal state
+  const [showFamilySetupModal, setShowFamilySetupModal] = useState(false);
+  
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -569,6 +576,20 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     }
   }, [initialOcrData, receiptUrl]);
   
+  // Check if user needs to create a family before adding expense
+  useEffect(() => {
+    if (initialOcrData && !isDemo && families.length === 0 && !showFamilySetupModal) {
+      setShowFamilySetupModal(true);
+    }
+  }, [initialOcrData, isDemo, families.length, showFamilySetupModal]);
+  
+  const handleFamilyCreated = () => {
+    setShowFamilySetupModal(false);
+    toast.success("Family created successfully", {
+      description: "You can now save your expense"
+    });
+  };
+  
   // Auto-detect partial receipts and enter multi-page mode
   useEffect(() => {
     if (ocrResult && !isMultiPageMode) {
@@ -583,6 +604,31 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
   const isComplete = ocrResult ? isReceiptComplete(ocrResult) : false;
   const totalPages = receiptPages.length + (imagePreview && ocrResult ? 1 : 0);
+
+  // Show family setup modal if user has scanned receipt but no families
+  if (showFamilySetupModal) {
+    return (
+      <>
+        <FamilySetupModal 
+          open={showFamilySetupModal}
+          onFamilyCreated={handleFamilyCreated}
+        />
+        <Card className="w-full max-w-xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold">Add New Expense</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Your receipt has been scanned successfully. Please create a family to continue.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <Card className="w-full max-w-xl mx-auto">
