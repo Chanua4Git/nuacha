@@ -103,23 +103,38 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   // Auto-create default family for brand new users
   useEffect(() => {
     const autoCreateDefaultFamily = async () => {
-      if (user && !familiesLoading && families.length === 0) {
-        const hasTriedAutoCreate = sessionStorage.getItem('hasTriedAutoCreateFamily');
+      if (!user || familiesLoading || families.length > 0) return;
+      
+      // Check if user account was created within the last hour (truly new user)
+      const userCreatedAt = new Date(user.created_at);
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const isNewUser = userCreatedAt > oneHourAgo;
+      
+      if (!isNewUser) {
+        console.log('⏭️ Skipping auto-create for existing user (account older than 1 hour)');
+        return;
+      }
+      
+      const hasTriedAutoCreate = sessionStorage.getItem('hasTriedAutoCreateFamily');
+      if (hasTriedAutoCreate) return;
+      
+      console.log('✨ New user detected - auto-creating default family...');
+      sessionStorage.setItem('hasTriedAutoCreateFamily', 'true');
+      
+      try {
+        const newFamily = await createFamily({
+          name: 'My Household',
+          color: '#5A7684'
+        });
         
-        if (!hasTriedAutoCreate) {
-          console.log('✨ New user detected - auto-creating default family...');
-          sessionStorage.setItem('hasTriedAutoCreateFamily', 'true');
-          
-          try {
-            const newFamily = await createFamily({
-              name: 'My Household',
-              color: '#5A7684'
-            });
-            
-            console.log('✅ Default family created:', newFamily.name);
-          } catch (error) {
-            console.error('Failed to auto-create default family:', error);
-          }
+        console.log('✅ Default family created:', newFamily.name);
+      } catch (error: any) {
+        // Gracefully handle 409 conflict (family already exists)
+        if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.status === 409) {
+          console.log('ℹ️ Default family already exists, skipping auto-create');
+        } else {
+          console.error('Failed to auto-create default family:', error);
+          sessionStorage.removeItem('hasTriedAutoCreateFamily');
         }
       }
     };
