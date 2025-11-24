@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReleaseNotesList } from '@/components/updates/ReleaseNotesList';
@@ -7,11 +7,27 @@ import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
 import { Button } from '@/components/ui/button';
 import { Sparkles, GraduationCap, Eye, MessageSquare, Database } from 'lucide-react';
 import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Updates() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'whats-new';
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSeedData = async () => {
     setIsSeeding(true);
@@ -31,19 +47,21 @@ export default function Updates() {
             Stay updated, learn how to use Nuacha, and share your feedback
           </p>
           
-          {/* Dev seed button */}
-          <div className="mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSeedData}
-              disabled={isSeeding}
-              className="gap-2"
-            >
-              <Database className="w-4 h-4" />
-              {isSeeding ? 'Seeding...' : 'Seed Release Notes'}
-            </Button>
-          </div>
+          {/* Dev seed button - only shown when authenticated */}
+          {isAuthenticated && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSeedData}
+                disabled={isSeeding}
+                className="gap-2"
+              >
+                <Database className="w-4 h-4" />
+                {isSeeding ? 'Seeding...' : 'Seed Release Notes'}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
