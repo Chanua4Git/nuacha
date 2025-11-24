@@ -1332,6 +1332,51 @@ export type Database = {
           },
         ]
       }
+      release_notes: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          display_order: number | null
+          feature_area: string | null
+          id: string
+          is_published: boolean | null
+          media_url: string | null
+          released_at: string
+          title: string
+          tutorial_steps: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          feature_area?: string | null
+          id?: string
+          is_published?: boolean | null
+          media_url?: string | null
+          released_at?: string
+          title: string
+          tutorial_steps?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          feature_area?: string | null
+          id?: string
+          is_published?: boolean | null
+          media_url?: string | null
+          released_at?: string
+          title?: string
+          tutorial_steps?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           created_at: string | null
@@ -1523,6 +1568,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_feedback: {
+        Row: {
+          admin_response: string | null
+          category: string | null
+          contact_info: Json | null
+          created_at: string
+          emoji_rating: string | null
+          feedback_type: string
+          id: string
+          keywords: string[] | null
+          message: string
+          metadata: Json | null
+          priority: string
+          rating: number | null
+          responded_at: string | null
+          sentiment_label: string | null
+          sentiment_score: number | null
+          status: string
+          subject: string
+          updated_at: string
+          urgency_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          emoji_rating?: string | null
+          feedback_type: string
+          id?: string
+          keywords?: string[] | null
+          message: string
+          metadata?: Json | null
+          priority?: string
+          rating?: number | null
+          responded_at?: string | null
+          sentiment_label?: string | null
+          sentiment_score?: number | null
+          status?: string
+          subject: string
+          updated_at?: string
+          urgency_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          emoji_rating?: string | null
+          feedback_type?: string
+          id?: string
+          keywords?: string[] | null
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          rating?: number | null
+          responded_at?: string | null
+          sentiment_label?: string | null
+          sentiment_score?: number | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          urgency_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_subscriptions: {
         Row: {
