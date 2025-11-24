@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { Session, User } from '@supabase/supabase-js';
 import { supabaseClient } from '../utils/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   setAuthDemoActive,
   clearAuthDemo,
@@ -117,6 +118,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (event === 'SIGNED_IN') {
           console.log('🔐 Auth: SIGNED_IN event, current path:', location.pathname);
+          
+          // Check if this is a new user (created within last 5 minutes)
+          if (currentSession?.user?.created_at) {
+            const userCreatedAt = new Date(currentSession.user.created_at);
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const isNewUser = userCreatedAt > fiveMinutesAgo;
+            
+            if (!isNewUser) {
+              toast.success("Welcome back! We've signed you in with your existing account.");
+              console.log('🔐 Auth: Existing user signed in');
+            }
+          }
+          
           const verificationComplete = localStorage.getItem("verificationComplete") === "true";
           
           if (verificationComplete) {
