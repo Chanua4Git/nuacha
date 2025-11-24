@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReleaseNotesList } from '@/components/updates/ReleaseNotesList';
 import { UnifiedFeedbackForm } from '@/components/updates/UnifiedFeedbackForm';
 import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
+import { LearningCenter } from '@/components/updates/LearningCenter';
 import { Button } from '@/components/ui/button';
 import { Sparkles, GraduationCap, Eye, MessageSquare, Database } from 'lucide-react';
 import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
@@ -98,13 +99,7 @@ export default function Updates() {
           </TabsContent>
 
           <TabsContent value="learning" className="space-y-6">
-            <div className="text-center py-12">
-              <GraduationCap className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-2xl font-semibold mb-2">Learning Center</h3>
-              <p className="text-muted-foreground">
-                Interactive tutorials and guides coming soon!
-              </p>
-            </div>
+            <LearningCenter />
           </TabsContent>
 
           <TabsContent value="features" className="space-y-6">
