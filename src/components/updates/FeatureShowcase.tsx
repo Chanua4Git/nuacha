@@ -42,13 +42,9 @@ export function FeatureShowcase() {
           }
         });
 
-      // Feature type filtering
+      // Feature type filtering using featureTypes array
       const matchesFeatureType = featureTypeFilter === 'all' ||
-        (featureTypeFilter === 'receipts' && (feature.id.includes('receipt') || feature.id.includes('scanning'))) ||
-        (featureTypeFilter === 'budgeting' && feature.id.includes('budget')) ||
-        (featureTypeFilter === 'family' && (feature.id.includes('family') || feature.id.includes('child'))) ||
-        (featureTypeFilter === 'payroll' && feature.id.includes('payroll')) ||
-        (featureTypeFilter === 'reports' && feature.id.includes('report'));
+        feature.featureTypes?.includes(featureTypeFilter);
 
       return matchesUserType && matchesFeatureType;
     });
