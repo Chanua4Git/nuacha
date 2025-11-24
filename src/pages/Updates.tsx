@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReleaseNotesList } from '@/components/updates/ReleaseNotesList';
 import { UnifiedFeedbackForm } from '@/components/updates/UnifiedFeedbackForm';
+import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
 import { Sparkles, GraduationCap, Eye, MessageSquare } from 'lucide-react';
 
 export default function Updates() {
@@ -64,13 +65,7 @@ export default function Updates() {
           </TabsContent>
 
           <TabsContent value="features" className="space-y-6">
-            <div className="text-center py-12">
-              <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-2xl font-semibold mb-2">Feature Showcase</h3>
-              <p className="text-muted-foreground">
-                Visual demonstrations of Nuacha's capabilities coming soon!
-              </p>
-            </div>
+            <FeatureShowcase />
           </TabsContent>
 
           <TabsContent value="feedback" className="space-y-6">
