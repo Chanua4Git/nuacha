@@ -240,6 +240,12 @@ const Navbar = () => {
             >
               <Link to="/authentication-demo">Auth Demo</Link>
             </Button>
+            <Button 
+              variant={isActive('/updates') ? "secondary" : "ghost"}
+              asChild
+            >
+              <Link to="/updates">Updates</Link>
+            </Button>
             <AuthButton />
           </nav>
         )}

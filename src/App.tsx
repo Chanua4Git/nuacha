@@ -27,6 +27,7 @@ import Budget from "./pages/Budget";
 import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
+import Updates from "./pages/Updates";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ScrollToTop from "@/components/navigation/ScrollToTop";
 
@@ -128,6 +129,7 @@ const App = () => {
                       </ProtectedRoute>
                     } />
                     <Route path="/payroll" element={<Payroll />} />
+                    <Route path="/updates" element={<Updates />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
