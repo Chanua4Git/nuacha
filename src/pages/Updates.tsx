@@ -4,11 +4,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReleaseNotesList } from '@/components/updates/ReleaseNotesList';
 import { UnifiedFeedbackForm } from '@/components/updates/UnifiedFeedbackForm';
 import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
-import { Sparkles, GraduationCap, Eye, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sparkles, GraduationCap, Eye, MessageSquare, Database } from 'lucide-react';
+import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
 
 export default function Updates() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'whats-new';
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    await seedReleaseNotes();
+    setIsSeeding(false);
+    // Refresh the page to show new data
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,6 +30,20 @@ export default function Updates() {
           <p className="text-lg text-muted-foreground">
             Stay updated, learn how to use Nuacha, and share your feedback
           </p>
+          
+          {/* Dev seed button */}
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedData}
+              disabled={isSeeding}
+              className="gap-2"
+            >
+              <Database className="w-4 h-4" />
+              {isSeeding ? 'Seeding...' : 'Seed Release Notes'}
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
