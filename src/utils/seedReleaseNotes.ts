@@ -4,6 +4,14 @@ import { toast } from 'sonner';
 
 export async function seedReleaseNotes() {
   try {
+    // Check if user is authenticated first
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast.error('Please log in to seed release notes');
+      return { success: false, message: 'Authentication required', count: 0 };
+    }
+
     console.log('Starting release notes seeding...');
     
     // Check if data already exists
