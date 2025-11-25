@@ -173,6 +173,16 @@ const Navbar = () => {
                     >
                       Authentication Demo
                     </Button>
+                    <Button
+                      variant={isActive('/updates') ? "secondary" : "ghost"}
+                      className="justify-start h-12 text-base w-full"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/updates');
+                      }}
+                    >
+                      Updates
+                    </Button>
                     {authDemoActive && (
                       <Button
                         variant="ghost"
