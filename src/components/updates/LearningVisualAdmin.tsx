@@ -132,9 +132,13 @@ export function LearningVisualAdmin() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Check if it's a GIF
+    const isGif = file.type === 'image/gif';
+    const isImage = file.type.startsWith('image/') && !isGif;
+
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Invalid file type. Please upload an image file (PNG, JPG, WebP)');
+    if (!isImage && !isGif) {
+      toast.error('Invalid file type. Please upload an image file (PNG, JPG, WebP, GIF)');
       return;
     }
 
@@ -144,7 +148,26 @@ export function LearningVisualAdmin() {
       return;
     }
 
-    // Open annotation editor instead of directly uploading
+    // For GIFs, upload directly without annotation
+    if (isGif) {
+      const key = `${moduleId}-${stepId}`;
+      setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
+      setVisualTypes(prev => new Map(prev).set(key, 'gif'));
+      
+      try {
+        await uploadLearningVisual(file, moduleId, stepId, 'gif');
+        setVisualStatus(prev => new Map(prev).set(key, 'exists'));
+        toast.success('GIF uploaded successfully!');
+      } catch (error) {
+        setVisualStatus(prev => new Map(prev).set(key, 'missing'));
+        toast.error('Failed to upload GIF');
+      }
+      
+      event.target.value = '';
+      return;
+    }
+
+    // For images, open annotation editor
     setAnnotatingStep({ file, moduleId, stepId, stepTitle });
 
     // Reset input
@@ -433,12 +456,12 @@ export function LearningVisualAdmin() {
                                 {status === 'exists' ? type : status}
                               </span>
                             </Badge>
-                            <input
+                             <input
                               ref={(el) => {
                                 if (el) fileInputRefs.current.set(key, el);
                               }}
                               type="file"
-                              accept="image/*"
+                              accept="image/*,.gif"
                               className="hidden"
                               onChange={(e) => handleFileUpload(e, module.id, step.id, step.title)}
                             />
