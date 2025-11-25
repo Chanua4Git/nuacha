@@ -1,5 +1,8 @@
 project_id = "fjrxqeyexlusjwzzecal"
 
+[functions.generate-learning-visual]
+verify_jwt = true
+
 [functions.process-receipt]
 verify_jwt = true
 
