@@ -141,22 +141,24 @@ export function LearningStepCard({
               <div className="space-y-4 mt-3 pt-3 border-t">
                 {/* Visual Content */}
                 {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
-                <img 
-                  src={visualUrl}
-                  alt={step.visual?.alt || step.title}
-                  className={cn(
-                    "w-full rounded-lg object-cover max-h-48 border border-border",
-                    !hasVisual && "hidden"
-                  )}
-                  onLoad={() => { 
-                    setHasVisual(true); 
-                    setImageLoading(false); 
-                  }}
-                  onError={() => { 
-                    setHasVisual(false); 
-                    setImageLoading(false); 
-                  }}
-                />
+                <div className={cn(
+                  "w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
+                  !hasVisual && "hidden"
+                )}>
+                  <img 
+                    src={visualUrl}
+                    alt={step.visual?.alt || step.title}
+                    className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
+                    onLoad={() => { 
+                      setHasVisual(true); 
+                      setImageLoading(false); 
+                    }}
+                    onError={() => { 
+                      setHasVisual(false); 
+                      setImageLoading(false); 
+                    }}
+                  />
+                </div>
 
                 {/* Main Instructions */}
                 <div className="prose prose-sm max-w-none text-muted-foreground">
