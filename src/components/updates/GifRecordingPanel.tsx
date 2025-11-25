@@ -76,6 +76,7 @@ export function GifRecordingPanel({
   };
 
   const captureFrame = async () => {
+    console.log('captureFrame called, canvasRef:', !!canvasRef.current);
     if (!iframeRef.current?.contentWindow?.document.body || !canvasRef.current) {
       return;
     }
@@ -96,6 +97,7 @@ export function GifRecordingPanel({
         canvasRef.current.height = canvas.height;
         ctx.drawImage(canvas, 0, 0);
         
+        console.log('Frame drawn to canvas, calling addFrame');
         // Add the captured frame to GIF encoder
         addFrame(canvasRef.current);
       }
@@ -121,11 +123,23 @@ export function GifRecordingPanel({
   const handleStartRecording = async () => {
     if (!canvasRef.current) return;
 
-    await captureFrame(); // Capture initial frame
+    // First, capture a frame to get the canvas dimensions
+    await captureFrame();
+    
+    // Now initialize the GIF encoder with correct dimensions
+    await startRecording(canvasRef.current);
+    
+    // Set recording refs
     isRecordingRef.current = true;
     isPausedRef.current = false;
-    lastCaptureTime.current = Date.now();
-    await startRecording(canvasRef.current);
+    
+    // Set lastCaptureTime to 0 so first loop iteration captures immediately
+    lastCaptureTime.current = 0;
+    
+    // Capture the first frame AFTER startRecording (so framesRef isn't cleared)
+    await captureFrame();
+    
+    // Start the capture loop
     startCaptureLoop();
   };
 
