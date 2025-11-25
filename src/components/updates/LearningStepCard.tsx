@@ -31,10 +31,26 @@ export function LearningStepCard({
   const [visualUrl, setVisualUrl] = useState<string>('');
   const navigate = useNavigate();
 
-  // Check for visuals on mount - prioritize screenshot over AI
+  // Check for visuals on mount - prioritize GIF → screenshot → AI
   useState(() => {
     const checkAndSetVisual = async () => {
-      // Check for screenshot first
+      // Check for GIF first (highest priority)
+      const gifUrl = getLearningVisualUrl(moduleId, step.id, 'gif');
+      const gifImg = new Image();
+      gifImg.src = gifUrl;
+      
+      const gifExists = await new Promise((resolve) => {
+        gifImg.onload = () => resolve(true);
+        gifImg.onerror = () => resolve(false);
+      });
+      
+      if (gifExists) {
+        setVisualUrl(gifUrl);
+        setHasVisual(true);
+        return;
+      }
+      
+      // Check for screenshot second
       const screenshotUrl = getLearningVisualUrl(moduleId, step.id, 'screenshot');
       const screenshotImg = new Image();
       screenshotImg.src = screenshotUrl;
@@ -50,7 +66,7 @@ export function LearningStepCard({
         return;
       }
       
-      // Check for AI-generated
+      // Check for AI-generated third
       const aiUrl = getLearningVisualUrl(moduleId, step.id, 'ai-generated');
       const aiImg = new Image();
       aiImg.src = aiUrl;

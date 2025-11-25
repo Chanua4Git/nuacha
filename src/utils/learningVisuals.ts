@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type VisualType = 'ai-generated' | 'screenshot' | 'manual';
+export type VisualType = 'ai-generated' | 'screenshot' | 'gif' | 'manual';
 
 /**
  * Upload an image to the learning-visuals storage bucket
@@ -42,10 +42,11 @@ export const getLearningVisualUrl = (
   moduleId: string,
   stepId: string,
   type: VisualType = 'ai-generated',
-  extension: string = 'png'
+  extension?: string
 ): string => {
   const supabaseUrl = 'https://fjrxqeyexlusjwzzecal.supabase.co';
-  return `${supabaseUrl}/storage/v1/object/public/learning-visuals/${type}/${moduleId}/${stepId}.${extension}`;
+  const ext = extension || (type === 'gif' ? 'gif' : 'png');
+  return `${supabaseUrl}/storage/v1/object/public/learning-visuals/${type}/${moduleId}/${stepId}.${ext}`;
 };
 
 /**
