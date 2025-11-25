@@ -8,6 +8,7 @@ import { learningModules } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
 import { checkVisualExists, uploadLearningVisual, getLearningVisualUrl } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
 import { CapturePreviewPanel } from './CapturePreviewPanel';
 import { GifRecordingPanel } from './GifRecordingPanel';
@@ -455,16 +456,35 @@ export function LearningVisualAdmin() {
                             </span>
                             {/* Preview thumbnail for existing visuals */}
                             {status === 'exists' && (
-                              <img 
-                                src={getLearningVisualUrl(
-                                  module.id, 
-                                  step.id, 
-                                  type === 'missing' ? 'ai-generated' : type,
-                                  type === 'gif' ? 'gif' : 'png'
-                                )}
-                                alt={`${step.title} preview`}
-                                className="h-8 w-12 object-cover rounded border border-border"
-                              />
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <img 
+                                    src={getLearningVisualUrl(
+                                      module.id, 
+                                      step.id, 
+                                      type === 'missing' ? 'ai-generated' : type,
+                                      type === 'gif' ? 'gif' : 'png'
+                                    )}
+                                    alt={`${step.title} preview`}
+                                    className="h-8 w-12 object-cover rounded border border-border cursor-pointer"
+                                  />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 p-2" side="right">
+                                  <img 
+                                    src={getLearningVisualUrl(
+                                      module.id, 
+                                      step.id, 
+                                      type === 'missing' ? 'ai-generated' : type,
+                                      type === 'gif' ? 'gif' : 'png'
+                                    )}
+                                    alt={`${step.title} full preview`}
+                                    className="w-full rounded"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                                    {type === 'gif' ? '🎬 Animated GIF' : type === 'screenshot' ? '📸 Screenshot' : '🎨 AI Generated'}
+                                  </p>
+                                </HoverCardContent>
+                              </HoverCard>
                             )}
                           </div>
                           <div className="flex items-center gap-2 ml-4">
