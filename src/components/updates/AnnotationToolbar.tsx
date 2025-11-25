@@ -1,9 +1,9 @@
-import { ArrowRight, Hash, Square, Type, Undo2, Redo2, Trash2, Eraser, Save } from "lucide-react";
+import { ArrowRight, Hash, Square, Type, Undo2, Redo2, Trash2, Eraser, Save, Crop, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export type AnnotationTool = "select" | "arrow" | "number" | "highlight" | "text";
+export type AnnotationTool = "select" | "arrow" | "number" | "highlight" | "text" | "crop";
 
 interface AnnotationToolbarProps {
   activeTool: AnnotationTool;
@@ -17,6 +17,9 @@ interface AnnotationToolbarProps {
   onSave: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  isCropping?: boolean;
+  onApplyCrop?: () => void;
+  onCancelCrop?: () => void;
 }
 
 const PRESET_COLORS = ["#EF4444", "#3B82F6", "#FCD34D", "#22C55E", "#8B5CF6", "#EC4899"];
@@ -33,6 +36,9 @@ export const AnnotationToolbar = ({
   onSave,
   canUndo,
   canRedo,
+  isCropping = false,
+  onApplyCrop,
+  onCancelCrop,
 }: AnnotationToolbarProps) => {
   return (
     <div className="flex items-center gap-2 p-3 bg-background border-b">
@@ -77,7 +83,38 @@ export const AnnotationToolbar = ({
         >
           <Type className="h-4 w-4" />
         </Button>
+        <Button
+          variant={activeTool === "crop" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => onToolChange("crop")}
+          title="Crop (C)"
+        >
+          <Crop className="h-4 w-4" />
+        </Button>
       </div>
+
+      {isCropping && (
+        <div className="flex items-center gap-2 border-l pl-3">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onApplyCrop}
+            className="gap-2"
+          >
+            <Check className="h-4 w-4" />
+            Apply Crop
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCancelCrop}
+            className="gap-2"
+          >
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+        </div>
+      )}
 
       <Popover>
         <PopoverTrigger asChild>

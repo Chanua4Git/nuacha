@@ -29,9 +29,11 @@ export const ScreenshotAnnotationEditor = ({
   const [history, setHistory] = useState<string[]>([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const [numberCounter, setNumberCounter] = useState(1);
+  const [cropRect, setCropRect] = useState<Rect | null>(null);
   const isDrawing = useRef(false);
   const startPoint = useRef<Point | null>(null);
   const tempShape = useRef<any>(null);
+  const originalImageFile = useRef<File>(imageFile);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -76,7 +78,27 @@ export const ScreenshotAnnotationEditor = ({
       isDrawing.current = true;
       startPoint.current = new Point(pointer.x, pointer.y);
 
-      if (activeTool === "arrow" || activeTool === "highlight") {
+      if (activeTool === "crop") {
+        // Remove existing crop rect if any
+        if (cropRect) {
+          fabricCanvas.remove(cropRect);
+        }
+        // Create new crop rectangle
+        const rect = new Rect({
+          left: pointer.x,
+          top: pointer.y,
+          width: 0,
+          height: 0,
+          fill: "transparent",
+          stroke: "hsl(var(--primary))",
+          strokeWidth: 2,
+          strokeDashArray: [5, 5],
+          selectable: false,
+          evented: false,
+        });
+        fabricCanvas.add(rect);
+        setCropRect(rect);
+      } else if (activeTool === "arrow" || activeTool === "highlight") {
         // Create temporary shape for visual feedback
         if (activeTool === "arrow") {
           tempShape.current = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
@@ -107,11 +129,23 @@ export const ScreenshotAnnotationEditor = ({
     };
 
     const handleMouseMove = (e: any) => {
-      if (!isDrawing.current || !tempShape.current) return;
+      if (!isDrawing.current) return;
 
       const pointer = fabricCanvas.getPointer(e.e);
 
-      if (activeTool === "arrow") {
+      if (activeTool === "crop" && cropRect) {
+        const width = pointer.x - startPoint.current!.x;
+        const height = pointer.y - startPoint.current!.y;
+        cropRect.set({
+          width: Math.abs(width),
+          height: Math.abs(height),
+          left: width < 0 ? pointer.x : startPoint.current!.x,
+          top: height < 0 ? pointer.y : startPoint.current!.y,
+        });
+        fabricCanvas.renderAll();
+      } else if (!tempShape.current) {
+        return;
+      } else if (activeTool === "arrow") {
         tempShape.current.set({
           x2: pointer.x,
           y2: pointer.y,
@@ -134,6 +168,11 @@ export const ScreenshotAnnotationEditor = ({
       if (!isDrawing.current) return;
 
       isDrawing.current = false;
+
+      if (activeTool === "crop") {
+        // Crop selection complete, keep it visible
+        return;
+      }
 
       if (tempShape.current) {
         const pointer = fabricCanvas.getPointer(e.e);
@@ -315,6 +354,101 @@ export const ScreenshotAnnotationEditor = ({
     toast.success("All annotations cleared");
   };
 
+  const applyCrop = async () => {
+    if (!fabricCanvas || !cropRect) return;
+
+    const cropLeft = cropRect.left!;
+    const cropTop = cropRect.top!;
+    const cropWidth = cropRect.width!;
+    const cropHeight = cropRect.height!;
+
+    if (cropWidth < 10 || cropHeight < 10) {
+      toast.error("Crop area too small");
+      return;
+    }
+
+    // Get all objects except crop rect
+    const objects = fabricCanvas.getObjects().filter((obj) => obj !== cropRect);
+
+    // Create a temporary canvas element with the cropped dimensions
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = cropWidth;
+    tempCanvas.height = cropHeight;
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (!tempCtx) return;
+
+    // Render the current canvas to get the full image with background
+    const fullCanvas = fabricCanvas.toCanvasElement();
+    
+    // Draw the cropped portion
+    tempCtx.drawImage(
+      fullCanvas,
+      cropLeft,
+      cropTop,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+
+    // Convert to blob and reload
+    tempCanvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imgUrl = e.target?.result as string;
+        FabricImage.fromURL(imgUrl).then((img) => {
+          // Clear canvas
+          fabricCanvas.clear();
+          
+          // Update canvas size
+          fabricCanvas.setWidth(cropWidth);
+          fabricCanvas.setHeight(cropHeight);
+          
+          // Set cropped image as background
+          fabricCanvas.backgroundImage = img;
+          
+          // Adjust all object positions relative to crop origin
+          objects.forEach((obj) => {
+            const newLeft = (obj.left || 0) - cropLeft;
+            const newTop = (obj.top || 0) - cropTop;
+            
+            // Only keep objects that are at least partially within bounds
+            if (
+              newLeft + (obj.width || 0) > 0 &&
+              newTop + (obj.height || 0) > 0 &&
+              newLeft < cropWidth &&
+              newTop < cropHeight
+            ) {
+              obj.set({ left: newLeft, top: newTop });
+              fabricCanvas.add(obj);
+            }
+          });
+          
+          fabricCanvas.renderAll();
+          setCropRect(null);
+          setActiveTool("select");
+          saveHistory(fabricCanvas);
+          toast.success("Image cropped successfully");
+        });
+      };
+      reader.readAsDataURL(blob);
+    }, "image/png");
+  };
+
+  const cancelCrop = () => {
+    if (fabricCanvas && cropRect) {
+      fabricCanvas.remove(cropRect);
+      fabricCanvas.renderAll();
+      setCropRect(null);
+      setActiveTool("select");
+    }
+  };
+
   const handleSave = () => {
     if (!fabricCanvas) return;
 
@@ -355,6 +489,9 @@ export const ScreenshotAnnotationEditor = ({
         onSave={handleSave}
         canUndo={historyStep > 0}
         canRedo={historyStep < history.length - 1}
+        isCropping={!!cropRect}
+        onApplyCrop={applyCrop}
+        onCancelCrop={cancelCrop}
       />
 
       <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
