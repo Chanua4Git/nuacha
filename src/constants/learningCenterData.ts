@@ -99,23 +99,31 @@ You do not need an account to try your first receipt scan. We will walk you thro
         id: 'step-1-2',
         title: 'Finding Your Way Around',
         description: 'How to access different parts of the app.',
-        detailedInstructions: `The navigation bar at the top helps you move between sections:
+        detailedInstructions: `The navigation bar at the top helps you move between sections. What you see depends on whether you are signed in:
 
+**Before You Sign In:**
 - **Nuacha logo** (top left): Click to return to the landing page.
-- **Try Demo**: Explore Nuacha without creating an account.
-- **Budget**: Plan and track your spending.
-- **Payroll**: Calculate Trinidad & Tobago NIS contributions (🇹🇹).
+- **Auth Demo**: Explore authentication features.
 - **Updates**: See what is new and access this Learning section.
-- **Sign In / Sign Up**: Create your account or log back in.
+- **Sign in**: Create your account or log back in.
+
+**After You Sign In:**
+- **Nuacha logo** (top left): Click to return to the landing page.
+- **Expense** dropdown: Access Dashboard, Add Expense, Budget & Planning, Receipt Management, Reports, and Settings.
+- **Reminders**: View upcoming bills and replacement reminders.
+- **Payroll** dropdown: Calculate Trinidad & Tobago NIS contributions (🇹🇹) and manage payroll periods.
+- **Auth Demo**: Explore authentication features.
+- **Updates**: See what is new and access this Learning section.
+- **Sign out**: Log out of your account.
 
 **On mobile:**
-Tap the ☰ menu icon to reveal these navigation options.
+Tap the ☰ menu icon to reveal these navigation options (works for both signed-in and signed-out states).
 
 **Where to find it:**
 Top of any page → Navigation bar
 
 **Pro tip:**
-After you have signed in, bookmark /app to jump straight into your expense tracker.`,
+After you have signed in, bookmark /dashboard to jump straight into your expense tracker dashboard.`,
         screenshotHint: 'Navigation bar with all menu items visible',
         ctaButton: { label: 'Explore Navigation', path: '/' }
       },
