@@ -10,9 +10,11 @@ import { checkVisualExists, uploadLearningVisual } from '@/utils/learningVisuals
 import { toast } from 'sonner';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
 import { CapturePreviewPanel } from './CapturePreviewPanel';
+import { GifRecordingPanel } from './GifRecordingPanel';
+import { GifEditor } from './GifEditor';
 
-type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading';
-type VisualType = 'screenshot' | 'ai-generated' | 'missing';
+type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading' | 'recording';
+type VisualType = 'gif' | 'screenshot' | 'ai-generated' | 'missing';
 
 export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
@@ -32,6 +34,18 @@ export function LearningVisualAdmin() {
     stepTitle: string;
     targetPath: string;
   } | null>(null);
+  const [recordingStep, setRecordingStep] = useState<{
+    moduleId: string;
+    stepId: string;
+    stepTitle: string;
+    targetPath: string;
+  } | null>(null);
+  const [editingGif, setEditingGif] = useState<{
+    blob: Blob;
+    moduleId: string;
+    stepId: string;
+    stepTitle: string;
+  } | null>(null);
 
   // Check which visuals already exist
   useEffect(() => {
@@ -46,7 +60,15 @@ export function LearningVisualAdmin() {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
         
-        // Check for screenshot first (higher priority)
+        // Check for GIF first (highest priority)
+        const hasGif = await checkVisualExists(module.id, step.id, 'gif', 'gif');
+        if (hasGif) {
+          statusMap.set(key, 'exists');
+          typeMap.set(key, 'gif');
+          continue;
+        }
+        
+        // Check for screenshot second
         const hasScreenshot = await checkVisualExists(module.id, step.id, 'screenshot');
         if (hasScreenshot) {
           statusMap.set(key, 'exists');
@@ -54,7 +76,7 @@ export function LearningVisualAdmin() {
           continue;
         }
         
-        // Check for AI-generated
+        // Check for AI-generated third
         const hasAI = await checkVisualExists(module.id, step.id, 'ai-generated');
         if (hasAI) {
           statusMap.set(key, 'exists');
@@ -62,7 +84,7 @@ export function LearningVisualAdmin() {
           continue;
         }
         
-        // Neither exists
+        // None exist
         statusMap.set(key, 'missing');
         typeMap.set(key, 'missing');
       }
@@ -171,6 +193,45 @@ export function LearningVisualAdmin() {
     });
 
     setPreviewingStep(null);
+  };
+
+  const handleGifRecordingComplete = (gifBlob: Blob) => {
+    if (!recordingStep) return;
+
+    setEditingGif({
+      blob: gifBlob,
+      moduleId: recordingStep.moduleId,
+      stepId: recordingStep.stepId,
+      stepTitle: recordingStep.stepTitle,
+    });
+
+    setRecordingStep(null);
+  };
+
+  const handleGifSave = async (editedBlob: Blob) => {
+    if (!editingGif) return;
+
+    const { moduleId, stepId, stepTitle } = editingGif;
+    const key = `${moduleId}-${stepId}`;
+    
+    setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
+    setEditingGif(null);
+
+    try {
+      const url = await uploadLearningVisual(editedBlob, moduleId, stepId, 'gif');
+      
+      if (url) {
+        setVisualStatus(prev => new Map(prev).set(key, 'exists'));
+        setVisualTypes(prev => new Map(prev).set(key, 'gif'));
+        toast.success(`GIF saved for "${stepTitle}"`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setVisualStatus(prev => new Map(prev).set(key, 'missing'));
+      toast.error('Failed to upload GIF. Please try again.');
+    }
   };
 
   const handleGenerateModule = async (moduleId: string) => {
@@ -361,10 +422,12 @@ export function LearningVisualAdmin() {
                               variant={status === 'exists' ? 'default' : isProcessing ? 'secondary' : 'outline'}
                               className="gap-1"
                             >
+                              {status === 'exists' && type === 'gif' && '🎬'}
                               {status === 'exists' && type === 'screenshot' && '📸'}
                               {status === 'exists' && type === 'ai-generated' && '🎨'}
                               {status === 'uploading' && <Loader2 className="w-3 h-3 animate-spin" />}
                               {status === 'generating' && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {status === 'recording' && <Loader2 className="w-3 h-3 animate-spin" />}
                               {status === 'missing' && '❌'}
                               <span className="capitalize">
                                 {status === 'exists' ? type : status}
@@ -379,6 +442,24 @@ export function LearningVisualAdmin() {
                               className="hidden"
                               onChange={(e) => handleFileUpload(e, module.id, step.id, step.title)}
                             />
+                            {step.ctaButton?.path && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => setRecordingStep({
+                                  moduleId: module.id,
+                                  stepId: step.id,
+                                  stepTitle: step.title,
+                                  targetPath: step.ctaButton!.path,
+                                })}
+                                disabled={isProcessing}
+                                className="gap-1"
+                              >
+                                <Camera className="w-3 h-3" />
+                                🎬 Record GIF
+                              </Button>
+                            )}
+                            
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -454,6 +535,25 @@ export function LearningVisualAdmin() {
           targetPath={previewingStep.targetPath}
           stepTitle={previewingStep.stepTitle}
           onCapture={handleCaptureFromPreview}
+        />
+      )}
+
+      {recordingStep && (
+        <GifRecordingPanel
+          open={!!recordingStep}
+          onClose={() => setRecordingStep(null)}
+          targetPath={recordingStep.targetPath}
+          stepTitle={recordingStep.stepTitle}
+          onRecordingComplete={handleGifRecordingComplete}
+        />
+      )}
+
+      {editingGif && (
+        <GifEditor
+          open={!!editingGif}
+          gifBlob={editingGif.blob}
+          onSave={handleGifSave}
+          onCancel={() => setEditingGif(null)}
         />
       )}
     </div>

@@ -1,10 +1,15 @@
 export interface LearningStepVisual {
-  type: 'ai-generated' | 'screenshot' | 'video' | 'none';
+  type: 'gif' | 'ai-generated' | 'screenshot' | 'video' | 'none';
   url?: string;
   alt?: string;
-  source?: 'lovable-ai' | 'html2canvas' | 'manual-upload';
+  source?: 'lovable-ai' | 'html2canvas' | 'manual-upload' | 'gif-recorder';
   capturedAt?: string; // ISO date string
   storageKey?: string; // Supabase storage path
+  gifSettings?: {
+    duration?: number;
+    frameRate?: number;
+    loopCount?: number;
+  };
 }
 
 export interface LearningStep {
