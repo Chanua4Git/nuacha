@@ -42,6 +42,10 @@ export function GifRecordingPanel({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isRecordingRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const lastCaptureTime = useRef(0);
+  const CAPTURE_INTERVAL = 100; // 10fps
   const [isIframeReady, setIsIframeReady] = useState(false);
   const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
   const [showGuide, setShowGuide] = useState(true);
@@ -98,8 +102,12 @@ export function GifRecordingPanel({
 
   const startCaptureLoop = () => {
     const captureLoop = async () => {
-      if (isRecording && !isPaused) {
-        await captureFrame();
+      const now = Date.now();
+      if (isRecordingRef.current && !isPausedRef.current) {
+        if (now - lastCaptureTime.current >= CAPTURE_INTERVAL) {
+          await captureFrame();
+          lastCaptureTime.current = now;
+        }
         animationFrameRef.current = requestAnimationFrame(captureLoop);
       }
     };
@@ -110,11 +118,17 @@ export function GifRecordingPanel({
     if (!canvasRef.current) return;
 
     await captureFrame(); // Capture initial frame
+    isRecordingRef.current = true;
+    isPausedRef.current = false;
+    lastCaptureTime.current = Date.now();
     await startRecording(canvasRef.current);
     startCaptureLoop();
   };
 
   const handleStopRecording = async () => {
+    isRecordingRef.current = false;
+    isPausedRef.current = false;
+    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -129,9 +143,11 @@ export function GifRecordingPanel({
 
   const handlePauseResume = () => {
     if (isPaused) {
+      isPausedRef.current = false;
       resumeRecording();
       startCaptureLoop();
     } else {
+      isPausedRef.current = true;
       pauseRecording();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
