@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { ExpenseFilters } from '@/hooks/useFilters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ReceiptImageDisplay from '@/components/receipt/ReceiptImageDisplay';
+import { useSignedReceiptUrls } from '@/hooks/useSignedReceiptUrls';
 
 interface ReceiptGalleryProps {
   filters: ExpenseFilters;
@@ -52,6 +53,16 @@ const ReceiptGallery: React.FC<ReceiptGalleryProps> = ({
   const expensesWithReceipts = expenses.filter(expense => 
     expense.receiptUrl || expense.receiptImageUrl
   );
+
+  // Collect all receipt URLs for signed URL generation
+  const receiptUrls = useMemo(() => 
+    expensesWithReceipts
+      .map(e => e.receiptImageUrl || e.receiptUrl)
+      .filter((url): url is string => !!url),
+    [expensesWithReceipts]
+  );
+
+  const { getSignedUrl, isLoading: isLoadingUrls } = useSignedReceiptUrls(receiptUrls);
 
   // Sort expenses
   const sortedExpenses = [...expensesWithReceipts].sort((a, b) => {
@@ -209,6 +220,7 @@ const ReceiptGallery: React.FC<ReceiptGalleryProps> = ({
                   familyName={getFamilyName(expense.familyId)}
                   categoryName={getCategoryName(expense.category)}
                   formatDate={formatDate}
+                  getSignedUrl={getSignedUrl}
                 />
               ))}
             </div>
@@ -248,7 +260,7 @@ const ReceiptGallery: React.FC<ReceiptGalleryProps> = ({
           {/* Receipt Image */}
           {(expense.receiptImageUrl || expense.receiptUrl) && (
             <ReceiptImageDisplay 
-              imageUrl={expense.receiptImageUrl || expense.receiptUrl} 
+              imageUrl={getSignedUrl(expense.receiptImageUrl || expense.receiptUrl)} 
               description={expense.description}
             />
           )}
@@ -303,6 +315,7 @@ interface ReceiptCardProps {
   familyName: string;
   categoryName: string;
   formatDate: (date: string) => string;
+  getSignedUrl: (url: string) => string;
 }
 
 const ReceiptCard: React.FC<ReceiptCardProps> = ({
@@ -313,7 +326,8 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   onView,
   familyName,
   categoryName,
-  formatDate
+  formatDate,
+  getSignedUrl
 }) => {
   if (viewMode === 'list') {
     return (
@@ -329,7 +343,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
               <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                 {expense.receiptImageUrl || expense.receiptUrl ? (
                   <img 
-                    src={expense.receiptImageUrl || expense.receiptUrl} 
+                    src={getSignedUrl(expense.receiptImageUrl || expense.receiptUrl)} 
                     alt="Receipt thumbnail"
                     className="w-full h-full object-cover rounded-lg"
                   />
@@ -392,7 +406,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
         <div className="aspect-[4/3] bg-muted rounded-lg mb-3 overflow-hidden relative">
           {expense.receiptImageUrl || expense.receiptUrl ? (
             <img 
-              src={expense.receiptImageUrl || expense.receiptUrl} 
+              src={getSignedUrl(expense.receiptImageUrl || expense.receiptUrl)} 
               alt="Receipt"
               className="w-full h-full object-cover"
             />

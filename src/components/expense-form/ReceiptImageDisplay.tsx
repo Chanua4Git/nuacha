@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { getSignedReceiptUrl } from '@/utils/receipt/signedUrls';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReceiptImageDisplayProps {
   imageUrl: string;
@@ -19,7 +21,42 @@ export const ReceiptImageDisplay: React.FC<ReceiptImageDisplayProps> = ({
   confidence,
   onViewReceipt
 }) => {
-  const displayUrl = imagePreview || imageUrl;
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!imageUrl) {
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const url = await getSignedReceiptUrl(imageUrl);
+        setSignedUrl(url);
+      } catch (error) {
+        console.error('Failed to get signed URL:', error);
+        setSignedUrl(imageUrl); // Fallback to original
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSignedUrl();
+  }, [imageUrl]);
+
+  const displayUrl = imagePreview || signedUrl || imageUrl;
+
+  if (!displayUrl || (!imagePreview && !signedUrl && isLoading)) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-4">
+          <Skeleton className="h-[200px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!displayUrl) return null;
 

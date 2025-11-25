@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Receipt, Download, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { getSignedReceiptUrl } from '@/utils/receipt/signedUrls';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReceiptImageDisplayProps {
   imageUrl: string;
@@ -19,20 +21,59 @@ const ReceiptImageDisplay: React.FC<ReceiptImageDisplayProps> = ({
 }) => {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!imageUrl) {
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const url = await getSignedReceiptUrl(imageUrl);
+        setSignedUrl(url);
+      } catch (error) {
+        console.error('Failed to get signed URL:', error);
+        setSignedUrl(imageUrl); // Fallback to original
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSignedUrl();
+  }, [imageUrl]);
+
+  const displayUrl = signedUrl || imageUrl;
 
   const handleDownload = () => {
     if (onDownload) {
       onDownload();
     } else {
-      // Default download behavior
+      // Default download behavior using signed URL
       const link = document.createElement('a');
-      link.href = imageUrl;
+      link.href = displayUrl;
       link.download = `receipt-${Date.now()}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-3">
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   const resetView = () => {
     setZoom(1);
@@ -77,7 +118,7 @@ const ReceiptImageDisplay: React.FC<ReceiptImageDisplayProps> = ({
           {/* Thumbnail view */}
           <div className="overflow-hidden rounded-md border">
             <img 
-              src={imageUrl} 
+              src={displayUrl} 
               alt={description}
               className="w-full object-contain max-h-[300px] cursor-pointer hover:opacity-90 transition-opacity" 
             />
@@ -145,7 +186,7 @@ const ReceiptImageDisplay: React.FC<ReceiptImageDisplayProps> = ({
               </DialogHeader>
               <div className="overflow-auto max-h-[70vh] flex justify-center items-center">
                 <img 
-                  src={imageUrl} 
+                  src={displayUrl} 
                   alt={description}
                   className="object-contain transition-transform duration-200"
                   style={{ 

@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
+import { getSignedReceiptUrl } from './signedUrls';
 
 interface ExpenseData {
   id: string;
@@ -115,13 +116,17 @@ export const exportReceiptsToPDF = async (
     const imageUrl = expense.receiptImageUrl || expense.receiptUrl;
     if (imageUrl) {
       try {
+        // Get signed URL for authenticated access
+        const signedUrl = await getSignedReceiptUrl(imageUrl);
+        if (!signedUrl) throw new Error('Could not get signed URL');
+
         const img = new Image();
         img.crossOrigin = 'anonymous';
         
         await new Promise((resolve, reject) => {
           img.onload = resolve;
           img.onerror = reject;
-          img.src = imageUrl;
+          img.src = signedUrl;
         });
 
         // Calculate dimensions to fit on page
@@ -275,7 +280,11 @@ export const exportReceiptsToZip = async (
     const imageUrl = expense.receiptImageUrl || expense.receiptUrl;
     if (imageUrl) {
       try {
-        const response = await fetch(imageUrl);
+        // Get signed URL for authenticated access
+        const signedUrl = await getSignedReceiptUrl(imageUrl);
+        if (!signedUrl) throw new Error('Could not get signed URL');
+
+        const response = await fetch(signedUrl);
         const blob = await response.blob();
         const filename = `receipt-${expense.id}.jpg`;
         
@@ -320,7 +329,11 @@ export const exportReceiptImages = async (
     const imageUrl = expense.receiptImageUrl || expense.receiptUrl;
     if (imageUrl) {
       try {
-        const response = await fetch(imageUrl);
+        // Get signed URL for authenticated access
+        const signedUrl = await getSignedReceiptUrl(imageUrl);
+        if (!signedUrl) throw new Error('Could not get signed URL');
+
+        const response = await fetch(signedUrl);
         const blob = await response.blob();
         
         // Create descriptive filename
