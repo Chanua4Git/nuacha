@@ -6,6 +6,7 @@ import { Circle, Square, Pause, Play, User, Ghost } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
+import { AdminCaptureGuide } from './AdminCaptureGuide';
 
 interface GifRecordingPanelProps {
   open: boolean;
@@ -13,6 +14,14 @@ interface GifRecordingPanelProps {
   targetPath: string;
   stepTitle: string;
   onRecordingComplete: (gifBlob: Blob) => void;
+  // Full step context
+  moduleTitle: string;
+  moduleTrack: string;
+  stepDescription: string;
+  screenshotHint?: string;
+  detailedInstructions?: string;
+  stepNumber: number;
+  totalSteps: number;
 }
 
 export function GifRecordingPanel({
@@ -20,7 +29,14 @@ export function GifRecordingPanel({
   onClose,
   targetPath,
   stepTitle,
-  onRecordingComplete
+  onRecordingComplete,
+  moduleTitle,
+  moduleTrack,
+  stepDescription,
+  screenshotHint,
+  detailedInstructions,
+  stepNumber,
+  totalSteps,
 }: GifRecordingPanelProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -184,6 +200,20 @@ export function GifRecordingPanel({
             </div>
           </div>
         </DialogHeader>
+
+        {/* Admin Capture Guide */}
+        <AdminCaptureGuide
+          moduleTitle={moduleTitle}
+          moduleTrack={moduleTrack}
+          stepTitle={stepTitle}
+          stepDescription={stepDescription}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          screenshotHint={screenshotHint}
+          detailedInstructions={detailedInstructions}
+          targetPath={targetPath}
+          isGif={true}
+        />
 
         {/* Preview Mode Toggle */}
         <div className="flex items-center gap-2 mb-4">

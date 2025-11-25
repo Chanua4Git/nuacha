@@ -33,12 +33,26 @@ export function LearningVisualAdmin() {
     stepId: string;
     stepTitle: string;
     targetPath: string;
+    moduleTitle: string;
+    moduleTrack: string;
+    stepDescription: string;
+    screenshotHint?: string;
+    detailedInstructions?: string;
+    stepNumber: number;
+    totalSteps: number;
   } | null>(null);
   const [recordingStep, setRecordingStep] = useState<{
     moduleId: string;
     stepId: string;
     stepTitle: string;
     targetPath: string;
+    moduleTitle: string;
+    moduleTrack: string;
+    stepDescription: string;
+    screenshotHint?: string;
+    detailedInstructions?: string;
+    stepNumber: number;
+    totalSteps: number;
   } | null>(null);
   const [editingGif, setEditingGif] = useState<{
     blob: Blob;
@@ -474,6 +488,13 @@ export function LearningVisualAdmin() {
                                   stepId: step.id,
                                   stepTitle: step.title,
                                   targetPath: step.ctaButton!.path,
+                                  moduleTitle: module.title,
+                                  moduleTrack: module.track,
+                                  stepDescription: step.description,
+                                  screenshotHint: step.screenshotHint,
+                                  detailedInstructions: step.detailedInstructions,
+                                  stepNumber: idx + 1,
+                                  totalSteps: module.steps.length,
                                 })}
                                 disabled={isProcessing}
                                 className="gap-1"
@@ -503,6 +524,13 @@ export function LearningVisualAdmin() {
                                   stepId: step.id,
                                   stepTitle: step.title,
                                   targetPath: step.ctaButton!.path,
+                                  moduleTitle: module.title,
+                                  moduleTrack: module.track,
+                                  stepDescription: step.description,
+                                  screenshotHint: step.screenshotHint,
+                                  detailedInstructions: step.detailedInstructions,
+                                  stepNumber: idx + 1,
+                                  totalSteps: module.steps.length,
                                 })}
                                 disabled={isProcessing}
                                 className="gap-1"
@@ -557,6 +585,13 @@ export function LearningVisualAdmin() {
           onClose={() => setPreviewingStep(null)}
           targetPath={previewingStep.targetPath}
           stepTitle={previewingStep.stepTitle}
+          moduleTitle={previewingStep.moduleTitle}
+          moduleTrack={previewingStep.moduleTrack}
+          stepDescription={previewingStep.stepDescription}
+          screenshotHint={previewingStep.screenshotHint}
+          detailedInstructions={previewingStep.detailedInstructions}
+          stepNumber={previewingStep.stepNumber}
+          totalSteps={previewingStep.totalSteps}
           onCapture={handleCaptureFromPreview}
         />
       )}
@@ -567,6 +602,13 @@ export function LearningVisualAdmin() {
           onClose={() => setRecordingStep(null)}
           targetPath={recordingStep.targetPath}
           stepTitle={recordingStep.stepTitle}
+          moduleTitle={recordingStep.moduleTitle}
+          moduleTrack={recordingStep.moduleTrack}
+          stepDescription={recordingStep.stepDescription}
+          screenshotHint={recordingStep.screenshotHint}
+          detailedInstructions={recordingStep.detailedInstructions}
+          stepNumber={recordingStep.stepNumber}
+          totalSteps={recordingStep.totalSteps}
           onRecordingComplete={handleGifRecordingComplete}
         />
       )}
