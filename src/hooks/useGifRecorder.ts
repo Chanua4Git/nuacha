@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import RecordRTC, { GifRecorder } from 'recordrtc';
+import GIF from 'gif.js';
 
 export function useGifRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -7,27 +7,33 @@ export function useGifRecorder() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   
-  const recorderRef = useRef<RecordRTC | null>(null);
+  const gifRef = useRef<GIF | null>(null);
+  const framesRef = useRef<ImageData[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const canvasDimensionsRef = useRef<{ width: number; height: number } | null>(null);
 
   const startRecording = useCallback(async (canvasElement: HTMLCanvasElement) => {
     try {
       setError(null);
       
-      // Get canvas stream
-      const stream = canvasElement.captureStream(10); // 10 fps
+      // Store canvas dimensions
+      canvasDimensionsRef.current = {
+        width: canvasElement.width,
+        height: canvasElement.height
+      };
       
-      // Initialize RecordRTC with GIF recorder
-      recorderRef.current = new RecordRTC(stream, {
-        type: 'gif',
-        frameRate: 10,
+      // Clear previous frames
+      framesRef.current = [];
+      
+      // Initialize GIF encoder
+      gifRef.current = new GIF({
+        workers: 2,
         quality: 10,
         width: canvasElement.width,
         height: canvasElement.height,
-        recorderType: GifRecorder
+        workerScript: '/gif.worker.js'
       });
       
-      recorderRef.current.startRecording();
       setIsRecording(true);
       setRecordingDuration(0);
       
@@ -43,15 +49,57 @@ export function useGifRecorder() {
     }
   }, []);
 
+  const addFrame = useCallback((canvas: HTMLCanvasElement) => {
+    if (!isRecording || isPaused) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx && canvasDimensionsRef.current) {
+      const imageData = ctx.getImageData(
+        0, 
+        0, 
+        canvasDimensionsRef.current.width, 
+        canvasDimensionsRef.current.height
+      );
+      framesRef.current.push(imageData);
+    }
+  }, [isRecording, isPaused]);
+
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
-      if (!recorderRef.current) {
+      if (!gifRef.current || framesRef.current.length === 0) {
+        console.warn('No frames captured for GIF');
+        setIsRecording(false);
+        setIsPaused(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
         resolve(null);
         return;
       }
       
-      recorderRef.current.stopRecording(() => {
-        const blob = recorderRef.current?.getBlob();
+      console.log(`Encoding ${framesRef.current.length} frames into GIF...`);
+      
+      // Create a temporary canvas for adding frames
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      
+      if (!ctx || !canvasDimensionsRef.current) {
+        resolve(null);
+        return;
+      }
+      
+      // Add all collected frames to the GIF encoder
+      framesRef.current.forEach((imageData, index) => {
+        tempCanvas.width = imageData.width;
+        tempCanvas.height = imageData.height;
+        ctx.putImageData(imageData, 0, 0);
+        gifRef.current!.addFrame(tempCanvas, { delay: 100, copy: true }); // 100ms = 10fps
+      });
+      
+      // Listen for completion
+      gifRef.current.on('finished', (blob: Blob) => {
+        console.log('GIF encoding complete!', blob);
         
         // Cleanup
         setIsRecording(false);
@@ -61,14 +109,20 @@ export function useGifRecorder() {
           timerRef.current = null;
         }
         
-        resolve(blob || null);
+        resolve(blob);
       });
+      
+      gifRef.current.on('progress', (progress: number) => {
+        console.log(`GIF encoding progress: ${Math.round(progress * 100)}%`);
+      });
+      
+      // Start rendering the GIF
+      gifRef.current.render();
     });
   }, []);
 
   const pauseRecording = useCallback(() => {
-    if (recorderRef.current && isRecording) {
-      recorderRef.current.pauseRecording();
+    if (isRecording) {
       setIsPaused(true);
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -78,8 +132,7 @@ export function useGifRecorder() {
   }, [isRecording]);
 
   const resumeRecording = useCallback(() => {
-    if (recorderRef.current && isPaused) {
-      recorderRef.current.resumeRecording();
+    if (isPaused) {
       setIsPaused(false);
       
       // Resume timer
@@ -102,6 +155,7 @@ export function useGifRecorder() {
     error,
     startRecording,
     stopRecording,
+    addFrame,
     pauseRecording,
     resumeRecording,
     formatDuration
