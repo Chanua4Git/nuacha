@@ -1,20 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Image, Loader2 } from 'lucide-react';
+import { ChevronDown, Image, Loader2, Upload } from 'lucide-react';
 import { learningModules } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
-import { checkVisualExists } from '@/utils/learningVisuals';
+import { checkVisualExists, uploadLearningVisual } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 
-type VisualStatus = 'exists' | 'missing' | 'generating';
+type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading';
+type VisualType = 'screenshot' | 'ai-generated' | 'missing';
 
 export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
   const [visualStatus, setVisualStatus] = useState<Map<string, VisualStatus>>(new Map());
+  const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
   // Check which visuals already exist
   useEffect(() => {
@@ -23,16 +26,36 @@ export function LearningVisualAdmin() {
 
   const checkAllVisualsExist = async () => {
     const statusMap = new Map<string, VisualStatus>();
+    const typeMap = new Map<string, VisualType>();
     
     for (const module of learningModules) {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
-        const exists = await checkVisualExists(module.id, step.id, 'ai-generated');
-        statusMap.set(key, exists ? 'exists' : 'missing');
+        
+        // Check for screenshot first (higher priority)
+        const hasScreenshot = await checkVisualExists(module.id, step.id, 'screenshot');
+        if (hasScreenshot) {
+          statusMap.set(key, 'exists');
+          typeMap.set(key, 'screenshot');
+          continue;
+        }
+        
+        // Check for AI-generated
+        const hasAI = await checkVisualExists(module.id, step.id, 'ai-generated');
+        if (hasAI) {
+          statusMap.set(key, 'exists');
+          typeMap.set(key, 'ai-generated');
+          continue;
+        }
+        
+        // Neither exists
+        statusMap.set(key, 'missing');
+        typeMap.set(key, 'missing');
       }
     }
     
     setVisualStatus(statusMap);
+    setVisualTypes(typeMap);
   };
 
   const handleGenerateSingle = async (moduleId: string, stepId: string, title: string, description: string, screenshotHint?: string) => {
@@ -50,7 +73,62 @@ export function LearningVisualAdmin() {
     });
     
     // Update status based on result
-    setVisualStatus(prev => new Map(prev).set(key, url ? 'exists' : 'missing'));
+    if (url) {
+      setVisualStatus(prev => new Map(prev).set(key, 'exists'));
+      setVisualTypes(prev => new Map(prev).set(key, 'ai-generated'));
+    } else {
+      setVisualStatus(prev => new Map(prev).set(key, 'missing'));
+    }
+  };
+
+  const handleFileSelect = (moduleId: string, stepId: string) => {
+    const key = `${moduleId}-${stepId}`;
+    const input = fileInputRefs.current.get(key);
+    input?.click();
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    stepId: string,
+    stepTitle: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Invalid file type. Please upload an image file (PNG, JPG, WebP)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large. Please upload an image smaller than 5MB');
+      return;
+    }
+
+    const key = `${moduleId}-${stepId}`;
+    setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
+
+    try {
+      const url = await uploadLearningVisual(file, moduleId, stepId, 'screenshot');
+      
+      if (url) {
+        setVisualStatus(prev => new Map(prev).set(key, 'exists'));
+        setVisualTypes(prev => new Map(prev).set(key, 'screenshot'));
+        toast.success(`Screenshot uploaded for "${stepTitle}"`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setVisualStatus(prev => new Map(prev).set(key, 'missing'));
+      toast.error('Failed to upload screenshot. Please try again.');
+    }
+
+    // Reset input
+    event.target.value = '';
   };
 
   const handleGenerateModule = async (moduleId: string) => {
@@ -223,6 +301,8 @@ export function LearningVisualAdmin() {
                     {module.steps.map((step, idx) => {
                       const key = `${module.id}-${step.id}`;
                       const status = visualStatus.get(key) || 'missing';
+                      const type = visualTypes.get(key) || 'missing';
+                      const isProcessing = status === 'generating' || status === 'uploading';
 
                       return (
                         <div 
@@ -236,14 +316,37 @@ export function LearningVisualAdmin() {
                           </div>
                           <div className="flex items-center gap-2 ml-4">
                             <Badge 
-                              variant={status === 'exists' ? 'default' : status === 'generating' ? 'secondary' : 'outline'}
+                              variant={status === 'exists' ? 'default' : isProcessing ? 'secondary' : 'outline'}
                               className="gap-1"
                             >
-                              {status === 'exists' && '✅'}
+                              {status === 'exists' && type === 'screenshot' && '📸'}
+                              {status === 'exists' && type === 'ai-generated' && '🎨'}
+                              {status === 'uploading' && <Loader2 className="w-3 h-3 animate-spin" />}
                               {status === 'generating' && <Loader2 className="w-3 h-3 animate-spin" />}
                               {status === 'missing' && '❌'}
-                              <span className="capitalize">{status}</span>
+                              <span className="capitalize">
+                                {status === 'exists' ? type : status}
+                              </span>
                             </Badge>
+                            <input
+                              ref={(el) => {
+                                if (el) fileInputRefs.current.set(key, el);
+                              }}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleFileUpload(e, module.id, step.id, step.title)}
+                            />
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleFileSelect(module.id, step.id)}
+                              disabled={isProcessing}
+                              className="gap-1"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload
+                            </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -254,9 +357,11 @@ export function LearningVisualAdmin() {
                                 step.description,
                                 step.screenshotHint
                               )}
-                              disabled={isGenerating}
+                              disabled={isProcessing}
+                              className="gap-1"
                             >
-                              Generate
+                              <Image className="w-3 h-3" />
+                              AI
                             </Button>
                           </div>
                         </div>

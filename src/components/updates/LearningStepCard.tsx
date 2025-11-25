@@ -28,10 +28,53 @@ export function LearningStepCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasVisual, setHasVisual] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [visualUrl, setVisualUrl] = useState<string>('');
   const navigate = useNavigate();
 
-  // Construct potential visual URL
-  const visualUrl = step.visual?.url || getLearningVisualUrl(moduleId, step.id, 'ai-generated');
+  // Check for visuals on mount - prioritize screenshot over AI
+  useState(() => {
+    const checkAndSetVisual = async () => {
+      // Check for screenshot first
+      const screenshotUrl = getLearningVisualUrl(moduleId, step.id, 'screenshot');
+      const screenshotImg = new Image();
+      screenshotImg.src = screenshotUrl;
+      
+      const screenshotExists = await new Promise((resolve) => {
+        screenshotImg.onload = () => resolve(true);
+        screenshotImg.onerror = () => resolve(false);
+      });
+      
+      if (screenshotExists) {
+        setVisualUrl(screenshotUrl);
+        setHasVisual(true);
+        return;
+      }
+      
+      // Check for AI-generated
+      const aiUrl = getLearningVisualUrl(moduleId, step.id, 'ai-generated');
+      const aiImg = new Image();
+      aiImg.src = aiUrl;
+      
+      const aiExists = await new Promise((resolve) => {
+        aiImg.onload = () => resolve(true);
+        aiImg.onerror = () => resolve(false);
+      });
+      
+      if (aiExists) {
+        setVisualUrl(aiUrl);
+        setHasVisual(true);
+        return;
+      }
+      
+      // Use custom visual URL if provided
+      if (step.visual?.url) {
+        setVisualUrl(step.visual.url);
+        setHasVisual(true);
+      }
+    };
+    
+    checkAndSetVisual();
+  });
 
   const handleCTAClick = () => {
     if (step.ctaButton?.path) {
