@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useRef } from "react";
 import DemoBreadcrumbs from "@/components/DemoBreadcrumbs";
 import WhoIsNuachaFor from "@/components/landing/WhoIsNuachaFor";
@@ -22,7 +22,12 @@ const Landing = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  
+  // Auth preview mode support - override user when in guest preview
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('_preview_auth') === 'false';
+  const auth = useAuth();
+  const user = isPreviewMode ? null : auth.user;
   
   // Receipt processing state
   const [isProcessing, setIsProcessing] = useState(false);
