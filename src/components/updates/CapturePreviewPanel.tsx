@@ -5,6 +5,7 @@ import { Camera, RefreshCw, X, User, Ghost } from 'lucide-react';
 import { captureIframe } from '@/utils/screenshotCapture';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { AdminCaptureGuide } from './AdminCaptureGuide';
 
 interface CapturePreviewPanelProps {
   open: boolean;
@@ -12,6 +13,14 @@ interface CapturePreviewPanelProps {
   targetPath: string;
   stepTitle: string;
   onCapture: (imageBlob: Blob) => void;
+  // Full step context
+  moduleTitle: string;
+  moduleTrack: string;
+  stepDescription: string;
+  screenshotHint?: string;
+  detailedInstructions?: string;
+  stepNumber: number;
+  totalSteps: number;
 }
 
 export const CapturePreviewPanel = ({
@@ -20,6 +29,13 @@ export const CapturePreviewPanel = ({
   targetPath,
   stepTitle,
   onCapture,
+  moduleTitle,
+  moduleTrack,
+  stepDescription,
+  screenshotHint,
+  detailedInstructions,
+  stepNumber,
+  totalSteps,
 }: CapturePreviewPanelProps) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
@@ -70,6 +86,20 @@ export const CapturePreviewPanel = ({
         <DialogHeader>
           <DialogTitle>Preview & Capture: {stepTitle}</DialogTitle>
         </DialogHeader>
+
+        {/* Admin Capture Guide */}
+        <AdminCaptureGuide
+          moduleTitle={moduleTitle}
+          moduleTrack={moduleTrack}
+          stepTitle={stepTitle}
+          stepDescription={stepDescription}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          screenshotHint={screenshotHint}
+          detailedInstructions={detailedInstructions}
+          targetPath={targetPath}
+          isGif={false}
+        />
 
         {/* Preview Mode Toggle */}
         <div className="flex items-center gap-2 mb-3">
