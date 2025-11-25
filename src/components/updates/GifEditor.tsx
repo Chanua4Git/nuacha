@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Scissors, Zap, Save, X } from 'lucide-react';
+import { Scissors, Zap, Save, X, Play, Pause, RotateCcw } from 'lucide-react';
 
 interface GifEditorProps {
   open: boolean;
@@ -17,15 +17,37 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [speed, setSpeed] = useState<number>(1);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [gifKey, setGifKey] = useState<number>(0);
+  const [fileSize, setFileSize] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (gifBlob) {
       const url = URL.createObjectURL(gifBlob);
       setGifUrl(url);
+      
+      // Calculate file size
+      const sizeInMB = (gifBlob.size / (1024 * 1024)).toFixed(2);
+      setFileSize(`${sizeInMB} MB`);
+      
       return () => URL.revokeObjectURL(url);
     }
   }, [gifBlob]);
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      setGifKey(prev => prev + 1);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleReplay = () => {
+    setGifKey(prev => prev + 1);
+    setIsPlaying(true);
+  };
 
   const handleSave = () => {
     // For v1, we'll just save the original blob
@@ -49,16 +71,59 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
 
         <div className="space-y-6 py-4">
           {/* Preview */}
-          <div className="flex justify-center border border-border rounded-lg bg-muted p-4">
-            <img
-              ref={imgRef}
-              src={gifUrl}
-              alt="GIF preview"
-              className="max-h-96 rounded"
-              style={{
-                imageRendering: 'pixelated'
-              }}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Preview</Label>
+              {fileSize && (
+                <span className="text-xs text-muted-foreground">File size: {fileSize}</span>
+              )}
+            </div>
+            <div className="relative flex justify-center border border-border rounded-lg bg-muted p-4">
+              {isPlaying ? (
+                <img
+                  key={gifKey}
+                  ref={imgRef}
+                  src={gifUrl}
+                  alt="GIF preview"
+                  className="max-h-96 rounded"
+                />
+              ) : (
+                <div className="flex items-center justify-center max-h-96 text-muted-foreground">
+                  GIF paused
+                </div>
+              )}
+              
+              {/* Playback controls overlay */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={togglePlayPause}
+                  className="shadow-lg"
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause className="w-4 h-4 mr-1" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-1" />
+                      Play
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleReplay}
+                  className="shadow-lg"
+                >
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  Replay
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Speed Control */}
