@@ -16,6 +16,7 @@ interface AdminCaptureGuideProps {
   detailedInstructions?: string;
   targetPath: string;
   isGif?: boolean;
+  variant?: 'card' | 'popover';
 }
 
 export const AdminCaptureGuide = ({
@@ -29,8 +30,9 @@ export const AdminCaptureGuide = ({
   detailedInstructions,
   targetPath,
   isGif = false,
+  variant = 'card',
 }: AdminCaptureGuideProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(variant === 'popover');
   
   // Smart suggestions based on step content
   const getSmartSuggestions = () => {
@@ -72,6 +74,69 @@ export const AdminCaptureGuide = ({
 
   const suggestions = getSmartSuggestions();
 
+  // Popover variant: render content directly without card wrapper
+  if (variant === 'popover') {
+    return (
+      <div className="space-y-3">
+        {/* Location breadcrumb */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+          <Badge variant="outline" className="font-normal text-xs px-1.5 py-0">
+            {moduleTrack}
+          </Badge>
+          <ChevronRight className="h-3 w-3" />
+          <span className="font-medium">{moduleTitle}</span>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-primary">
+            Step {stepNumber}/{totalSteps}
+          </span>
+        </div>
+        
+        {/* Title */}
+        <h4 className="font-semibold text-sm text-foreground">{stepTitle}</h4>
+        
+        {/* Description */}
+        <p className="text-sm text-muted-foreground">{stepDescription}</p>
+
+        {/* What to capture */}
+        {screenshotHint && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-2.5">
+            <div className="flex items-start gap-2">
+              {isGif ? (
+                <Film className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+              ) : (
+                <Camera className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-xs text-foreground mb-1">
+                  {isGif ? 'WHAT TO RECORD:' : 'WHAT TO CAPTURE:'}
+                </p>
+                <p className="text-xs text-foreground/90">{screenshotHint}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Smart suggestions */}
+        {suggestions.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+              <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+              <span>Suggestions:</span>
+            </div>
+            <ul className="space-y-0.5 ml-5">
+              {suggestions.map((suggestion, idx) => (
+                <li key={idx} className="text-xs text-muted-foreground">
+                  • {suggestion}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Card variant: original collapsible card
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <Card className="mb-3 border-primary/20 bg-gradient-to-br from-background to-muted/30">
