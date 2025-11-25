@@ -8,6 +8,7 @@ import { learningModules } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
 import { checkVisualExists, uploadLearningVisual } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
+import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
 
 type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading';
 type VisualType = 'screenshot' | 'ai-generated' | 'missing';
@@ -18,6 +19,12 @@ export function LearningVisualAdmin() {
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const [annotatingStep, setAnnotatingStep] = useState<{
+    file: File;
+    moduleId: string;
+    stepId: string;
+    stepTitle: string;
+  } | null>(null);
 
   // Check which visuals already exist
   useEffect(() => {
@@ -108,16 +115,29 @@ export function LearningVisualAdmin() {
       return;
     }
 
+    // Open annotation editor instead of directly uploading
+    setAnnotatingStep({ file, moduleId, stepId, stepTitle });
+
+    // Reset input
+    event.target.value = '';
+  };
+
+  const handleAnnotationSave = async (annotatedBlob: Blob) => {
+    if (!annotatingStep) return;
+
+    const { moduleId, stepId, stepTitle } = annotatingStep;
     const key = `${moduleId}-${stepId}`;
+    
     setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
+    setAnnotatingStep(null);
 
     try {
-      const url = await uploadLearningVisual(file, moduleId, stepId, 'screenshot');
+      const url = await uploadLearningVisual(annotatedBlob, moduleId, stepId, 'screenshot');
       
       if (url) {
         setVisualStatus(prev => new Map(prev).set(key, 'exists'));
         setVisualTypes(prev => new Map(prev).set(key, 'screenshot'));
-        toast.success(`Screenshot uploaded for "${stepTitle}"`);
+        toast.success(`Annotated screenshot saved for "${stepTitle}"`);
       } else {
         throw new Error('Upload failed');
       }
@@ -126,9 +146,6 @@ export function LearningVisualAdmin() {
       setVisualStatus(prev => new Map(prev).set(key, 'missing'));
       toast.error('Failed to upload screenshot. Please try again.');
     }
-
-    // Reset input
-    event.target.value = '';
   };
 
   const handleGenerateModule = async (moduleId: string) => {
@@ -374,6 +391,17 @@ export function LearningVisualAdmin() {
           );
         })}
       </div>
+
+      {annotatingStep && (
+        <ScreenshotAnnotationEditor
+          imageFile={annotatingStep.file}
+          moduleId={annotatingStep.moduleId}
+          stepId={annotatingStep.stepId}
+          stepTitle={annotatingStep.stepTitle}
+          onSave={handleAnnotationSave}
+          onCancel={() => setAnnotatingStep(null)}
+        />
+      )}
     </div>
   );
 }
