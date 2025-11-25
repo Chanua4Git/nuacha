@@ -234,8 +234,16 @@ export function LearningVisualAdmin() {
   };
 
   const handleGifRecordingComplete = (gifBlob: Blob) => {
-    if (!recordingStep) return;
+    console.log('=== handleGifRecordingComplete called ===');
+    console.log('gifBlob:', gifBlob, 'size:', gifBlob?.size);
+    console.log('recordingStep:', recordingStep);
+    
+    if (!recordingStep) {
+      console.error('❌ recordingStep is null - returning early!');
+      return;
+    }
 
+    console.log('✅ Setting editingGif state...');
     setEditingGif({
       blob: gifBlob,
       moduleId: recordingStep.moduleId,
@@ -243,6 +251,7 @@ export function LearningVisualAdmin() {
       stepTitle: recordingStep.stepTitle,
     });
 
+    console.log('✅ Setting recordingStep to null (closing recording panel)...');
     setRecordingStep(null);
   };
 

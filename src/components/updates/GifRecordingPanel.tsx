@@ -155,15 +155,18 @@ export function GifRecordingPanel({
 
     try {
       const blob = await stopRecording();
-      console.log('stopRecording returned blob:', !!blob);
+      console.log('stopRecording returned blob:', !!blob, blob?.size, 'bytes');
       if (blob) {
+        console.log('Calling onRecordingComplete with blob');
         onRecordingComplete(blob);
-        onClose();
+        // ✅ REMOVED: onClose() - handleGifRecordingComplete handles closing via setRecordingStep(null)
       } else {
         console.warn('No blob returned from stopRecording');
+        onClose(); // Only close on error/no-blob
       }
     } catch (error) {
       console.error('Error stopping recording:', error);
+      onClose(); // Close on error
     }
   };
 
