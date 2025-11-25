@@ -1,3 +1,12 @@
+export interface LearningStepVisual {
+  type: 'ai-generated' | 'screenshot' | 'video' | 'none';
+  url?: string;
+  alt?: string;
+  source?: 'lovable-ai' | 'html2canvas' | 'manual-upload';
+  capturedAt?: string; // ISO date string
+  storageKey?: string; // Supabase storage path
+}
+
 export interface LearningStep {
   id: string;
   title: string;
@@ -6,6 +15,7 @@ export interface LearningStep {
   targetSelector?: string;
   screenshotHint?: string;
   ctaButton?: { label: string; path: string };
+  visual?: LearningStepVisual; // Optional visual content
 }
 
 export interface LearningModule {
