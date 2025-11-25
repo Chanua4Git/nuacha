@@ -67,7 +67,9 @@ export function useGifRecorder() {
   }, []);
 
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      console.log('stopRecording called, frames:', framesRef.current.length);
+      
       if (!gifRef.current || framesRef.current.length === 0) {
         console.warn('No frames captured for GIF');
         setIsRecording(false);
@@ -82,44 +84,76 @@ export function useGifRecorder() {
       
       console.log(`Encoding ${framesRef.current.length} frames into GIF...`);
       
-      // Create a temporary canvas for adding frames
-      const tempCanvas = document.createElement('canvas');
-      const ctx = tempCanvas.getContext('2d');
-      
-      if (!ctx || !canvasDimensionsRef.current) {
-        resolve(null);
-        return;
-      }
-      
-      // Add all collected frames to the GIF encoder
-      framesRef.current.forEach((imageData, index) => {
-        tempCanvas.width = imageData.width;
-        tempCanvas.height = imageData.height;
-        ctx.putImageData(imageData, 0, 0);
-        gifRef.current!.addFrame(tempCanvas, { delay: 100, copy: true }); // 100ms = 10fps
-      });
-      
-      // Listen for completion
-      gifRef.current.on('finished', (blob: Blob) => {
-        console.log('GIF encoding complete!', blob);
-        
-        // Cleanup
+      // Set a timeout in case encoding hangs
+      const timeout = setTimeout(() => {
+        console.error('GIF encoding timed out after 30 seconds');
         setIsRecording(false);
         setIsPaused(false);
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
+        reject(new Error('GIF encoding timed out'));
+      }, 30000);
+      
+      // Create a temporary canvas for adding frames
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      
+      if (!ctx || !canvasDimensionsRef.current) {
+        clearTimeout(timeout);
+        console.error('No canvas context or dimensions');
+        resolve(null);
+        return;
+      }
+      
+      try {
+        // Add all collected frames to the GIF encoder
+        framesRef.current.forEach((imageData, index) => {
+          tempCanvas.width = imageData.width;
+          tempCanvas.height = imageData.height;
+          ctx.putImageData(imageData, 0, 0);
+          gifRef.current!.addFrame(tempCanvas, { delay: 100, copy: true }); // 100ms = 10fps
+          if (index % 10 === 0) {
+            console.log(`Added frame ${index + 1}/${framesRef.current.length}`);
+          }
+        });
         
-        resolve(blob);
-      });
-      
-      gifRef.current.on('progress', (progress: number) => {
-        console.log(`GIF encoding progress: ${Math.round(progress * 100)}%`);
-      });
-      
-      // Start rendering the GIF
-      gifRef.current.render();
+        console.log('All frames added, starting render...');
+        
+        // Listen for completion
+        gifRef.current.on('finished', (blob: Blob) => {
+          clearTimeout(timeout);
+          console.log('GIF encoding complete!', blob.size, 'bytes');
+          
+          // Cleanup
+          setIsRecording(false);
+          setIsPaused(false);
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          
+          resolve(blob);
+        });
+        
+        gifRef.current.on('progress', (progress: number) => {
+          console.log(`GIF encoding progress: ${Math.round(progress * 100)}%`);
+        });
+        
+        // Start rendering the GIF
+        gifRef.current.render();
+      } catch (error) {
+        clearTimeout(timeout);
+        console.error('Error during GIF encoding:', error);
+        setIsRecording(false);
+        setIsPaused(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        reject(error);
+      }
     });
   }, []);
 
