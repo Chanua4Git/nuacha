@@ -5,8 +5,9 @@ import { ReleaseNotesList } from '@/components/updates/ReleaseNotesList';
 import { UnifiedFeedbackForm } from '@/components/updates/UnifiedFeedbackForm';
 import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
 import { LearningCenter } from '@/components/updates/LearningCenter';
+import { LearningVisualAdmin } from '@/components/updates/LearningVisualAdmin';
 import { Button } from '@/components/ui/button';
-import { Sparkles, GraduationCap, Eye, MessageSquare, Database } from 'lucide-react';
+import { Sparkles, GraduationCap, Eye, MessageSquare, Database, Settings } from 'lucide-react';
 import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -71,7 +72,7 @@ export default function Updates() {
           onValueChange={(value) => setSearchParams({ tab: value })}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
+          <TabsList className={`grid w-full ${isAuthenticated ? 'grid-cols-5' : 'grid-cols-4'} mb-8`}>
             <TabsTrigger value="whats-new" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">What's New</span>
@@ -92,6 +93,13 @@ export default function Updates() {
               <span className="hidden sm:inline">Feedback</span>
               <span className="sm:hidden">Feedback</span>
             </TabsTrigger>
+            {isAuthenticated && (
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin</span>
+                <span className="sm:hidden">Admin</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="whats-new" className="space-y-6">
@@ -109,6 +117,12 @@ export default function Updates() {
           <TabsContent value="feedback" className="space-y-6">
             <UnifiedFeedbackForm />
           </TabsContent>
+
+          {isAuthenticated && (
+            <TabsContent value="admin" className="space-y-6">
+              <LearningVisualAdmin />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
