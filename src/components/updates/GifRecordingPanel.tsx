@@ -144,6 +144,7 @@ export function GifRecordingPanel({
   };
 
   const handleStopRecording = async () => {
+    console.log('handleStopRecording called');
     isRecordingRef.current = false;
     isPausedRef.current = false;
     
@@ -152,10 +153,17 @@ export function GifRecordingPanel({
       animationFrameRef.current = null;
     }
 
-    const blob = await stopRecording();
-    if (blob) {
-      onRecordingComplete(blob);
-      onClose();
+    try {
+      const blob = await stopRecording();
+      console.log('stopRecording returned blob:', !!blob);
+      if (blob) {
+        onRecordingComplete(blob);
+        onClose();
+      } else {
+        console.warn('No blob returned from stopRecording');
+      }
+    } catch (error) {
+      console.error('Error stopping recording:', error);
     }
   };
 
