@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, RefreshCw, X, User, Ghost } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Camera, RefreshCw, User, Ghost, Info } from 'lucide-react';
 import { captureIframe } from '@/utils/screenshotCapture';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -82,96 +83,91 @@ export const CapturePreviewPanel = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Preview & Capture: {stepTitle}</DialogTitle>
-        </DialogHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <DialogTitle>Preview & Capture: {stepTitle}</DialogTitle>
+              
+              {/* Info popover with guide */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[500px]" align="start">
+                  <AdminCaptureGuide
+                    variant="popover"
+                    moduleTitle={moduleTitle}
+                    moduleTrack={moduleTrack}
+                    stepTitle={stepTitle}
+                    stepDescription={stepDescription}
+                    stepNumber={stepNumber}
+                    totalSteps={totalSteps}
+                    screenshotHint={screenshotHint}
+                    detailedInstructions={detailedInstructions}
+                    targetPath={targetPath}
+                    isGif={false}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-        {/* Admin Capture Guide */}
-        <AdminCaptureGuide
-          moduleTitle={moduleTitle}
-          moduleTrack={moduleTrack}
-          stepTitle={stepTitle}
-          stepDescription={stepDescription}
-          stepNumber={stepNumber}
-          totalSteps={totalSteps}
-          screenshotHint={screenshotHint}
-          detailedInstructions={detailedInstructions}
-          targetPath={targetPath}
-          isGif={false}
-        />
+            <div className="flex items-center gap-3">
+              {/* Preview mode toggle */}
+              <div className="inline-flex rounded-lg border border-border bg-background p-1">
+                <button
+                  onClick={() => !isCapturing && setPreviewMode('authenticated')}
+                  disabled={isCapturing}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md transition-colors",
+                    previewMode === 'authenticated' 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground",
+                    isCapturing && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <User className="w-3 h-3" />
+                  Auth
+                </button>
+                <button
+                  onClick={() => !isCapturing && setPreviewMode('guest')}
+                  disabled={isCapturing}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md transition-colors",
+                    previewMode === 'guest' 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground",
+                    isCapturing && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Ghost className="w-3 h-3" />
+                  Guest
+                </button>
+              </div>
 
-        {/* Preview Mode Toggle */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm text-muted-foreground">Preview as:</span>
-          <div className="inline-flex rounded-lg border border-border bg-background p-1">
-            <button
-              onClick={() => !isCapturing && setPreviewMode('authenticated')}
-              disabled={isCapturing}
-              className={cn(
-                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                previewMode === 'authenticated' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "text-muted-foreground hover:text-foreground",
-                isCapturing && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <User className="w-4 h-4" />
-              Authenticated
-            </button>
-            <button
-              onClick={() => !isCapturing && setPreviewMode('guest')}
-              disabled={isCapturing}
-              className={cn(
-                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                previewMode === 'guest' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "text-muted-foreground hover:text-foreground",
-                isCapturing && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <Ghost className="w-4 h-4" />
-              Guest
-            </button>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                disabled={isCapturing}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              
+              <Button
+                onClick={handleCapture}
+                disabled={isCapturing}
+                size="sm"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                {isCapturing ? 'Capturing...' : 'Capture'}
+              </Button>
+            </div>
           </div>
-          {previewMode === 'guest' && (
-            <span className="text-xs text-muted-foreground">
-              (Simulates unauthenticated user)
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 mb-4">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={isCapturing}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          
-          <Button
-            onClick={handleCapture}
-            disabled={isCapturing}
-            size="sm"
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            {isCapturing ? 'Capturing...' : 'Capture Screenshot'}
-          </Button>
-
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            disabled={isCapturing}
-            className="ml-auto"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Close
-          </Button>
-        </div>
+        </DialogHeader>
 
         <div className="flex-1 border rounded-lg overflow-hidden bg-muted">
           <iframe
@@ -182,10 +178,6 @@ export const CapturePreviewPanel = ({
             title="Preview"
           />
         </div>
-
-        <p className="text-sm text-muted-foreground mt-2">
-          Interact with the preview above to set the desired UI state, then click "Capture Screenshot" to proceed to annotation.
-        </p>
       </DialogContent>
     </Dialog>
   );
