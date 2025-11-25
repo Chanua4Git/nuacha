@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, Image, Loader2, Upload, Camera } from 'lucide-react';
 import { learningModules } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
-import { checkVisualExists, uploadLearningVisual } from '@/utils/learningVisuals';
+import { checkVisualExists, uploadLearningVisual, getLearningVisualUrl } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
 import { CapturePreviewPanel } from './CapturePreviewPanel';
@@ -449,10 +449,23 @@ export function LearningVisualAdmin() {
                           key={step.id} 
                           className="flex items-center justify-between py-3 border-b last:border-0"
                         >
-                          <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             <span className="text-sm font-medium">
                               {idx + 1}. {step.title}
                             </span>
+                            {/* Preview thumbnail for existing visuals */}
+                            {status === 'exists' && (
+                              <img 
+                                src={getLearningVisualUrl(
+                                  module.id, 
+                                  step.id, 
+                                  type === 'missing' ? 'ai-generated' : type,
+                                  type === 'gif' ? 'gif' : 'png'
+                                )}
+                                alt={`${step.title} preview`}
+                                className="h-8 w-12 object-cover rounded border border-border"
+                              />
+                            )}
                           </div>
                           <div className="flex items-center gap-2 ml-4">
                             <Badge 

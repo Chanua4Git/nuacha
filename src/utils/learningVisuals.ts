@@ -88,21 +88,10 @@ export const checkVisualExists = async (
   extension: string = 'png'
 ): Promise<boolean> => {
   try {
-    const storagePath = `${type}/${moduleId}/${stepId}.${extension}`;
-
-    const { data, error } = await supabase.storage
-      .from('learning-visuals')
-      .list(`${type}/${moduleId}`, {
-        search: `${stepId}.${extension}`
-      });
-
-    if (error) {
-      console.error('List error:', error);
-      return false;
-    }
-
-    return data && data.length > 0;
-
+    // Use HEAD request to directly check if file exists
+    const url = getLearningVisualUrl(moduleId, stepId, type, extension);
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
   } catch (error) {
     console.error('Error checking visual existence:', error);
     return false;
