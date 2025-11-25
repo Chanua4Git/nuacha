@@ -58,14 +58,20 @@ export async function uploadReceiptToOrganizedStorage(
       return await uploadReceiptToStorage(processedFile, userId);
     }
     
-    const { data: { publicUrl } } = supabase.storage
+    // Get a signed URL for the uploaded file (1 hour expiration)
+    const { data: signedUrlData, error: signedError } = await supabase.storage
       .from('receipts')
-      .getPublicUrl(data.path);
+      .createSignedUrl(data.path, 3600);
+
+    if (signedError || !signedUrlData) {
+      console.error('❌ Error creating signed URL:', signedError);
+      return null;
+    }
     
-    console.log('📸 Receipt uploaded to organized storage:', publicUrl);
+    console.log('📸 Receipt uploaded to organized storage with signed URL');
     toast.success('Receipt saved and organized');
     
-    return publicUrl;
+    return signedUrlData.signedUrl;
   } catch (error) {
     console.error('❌ Error in organized receipt upload:', error);
     
@@ -99,12 +105,18 @@ async function uploadReceiptToStorage(file: File, userId: string): Promise<strin
       return null;
     }
     
-    const { data: { publicUrl } } = supabase.storage
+    // Get a signed URL for the uploaded file (1 hour expiration)
+    const { data: signedUrlData, error: signedError } = await supabase.storage
       .from('receipts')
-      .getPublicUrl(data.path);
+      .createSignedUrl(data.path, 3600);
+
+    if (signedError || !signedUrlData) {
+      console.error('❌ Error creating signed URL:', signedError);
+      return null;
+    }
     
-    console.log('📸 Receipt uploaded successfully:', publicUrl);
-    return publicUrl;
+    console.log('📸 Receipt uploaded successfully with signed URL');
+    return signedUrlData.signedUrl;
   } catch (error) {
     console.error('❌ Error in receipt upload:', error);
     toast("We couldn't save your receipt", {
