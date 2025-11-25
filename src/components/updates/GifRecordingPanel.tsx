@@ -56,6 +56,7 @@ export function GifRecordingPanel({
     recordingDuration,
     startRecording,
     stopRecording,
+    addFrame,
     pauseRecording,
     resumeRecording,
     formatDuration
@@ -94,6 +95,9 @@ export function GifRecordingPanel({
         canvasRef.current.width = canvas.width;
         canvasRef.current.height = canvas.height;
         ctx.drawImage(canvas, 0, 0);
+        
+        // Add the captured frame to GIF encoder
+        addFrame(canvasRef.current);
       }
     } catch (error) {
       console.error('Error capturing frame:', error);
