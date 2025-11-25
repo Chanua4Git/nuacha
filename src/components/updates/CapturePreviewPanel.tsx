@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, RefreshCw, X } from 'lucide-react';
+import { Camera, RefreshCw, X, User, Ghost } from 'lucide-react';
 import { captureIframe } from '@/utils/screenshotCapture';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface CapturePreviewPanelProps {
   open: boolean;
@@ -21,6 +22,7 @@ export const CapturePreviewPanel = ({
   onCapture,
 }: CapturePreviewPanelProps) => {
   const [isCapturing, setIsCapturing] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleCapture = async () => {
@@ -57,12 +59,57 @@ export const CapturePreviewPanel = ({
     }
   };
 
+  // Build iframe URL with preview mode parameter
+  const iframeUrl = previewMode === 'guest' 
+    ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
+    : targetPath;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Preview & Capture: {stepTitle}</DialogTitle>
         </DialogHeader>
+
+        {/* Preview Mode Toggle */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm text-muted-foreground">Preview as:</span>
+          <div className="inline-flex rounded-lg border border-border bg-background p-1">
+            <button
+              onClick={() => !isCapturing && setPreviewMode('authenticated')}
+              disabled={isCapturing}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                previewMode === 'authenticated' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground",
+                isCapturing && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <User className="w-4 h-4" />
+              Authenticated
+            </button>
+            <button
+              onClick={() => !isCapturing && setPreviewMode('guest')}
+              disabled={isCapturing}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                previewMode === 'guest' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground",
+                isCapturing && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Ghost className="w-4 h-4" />
+              Guest
+            </button>
+          </div>
+          {previewMode === 'guest' && (
+            <span className="text-xs text-muted-foreground">
+              (Simulates unauthenticated user)
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 mb-4">
           <Button
@@ -99,7 +146,8 @@ export const CapturePreviewPanel = ({
         <div className="flex-1 border rounded-lg overflow-hidden bg-muted">
           <iframe
             ref={iframeRef}
-            src={targetPath}
+            src={iframeUrl}
+            key={iframeUrl}
             className="w-full h-full"
             title="Preview"
           />

@@ -1,4 +1,3 @@
-
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import DownloadPurchaseSuccess from "./pages/DownloadPurchaseSuccess";
 import Payroll from "./pages/Payroll";
 import { AuthProvider } from "./auth/contexts/AuthProvider";
 import { AuthDemoProvider } from "./auth/contexts/AuthDemoProvider";
+import { AuthPreviewProvider } from "./contexts/AuthPreviewContext";
 import Login from "./auth/components/Login";
 import Signup from "./auth/components/Signup";
 import ResetPassword from "./auth/components/ResetPassword";
@@ -83,22 +83,23 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthDemoProvider>
-          <ExpenseProvider>
-            <TooltipProvider>
-              <OnboardingProvider>
-              <Toaster
-                position="top-center"
-                toastOptions={{
-                  style: {
-                    maxWidth: '90vw',
-                  },
-                }}
-              />
-              <div className="min-h-screen flex flex-col">
-                <ScrollToTop />
-                <Navbar />
-                <main className="flex-1">
+        <AuthPreviewProvider>
+          <AuthDemoProvider>
+            <ExpenseProvider>
+              <TooltipProvider>
+                <OnboardingProvider>
+                <Toaster
+                  position="top-center"
+                  toastOptions={{
+                    style: {
+                      maxWidth: '90vw',
+                    },
+                  }}
+                />
+                <div className="min-h-screen flex flex-col">
+                  <ScrollToTop />
+                  <Navbar />
+                  <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/app" element={
@@ -150,6 +151,7 @@ const App = () => {
             </TooltipProvider>
           </ExpenseProvider>
         </AuthDemoProvider>
+      </AuthPreviewProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

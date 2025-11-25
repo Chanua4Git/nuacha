@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, Pause, Play } from 'lucide-react';
+import { Circle, Square, Pause, Play, User, Ghost } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import html2canvas from 'html2canvas';
+import { cn } from '@/lib/utils';
 
 interface GifRecordingPanelProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function GifRecordingPanel({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [isIframeReady, setIsIframeReady] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
   
   const {
     isRecording,
@@ -120,6 +122,11 @@ export function GifRecordingPanel({
     }
   };
 
+  // Build iframe URL with preview mode parameter
+  const iframeUrl = previewMode === 'guest' 
+    ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
+    : targetPath;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
@@ -178,10 +185,51 @@ export function GifRecordingPanel({
           </div>
         </DialogHeader>
 
+        {/* Preview Mode Toggle */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">Preview as:</span>
+          <div className="inline-flex rounded-lg border border-border bg-background p-1">
+            <button
+              onClick={() => !isRecording && setPreviewMode('authenticated')}
+              disabled={isRecording}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                previewMode === 'authenticated' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground",
+                isRecording && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <User className="w-4 h-4" />
+              Authenticated
+            </button>
+            <button
+              onClick={() => !isRecording && setPreviewMode('guest')}
+              disabled={isRecording}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                previewMode === 'guest' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground",
+                isRecording && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Ghost className="w-4 h-4" />
+              Guest
+            </button>
+          </div>
+          {previewMode === 'guest' && (
+            <span className="text-xs text-muted-foreground">
+              (Simulates unauthenticated user)
+            </span>
+          )}
+        </div>
+
         <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted">
           <iframe
             ref={iframeRef}
-            src={targetPath}
+            src={iframeUrl}
+            key={iframeUrl}
             onLoad={handleIframeLoad}
             className="w-full h-full"
             title="Preview"
