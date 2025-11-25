@@ -6,7 +6,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/auth/contexts/AuthProvider';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuthPreview } from '@/contexts/AuthPreviewContext';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import NavigationDropdown from '@/components/navigation/NavigationDropdown';
 
@@ -17,9 +18,18 @@ const Navbar = () => {
   const { selectedFamily } = useExpense();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, authDemoActive } = useAuth();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Check if we're in preview mode (for admin tools)
+  const isPreviewMode = searchParams.get('_preview_auth') === 'false';
+  
+  // Always use real auth, but override user in preview mode
+  const auth = useAuth();
+  const previewAuth = useAuthPreview();
+  const user = isPreviewMode ? null : auth.user;
+  const { signOut, authDemoActive } = auth;
 
   // Only hide navbar on auth pages
   if (HIDDEN_ROUTES.includes(location.pathname)) {
