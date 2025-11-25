@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Image, Loader2, Upload } from 'lucide-react';
+import { ChevronDown, Image, Loader2, Upload, Camera } from 'lucide-react';
 import { learningModules } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
 import { checkVisualExists, uploadLearningVisual } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
+import { CapturePreviewPanel } from './CapturePreviewPanel';
 
 type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading';
 type VisualType = 'screenshot' | 'ai-generated' | 'missing';
@@ -24,6 +25,12 @@ export function LearningVisualAdmin() {
     moduleId: string;
     stepId: string;
     stepTitle: string;
+  } | null>(null);
+  const [previewingStep, setPreviewingStep] = useState<{
+    moduleId: string;
+    stepId: string;
+    stepTitle: string;
+    targetPath: string;
   } | null>(null);
 
   // Check which visuals already exist
@@ -146,6 +153,24 @@ export function LearningVisualAdmin() {
       setVisualStatus(prev => new Map(prev).set(key, 'missing'));
       toast.error('Failed to upload screenshot. Please try again.');
     }
+  };
+
+  const handleCaptureFromPreview = (imageBlob: Blob) => {
+    if (!previewingStep) return;
+
+    // Convert blob to File for annotation editor
+    const file = new File([imageBlob], `${previewingStep.stepId}-capture.png`, {
+      type: 'image/png',
+    });
+
+    setAnnotatingStep({
+      file,
+      moduleId: previewingStep.moduleId,
+      stepId: previewingStep.stepId,
+      stepTitle: previewingStep.stepTitle,
+    });
+
+    setPreviewingStep(null);
   };
 
   const handleGenerateModule = async (moduleId: string) => {
@@ -364,6 +389,25 @@ export function LearningVisualAdmin() {
                               <Upload className="w-3 h-3" />
                               Upload
                             </Button>
+
+                            {step.ctaButton?.path && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setPreviewingStep({
+                                  moduleId: module.id,
+                                  stepId: step.id,
+                                  stepTitle: step.title,
+                                  targetPath: step.ctaButton!.path,
+                                })}
+                                disabled={isProcessing}
+                                className="gap-1"
+                              >
+                                <Camera className="w-3 h-3" />
+                                Preview
+                              </Button>
+                            )}
+                            
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -400,6 +444,16 @@ export function LearningVisualAdmin() {
           stepTitle={annotatingStep.stepTitle}
           onSave={handleAnnotationSave}
           onCancel={() => setAnnotatingStep(null)}
+        />
+      )}
+
+      {previewingStep && (
+        <CapturePreviewPanel
+          open={!!previewingStep}
+          onClose={() => setPreviewingStep(null)}
+          targetPath={previewingStep.targetPath}
+          stepTitle={previewingStep.stepTitle}
+          onCapture={handleCaptureFromPreview}
         />
       )}
     </div>
