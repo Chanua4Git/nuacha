@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronDown, ChevronUp, ExternalLink, Lightbulb } from 'lucide-react';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import { getLearningVisualUrl } from '@/utils/learningVisuals';
+import { cn } from '@/lib/utils';
 
 interface LearningStepCardProps {
   step: LearningStep;
@@ -18,11 +21,17 @@ interface LearningStepCardProps {
 export function LearningStepCard({
   step,
   stepNumber,
+  moduleId,
   isCompleted,
   onToggleComplete
 }: LearningStepCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasVisual, setHasVisual] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Construct potential visual URL
+  const visualUrl = step.visual?.url || getLearningVisualUrl(moduleId, step.id, 'ai-generated');
 
   const handleCTAClick = () => {
     if (step.ctaButton?.path) {
@@ -87,6 +96,25 @@ export function LearningStepCard({
             {/* Expanded Content */}
             {isExpanded && (
               <div className="space-y-4 mt-3 pt-3 border-t">
+                {/* Visual Content */}
+                {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
+                <img 
+                  src={visualUrl}
+                  alt={step.visual?.alt || step.title}
+                  className={cn(
+                    "w-full rounded-lg object-cover max-h-48 border border-border",
+                    !hasVisual && "hidden"
+                  )}
+                  onLoad={() => { 
+                    setHasVisual(true); 
+                    setImageLoading(false); 
+                  }}
+                  onError={() => { 
+                    setHasVisual(false); 
+                    setImageLoading(false); 
+                  }}
+                />
+
                 {/* Main Instructions */}
                 <div className="prose prose-sm max-w-none text-muted-foreground">
                   <ReactMarkdown>{mainContent}</ReactMarkdown>
