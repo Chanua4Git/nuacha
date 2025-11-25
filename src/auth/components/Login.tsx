@@ -27,7 +27,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-accent/10">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-b from-background to-accent/10">
       <Card className="auth-card">
         <CardHeader className="space-y-1 text-center">
           <BackToAuthDemo />

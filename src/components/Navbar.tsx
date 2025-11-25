@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import NavigationDropdown from '@/components/navigation/NavigationDropdown';
 
 // Only hide navbar on auth pages and special demo pages
-const HIDDEN_ROUTES = ['/login', '/signup', '/reset-password', '/reset-password/confirm'];
+const HIDDEN_ROUTES = ['/reset-password', '/reset-password/confirm'];
 
 const Navbar = () => {
   const { selectedFamily } = useExpense();
