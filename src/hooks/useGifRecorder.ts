@@ -50,7 +50,8 @@ export function useGifRecorder() {
   }, []);
 
   const addFrame = useCallback((canvas: HTMLCanvasElement) => {
-    if (!isRecording || isPaused) return;
+    // Note: Recording state is managed by the caller (GifRecordingPanel)
+    // using refs, so we don't check state here to avoid stale closures
     
     const ctx = canvas.getContext('2d');
     if (ctx && canvasDimensionsRef.current) {
@@ -61,8 +62,9 @@ export function useGifRecorder() {
         canvasDimensionsRef.current.height
       );
       framesRef.current.push(imageData);
+      console.log(`Frame ${framesRef.current.length} captured`);
     }
-  }, [isRecording, isPaused]);
+  }, []);
 
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
