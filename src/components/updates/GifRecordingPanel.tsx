@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Circle, Square, Pause, Play, User, Ghost, Info } from 'lucide-react';
+import { Circle, Square, Pause, Play, User, Ghost, ChevronRight, ChevronLeft, Film } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
@@ -44,6 +44,7 @@ export function GifRecordingPanel({
   const animationFrameRef = useRef<number | null>(null);
   const [isIframeReady, setIsIframeReady] = useState(false);
   const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
+  const [showGuide, setShowGuide] = useState(true);
   
   const {
     isRecording,
@@ -149,33 +150,7 @@ export function GifRecordingPanel({
       <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <DialogTitle>Recording: {stepTitle}</DialogTitle>
-              
-              {/* Info popover with guide */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[500px]" align="start">
-                  <AdminCaptureGuide
-                    variant="popover"
-                    moduleTitle={moduleTitle}
-                    moduleTrack={moduleTrack}
-                    stepTitle={stepTitle}
-                    stepDescription={stepDescription}
-                    stepNumber={stepNumber}
-                    totalSteps={totalSteps}
-                    screenshotHint={screenshotHint}
-                    detailedInstructions={detailedInstructions}
-                    targetPath={targetPath}
-                    isGif={true}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <DialogTitle>Recording: {stepTitle}</DialogTitle>
 
             <div className="flex items-center gap-3">
               {/* Preview mode toggle */}
@@ -264,24 +239,62 @@ export function GifRecordingPanel({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted">
-          <iframe
-            ref={iframeRef}
-            src={iframeUrl}
-            key={iframeUrl}
-            onLoad={handleIframeLoad}
-            className="w-full h-full"
-            title="Preview"
-          />
-          
-          {isRecording && (
-            <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-              <Circle className="w-2 h-2 fill-current animate-pulse" />
-              Recording
-            </div>
-          )}
+        <div className="flex-1 flex overflow-hidden gap-3">
+          {/* Main iframe area */}
+          <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted">
+            <iframe
+              ref={iframeRef}
+              src={iframeUrl}
+              key={iframeUrl}
+              onLoad={handleIframeLoad}
+              className="w-full h-full"
+              title="Preview"
+            />
+            
+            {isRecording && (
+              <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+                <Circle className="w-2 h-2 fill-current animate-pulse" />
+                Recording
+              </div>
+            )}
 
-          <canvas ref={canvasRef} className="hidden" />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+
+          {/* Collapsible guide sidebar */}
+          {showGuide ? (
+            <div className="w-72 border border-border rounded-lg p-4 overflow-y-auto bg-background">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Film className="h-4 w-4" /> Recording Guide
+                </h4>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setShowGuide(false)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <AdminCaptureGuide
+                variant="popover"
+                moduleTitle={moduleTitle}
+                moduleTrack={moduleTrack}
+                stepTitle={stepTitle}
+                stepDescription={stepDescription}
+                stepNumber={stepNumber}
+                totalSteps={totalSteps}
+                screenshotHint={screenshotHint}
+                detailedInstructions={detailedInstructions}
+                targetPath={targetPath}
+                isGif={true}
+              />
+            </div>
+          ) : (
+            <button 
+              onClick={() => setShowGuide(true)}
+              className="w-8 border border-border rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+              aria-label="Show recording guide"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
