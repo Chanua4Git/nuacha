@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import GIF from 'gif.js';
+import gifWorkerUrl from 'gif.js/dist/gif.worker.js?url';
 
 export function useGifRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -11,6 +12,7 @@ export function useGifRecorder() {
   const framesRef = useRef<ImageData[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const canvasDimensionsRef = useRef<{ width: number; height: number } | null>(null);
+  const isRenderingRef = useRef(false);
 
   const startRecording = useCallback(async (canvasElement: HTMLCanvasElement) => {
     try {
@@ -31,7 +33,7 @@ export function useGifRecorder() {
         quality: 10,
         width: canvasElement.width,
         height: canvasElement.height,
-        workerScript: '/gif.worker.js'
+        workerScript: gifWorkerUrl
       });
       
       setIsRecording(true);
@@ -70,6 +72,13 @@ export function useGifRecorder() {
     return new Promise((resolve, reject) => {
       console.log('stopRecording called, frames:', framesRef.current.length);
       
+      // Guard against duplicate calls
+      if (isRenderingRef.current) {
+        console.warn('Already rendering, ignoring duplicate stopRecording call');
+        resolve(null);
+        return;
+      }
+      
       if (!gifRef.current || framesRef.current.length === 0) {
         console.warn('No frames captured for GIF');
         setIsRecording(false);
@@ -83,6 +92,9 @@ export function useGifRecorder() {
       }
       
       console.log(`Encoding ${framesRef.current.length} frames into GIF...`);
+      
+      // Set rendering flag to prevent duplicate calls
+      isRenderingRef.current = true;
       
       // Set a timeout in case encoding hangs
       const timeout = setTimeout(() => {
@@ -134,6 +146,10 @@ export function useGifRecorder() {
             timerRef.current = null;
           }
           
+          // Reset rendering flag and null out encoder
+          isRenderingRef.current = false;
+          gifRef.current = null;
+          
           resolve(blob);
         });
         
@@ -152,6 +168,11 @@ export function useGifRecorder() {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
+        
+        // Reset rendering flag and null out encoder on error
+        isRenderingRef.current = false;
+        gifRef.current = null;
+        
         reject(error);
       }
     });
