@@ -1,11 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Circle, Square, Pause, Play, User, Ghost, ChevronRight, ChevronLeft, Film } from 'lucide-react';
+import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
-import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
 
@@ -39,153 +37,47 @@ export function GifRecordingPanel({
   stepNumber,
   totalSteps,
 }: GifRecordingPanelProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const isRecordingRef = useRef(false);
-  const isPausedRef = useRef(false);
-  const lastCaptureTime = useRef(0);
-  const CAPTURE_INTERVAL = 100; // 10fps
-  const [isIframeReady, setIsIframeReady] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'authenticated' | 'guest'>('guest');
   const [showGuide, setShowGuide] = useState(true);
+  const [previewMode] = useState<'authenticated' | 'guest'>('guest');
   
   const {
     isRecording,
-    isPaused,
-    recordingDuration,
+    hasRecording,
+    error,
+    videoBlob,
+    videoUrl,
     startRecording,
     stopRecording,
-    addFrame,
-    pauseRecording,
-    resumeRecording,
-    formatDuration
+    reset,
   } = useGifRecorder();
 
   useEffect(() => {
     if (!open) {
-      setIsIframeReady(false);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      reset();
     }
-  }, [open]);
+  }, [open, reset]);
 
-  const handleIframeLoad = () => {
-    setIsIframeReady(true);
+  const handleStart = async () => {
+    await startRecording();
   };
 
-  const captureFrame = async () => {
-    console.log('captureFrame called, canvasRef:', !!canvasRef.current);
-    if (!iframeRef.current?.contentWindow?.document.body || !canvasRef.current) {
-      return;
-    }
+  const handleStop = () => {
+    stopRecording();
+  };
 
-    try {
-      const canvas = await html2canvas(iframeRef.current.contentWindow.document.body, {
-        useCORS: true,
-        allowTaint: false,
-        scale: 1,
-        logging: false,
-        width: 1280,
-        height: 720
-      });
-
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        canvasRef.current.width = canvas.width;
-        canvasRef.current.height = canvas.height;
-        ctx.drawImage(canvas, 0, 0);
-        
-        console.log('Frame drawn to canvas, calling addFrame');
-        // Add the captured frame to GIF encoder
-        addFrame(canvasRef.current);
-      }
-    } catch (error) {
-      console.error('Error capturing frame:', error);
+  const handleUseRecording = () => {
+    if (videoBlob) {
+      // TODO: Convert videoBlob to GIF
+      // For now, pass the video blob directly
+      onRecordingComplete(videoBlob);
     }
   };
 
-  const startCaptureLoop = () => {
-    const captureLoop = async () => {
-      const now = Date.now();
-      if (isRecordingRef.current && !isPausedRef.current) {
-        if (now - lastCaptureTime.current >= CAPTURE_INTERVAL) {
-          await captureFrame();
-          lastCaptureTime.current = now;
-        }
-        animationFrameRef.current = requestAnimationFrame(captureLoop);
-      }
-    };
-    captureLoop();
+  const handleDiscard = () => {
+    reset();
   };
 
-  const handleStartRecording = async () => {
-    if (!canvasRef.current) return;
-
-    // First, capture a frame to get the canvas dimensions
-    await captureFrame();
-    
-    // Now initialize the GIF encoder with correct dimensions
-    await startRecording(canvasRef.current);
-    
-    // Set recording refs
-    isRecordingRef.current = true;
-    isPausedRef.current = false;
-    
-    // Set lastCaptureTime to 0 so first loop iteration captures immediately
-    lastCaptureTime.current = 0;
-    
-    // Capture the first frame AFTER startRecording (so framesRef isn't cleared)
-    await captureFrame();
-    
-    // Start the capture loop
-    startCaptureLoop();
-  };
-
-  const handleStopRecording = async () => {
-    console.log('handleStopRecording called');
-    isRecordingRef.current = false;
-    isPausedRef.current = false;
-    
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    try {
-      const blob = await stopRecording();
-      console.log('stopRecording returned blob:', !!blob, blob?.size, 'bytes');
-      if (blob) {
-        console.log('Calling onRecordingComplete with blob');
-        onRecordingComplete(blob);
-        // ✅ REMOVED: onClose() - handleGifRecordingComplete handles closing via setRecordingStep(null)
-      } else {
-        console.warn('No blob returned from stopRecording');
-        onClose(); // Only close on error/no-blob
-      }
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-      onClose(); // Close on error
-    }
-  };
-
-  const handlePauseResume = () => {
-    if (isPaused) {
-      isPausedRef.current = false;
-      resumeRecording();
-      startCaptureLoop();
-    } else {
-      isPausedRef.current = true;
-      pauseRecording();
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    }
-  };
-
-  // Build iframe URL with preview mode parameter
+  // Build iframe URL with preview mode parameter (kept for reference, but not used for capture)
   const iframeUrl = previewMode === 'guest' 
     ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
     : targetPath;
@@ -198,112 +90,113 @@ export function GifRecordingPanel({
             <DialogTitle>Recording: {stepTitle}</DialogTitle>
 
             <div className="flex items-center gap-3">
-              {/* Preview mode toggle */}
-              <div className="inline-flex rounded-lg border border-border bg-background p-1">
-                <button
-                  onClick={() => !isRecording && setPreviewMode('authenticated')}
-                  disabled={isRecording}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md transition-colors",
-                    previewMode === 'authenticated' 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground",
-                    isRecording && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <User className="w-3 h-3" />
-                  Auth
-                </button>
-                <button
-                  onClick={() => !isRecording && setPreviewMode('guest')}
-                  disabled={isRecording}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md transition-colors",
-                    previewMode === 'guest' 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground",
-                    isRecording && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <Ghost className="w-3 h-3" />
-                  Guest
-                </button>
-              </div>
-
               {isRecording && (
                 <Badge variant="destructive" className="gap-2">
                   <Circle className="w-2 h-2 fill-current animate-pulse" />
-                  REC {formatDuration(recordingDuration)}
+                  REC
                 </Badge>
               )}
-              
-              <div className="flex items-center gap-2">
-                {!isRecording ? (
-                  <Button
-                    onClick={handleStartRecording}
-                    disabled={!isIframeReady}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Circle className="w-4 h-4 fill-current" />
-                    Start
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      onClick={handlePauseResume}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      {isPaused ? (
-                        <>
-                          <Play className="w-4 h-4" />
-                          Resume
-                        </>
-                      ) : (
-                        <>
-                          <Pause className="w-4 h-4" />
-                          Pause
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleStopRecording}
-                      variant="destructive"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <Square className="w-4 h-4" />
-                      Stop
-                    </Button>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </DialogHeader>
 
+        {error && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
         <div className="flex-1 flex overflow-hidden gap-3">
-          {/* Main iframe area */}
-          <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted">
-            <iframe
-              ref={iframeRef}
-              src={iframeUrl}
-              key={iframeUrl}
-              onLoad={handleIframeLoad}
-              className="w-full h-full"
-              title="Preview"
-            />
+          {/* Main content area */}
+          <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted p-6 flex flex-col justify-center">
             
-            {isRecording && (
-              <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-                <Circle className="w-2 h-2 fill-current animate-pulse" />
-                Recording
+            {/* State: Idle (no recording yet) */}
+            {!isRecording && !hasRecording && (
+              <div className="max-w-2xl mx-auto space-y-6 text-center">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-semibold">Ready to Record</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    When you click <strong>Start recording</strong>, your browser will ask which screen, window, or tab to share.
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Select the browser tab where Nuacha is open, then perform the interaction you want to show (hover menus, click buttons, fill forms).
+                  </p>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">What to capture:</p>
+                  <p className="text-sm">{screenshotHint || stepDescription}</p>
+                </div>
+
+                <Button onClick={handleStart} size="lg" className="gap-2">
+                  <Circle className="w-4 h-4 fill-current" />
+                  Start Recording
+                </Button>
               </div>
             )}
 
-            <canvas ref={canvasRef} className="hidden" />
+            {/* State: Recording */}
+            {isRecording && (
+              <div className="max-w-2xl mx-auto space-y-6 text-center">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 text-destructive font-semibold text-lg">
+                    <Circle className="w-3 h-3 fill-current animate-pulse" />
+                    Recording in progress…
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Perform the interaction you want to show. The screen capture is recording your actions.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    When finished, click <strong>Stop Recording</strong> below.
+                  </p>
+                </div>
+
+                <div className="flex justify-center">
+                  <Button onClick={handleStop} variant="destructive" size="lg" className="gap-2">
+                    <Square className="w-4 h-4" />
+                    Stop Recording
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* State: Recorded (preview) */}
+            {!isRecording && hasRecording && (
+              <div className="max-w-3xl mx-auto space-y-4 w-full">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Preview Recording</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This is the video that will be converted to a GIF and added to the learning step.
+                  </p>
+                </div>
+
+                {videoUrl && (
+                  <div className="rounded-lg border border-border overflow-hidden bg-black">
+                    <video
+                      className="w-full max-h-[400px]"
+                      src={videoUrl}
+                      controls
+                      playsInline
+                      autoPlay
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button onClick={handleUseRecording} size="lg" className="gap-2">
+                    Use This Recording
+                  </Button>
+
+                  <Button onClick={handleDiscard} variant="outline" size="lg">
+                    Discard & Retry
+                  </Button>
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  Note: Video will be converted to GIF format when saved.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Collapsible guide sidebar */}
