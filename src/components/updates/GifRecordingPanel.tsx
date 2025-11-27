@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film, ExternalLink } from 'lucide-react';
+import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
@@ -115,32 +115,22 @@ export function GifRecordingPanel({
               <div className="max-w-2xl mx-auto space-y-6 text-center">
                 <div className="space-y-3">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    When you click <strong>Start recording</strong>, your browser will ask which screen, window, or tab to share.
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Select the browser tab where Nuacha is open, then perform the interaction you want to show (hover menus, click buttons, fill forms).
+                  </p>
                   
                   {previewMode === 'guest' && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                      <p className="text-xs text-blue-800">
-                        <strong>Guest Preview Mode:</strong> Recording unauthenticated user experience.
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(iframeUrl, '_blank')}
-                        className="gap-2 w-full"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Open Preview Tab
-                      </Button>
-                      <p className="text-xs text-blue-700">
-                        Opens target page in new tab with guest UI. Record that tab when ready.
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800">
+                        <strong>Note:</strong> You're in Guest Preview Mode. The Screen Capture API will record the <strong>actual browser tab</strong> you select, 
+                        so open the target page (with <code className="bg-amber-100 px-1 rounded">?_preview_auth=false</code>) in a separate tab before recording 
+                        to ensure you capture the unauthenticated experience.
                       </p>
                     </div>
                   )}
-                  
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {previewMode === 'guest'
-                      ? 'After opening the preview tab, click Start Recording below and select that tab to capture.'
-                      : 'When you click Start Recording, your browser will ask which screen, window, or tab to share.'}
-                  </p>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
