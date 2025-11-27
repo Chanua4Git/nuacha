@@ -16,7 +16,7 @@ import { ReceiptLineItem } from '@/types/receipt';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getAllDemoCategories, findDemoCategory, comprehensiveCategories } from '@/data/comprehensiveCategories';
-import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useAuthPreview } from '@/contexts/AuthPreviewContext';
 
 interface CategorySelectorProps {
   value?: string;
@@ -40,10 +40,10 @@ const CategorySelector = ({
   autoSelectTopSuggestion = false  // 🆕 Default to false
 }: CategorySelectorProps) => {
   const { selectedFamily } = useExpense();
-  const { user } = useAuth();
+  const { user } = useAuthPreview();
 
   // Use unified categories for consistent behavior across the app
-  const { 
+  const {
     categories: unifiedCategories, 
     hierarchicalCategories,
     budgetCategories,
