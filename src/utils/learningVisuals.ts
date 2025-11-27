@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type VisualType = 'ai-generated' | 'screenshot' | 'gif' | 'manual';
+export type VisualType = 'ai-generated' | 'screenshot' | 'gif' | 'manual' | 'narrator';
 
 /**
  * Upload an image to the learning-visuals storage bucket
@@ -97,4 +97,36 @@ export const checkVisualExists = async (
     console.error('Error checking visual existence:', error);
     return false;
   }
+};
+
+/**
+ * Upload a narrator video to storage
+ */
+export const uploadNarratorVideo = async (
+  videoBlob: Blob,
+  moduleId: string,
+  stepId: string
+): Promise<string | null> => {
+  return uploadLearningVisual(videoBlob, moduleId, stepId, 'narrator');
+};
+
+/**
+ * Get the narrator video URL for a learning step
+ */
+export const getNarratorVideoUrl = (
+  moduleId: string,
+  stepId: string,
+  extension: string = 'webm'
+): string => {
+  return getLearningVisualUrl(moduleId, stepId, 'narrator', extension);
+};
+
+/**
+ * Check if a narrator video exists for a step
+ */
+export const checkNarratorExists = async (
+  moduleId: string,
+  stepId: string
+): Promise<boolean> => {
+  return checkVisualExists(moduleId, stepId, 'narrator', 'webm');
 };

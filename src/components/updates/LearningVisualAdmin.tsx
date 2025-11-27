@@ -3,16 +3,18 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Image, Loader2, Upload, Camera } from 'lucide-react';
-import { learningModules } from '@/constants/learningCenterData';
+import { ChevronDown, Image, Loader2, Upload, Camera, Mic } from 'lucide-react';
+import { learningModules, type NarratorDisplayMode } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
-import { checkVisualExists, uploadLearningVisual, getLearningVisualUrl } from '@/utils/learningVisuals';
+import { checkVisualExists, uploadLearningVisual, getLearningVisualUrl, uploadNarratorVideo, getNarratorVideoUrl, checkNarratorExists } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
 import { CapturePreviewPanel } from './CapturePreviewPanel';
 import { GifRecordingPanel } from './GifRecordingPanel';
 import { GifEditor } from './GifEditor';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading' | 'recording';
 type VisualType = 'gif' | 'screenshot' | 'ai-generated' | 'missing';
@@ -21,8 +23,11 @@ export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
   const [visualStatus, setVisualStatus] = useState<Map<string, VisualStatus>>(new Map());
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
+  const [narratorStatus, setNarratorStatus] = useState<Map<string, boolean>>(new Map());
+  const [narratorModes, setNarratorModes] = useState<Map<string, NarratorDisplayMode>>(new Map());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const narratorInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const [annotatingStep, setAnnotatingStep] = useState<{
     file: File;
     moduleId: string;
@@ -65,6 +70,7 @@ export function LearningVisualAdmin() {
   // Check which visuals already exist
   useEffect(() => {
     checkAllVisualsExist();
+    checkAllNarrators();
   }, []);
 
   const checkAllVisualsExist = async () => {
@@ -107,6 +113,25 @@ export function LearningVisualAdmin() {
     
     setVisualStatus(statusMap);
     setVisualTypes(typeMap);
+  };
+
+  const checkAllNarrators = async () => {
+    const narratorMap = new Map<string, boolean>();
+    
+    for (const module of learningModules) {
+      for (const step of module.steps) {
+        const key = `${module.id}-${step.id}`;
+        const hasNarrator = await checkNarratorExists(module.id, step.id);
+        narratorMap.set(key, hasNarrator);
+        
+        // Initialize narrator mode to default if not set
+        if (!narratorModes.has(key)) {
+          setNarratorModes(prev => new Map(prev).set(key, step.narrator?.displayMode || 'face-voice'));
+        }
+      }
+    }
+    
+    setNarratorStatus(narratorMap);
   };
 
   const handleGenerateSingle = async (moduleId: string, stepId: string, title: string, description: string, screenshotHint?: string) => {
@@ -281,6 +306,59 @@ export function LearningVisualAdmin() {
     }
   };
 
+  const handleNarratorFileSelect = (moduleId: string, stepId: string) => {
+    const key = `${moduleId}-${stepId}`;
+    const input = narratorInputRefs.current.get(key);
+    input?.click();
+  };
+
+  const handleNarratorUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    stepId: string,
+    stepTitle: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type (video only)
+    if (!file.type.startsWith('video/')) {
+      toast.error('Invalid file type. Please upload a video file (MP4, WebM)');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large. Please upload a video smaller than 10MB');
+      return;
+    }
+
+    const key = `${moduleId}-${stepId}`;
+    
+    try {
+      const url = await uploadNarratorVideo(file, moduleId, stepId);
+      
+      if (url) {
+        setNarratorStatus(prev => new Map(prev).set(key, true));
+        toast.success(`Narrator video uploaded for "${stepTitle}"`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Narrator upload error:', error);
+      toast.error('Failed to upload narrator video. Please try again.');
+    }
+    
+    event.target.value = '';
+  };
+
+  const handleNarratorModeChange = (moduleId: string, stepId: string, mode: NarratorDisplayMode) => {
+    const key = `${moduleId}-${stepId}`;
+    setNarratorModes(prev => new Map(prev).set(key, mode));
+    // In a real app, this would save to database/storage
+    toast.success(`Narrator display mode set to: ${mode}`);
+  };
+
   const handleGenerateModule = async (moduleId: string) => {
     const module = learningModules.find(m => m.id === moduleId);
     if (!module) return;
@@ -453,20 +531,24 @@ export function LearningVisualAdmin() {
                       const status = visualStatus.get(key) || 'missing';
                       const type = visualTypes.get(key) || 'missing';
                       const isProcessing = status === 'generating' || status === 'uploading';
+                      const hasNarrator = narratorStatus.get(key) || false;
+                      const narratorMode = narratorModes.get(key) || 'face-voice';
 
                       return (
                         <div 
                           key={step.id} 
-                          className="flex items-center justify-between py-3 border-b last:border-0"
+                          className="py-4 border-b last:border-0 space-y-3"
                         >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <span className="text-sm font-medium">
-                              {idx + 1}. {step.title}
-                            </span>
-                            {/* Preview thumbnail for existing visuals */}
-                            {status === 'exists' && (
-                              <HoverCard>
-                                <HoverCardTrigger asChild>
+                          {/* Step Header with Visual Status */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className="text-sm font-medium">
+                                {idx + 1}. {step.title}
+                              </span>
+                              {/* Preview thumbnail for existing visuals */}
+                              {status === 'exists' && (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
                                   {type === 'gif' ? (
                                     <video
                                       src={getLearningVisualUrl(module.id, step.id, 'gif', 'webm')}
@@ -622,6 +704,98 @@ export function LearningVisualAdmin() {
                             </Button>
                           </div>
                         </div>
+
+                        {/* Narrator Section */}
+                        <div className="pl-8 bg-muted/30 rounded-lg p-3 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Mic className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">Narrator Video</span>
+                              <Badge variant={hasNarrator ? 'default' : 'outline'} className="text-xs">
+                                {hasNarrator ? '🎙️ Has Narrator' : '❌ No Narrator'}
+                              </Badge>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <input
+                                ref={(el) => {
+                                  if (el) narratorInputRefs.current.set(key, el);
+                                }}
+                                type="file"
+                                accept="video/*"
+                                className="hidden"
+                                onChange={(e) => handleNarratorUpload(e, module.id, step.id, step.title)}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleNarratorFileSelect(module.id, step.id)}
+                                disabled={isProcessing}
+                                className="gap-1"
+                              >
+                                <Upload className="w-3 h-3" />
+                                Upload Narrator
+                              </Button>
+                              
+                              {hasNarrator && (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <video
+                                      src={getNarratorVideoUrl(module.id, step.id)}
+                                      muted
+                                      playsInline
+                                      className="h-8 w-12 object-cover rounded-full border border-border cursor-pointer"
+                                    />
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80 p-2" side="right">
+                                    <video
+                                      src={getNarratorVideoUrl(module.id, step.id)}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="w-full rounded"
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                                      🎙️ Narrator Video Preview
+                                    </p>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {hasNarrator && (
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground">Display Mode:</Label>
+                              <RadioGroup
+                                value={narratorMode}
+                                onValueChange={(value) => handleNarratorModeChange(module.id, step.id, value as NarratorDisplayMode)}
+                                className="flex gap-4"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="face-voice" id={`${key}-face-voice`} />
+                                  <Label htmlFor={`${key}-face-voice`} className="text-xs font-normal cursor-pointer">
+                                    Face + Voice (circular bubble)
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="voice-only" id={`${key}-voice-only`} />
+                                  <Label htmlFor={`${key}-voice-only`} className="text-xs font-normal cursor-pointer">
+                                    Voice Only (audio plays, no video)
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="disabled" id={`${key}-disabled`} />
+                                  <Label htmlFor={`${key}-disabled`} className="text-xs font-normal cursor-pointer">
+                                    Disabled (muted)
+                                  </Label>
+                                </div>
+                              </RadioGroup>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       );
                     })}
                   </CardContent>
