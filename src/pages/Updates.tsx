@@ -6,16 +6,20 @@ import { UnifiedFeedbackForm } from '@/components/updates/UnifiedFeedbackForm';
 import { FeatureShowcase } from '@/components/updates/FeatureShowcase';
 import { LearningCenter } from '@/components/updates/LearningCenter';
 import { LearningVisualAdmin } from '@/components/updates/LearningVisualAdmin';
+import { AdminTaskList } from '@/components/updates/AdminTaskList';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Sparkles, GraduationCap, Eye, MessageSquare, Database, Settings } from 'lucide-react';
 import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 export default function Updates() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'whats-new';
   const [isSeeding, setIsSeeding] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAdmin, isLoading: isLoadingAdmin } = useAdminRole();
 
   useEffect(() => {
     // Check authentication status
@@ -119,8 +123,36 @@ export default function Updates() {
           </TabsContent>
 
           {isAuthenticated && (
-            <TabsContent value="admin" className="space-y-6">
-              <LearningVisualAdmin />
+            <TabsContent value="admin" className="space-y-8">
+              {isLoadingAdmin ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : isAdmin ? (
+                <>
+                  {/* Admin Task List - Only for admins */}
+                  <div className="space-y-4">
+                    <div>
+                      <h2 className="text-2xl font-bold">Development Tasks</h2>
+                      <p className="text-muted-foreground">Track your working list (TTD)</p>
+                    </div>
+                    <AdminTaskList />
+                  </div>
+
+                  <Separator className="my-8" />
+
+                  {/* Learning Visual Generator */}
+                  <div className="space-y-4">
+                    <div>
+                      <h2 className="text-2xl font-bold">Learning Visual Generator</h2>
+                      <p className="text-muted-foreground">Create and manage visual content for learning modules</p>
+                    </div>
+                    <LearningVisualAdmin />
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Admin access required to view this section
+                </div>
+              )}
             </TabsContent>
           )}
         </Tabs>
