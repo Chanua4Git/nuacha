@@ -121,6 +121,16 @@ export function GifRecordingPanel({
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Select the browser tab where Nuacha is open, then perform the interaction you want to show (hover menus, click buttons, fill forms).
                   </p>
+                  
+                  {previewMode === 'guest' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800">
+                        <strong>Note:</strong> You're in Guest Preview Mode. The Screen Capture API will record the <strong>actual browser tab</strong> you select, 
+                        so open the target page (with <code className="bg-amber-100 px-1 rounded">?_preview_auth=false</code>) in a separate tab before recording 
+                        to ensure you capture the unauthenticated experience.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
