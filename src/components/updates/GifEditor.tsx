@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Scissors, Zap, Save, X, Play, Pause, RotateCcw } from 'lucide-react';
+import { useVideoTrimmer } from '@/hooks/useVideoTrimmer';
+import { toast } from 'sonner';
 
 interface GifEditorProps {
   open: boolean;
@@ -20,20 +22,30 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [gifKey, setGifKey] = useState<number>(0);
   const [fileSize, setFileSize] = useState<string>('');
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [currentBlob, setCurrentBlob] = useState<Blob>(gifBlob);
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
 
   useEffect(() => {
-    if (gifBlob) {
-      const url = URL.createObjectURL(gifBlob);
+    if (currentBlob) {
+      const url = URL.createObjectURL(currentBlob);
       setGifUrl(url);
       
       // Calculate file size
-      const sizeInMB = (gifBlob.size / (1024 * 1024)).toFixed(2);
+      const sizeInMB = (currentBlob.size / (1024 * 1024)).toFixed(2);
       setFileSize(`${sizeInMB} MB`);
       
       return () => URL.revokeObjectURL(url);
     }
-  }, [gifBlob]);
+  }, [currentBlob]);
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setVideoDuration(videoRef.current.duration);
+    }
+  };
 
   const togglePlayPause = () => {
     if (isPlaying) {
@@ -49,10 +61,31 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
     setIsPlaying(true);
   };
 
+  async function handleApplyTrim() {
+    if (!videoDuration) {
+      toast.error('Video duration not loaded yet');
+      return;
+    }
+
+    const startTime = (trimStart / 100) * videoDuration;
+    const endTime = (trimEnd / 100) * videoDuration;
+
+    if (startTime >= endTime) {
+      toast.error('Start time must be before end time');
+      return;
+    }
+
+    try {
+      const trimmedBlob = await trimVideo(currentBlob, startTime, endTime);
+      setCurrentBlob(trimmedBlob);
+      toast.success('Trim applied! Review the result.');
+    } catch (error) {
+      // Error already toasted in hook
+    }
+  }
+
   const handleSave = () => {
-    // For v1, we'll just save the original blob
-    // Future enhancement: implement actual trimming and speed adjustment
-    onSave(gifBlob);
+    onSave(currentBlob);
   };
 
   const speedOptions = [
@@ -81,12 +114,14 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             <div className="relative flex justify-center border border-border rounded-lg bg-muted p-4">
               {isPlaying ? (
                 <video
+                  ref={videoRef}
                   key={gifKey}
                   src={gifUrl}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  onLoadedMetadata={handleLoadedMetadata}
                   className="max-h-96 rounded"
                 />
               ) : (
@@ -153,10 +188,17 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
 
           {/* Trim Control */}
           <div className="space-y-3">
-            <Label className="flex items-center gap-2">
-              <Scissors className="w-4 h-4" />
-              Trim Duration
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Scissors className="w-4 h-4" />
+                Trim Duration
+              </Label>
+              {videoDuration > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Duration: {videoDuration.toFixed(1)}s
+                </span>
+              )}
+            </div>
             <div className="space-y-2">
               <div className="flex items-center gap-4">
                 <span className="text-sm text-muted-foreground w-16">Start:</span>
@@ -166,8 +208,14 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                   max={100}
                   step={1}
                   className="flex-1"
+                  disabled={isTrimming}
                 />
-                <span className="text-sm font-medium w-12">{trimStart}%</span>
+                <span className="text-sm font-medium w-16">
+                  {videoDuration > 0 
+                    ? `${((trimStart / 100) * videoDuration).toFixed(1)}s`
+                    : `${trimStart}%`
+                  }
+                </span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-muted-foreground w-16">End:</span>
@@ -177,13 +225,29 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                   max={100}
                   step={1}
                   className="flex-1"
+                  disabled={isTrimming}
                 />
-                <span className="text-sm font-medium w-12">{trimEnd}%</span>
+                <span className="text-sm font-medium w-16">
+                  {videoDuration > 0 
+                    ? `${((trimEnd / 100) * videoDuration).toFixed(1)}s`
+                    : `${trimEnd}%`
+                  }
+                </span>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Note: Trimming will be applied in future version
-            </p>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleApplyTrim} 
+                disabled={isTrimming || !videoDuration}
+                size="sm"
+                variant="secondary"
+              >
+                {isTrimming ? `Processing... ${progress}%` : 'Apply Trim'}
+              </Button>
+              {isTrimming && (
+                <span className="text-xs text-muted-foreground">This may take a moment...</span>
+              )}
+            </div>
           </div>
         </div>
 
