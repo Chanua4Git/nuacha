@@ -22,14 +22,9 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Check if we're in preview mode (for admin tools)
-  const isPreviewMode = searchParams.get('_preview_auth') === 'false';
-  
-  // Always use real auth, but override user in preview mode
-  const auth = useAuth();
-  const previewAuth = useAuthPreview();
-  const user = isPreviewMode ? null : auth.user;
-  const { signOut, authDemoActive } = auth;
+  // Use preview-aware auth (respects ?_preview_auth=false but protects admin routes)
+  const { user, isPreviewMode } = useAuthPreview();
+  const { signOut, authDemoActive } = useAuth();
 
   // Only hide navbar on auth pages
   if (HIDDEN_ROUTES.includes(location.pathname)) {

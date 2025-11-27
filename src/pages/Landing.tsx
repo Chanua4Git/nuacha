@@ -16,18 +16,15 @@ import { toast } from "sonner";
 import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
 import { processReceiptWithEdgeFunction } from "@/utils/receipt/ocrProcessing";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/auth/contexts/AuthProvider";
+import { useAuthPreview } from "@/contexts/AuthPreviewContext";
 
 const Landing = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   
-  // Auth preview mode support - override user when in guest preview
-  const [searchParams] = useSearchParams();
-  const isPreviewMode = searchParams.get('_preview_auth') === 'false';
-  const auth = useAuth();
-  const user = isPreviewMode ? null : auth.user;
+  // Use preview-aware auth (respects ?_preview_auth=false)
+  const { user } = useAuthPreview();
   
   // Receipt processing state
   const [isProcessing, setIsProcessing] = useState(false);

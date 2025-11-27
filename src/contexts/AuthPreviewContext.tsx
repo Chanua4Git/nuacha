@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useAuth } from '@/auth/contexts/AuthProvider';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
 
 type AuthPreviewContextType = {
@@ -8,7 +8,12 @@ type AuthPreviewContextType = {
   user: User | null;
   isLoading: boolean;
   isPreviewMode: boolean;
+  isActuallyAuthenticated: boolean;
 };
+
+// Admin routes that should always use real auth (never preview mode)
+const ADMIN_ROUTES = ['/updates'];
+const ADMIN_PARAMS = ['tab=admin'];
 
 const AuthPreviewContext = createContext<AuthPreviewContextType | null>(null);
 
@@ -23,18 +28,30 @@ export const useAuthPreview = () => {
 export const AuthPreviewProvider = ({ children }: { children: ReactNode }) => {
   const realAuth = useAuth();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   
-  // Check if preview mode is active via URL parameter
-  const isPreviewMode = searchParams.get('_preview_auth') === 'false';
+  // Check if preview mode is requested via URL parameter
+  const previewModeRequested = searchParams.get('_preview_auth') === 'false';
+  
+  // Check if current route/params are admin-only (should ignore preview mode)
+  const isAdminContext = useMemo(() => {
+    const isAdminRoute = ADMIN_ROUTES.some(route => location.pathname.startsWith(route));
+    const hasAdminParam = ADMIN_PARAMS.some(param => location.search.includes(param));
+    return isAdminRoute && hasAdminParam;
+  }, [location.pathname, location.search]);
+  
+  // Preview mode is active only if requested AND not in admin context
+  const isPreviewMode = previewModeRequested && !isAdminContext;
   
   const value = useMemo<AuthPreviewContextType>(() => {
     if (isPreviewMode) {
-      // Override auth to simulate unauthenticated state
+      // Override auth to simulate unauthenticated state for preview
       return {
         session: null,
         user: null,
         isLoading: false,
-        isPreviewMode: true
+        isPreviewMode: true,
+        isActuallyAuthenticated: !!realAuth.user
       };
     }
     
@@ -43,7 +60,8 @@ export const AuthPreviewProvider = ({ children }: { children: ReactNode }) => {
       session: realAuth.session,
       user: realAuth.user,
       isLoading: realAuth.isLoading,
-      isPreviewMode: false
+      isPreviewMode: false,
+      isActuallyAuthenticated: !!realAuth.user
     };
   }, [isPreviewMode, realAuth.session, realAuth.user, realAuth.isLoading]);
   

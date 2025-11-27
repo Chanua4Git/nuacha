@@ -9,7 +9,7 @@ import { CategorySyncBanner } from '@/components/CategorySyncBanner';
 import { PlusCircle, ListFilter, Tag, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useAuth } from '@/auth/contexts/AuthProvider';
+import { useAuthPreview } from '@/contexts/AuthPreviewContext';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useExpense } from '@/context/ExpenseContext';
 import { ensureEssentialFamilyCategories } from '@/utils/categorySync';
