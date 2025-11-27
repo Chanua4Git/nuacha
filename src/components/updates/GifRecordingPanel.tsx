@@ -123,11 +123,14 @@ export function GifRecordingPanel({
                   </p>
                   
                   {previewMode === 'guest' && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs text-amber-800">
-                        <strong>Note:</strong> You're in Guest Preview Mode. The Screen Capture API will record the <strong>actual browser tab</strong> you select, 
-                        so open the target page (with <code className="bg-amber-100 px-1 rounded">?_preview_auth=false</code>) in a separate tab before recording 
-                        to ensure you capture the unauthenticated experience.
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-800">
+                        <strong>Guest Preview Mode Active:</strong> You'll record the unauthenticated user experience. 
+                        When selecting which tab to record, choose the Nuacha tab where you're currently logged in. 
+                        The UI will automatically show the guest experience because <code className="bg-blue-100 px-1 rounded">?_preview_auth=false</code> is active.
+                      </p>
+                      <p className="text-xs text-blue-800 mt-2">
+                        No need to open a separate tab—just record <strong>this current browser tab</strong> to capture the guest UI.
                       </p>
                     </div>
                   )}
