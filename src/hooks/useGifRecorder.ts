@@ -1,220 +1,158 @@
-import { useState, useRef, useCallback } from 'react';
-import GIF from 'gif.js';
-import gifWorkerUrl from 'gif.js/dist/gif.worker.js?url';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
-export function useGifRecorder() {
+export interface UseGifRecorderResult {
+  isRecording: boolean;
+  hasRecording: boolean;
+  error: string | null;
+  videoBlob: Blob | null;
+  videoUrl: string | null;
+  startRecording: () => Promise<void>;
+  stopRecording: () => void;
+  reset: () => void;
+}
+
+/**
+ * useGifRecorder
+ * 
+ * Uses Screen Capture API + MediaRecorder to record actual screen pixels
+ * (hover states, animations, cursor movements) as a WebM video.
+ * The video can then be converted to GIF.
+ */
+export function useGifRecorder(): UseGifRecorderResult {
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  const gifRef = useRef<GIF | null>(null);
-  const framesRef = useRef<ImageData[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const canvasDimensionsRef = useRef<{ width: number; height: number } | null>(null);
-  const isRenderingRef = useRef(false);
 
-  const startRecording = useCallback(async (canvasElement: HTMLCanvasElement) => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, [videoUrl]);
+
+  const startRecording = useCallback(async () => {
+    setError(null);
+
+    // Prevent double start
+    if (isRecording || mediaRecorderRef.current) {
+      return;
+    }
+
     try {
-      setError(null);
-      
-      // Store canvas dimensions
-      canvasDimensionsRef.current = {
-        width: canvasElement.width,
-        height: canvasElement.height
-      };
-      
-      // Clear previous frames
-      framesRef.current = [];
-      
-      // Initialize GIF encoder
-      gifRef.current = new GIF({
-        workers: 2,
-        quality: 10,
-        width: canvasElement.width,
-        height: canvasElement.height,
-        workerScript: gifWorkerUrl
+      // Request screen/window/tab capture
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 10 }, // 10 FPS for GIF-friendly capture
+        audio: false,
       });
-      
+
+      streamRef.current = stream;
+
+      // Set up MediaRecorder
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+      });
+
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onerror = (event) => {
+        console.error('MediaRecorder error', event);
+        setError('Recording error. Please try again.');
+      };
+
+      recorder.onstop = () => {
+        // Assemble chunks into a Blob
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        setVideoBlob(blob);
+
+        // Create preview URL
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
+
+        // Stop screen sharing tracks
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
+
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+      };
+
+      recorder.start(100); // Request data every 100ms
+      mediaRecorderRef.current = recorder;
       setIsRecording(true);
-      setRecordingDuration(0);
-      
-      // Start duration timer
-      timerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-      
-    } catch (err) {
-      console.error('Error starting recording:', err);
-      setError('Failed to start recording');
-      throw err;
-    }
-  }, []);
+    } catch (err: any) {
+      console.error('startRecording error', err);
 
-  const addFrame = useCallback((canvas: HTMLCanvasElement) => {
-    // Note: Recording state is managed by the caller (GifRecordingPanel)
-    // using refs, so we don't check state here to avoid stale closures
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx && canvasDimensionsRef.current) {
-      const imageData = ctx.getImageData(
-        0, 
-        0, 
-        canvasDimensionsRef.current.width, 
-        canvasDimensionsRef.current.height
-      );
-      framesRef.current.push(imageData);
-      console.log(`Frame ${framesRef.current.length} captured`);
-    }
-  }, []);
+      // User cancelling the picker is expected behavior
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        setError('Screen capture was cancelled. Please try again and select a window or tab.');
+      } else {
+        setError('Could not start screen capture. Please check browser permissions.');
+      }
 
-  const stopRecording = useCallback(async (): Promise<Blob | null> => {
-    return new Promise((resolve, reject) => {
-      console.log('stopRecording called, frames:', framesRef.current.length);
-      
-      // Guard against duplicate calls
-      if (isRenderingRef.current) {
-        console.warn('Already rendering, ignoring duplicate stopRecording call');
-        resolve(null);
-        return;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
-      
-      if (!gifRef.current || framesRef.current.length === 0) {
-        console.warn('No frames captured for GIF');
-        setIsRecording(false);
-        setIsPaused(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        resolve(null);
-        return;
-      }
-      
-      console.log(`Encoding ${framesRef.current.length} frames into GIF...`);
-      
-      // Set rendering flag to prevent duplicate calls
-      isRenderingRef.current = true;
-      
-      // Set a timeout in case encoding hangs
-      const timeout = setTimeout(() => {
-        console.error('GIF encoding timed out after 30 seconds');
-        setIsRecording(false);
-        setIsPaused(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        reject(new Error('GIF encoding timed out'));
-      }, 30000);
-      
-      // Create a temporary canvas for adding frames
-      const tempCanvas = document.createElement('canvas');
-      const ctx = tempCanvas.getContext('2d');
-      
-      if (!ctx || !canvasDimensionsRef.current) {
-        clearTimeout(timeout);
-        console.error('No canvas context or dimensions');
-        resolve(null);
-        return;
-      }
-      
-      try {
-        // Add all collected frames to the GIF encoder
-        framesRef.current.forEach((imageData, index) => {
-          tempCanvas.width = imageData.width;
-          tempCanvas.height = imageData.height;
-          ctx.putImageData(imageData, 0, 0);
-          gifRef.current!.addFrame(tempCanvas, { delay: 100, copy: true }); // 100ms = 10fps
-          if (index % 10 === 0) {
-            console.log(`Added frame ${index + 1}/${framesRef.current.length}`);
-          }
-        });
-        
-        console.log('All frames added, starting render...');
-        
-        // Listen for completion
-        gifRef.current.on('finished', (blob: Blob) => {
-          clearTimeout(timeout);
-          console.log('GIF encoding complete!', blob.size, 'bytes');
-          
-          // Cleanup
-          setIsRecording(false);
-          setIsPaused(false);
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          
-          // Reset rendering flag and null out encoder
-          isRenderingRef.current = false;
-          gifRef.current = null;
-          
-          resolve(blob);
-        });
-        
-        gifRef.current.on('progress', (progress: number) => {
-          console.log(`GIF encoding progress: ${Math.round(progress * 100)}%`);
-        });
-        
-        // Start rendering the GIF
-        gifRef.current.render();
-      } catch (error) {
-        clearTimeout(timeout);
-        console.error('Error during GIF encoding:', error);
-        setIsRecording(false);
-        setIsPaused(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        
-        // Reset rendering flag and null out encoder on error
-        isRenderingRef.current = false;
-        gifRef.current = null;
-        
-        reject(error);
-      }
-    });
-  }, []);
 
-  const pauseRecording = useCallback(() => {
-    if (isRecording) {
-      setIsPaused(true);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
     }
   }, [isRecording]);
 
-  const resumeRecording = useCallback(() => {
-    if (isPaused) {
-      setIsPaused(false);
-      
-      // Resume timer
-      timerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      // isRecording will be set to false in onstop
     }
-  }, [isPaused]);
-
-  const formatDuration = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }, []);
+
+  const reset = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+
+    if (videoUrl) {
+      URL.revokeObjectURL(videoUrl);
+    }
+
+    setVideoBlob(null);
+    setVideoUrl(null);
+    setIsRecording(false);
+    setError(null);
+  }, [videoUrl]);
 
   return {
     isRecording,
-    isPaused,
-    recordingDuration,
+    hasRecording: !!videoBlob,
     error,
+    videoBlob,
+    videoUrl,
     startRecording,
     stopRecording,
-    addFrame,
-    pauseRecording,
-    resumeRecording,
-    formatDuration
+    reset,
   };
 }
