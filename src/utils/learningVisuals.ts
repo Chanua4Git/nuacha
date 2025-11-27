@@ -45,7 +45,8 @@ export const getLearningVisualUrl = (
   extension?: string
 ): string => {
   const supabaseUrl = 'https://fjrxqeyexlusjwzzecal.supabase.co';
-  const ext = extension || (type === 'gif' ? 'gif' : 'png');
+  // For 'gif' type, we now store as webm video
+  const ext = extension || (type === 'gif' ? 'webm' : 'png');
   return `${supabaseUrl}/storage/v1/object/public/learning-visuals/${type}/${moduleId}/${stepId}.${ext}`;
 };
 
