@@ -80,16 +80,18 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             </div>
             <div className="relative flex justify-center border border-border rounded-lg bg-muted p-4">
               {isPlaying ? (
-                <img
+                <video
                   key={gifKey}
-                  ref={imgRef}
                   src={gifUrl}
-                  alt="GIF preview"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="max-h-96 rounded"
                 />
               ) : (
                 <div className="flex items-center justify-center max-h-96 text-muted-foreground">
-                  GIF paused
+                  Video paused
                 </div>
               )}
               

@@ -34,14 +34,14 @@ export function LearningStepCard({
   // Check for visuals on mount - prioritize GIF → screenshot → AI
   useState(() => {
     const checkAndSetVisual = async () => {
-      // Check for GIF first (highest priority)
-      const gifUrl = getLearningVisualUrl(moduleId, step.id, 'gif');
-      const gifImg = new Image();
-      gifImg.src = gifUrl;
+      // Check for GIF first (highest priority) - stored as .webm
+      const gifUrl = getLearningVisualUrl(moduleId, step.id, 'gif', 'webm');
+      const gifVideo = document.createElement('video');
+      gifVideo.src = gifUrl;
       
       const gifExists = await new Promise((resolve) => {
-        gifImg.onload = () => resolve(true);
-        gifImg.onerror = () => resolve(false);
+        gifVideo.onloadeddata = () => resolve(true);
+        gifVideo.onerror = () => resolve(false);
       });
       
       if (gifExists) {
@@ -161,19 +161,38 @@ export function LearningStepCard({
                   "w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
                   !hasVisual && "hidden"
                 )}>
-                  <img 
-                    src={visualUrl}
-                    alt={step.visual?.alt || step.title}
-                    className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
-                    onLoad={() => { 
-                      setHasVisual(true); 
-                      setImageLoading(false); 
-                    }}
-                    onError={() => { 
-                      setHasVisual(false); 
-                      setImageLoading(false); 
-                    }}
-                  />
+                  {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
+                    <video 
+                      src={visualUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
+                      onLoadedData={() => { 
+                        setHasVisual(true); 
+                        setImageLoading(false); 
+                      }}
+                      onError={() => { 
+                        setHasVisual(false); 
+                        setImageLoading(false); 
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src={visualUrl}
+                      alt={step.visual?.alt || step.title}
+                      className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
+                      onLoad={() => { 
+                        setHasVisual(true); 
+                        setImageLoading(false); 
+                      }}
+                      onError={() => { 
+                        setHasVisual(false); 
+                        setImageLoading(false); 
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Main Instructions */}

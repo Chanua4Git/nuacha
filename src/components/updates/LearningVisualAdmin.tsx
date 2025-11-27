@@ -75,8 +75,8 @@ export function LearningVisualAdmin() {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
         
-        // Check for GIF first (highest priority)
-        const hasGif = await checkVisualExists(module.id, step.id, 'gif', 'gif');
+        // Check for GIF first (highest priority) - stored as .webm
+        const hasGif = await checkVisualExists(module.id, step.id, 'gif', 'webm');
         if (hasGif) {
           statusMap.set(key, 'exists');
           typeMap.set(key, 'gif');
@@ -467,28 +467,50 @@ export function LearningVisualAdmin() {
                             {status === 'exists' && (
                               <HoverCard>
                                 <HoverCardTrigger asChild>
-                                  <img 
-                                    src={getLearningVisualUrl(
-                                      module.id, 
-                                      step.id, 
-                                      type === 'missing' ? 'ai-generated' : type,
-                                      type === 'gif' ? 'gif' : 'png'
-                                    )}
-                                    alt={`${step.title} preview`}
-                                    className="h-8 w-12 object-cover rounded border border-border cursor-pointer"
-                                  />
+                                  {type === 'gif' ? (
+                                    <video
+                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'webm')}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="h-8 w-12 object-cover rounded border border-border cursor-pointer"
+                                    />
+                                  ) : (
+                                    <img 
+                                      src={getLearningVisualUrl(
+                                        module.id, 
+                                        step.id, 
+                                        type === 'missing' ? 'ai-generated' : type,
+                                        'png'
+                                      )}
+                                      alt={`${step.title} preview`}
+                                      className="h-8 w-12 object-cover rounded border border-border cursor-pointer"
+                                    />
+                                  )}
                                 </HoverCardTrigger>
                                 <HoverCardContent className="w-80 p-2" side="right">
-                                  <img 
-                                    src={getLearningVisualUrl(
-                                      module.id, 
-                                      step.id, 
-                                      type === 'missing' ? 'ai-generated' : type,
-                                      type === 'gif' ? 'gif' : 'png'
-                                    )}
-                                    alt={`${step.title} full preview`}
-                                    className="w-full rounded"
-                                  />
+                                  {type === 'gif' ? (
+                                    <video
+                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'webm')}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="w-full rounded"
+                                    />
+                                  ) : (
+                                    <img 
+                                      src={getLearningVisualUrl(
+                                        module.id, 
+                                        step.id, 
+                                        type === 'missing' ? 'ai-generated' : type,
+                                        'png'
+                                      )}
+                                      alt={`${step.title} full preview`}
+                                      className="w-full rounded"
+                                    />
+                                  )}
                                   <p className="text-xs text-muted-foreground mt-2 text-center">
                                     {type === 'gif' ? '🎬 Animated GIF' : type === 'screenshot' ? '📸 Screenshot' : '🎨 AI Generated'}
                                   </p>
