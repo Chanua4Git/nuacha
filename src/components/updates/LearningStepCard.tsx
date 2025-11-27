@@ -7,8 +7,9 @@ import { ChevronDown, ChevronUp, ExternalLink, Lightbulb } from 'lucide-react';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { getLearningVisualUrl } from '@/utils/learningVisuals';
+import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists } from '@/utils/learningVisuals';
 import { cn } from '@/lib/utils';
+import { NarratorOverlay } from './NarratorOverlay';
 
 interface LearningStepCardProps {
   step: LearningStep;
@@ -29,9 +30,11 @@ export function LearningStepCard({
   const [hasVisual, setHasVisual] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [visualUrl, setVisualUrl] = useState<string>('');
+  const [hasNarrator, setHasNarrator] = useState(false);
+  const [narratorUrl, setNarratorUrl] = useState<string>('');
   const navigate = useNavigate();
 
-  // Check for visuals on mount - prioritize GIF → screenshot → AI
+  // Check for visuals and narrator on mount
   useState(() => {
     const checkAndSetVisual = async () => {
       // Check for GIF first (highest priority) - stored as .webm
@@ -89,7 +92,16 @@ export function LearningStepCard({
       }
     };
     
+    const checkNarrator = async () => {
+      const exists = await checkNarratorExists(moduleId, step.id);
+      if (exists) {
+        setHasNarrator(true);
+        setNarratorUrl(getNarratorVideoUrl(moduleId, step.id));
+      }
+    };
+    
     checkAndSetVisual();
+    checkNarrator();
   });
 
   const handleCTAClick = () => {
@@ -155,10 +167,10 @@ export function LearningStepCard({
             {/* Expanded Content */}
             {isExpanded && (
               <div className="space-y-4 mt-3 pt-3 border-t">
-                {/* Visual Content */}
+                {/* Visual Content with Narrator Overlay */}
                 {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
                 <div className={cn(
-                  "w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
+                  "relative w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
                   !hasVisual && "hidden"
                 )}>
                   {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
@@ -191,6 +203,14 @@ export function LearningStepCard({
                         setHasVisual(false); 
                         setImageLoading(false); 
                       }}
+                    />
+                  )}
+                  
+                  {/* Narrator Overlay */}
+                  {hasNarrator && narratorUrl && (
+                    <NarratorOverlay
+                      videoUrl={narratorUrl}
+                      displayMode={step.narrator?.displayMode || 'face-voice'}
                     />
                   )}
                 </div>

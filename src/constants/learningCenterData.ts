@@ -12,6 +12,14 @@ export interface LearningStepVisual {
   };
 }
 
+export type NarratorDisplayMode = 'face-voice' | 'voice-only' | 'disabled';
+
+export interface LearningStepNarrator {
+  displayMode: NarratorDisplayMode;
+  url?: string;
+  alt?: string;
+}
+
 export interface LearningStep {
   id: string;
   title: string;
@@ -21,6 +29,7 @@ export interface LearningStep {
   screenshotHint?: string;
   ctaButton?: { label: string; path: string };
   visual?: LearningStepVisual; // Optional visual content
+  narrator?: LearningStepNarrator; // Optional narrator (voice + face)
 }
 
 export interface LearningModule {
