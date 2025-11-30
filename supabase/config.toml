@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.capture-download-purchase-paypal]
 verify_jwt = false
+
+[functions.smart-categorize]
+verify_jwt = true

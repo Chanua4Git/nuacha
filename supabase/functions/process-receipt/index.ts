@@ -416,43 +416,104 @@ serve(async (req) => {
         }
         
         if (categories && categories.length > 0) {
-          console.log(`🎯 Starting categorization with ${categories.length} categories and ${rules.length} rules`);
+          console.log(`🤖 Starting AI-powered categorization with ${categories.length} categories`);
           
-          // Convert NormalizedLineItem[] to ReceiptLineItem[] format expected by suggestCategories
+          // Convert line items to format expected by smart-categorize
           const formattedLineItems = result.lineItems.map(item => ({
             description: item.description || '',
-            quantity: item.quantity ?? undefined,
-            // Be resilient to different shapes coming from OCR
-            unitPrice: (item.unitPrice ?? (item as any).unit_price)?.toString(),
-            totalPrice: (item.totalPrice ?? (item as any).total_price)?.toString() || '0',
-            confidence: 0.5,
-            suggestedCategoryId: item.suggestedCategoryId ?? undefined,
-            categoryConfidence: item.categoryConfidence ?? undefined
+            totalPrice: parseFloat((item.totalPrice ?? (item as any).total_price)?.toString() || '0')
           }));
           
-          // Process line items and suggest categories
-          const enhancedLineItems = await suggestCategories(
-            formattedLineItems,
-            vendorName,
-            categories,
-            rules
-          );
+          // Format categories for AI categorization
+          const formattedCategories = categories.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            group: cat.group_type as 'needs' | 'wants' | 'savings'
+          }));
           
-          // Log categorization results
-          const categorizedCount = enhancedLineItems.filter(item => item.suggestedCategoryId).length;
-          console.log(`✅ Categorization complete: ${categorizedCount}/${enhancedLineItems.length} items categorized`);
-          
-          enhancedLineItems.forEach((item, index) => {
-            if (item.suggestedCategoryId) {
-              const category = categories.find(c => c.id === item.suggestedCategoryId);
-              console.log(`  📝 Item ${index + 1}: "${item.description}" → ${category?.name || item.suggestedCategoryId} (confidence: ${item.categoryConfidence || 0})`);
-            } else {
-              console.log(`  ❓ Item ${index + 1}: "${item.description}" → No category suggested`);
+          try {
+            // Call the smart-categorize edge function using AI
+            const smartCategorizeUrl = `${supabaseUrl}/functions/v1/smart-categorize`;
+            console.log(`🔗 Calling smart-categorize at: ${smartCategorizeUrl}`);
+            
+            const aiResponse = await fetch(smartCategorizeUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authHeader || `Bearer ${supabaseServiceKey}`
+              },
+              body: JSON.stringify({
+                lineItems: formattedLineItems,
+                vendor: vendorName,
+                categories: formattedCategories
+              })
+            });
+            
+            if (!aiResponse.ok) {
+              const errorText = await aiResponse.text();
+              console.error(`❌ Smart categorize error (${aiResponse.status}):`, errorText);
+              throw new Error(`Smart categorize returned ${aiResponse.status}`);
             }
-          });
-          
-          // Replace the original line items with the enhanced ones
-          result.lineItems = enhancedLineItems;
+            
+            const aiResult = await aiResponse.json();
+            console.log(`✅ AI categorization complete`);
+            
+            // Apply AI suggestions to line items
+            const enhancedLineItems = result.lineItems.map((item, index) => {
+              const aiCategorization = aiResult.categorizations?.[index];
+              
+              return {
+                description: item.description || '',
+                quantity: item.quantity ?? undefined,
+                unitPrice: (item.unitPrice ?? (item as any).unit_price)?.toString(),
+                totalPrice: (item.totalPrice ?? (item as any).total_price)?.toString() || '0',
+                confidence: 0.5,
+                suggestedCategoryId: aiCategorization?.categoryId,
+                categoryConfidence: aiCategorization?.confidence
+              };
+            });
+            
+            // Log categorization results
+            const categorizedCount = enhancedLineItems.filter(item => item.suggestedCategoryId).length;
+            console.log(`✅ AI Categorization complete: ${categorizedCount}/${enhancedLineItems.length} items categorized`);
+            
+            enhancedLineItems.forEach((item, index) => {
+              if (item.suggestedCategoryId) {
+                const category = categories.find(c => c.id === item.suggestedCategoryId);
+                const aiCat = aiResult.categorizations?.[index];
+                console.log(`  🤖 Item ${index + 1}: "${item.description}" → ${category?.name || item.suggestedCategoryId} (confidence: ${item.categoryConfidence || 0}, reasoning: ${aiCat?.reasoning || 'N/A'})`);
+              } else {
+                console.log(`  ❓ Item ${index + 1}: "${item.description}" → No category suggested`);
+              }
+            });
+            
+            // Replace the original line items with the AI-enhanced ones
+            result.lineItems = enhancedLineItems;
+            
+          } catch (aiError) {
+            console.error('❌ AI categorization failed, falling back to pattern matching:', aiError);
+            
+            // Fallback to original pattern matching if AI fails
+            const formattedLineItems = result.lineItems.map(item => ({
+              description: item.description || '',
+              quantity: item.quantity ?? undefined,
+              unitPrice: (item.unitPrice ?? (item as any).unit_price)?.toString(),
+              totalPrice: (item.totalPrice ?? (item as any).total_price)?.toString() || '0',
+              confidence: 0.5,
+              suggestedCategoryId: item.suggestedCategoryId ?? undefined,
+              categoryConfidence: item.categoryConfidence ?? undefined
+            }));
+            
+            const enhancedLineItems = await suggestCategories(
+              formattedLineItems,
+              vendorName,
+              categories,
+              rules
+            );
+            
+            result.lineItems = enhancedLineItems;
+            console.log('✅ Fallback categorization complete');
+          }
         } else {
           console.log('⚠️ No categories found, skipping category suggestions');
         }
