@@ -90,8 +90,8 @@ const CategorySelector = ({
     if (autoSelectTopSuggestion && !value && suggestions.length > 0 && !suggestionsLoading) {
       const topSuggestion = suggestions[0];
       
-      // Only auto-select if confidence is high enough (>70%)
-      if (topSuggestion.confidence > 0.7) {
+      // Only auto-select if confidence is high enough (>=50%)
+      if (topSuggestion.confidence >= 50) {
         console.log(`🎯 Auto-selecting top category: ${topSuggestion.category.name} (${topSuggestion.confidence}% confidence)`);
         onChange(topSuggestion.categoryId);
       } else {
