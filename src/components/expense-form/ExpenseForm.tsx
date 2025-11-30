@@ -23,6 +23,7 @@ import { useSupabasePayroll } from '@/hooks/useSupabasePayroll';
 import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
+import HeroUploadSection from '../HeroUploadSection';
 import { Camera, Image, Images, Layers, Check, AlertCircle, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
@@ -75,6 +76,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
   const [showDetailedReceiptView, setShowDetailedReceiptView] = useState(false);
   const [autoSelectCategory, setAutoSelectCategory] = useState(false);  // 🆕 Flag for auto-selection
+  const [manualEntryMode, setManualEntryMode] = useState(false); // Track manual entry choice
 
   // Duplicate detection states
   const { checkForReceiptDuplicates, isChecking } = useReceiptDuplicateDetection(selectedFamily?.id);
@@ -119,6 +121,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     setReceiptImage(file);
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
+    setManualEntryMode(false); // Exit manual entry mode when uploading receipt
   };
 
   const handleImagesUpload = (files: File[]) => {
@@ -658,6 +661,9 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     );
   }
 
+  // Determine if we should show the Hero Upload Section
+  const shouldShowHeroUpload = !imagePreview && !ocrResult && !manualEntryMode && !initialOcrData;
+
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
@@ -665,72 +671,120 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {/* Expense Type Selector */}
-          <ExpenseTypeSelector
-            value={expenseType}
-            onChange={setExpenseType}
-          />
-
-          {/* Receipt Mode Toggle */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-            <div className="flex items-center gap-2">
-              <Camera className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Receipt Upload Mode</span>
+          {shouldShowHeroUpload ? (
+            // Show prominent hero upload section when no receipt scanned yet
+            <div className="space-y-6">
+              <HeroUploadSection
+                onCameraClick={() => {
+                  // Trigger file input for camera capture
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.capture = 'environment';
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  };
+                  input.click();
+                }}
+                onUploadClick={() => {
+                  // Trigger file input for upload
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  };
+                  input.click();
+                }}
+                onFileSelect={handleImageUpload}
+              />
+              
+              {/* Manual entry option */}
+              <div className="text-center">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  onClick={() => setManualEntryMode(true)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Prefer to enter details yourself? Enter manually
+                </Button>
+              </div>
             </div>
-            <Button
-              type="button"
-              variant={isLongReceiptMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsLongReceiptMode(!isLongReceiptMode)}
-              className="gap-2"
-            >
-              {isLongReceiptMode ? (
-                <>
-                  <Images className="h-4 w-4" />
-                  Long Receipt
-                </>
-              ) : (
-                <>
-                  <Image className="h-4 w-4" />
-                  Single Receipt
-                </>
-              )}
-            </Button>
-          </div>
-
-          {isLongReceiptMode ? (
-            <MultiImageReceiptUpload
-              onImagesUpload={handleImagesUpload}
-              onImagesRemove={handleImagesRemove}
-              onDataExtracted={handleOcrData}
-              isLongReceiptMode={isLongReceiptMode}
-              onToggleLongReceiptMode={() => setIsLongReceiptMode(!isLongReceiptMode)}
-              familyId={selectedFamily?.id}
-            />
           ) : (
-            <ReceiptUpload
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              onDataExtracted={handleOcrData}
-              imagePreview={imagePreview}
-              familyId={selectedFamily?.id}
-              disableInternalCTAs={true}
-            />
-          )}
+            // Show form fields after receipt upload or manual entry choice
+            <>
+              {/* Expense Type Selector */}
+              <ExpenseTypeSelector
+                value={expenseType}
+                onChange={setExpenseType}
+              />
 
-          {/* Display receipt image preview */}
-          {imagePreview && (
-            <ReceiptImageDisplay
-              imageUrl={imagePreview}
-              imagePreview={imagePreview}
-              description="Receipt Preview"
-              confidence={ocrResult?.confidence}
-              onViewReceipt={() => setShowDetailedReceiptView(true)}
-            />
-          )}
+              {/* Receipt Mode Toggle - only show if not in manual entry mode */}
+              {!manualEntryMode && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Receipt Upload Mode</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={isLongReceiptMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsLongReceiptMode(!isLongReceiptMode)}
+                    className="gap-2"
+                  >
+                    {isLongReceiptMode ? (
+                      <>
+                        <Images className="h-4 w-4" />
+                        Long Receipt
+                      </>
+                    ) : (
+                      <>
+                        <Image className="h-4 w-4" />
+                        Single Receipt
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
 
-          {/* Detailed Receipt View */}
-          {ocrResult && (
+              {/* Receipt upload components - only show in manual entry or after first upload */}
+              {!manualEntryMode && (isLongReceiptMode ? (
+                <MultiImageReceiptUpload
+                  onImagesUpload={handleImagesUpload}
+                  onImagesRemove={handleImagesRemove}
+                  onDataExtracted={handleOcrData}
+                  isLongReceiptMode={isLongReceiptMode}
+                  onToggleLongReceiptMode={() => setIsLongReceiptMode(!isLongReceiptMode)}
+                  familyId={selectedFamily?.id}
+                />
+              ) : (
+                <ReceiptUpload
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  onDataExtracted={handleOcrData}
+                  imagePreview={imagePreview}
+                  familyId={selectedFamily?.id}
+                  disableInternalCTAs={true}
+                />
+              ))}
+
+              {/* Display receipt image preview */}
+              {imagePreview && (
+                <ReceiptImageDisplay
+                  imageUrl={imagePreview}
+                  imagePreview={imagePreview}
+                  description="Receipt Preview"
+                  confidence={ocrResult?.confidence}
+                  onViewReceipt={() => setShowDetailedReceiptView(true)}
+                />
+              )}
+
+              {/* Detailed Receipt View */}
+              {ocrResult && (
             <div className="space-y-3">
               <Button
                 type="button"
@@ -827,81 +881,83 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                   )}
                 </div>
               )}
-            </div>
+              </div>
+              )}
+
+              <AmountInput 
+                value={amount}
+                onChange={setAmount}
+              />
+              
+              <DescriptionInput
+                value={description}
+                onChange={setDescription}
+              />
+              
+              <CategorySelector
+                value={category}
+                onChange={setCategory}
+                place={place || ocrResult?.storeDetails?.name}
+                lineItems={ocrResult?.lineItems ? ocrResult.lineItems.map(item => ({ 
+                  description: item.description, 
+                  confidence: 0.8 // Default confidence for type compatibility
+                } as any)) : undefined}
+                autoSelectTopSuggestion={autoSelectCategory}  // 🔥 Pass auto-select flag
+              />
+              
+              <RecurringDateSelector
+                mode={dateMode}
+                onModeChange={setDateMode}
+                singleDate={singleDate}
+                onSingleDateChange={setSingleDate}
+                multipleDates={multipleDates}
+                onMultipleDatesChange={setMultipleDates}
+                recurrencePattern={recurrencePattern}
+                onRecurrencePatternChange={setRecurrencePattern}
+                recurrenceStartDate={recurrenceStartDate}
+                onRecurrenceStartDateChange={setRecurrenceStartDate}
+                recurrenceEndDate={recurrenceEndDate}
+                onRecurrenceEndDateChange={setRecurrenceEndDate}
+                onGeneratedDatesChange={setGeneratedDates}
+              />
+
+              {/* Paid on date (optional) */}
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Paid on date (optional)</label>
+                <Input
+                  type="date"
+                  value={paidOnDate ? paidOnDate.toISOString().slice(0,10) : ''}
+                  onChange={(e) => setPaidOnDate(e.target.value ? new Date(e.target.value) : undefined)}
+                />
+              </div>
+              
+              <PlaceInput
+                value={place}
+                onChange={setPlace}
+              />
+              
+              {selectedFamily?.id === '1' && (
+                <ReplacementSection
+                  needsReplacement={needsReplacement}
+                  replacementFrequency={replacementFrequency}
+                  onNeedsReplacementChange={setNeedsReplacement}
+                  onFrequencyChange={setReplacementFrequency}
+                />
+              )}
+
+              {/* Payroll linking */}
+              <PayrollLinkSection
+                state={payrollLink}
+                onChange={setPayrollLink}
+                employees={employees}
+                payrollPeriods={payrollPeriods}
+                onQuickAddEmployee={addEmployee as any}
+                suggestedStart={suggestedStart}
+                suggestedEnd={suggestedEnd}
+                suggestedPayDate={paidOnDate}
+              />
+            </>
           )}
-
-          <AmountInput 
-            value={amount}
-            onChange={setAmount}
-          />
-          
-          <DescriptionInput
-            value={description}
-            onChange={setDescription}
-          />
-          
-          <CategorySelector
-            value={category}
-            onChange={setCategory}
-            place={place || ocrResult?.storeDetails?.name}
-            lineItems={ocrResult?.lineItems ? ocrResult.lineItems.map(item => ({ 
-              description: item.description, 
-              confidence: 0.8 // Default confidence for type compatibility
-            } as any)) : undefined}
-            autoSelectTopSuggestion={autoSelectCategory}  // 🔥 Pass auto-select flag
-          />
-          
-          <RecurringDateSelector
-            mode={dateMode}
-            onModeChange={setDateMode}
-            singleDate={singleDate}
-            onSingleDateChange={setSingleDate}
-            multipleDates={multipleDates}
-            onMultipleDatesChange={setMultipleDates}
-            recurrencePattern={recurrencePattern}
-            onRecurrencePatternChange={setRecurrencePattern}
-            recurrenceStartDate={recurrenceStartDate}
-            onRecurrenceStartDateChange={setRecurrenceStartDate}
-            recurrenceEndDate={recurrenceEndDate}
-            onRecurrenceEndDateChange={setRecurrenceEndDate}
-            onGeneratedDatesChange={setGeneratedDates}
-          />
-
-          {/* Paid on date (optional) */}
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Paid on date (optional)</label>
-            <Input
-              type="date"
-              value={paidOnDate ? paidOnDate.toISOString().slice(0,10) : ''}
-              onChange={(e) => setPaidOnDate(e.target.value ? new Date(e.target.value) : undefined)}
-            />
-          </div>
-          
-          <PlaceInput
-            value={place}
-            onChange={setPlace}
-          />
-          
-          {selectedFamily?.id === '1' && (
-            <ReplacementSection
-              needsReplacement={needsReplacement}
-              replacementFrequency={replacementFrequency}
-              onNeedsReplacementChange={setNeedsReplacement}
-              onFrequencyChange={setReplacementFrequency}
-            />
-          )}
-
-          {/* Payroll linking */}
-          <PayrollLinkSection
-            state={payrollLink}
-            onChange={setPayrollLink}
-            employees={employees}
-            payrollPeriods={payrollPeriods}
-            onQuickAddEmployee={addEmployee as any}
-            suggestedStart={suggestedStart}
-            suggestedEnd={suggestedEnd}
-            suggestedPayDate={paidOnDate}
-          />
         </CardContent>
         <CardFooter>
           <Button 
