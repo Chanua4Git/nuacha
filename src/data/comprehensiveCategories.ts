@@ -214,11 +214,27 @@ export const comprehensiveCategories: DemoCategory[] = [
       { id: 'spa-massage', name: 'Spa & massage', color: '#EC4899', group: 'wants' },
       { id: 'gym-membership', name: 'Gym membership', color: '#EC4899', group: 'wants' },
       { id: 'skincare', name: 'Skincare', color: '#EC4899', group: 'wants' },
-      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' }
+      { id: 'vitamins-supplements', name: 'Vitamins & supplements', color: '#EC4899', group: 'wants' },
+      { id: 'personal-services', name: 'Personal Services (piercing, tattoo, nails, waxing)', color: '#EC4899', group: 'wants' }
     ]
   },
 
-  // 12. Gifts & Special Occasions (Wants)
+  // 12. Kids & Family (Wants - non-school related)
+  {
+    id: 'kids-family',
+    name: 'Kids & Family',
+    color: '#A855F7',
+    group: 'wants',
+    children: [
+      { id: 'kids-toys', name: 'Kids Toys & Games', color: '#A855F7', group: 'wants' },
+      { id: 'kids-clothing', name: 'Kids Clothing & Shoes', color: '#A855F7', group: 'wants' },
+      { id: 'kids-activities', name: 'Kids Activities & Entertainment', color: '#A855F7', group: 'wants' },
+      { id: 'kids-allowance', name: 'Kids Pocket Money / Allowance', color: '#A855F7', group: 'wants' },
+      { id: 'kids-birthday-parties', name: 'Kids Birthday Parties', color: '#A855F7', group: 'wants' }
+    ]
+  },
+
+  // 13. Gifts & Special Occasions (Wants)
   {
     id: 'gifts-occasions',
     name: 'Gifts & Special Occasions',
@@ -233,7 +249,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 13. Travel & Holidays (Wants)
+  // 14. Travel & Holidays (Wants)
   {
     id: 'travel-holidays',
     name: 'Travel & Holidays',
@@ -248,7 +264,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 14. Household Operations (Wants portion)
+  // 15. Household Operations (Wants portion)
   {
     id: 'household-operations-wants',
     name: 'Household Operations (Wants)',
@@ -263,7 +279,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 15. Education & Child (Wants portion)
+  // 16. Education & Child (Wants portion)
   {
     id: 'education-child-wants',
     name: 'Education & Child (Wants)',
@@ -277,7 +293,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 16. Technology & Lifestyle (Wants)
+  // 17. Technology & Lifestyle (Wants)
   {
     id: 'technology-lifestyle',
     name: 'Technology & Lifestyle',
@@ -292,7 +308,7 @@ export const comprehensiveCategories: DemoCategory[] = [
 
   // 💚 SAVINGS & INVESTMENTS
 
-  // 17. Core Savings
+  // 18. Core Savings
   {
     id: 'core-savings',
     name: 'Core Savings',
@@ -310,7 +326,7 @@ export const comprehensiveCategories: DemoCategory[] = [
     ]
   },
 
-  // 18. Long-Term
+  // 19. Long-Term
   {
     id: 'long-term-savings',
     name: 'Long-Term',
