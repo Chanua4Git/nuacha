@@ -47,11 +47,11 @@ export function LearningModuleCard({ module }: LearningModuleCardProps) {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex items-start gap-4">
+        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+          <div className="flex items-start gap-2 sm:gap-4">
             {/* Icon */}
-            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              {IconComponent && <IconComponent className="w-6 h-6 text-primary" />}
+            <div className="flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              {IconComponent && <IconComponent className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />}
             </div>
 
             {/* Header Content */}
@@ -98,7 +98,7 @@ export function LearningModuleCard({ module }: LearningModuleCardProps) {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0">
+        <CardContent className="px-3 sm:px-6 pt-0 pb-3 sm:pb-6">
           {/* Action Buttons */}
           <div className="flex items-center gap-2 mb-3">
             <CollapsibleTrigger asChild>

@@ -126,10 +126,10 @@ export function LearningStepCard({
 
   return (
     <Card className="border-l-4 border-l-primary/30 hover:border-l-primary transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+      <CardContent className="p-2 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-3">
           {/* Step Number */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+          <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs sm:text-sm">
             {stepNumber}
           </div>
 
@@ -174,7 +174,8 @@ export function LearningStepCard({
                 {/* Visual Content */}
                 {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
                 <div className={cn(
-                  "relative w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
+                  "relative w-full rounded-lg sm:rounded-lg border border-border bg-muted/30 overflow-hidden",
+                  "mx-[-8px] sm:mx-0 w-[calc(100%+16px)] sm:w-full",
                   !hasVisual && "hidden"
                 )}>
                   {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
