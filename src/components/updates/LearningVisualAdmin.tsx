@@ -377,7 +377,7 @@ export function LearningVisualAdmin() {
       
       if (url) {
         setNarratorStatus(prev => new Map(prev).set(key, true));
-        setNarratorExtensions(prev => new Map(prev).set(key, 'webm'));
+        setNarratorExtensions(prev => new Map(prev).set(key, 'mp4'));
         
         if (needsCompression) {
           toast.success(`Narrator video compressed and uploaded for "${stepTitle}"`);

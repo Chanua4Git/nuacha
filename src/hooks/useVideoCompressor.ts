@@ -89,28 +89,30 @@ export function useVideoCompressor() {
 
       console.log(`Compressing ${fileSizeMB.toFixed(2)}MB file with ${level} compression`);
 
-      // Run FFmpeg compression command
+      // Run FFmpeg compression command with H.264/AAC (widely supported)
       await ffmpegInstance.exec([
         '-i', inputFileName,
-        '-c:v', 'libvpx-vp9',  // VP9 codec for WebM
+        '-c:v', 'libx264',     // H.264 codec (available in standard FFmpeg WASM)
+        '-preset', 'fast',     // Balance speed vs compression
         '-crf', params.crf,
         '-b:v', params.videoBitrate,
-        '-c:a', 'libopus',     // Opus audio codec
+        '-c:a', 'aac',         // AAC audio codec (available in standard FFmpeg WASM)
         '-b:a', params.audioBitrate,
-        'output.webm'
+        '-movflags', '+faststart', // Optimize for streaming
+        'output.mp4'
       ]);
 
       setStage('finalizing');
 
       // Read output file
-      const data = await ffmpegInstance.readFile('output.webm');
+      const data = await ffmpegInstance.readFile('output.mp4');
       
       // Clean up
       await ffmpegInstance.deleteFile(inputFileName);
-      await ffmpegInstance.deleteFile('output.webm');
+      await ffmpegInstance.deleteFile('output.mp4');
 
       // Convert to Blob
-      const outputBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: 'video/webm' });
+      const outputBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: 'video/mp4' });
       
       const outputSizeMB = outputBlob.size / (1024 * 1024);
       console.log(`Compression complete: ${fileSizeMB.toFixed(2)}MB → ${outputSizeMB.toFixed(2)}MB`);
