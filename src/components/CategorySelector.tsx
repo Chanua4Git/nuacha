@@ -42,8 +42,8 @@ const CategorySelector = ({
   const { selectedFamily } = useExpense();
   const { user } = useAuth();
   
-  // Track if we've already attempted auto-selection for this receipt
-  const hasAttemptedAutoSelect = useRef(false);
+  // Track what receipt content we've auto-selected for (content-based, not reference-based)
+  const lastAutoSelectKey = useRef<string>('');
 
   // Use unified categories for consistent behavior across the app
   const { 
@@ -88,20 +88,22 @@ const CategorySelector = ({
     autoSelectEnabled: autoSelectTopSuggestion
   });
   
-  // Reset auto-selection tracker when place or lineItems change (new receipt)
-  useEffect(() => {
-    hasAttemptedAutoSelect.current = false;
+  // Create stable key based on receipt CONTENT (not reference)
+  const currentReceiptKey = useMemo(() => {
+    const placeKey = place || '';
+    const itemsKey = lineItems?.map(i => i.description).join('|') || '';
+    return `${placeKey}::${itemsKey}`;
   }, [place, lineItems]);
   
-  // 🆕 AUTO-SELECT TOP SUGGESTION: Self-contained, one-time auto-selection
+  // 🆕 AUTO-SELECT TOP SUGGESTION: Content-based, one-time auto-selection per unique receipt
   useEffect(() => {
-    // Only auto-select once, when:
+    // Only auto-select when:
     // 1. No category is currently selected (!value)
     // 2. We have suggestions
     // 3. Suggestions are done loading
-    // 4. We haven't already attempted auto-selection for this receipt
-    if (!value && suggestions.length > 0 && !suggestionsLoading && !hasAttemptedAutoSelect.current) {
-      hasAttemptedAutoSelect.current = true;
+    // 4. This receipt content is different from what we last auto-selected for
+    if (!value && suggestions.length > 0 && !suggestionsLoading && currentReceiptKey !== lastAutoSelectKey.current) {
+      lastAutoSelectKey.current = currentReceiptKey;
       const topSuggestion = suggestions[0];
       
       if (topSuggestion.confidence >= 50) {
@@ -111,7 +113,7 @@ const CategorySelector = ({
         console.log(`⚠️ Top suggestion confidence too low (${topSuggestion.confidence}%) - not auto-selecting`);
       }
     }
-  }, [suggestions, value, onChange, suggestionsLoading]);
+  }, [suggestions, value, onChange, suggestionsLoading, currentReceiptKey]);
   
   const getCategory = (id: string): CategoryWithCamelCase | any => {
     if (!user) {
