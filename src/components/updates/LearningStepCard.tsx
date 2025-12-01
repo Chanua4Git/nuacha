@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronDown, ChevronUp, ExternalLink, Lightbulb } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ChevronDown, ChevronUp, ExternalLink, Lightbulb, Maximize2 } from 'lucide-react';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists } from '@/utils/learningVisuals';
 import { cn } from '@/lib/utils';
 import { NarratorOverlay } from './NarratorOverlay';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LearningStepCardProps {
   step: LearningStep;
@@ -27,12 +29,14 @@ export function LearningStepCard({
   onToggleComplete
 }: LearningStepCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isVisualExpanded, setIsVisualExpanded] = useState(false);
   const [hasVisual, setHasVisual] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [visualUrl, setVisualUrl] = useState<string>('');
   const [hasNarrator, setHasNarrator] = useState(false);
   const [narratorUrl, setNarratorUrl] = useState<string>('');
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Check for visuals and narrator on mount
   useState(() => {
@@ -167,7 +171,7 @@ export function LearningStepCard({
             {/* Expanded Content */}
             {isExpanded && (
               <div className="space-y-4 mt-3 pt-3 border-t">
-                {/* Visual Content with Narrator Overlay */}
+                {/* Visual Content */}
                 {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
                 <div className={cn(
                   "relative w-full rounded-lg border border-border bg-muted/30 overflow-hidden",
@@ -180,7 +184,7 @@ export function LearningStepCard({
                       loop
                       muted
                       playsInline
-                      className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
+                      className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
                       onLoadedData={() => { 
                         setHasVisual(true); 
                         setImageLoading(false); 
@@ -194,7 +198,7 @@ export function LearningStepCard({
                     <img 
                       src={visualUrl}
                       alt={step.visual?.alt || step.title}
-                      className="w-full max-h-48 md:max-h-64 lg:max-h-80 object-contain mx-auto"
+                      className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
                       onLoad={() => { 
                         setHasVisual(true); 
                         setImageLoading(false); 
@@ -206,14 +210,56 @@ export function LearningStepCard({
                     />
                   )}
                   
-                  {/* Narrator Overlay */}
-                  {hasNarrator && narratorUrl && (
+                  {/* Expand Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsVisualExpanded(true)}
+                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow"
+                    title="View fullscreen"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </Button>
+                  
+                  {/* Narrator Overlay - Only on desktop */}
+                  {!isMobile && hasNarrator && narratorUrl && (
                     <NarratorOverlay
                       videoUrl={narratorUrl}
                       displayMode={step.narrator?.displayMode || 'face-voice'}
                     />
                   )}
                 </div>
+
+                {/* Narrator - Below visual on mobile */}
+                {isMobile && hasNarrator && narratorUrl && (
+                  <NarratorOverlay
+                    videoUrl={narratorUrl}
+                    displayMode={step.narrator?.displayMode || 'face-voice'}
+                    isMobile={true}
+                  />
+                )}
+
+                {/* Fullscreen Dialog */}
+                <Dialog open={isVisualExpanded} onOpenChange={setIsVisualExpanded}>
+                  <DialogContent className="max-w-[95vw] max-h-[90vh] p-2">
+                    {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
+                      <video 
+                        src={visualUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <img 
+                        src={visualUrl}
+                        alt={step.visual?.alt || step.title}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
 
                 {/* Main Instructions */}
                 <div className="prose prose-sm max-w-none text-muted-foreground">

@@ -8,9 +8,10 @@ interface NarratorOverlayProps {
   videoUrl: string;
   displayMode: NarratorDisplayMode;
   className?: string;
+  isMobile?: boolean;
 }
 
-export function NarratorOverlay({ videoUrl, displayMode, className }: NarratorOverlayProps) {
+export function NarratorOverlay({ videoUrl, displayMode, className, isMobile = false }: NarratorOverlayProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
 
@@ -62,7 +63,44 @@ export function NarratorOverlay({ videoUrl, displayMode, className }: NarratorOv
     );
   }
 
-  // Face + Voice mode: circular bubble overlay
+  // Face + Voice mode: circular bubble overlay (desktop) or stacked (mobile)
+  if (isMobile) {
+    return (
+      <div className={cn("flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border", className)}>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          autoPlay
+          loop
+          playsInline
+          muted={isMuted}
+          className="w-16 h-16 object-cover rounded-full border-2 border-border shadow flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground mb-1">Your guide</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleMute}
+            className="h-7 text-xs"
+          >
+            {isMuted ? (
+              <>
+                <VolumeX className="w-3 h-3 mr-1" />
+                Unmute
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-3 h-3 mr-1" />
+                Mute
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("absolute bottom-3 right-3 z-10 group", className)}>
       <div className="relative w-20 h-20 md:w-24 md:h-24">
