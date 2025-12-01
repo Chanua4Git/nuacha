@@ -15,12 +15,16 @@ import { GifRecordingPanel } from './GifRecordingPanel';
 import { GifEditor } from './GifEditor';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useVideoCompressor } from '@/hooks/useVideoCompressor';
+import { VideoCompressionProgress } from './VideoCompressionProgress';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading' | 'recording';
 type VisualType = 'gif' | 'screenshot' | 'ai-generated' | 'missing';
 
 export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
+  const { compressVideo, isCompressing, progress, stage, estimateCompressedSize } = useVideoCompressor();
   const [visualStatus, setVisualStatus] = useState<Map<string, VisualStatus>>(new Map());
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [narratorStatus, setNarratorStatus] = useState<Map<string, boolean>>(new Map());
@@ -29,6 +33,11 @@ export function LearningVisualAdmin() {
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const narratorInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const [compressingNarrator, setCompressingNarrator] = useState<{
+    key: string;
+    originalSizeMB: number;
+    stepTitle: string;
+  } | null>(null);
   const [annotatingStep, setAnnotatingStep] = useState<{
     file: File;
     moduleId: string;
@@ -336,33 +345,52 @@ export function LearningVisualAdmin() {
       return;
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File too large. Please upload a video smaller than 10MB');
-      return;
-    }
-
     const key = `${moduleId}-${stepId}`;
-    
+    const fileSizeMB = file.size / (1024 * 1024);
+    const needsCompression = fileSizeMB >= 5;
+
+    let videoToUpload: Blob = file;
+
     try {
-      const url = await uploadNarratorVideo(file, moduleId, stepId);
+      // Compress if file is 5MB or larger
+      if (needsCompression) {
+        setCompressingNarrator({
+          key,
+          originalSizeMB: fileSizeMB,
+          stepTitle
+        });
+
+        toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+        videoToUpload = await compressVideo(file);
+
+        // Check compressed size
+        const compressedSizeMB = videoToUpload.size / (1024 * 1024);
+        if (compressedSizeMB >= 5) {
+          toast.warning(`Compressed video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
+        }
+
+        setCompressingNarrator(null);
+      }
+
+      // Upload the video (compressed or original)
+      const url = await uploadNarratorVideo(videoToUpload, moduleId, stepId);
       
       if (url) {
-        // Detect and store the uploaded extension
-        const extension = file.type.includes('quicktime') ? 'mov' 
-          : file.type.includes('mp4') ? 'mp4'
-          : file.type.includes('webm') ? 'webm'
-          : 'webm';
-        
         setNarratorStatus(prev => new Map(prev).set(key, true));
-        setNarratorExtensions(prev => new Map(prev).set(key, extension));
-        toast.success(`Narrator video uploaded for "${stepTitle}"`);
+        setNarratorExtensions(prev => new Map(prev).set(key, 'webm'));
+        
+        if (needsCompression) {
+          toast.success(`Narrator video compressed and uploaded for "${stepTitle}"`);
+        } else {
+          toast.success(`Narrator video uploaded for "${stepTitle}"`);
+        }
       } else {
         throw new Error('Upload failed');
       }
     } catch (error) {
       console.error('Narrator upload error:', error);
       toast.error('Failed to upload narrator video. Please try again.');
+      setCompressingNarrator(null);
     }
     
     event.target.value = '';
@@ -874,6 +902,19 @@ export function LearningVisualAdmin() {
           onSave={handleGifSave}
           onCancel={() => setEditingGif(null)}
         />
+      )}
+
+      {compressingNarrator && (
+        <Dialog open={true}>
+          <DialogContent className="sm:max-w-md">
+            <VideoCompressionProgress
+              originalSizeMB={compressingNarrator.originalSizeMB}
+              estimatedSizeMB={estimateCompressedSize(compressingNarrator.originalSizeMB)}
+              progress={progress}
+              stage={stage}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
