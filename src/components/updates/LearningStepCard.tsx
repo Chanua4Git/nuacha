@@ -93,10 +93,10 @@ export function LearningStepCard({
     };
     
     const checkNarrator = async () => {
-      const exists = await checkNarratorExists(moduleId, step.id);
-      if (exists) {
+      const extension = await checkNarratorExists(moduleId, step.id);
+      if (extension) {
         setHasNarrator(true);
-        setNarratorUrl(getNarratorVideoUrl(moduleId, step.id));
+        setNarratorUrl(getNarratorVideoUrl(moduleId, step.id, extension));
       }
     };
     
