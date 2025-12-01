@@ -158,49 +158,37 @@ const Landing = () => {
   return <>
       <DemoBreadcrumbs currentPage="home" />
       <div className="min-h-screen bg-background py-12 px-4">
-        {/* Hero Upload Section - Conditional based on authentication */}
+        {/* Hero Upload Section - Now for ALL users */}
         <section className="relative">
-          {user ? (
-            // Authenticated user - Welcome back message
-            <div className="max-w-4xl mx-auto text-center py-16 px-4">
-              <div className="bg-gradient-to-r from-[#F4E8D3]/30 via-[#C3DCD1]/20 to-[#F1CBC7]/30 rounded-3xl p-8 md:p-12 backdrop-blur border border-white/20">
-                <h2 className="text-3xl md:text-4xl font-playfair mb-4 text-foreground">
-                  Welcome back!
-                </h2>
-                <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-                  Ready to continue tracking your expenses? Head to your app to manage your families, upload receipts, and stay on top of your finances.
-                </p>
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate('/app?tab=add-expense')}
-                  className="bg-[#5A7684] hover:bg-[#5A7684]/90 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  Go to Your App
-                  <ArrowRight className="ml-2" />
-                </Button>
-              </div>
+          <HeroUploadSection 
+            onCameraClick={handleCameraClick}
+            onUploadClick={handleUploadClick}
+            onFileSelect={handleFileSelect}
+            isDemo={!user}
+          />
+          {/* Hidden file input for camera/upload */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+            }}
+            className="hidden"
+          />
+          
+          {/* Optional shortcut link for authenticated users */}
+          {user && (
+            <div className="text-center mt-4">
+              <Button 
+                variant="link" 
+                onClick={() => navigate('/app')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                or go directly to your dashboard →
+              </Button>
             </div>
-          ) : (
-            // Unauthenticated user - Show upload section
-            <>
-              <HeroUploadSection 
-                onCameraClick={handleCameraClick}
-                onUploadClick={handleUploadClick}
-                onFileSelect={handleFileSelect}
-                isDemo={true}
-              />
-              {/* Hidden file input for camera/upload */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileSelect(file);
-                }}
-                className="hidden"
-              />
-            </>
           )}
         </section>
 
