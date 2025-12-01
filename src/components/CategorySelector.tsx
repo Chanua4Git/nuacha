@@ -1,5 +1,5 @@
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { 
   Select, 
   SelectContent, 
@@ -41,6 +41,9 @@ const CategorySelector = ({
 }: CategorySelectorProps) => {
   const { selectedFamily } = useExpense();
   const { user } = useAuth();
+  
+  // Track if we've already attempted auto-selection for this receipt
+  const hasAttemptedAutoSelect = useRef(false);
 
   // Use unified categories for consistent behavior across the app
   const { 
@@ -85,12 +88,22 @@ const CategorySelector = ({
     autoSelectEnabled: autoSelectTopSuggestion
   });
   
-  // 🆕 AUTO-SELECT TOP SUGGESTION: Auto-select if enabled and no category selected
+  // Reset auto-selection tracker when place or lineItems change (new receipt)
   useEffect(() => {
-    if (autoSelectTopSuggestion && !value && suggestions.length > 0 && !suggestionsLoading) {
+    hasAttemptedAutoSelect.current = false;
+  }, [place, lineItems]);
+  
+  // 🆕 AUTO-SELECT TOP SUGGESTION: Self-contained, one-time auto-selection
+  useEffect(() => {
+    // Only auto-select once, when:
+    // 1. No category is currently selected (!value)
+    // 2. We have suggestions
+    // 3. Suggestions are done loading
+    // 4. We haven't already attempted auto-selection for this receipt
+    if (!value && suggestions.length > 0 && !suggestionsLoading && !hasAttemptedAutoSelect.current) {
+      hasAttemptedAutoSelect.current = true;
       const topSuggestion = suggestions[0];
       
-      // Only auto-select if confidence is high enough (>=50%)
       if (topSuggestion.confidence >= 50) {
         console.log(`🎯 Auto-selecting top category: ${topSuggestion.category.name} (${topSuggestion.confidence}% confidence)`);
         onChange(topSuggestion.categoryId);
@@ -98,7 +111,7 @@ const CategorySelector = ({
         console.log(`⚠️ Top suggestion confidence too low (${topSuggestion.confidence}%) - not auto-selecting`);
       }
     }
-  }, [suggestions, value, autoSelectTopSuggestion, onChange, suggestionsLoading]);
+  }, [suggestions, value, onChange, suggestionsLoading]);
   
   const getCategory = (id: string): CategoryWithCamelCase | any => {
     if (!user) {
