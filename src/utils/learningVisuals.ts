@@ -3,6 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 export type VisualType = 'ai-generated' | 'screenshot' | 'gif' | 'manual' | 'narrator';
 
 /**
+ * Map MIME type to proper file extension for videos
+ */
+const getExtensionFromMimeType = (mimeType: string): string => {
+  const mimeToExt: Record<string, string> = {
+    'video/quicktime': 'mov',
+    'video/mp4': 'mp4',
+    'video/webm': 'webm',
+    'video/x-matroska': 'mkv',
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+  
+  return mimeToExt[mimeType] || mimeType.split('/')[1] || 'mp4';
+};
+
+/**
  * Upload an image to the learning-visuals storage bucket
  */
 export const uploadLearningVisual = async (
@@ -12,7 +31,7 @@ export const uploadLearningVisual = async (
   type: VisualType = 'manual'
 ): Promise<string | null> => {
   try {
-    const extension = imageBlob.type.split('/')[1] || 'png';
+    const extension = getExtensionFromMimeType(imageBlob.type);
     const storagePath = `${type}/${moduleId}/${stepId}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
@@ -122,11 +141,21 @@ export const getNarratorVideoUrl = (
 };
 
 /**
- * Check if a narrator video exists for a step
+ * Check if a narrator video exists for a step and return the extension if found
  */
 export const checkNarratorExists = async (
   moduleId: string,
   stepId: string
-): Promise<boolean> => {
-  return checkVisualExists(moduleId, stepId, 'narrator', 'webm');
+): Promise<string | null> => {
+  // Check for multiple video formats in priority order
+  const videoExtensions = ['webm', 'mp4', 'mov'];
+  
+  for (const ext of videoExtensions) {
+    const exists = await checkVisualExists(moduleId, stepId, 'narrator', ext);
+    if (exists) {
+      return ext; // Return the extension that exists
+    }
+  }
+  
+  return null; // No video found
 };

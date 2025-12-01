@@ -25,6 +25,7 @@ export function LearningVisualAdmin() {
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [narratorStatus, setNarratorStatus] = useState<Map<string, boolean>>(new Map());
   const [narratorModes, setNarratorModes] = useState<Map<string, NarratorDisplayMode>>(new Map());
+  const [narratorExtensions, setNarratorExtensions] = useState<Map<string, string>>(new Map()); // Track video format
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const narratorInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -117,12 +118,19 @@ export function LearningVisualAdmin() {
 
   const checkAllNarrators = async () => {
     const narratorMap = new Map<string, boolean>();
+    const extensionMap = new Map<string, string>();
     
     for (const module of learningModules) {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
-        const hasNarrator = await checkNarratorExists(module.id, step.id);
-        narratorMap.set(key, hasNarrator);
+        const extension = await checkNarratorExists(module.id, step.id);
+        
+        if (extension) {
+          narratorMap.set(key, true);
+          extensionMap.set(key, extension);
+        } else {
+          narratorMap.set(key, false);
+        }
         
         // Initialize narrator mode to default if not set
         if (!narratorModes.has(key)) {
@@ -132,6 +140,7 @@ export function LearningVisualAdmin() {
     }
     
     setNarratorStatus(narratorMap);
+    setNarratorExtensions(extensionMap);
   };
 
   const handleGenerateSingle = async (moduleId: string, stepId: string, title: string, description: string, screenshotHint?: string) => {
@@ -323,7 +332,7 @@ export function LearningVisualAdmin() {
 
     // Validate file type (video only)
     if (!file.type.startsWith('video/')) {
-      toast.error('Invalid file type. Please upload a video file (MP4, WebM)');
+      toast.error('Invalid file type. Please upload a video file (MP4, WebM, MOV)');
       return;
     }
 
@@ -339,7 +348,14 @@ export function LearningVisualAdmin() {
       const url = await uploadNarratorVideo(file, moduleId, stepId);
       
       if (url) {
+        // Detect and store the uploaded extension
+        const extension = file.type.includes('quicktime') ? 'mov' 
+          : file.type.includes('mp4') ? 'mp4'
+          : file.type.includes('webm') ? 'webm'
+          : 'webm';
+        
         setNarratorStatus(prev => new Map(prev).set(key, true));
+        setNarratorExtensions(prev => new Map(prev).set(key, extension));
         toast.success(`Narrator video uploaded for "${stepTitle}"`);
       } else {
         throw new Error('Upload failed');
@@ -741,7 +757,7 @@ export function LearningVisualAdmin() {
                                 <HoverCard>
                                   <HoverCardTrigger asChild>
                                     <video
-                                      src={getNarratorVideoUrl(module.id, step.id)}
+                                      src={getNarratorVideoUrl(module.id, step.id, narratorExtensions.get(key) || 'webm')}
                                       muted
                                       playsInline
                                       className="h-8 w-12 object-cover rounded-full border border-border cursor-pointer"
@@ -749,7 +765,7 @@ export function LearningVisualAdmin() {
                                   </HoverCardTrigger>
                                   <HoverCardContent className="w-80 p-2" side="right">
                                     <video
-                                      src={getNarratorVideoUrl(module.id, step.id)}
+                                      src={getNarratorVideoUrl(module.id, step.id, narratorExtensions.get(key) || 'webm')}
                                       autoPlay
                                       loop
                                       muted
