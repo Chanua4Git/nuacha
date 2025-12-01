@@ -10,7 +10,7 @@ import {
 import { useExpense } from '@/context/ExpenseContext';
 import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
 import { useSmartCategorySuggestions } from '@/hooks/useSmartCategorySuggestions';
-import { Tag, RefreshCw, Sparkles, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { Tag, RefreshCw, Sparkles, TrendingUp, Clock, Calendar, Loader2 } from 'lucide-react';
 import { CategoryWithCamelCase } from '@/types/expense';
 import { ReceiptLineItem } from '@/types/receipt';
 import { Button } from '@/components/ui/button';
@@ -534,6 +534,14 @@ const CategorySelector = ({
           {renderCategories()}
         </SelectContent>
       </Select>
+      
+      {/* Loading indicator when populating smart categories */}
+      {suggestionsLoading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+          <Loader2 className="h-3 w-3 animate-spin" style={{ color: '#5A7684' }} />
+          <span>Finding the best category for you...</span>
+        </div>
+      )}
       
       {suggestedCategory && !value && (
         <div className="mt-1 text-xs text-muted-foreground">
