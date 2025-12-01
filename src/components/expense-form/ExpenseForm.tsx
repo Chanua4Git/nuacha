@@ -124,6 +124,47 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     setManualEntryMode(false); // Exit manual entry mode when uploading receipt
   };
 
+  // New: Hero upload section handler that triggers full OCR processing
+  const handleHeroFileSelect = async (file: File) => {
+    console.log('🚀 ExpenseForm: HeroUploadSection file selected', file);
+    
+    // Set preview immediately for user feedback
+    setReceiptImage(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+    setManualEntryMode(false);
+    
+    // Show processing indicator
+    toast.loading("Processing your receipt...", {
+      id: 'ocr-processing',
+      description: "We're extracting the details for you."
+    });
+    
+    try {
+      // Use same OCR flow as ReceiptUpload component
+      const { processReceiptImage, validateOCRResult } = await import('@/utils/receipt');
+      const extractedData = await processReceiptImage(file, selectedFamily?.id);
+      
+      toast.dismiss('ocr-processing');
+      
+      if (validateOCRResult(extractedData)) {
+        handleOcrData(extractedData, previewUrl);
+        toast.success('Receipt details gently applied');
+      } else {
+        handleOcrData(extractedData, previewUrl); // Still show partial data
+        toast("The receipt details weren't clear enough", {
+          description: "Feel free to adjust the information as needed."
+        });
+      }
+    } catch (error) {
+      toast.dismiss('ocr-processing');
+      console.error('Error processing receipt:', error);
+      toast.error("We couldn't read the receipt", {
+        description: "You can still add the information yourself."
+      });
+    }
+  };
+
   const handleImagesUpload = (files: File[]) => {
     setReceiptImages(files);
     if (files.length === 1) {
@@ -677,32 +718,32 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           {shouldShowHeroUpload ? (
             // Show prominent hero upload section when no receipt scanned yet
             <div className="space-y-6">
-              <HeroUploadSection
-                onCameraClick={() => {
-                  // Trigger file input for camera capture
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.capture = 'environment';
-                  input.onchange = (e: any) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                  };
-                  input.click();
-                }}
-                onUploadClick={() => {
-                  // Trigger file input for upload
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.onchange = (e: any) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                  };
-                  input.click();
-                }}
-                onFileSelect={handleImageUpload}
-              />
+        <HeroUploadSection
+          onCameraClick={() => {
+            // Trigger file input for camera capture
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment';
+            input.onchange = (e: any) => {
+              const file = e.target.files?.[0];
+              if (file) handleHeroFileSelect(file);
+            };
+            input.click();
+          }}
+          onUploadClick={() => {
+            // Trigger file input for upload
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e: any) => {
+              const file = e.target.files?.[0];
+              if (file) handleHeroFileSelect(file);
+            };
+            input.click();
+          }}
+          onFileSelect={handleHeroFileSelect}
+        />
               
               {/* Manual entry option */}
               <div className="text-center">
