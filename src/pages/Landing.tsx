@@ -11,6 +11,7 @@ import { useTimeBasedLeadCapture } from "@/hooks/useTimeBasedLeadCapture";
 import { useLeadCaptureManager } from "@/hooks/useLeadCaptureManager";
 import ExitIntentLeadCaptureModal from "@/components/lead-capture/ExitIntentLeadCaptureModal";
 import TimeBasedLeadCaptureBanner from "@/components/lead-capture/TimeBasedLeadCaptureBanner";
+import ProcessingOverlay from "@/components/ui/processing-overlay";
 import { OCRResult } from "@/types/expense";
 import { toast } from "sonner";
 import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
@@ -420,26 +421,11 @@ const Landing = () => {
         />
 
         {/* Processing Overlay - Full screen when uploading/processing receipt */}
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-            <div className="bg-background rounded-2xl p-8 shadow-2xl max-w-md mx-4 flex flex-col items-center gap-6">
-              <div className="relative">
-                <Loader2 
-                  className="h-16 w-16 animate-spin" 
-                  style={{ color: '#5A7684' }}
-                />
-              </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-medium text-foreground">
-                  Processing your receipt...
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  We're extracting the details for you. This might take a moment.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <ProcessingOverlay 
+          isVisible={isProcessing}
+          title="Processing your receipt..."
+          description="We're extracting the details for you. This might take a moment."
+        />
       </div>
     </>;
 };

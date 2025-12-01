@@ -5,6 +5,7 @@ import React from 'react';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { format } from 'date-fns';
 import CategorySelector from '../CategorySelector';
+import ProcessingOverlay from '../ui/processing-overlay';
 import ReceiptUpload from '../ReceiptUpload';
 import MultiImageReceiptUpload from '../receipt/MultiImageReceiptUpload';
 import AmountInput from './AmountInput';
@@ -1054,6 +1055,13 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           )}
         </div>
       )}
+
+      {/* Processing Overlay - Full screen when saving expense */}
+      <ProcessingOverlay 
+        isVisible={isSubmitting}
+        title="Saving your expense..."
+        description="We're recording this expense and organizing your receipt. Just a moment."
+      />
     </Card>
   );
 };
