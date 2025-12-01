@@ -2,18 +2,10 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor, ExternalLink } from 'lucide-react';
+import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
-
-type DevicePreset = 'mobile' | 'tablet' | 'desktop';
-
-const DEVICE_PRESETS = {
-  mobile: { name: 'Mobile', width: 375, height: 667, icon: Smartphone },
-  tablet: { name: 'Tablet', width: 768, height: 1024, icon: Tablet },
-  desktop: { name: 'Desktop', width: 1280, height: 800, icon: Monitor },
-} as const;
 
 interface GifRecordingPanelProps {
   open: boolean;
@@ -47,7 +39,6 @@ export function GifRecordingPanel({
 }: GifRecordingPanelProps) {
   const [showGuide, setShowGuide] = useState(true);
   const [previewMode] = useState<'authenticated' | 'guest'>('guest');
-  const [devicePreset, setDevicePreset] = useState<DevicePreset>('mobile');
   
   const {
     isRecording,
@@ -121,97 +112,36 @@ export function GifRecordingPanel({
             
             {/* State: Idle (no recording yet) */}
             {!isRecording && !hasRecording && (
-              <div className="max-w-3xl mx-auto space-y-6 text-center">
+              <div className="max-w-2xl mx-auto space-y-6 text-center">
                 <div className="space-y-3">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    When you click <strong>Start recording</strong>, your browser will ask which screen, window, or tab to share.
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Select the browser tab where Nuacha is open, then perform the interaction you want to show (hover menus, click buttons, fill forms).
+                  </p>
                   
-                  {/* Device Preset Selector */}
-                  <div className="flex justify-center gap-2 mb-4">
-                    {(Object.entries(DEVICE_PRESETS) as [DevicePreset, typeof DEVICE_PRESETS[DevicePreset]][]).map(([key, preset]) => {
-                      const Icon = preset.icon;
-                      return (
-                        <Button
-                          key={key}
-                          variant={devicePreset === key ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDevicePreset(key)}
-                          className="gap-2"
-                        >
-                          <Icon className="w-4 h-4" />
-                          {preset.name}
-                          <span className="text-xs opacity-70">{preset.width}×{preset.height}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Visual Preview at Selected Size */}
-                  <div className="flex justify-center mb-4">
-                    <div 
-                      className="border-2 border-primary rounded-lg overflow-hidden shadow-lg bg-white"
-                      style={{ 
-                        width: `${Math.min(DEVICE_PRESETS[devicePreset].width * 0.8, 300)}px`,
-                        height: `${Math.min(DEVICE_PRESETS[devicePreset].height * 0.5, 333)}px`,
-                      }}
-                    >
-                      <iframe
-                        src={iframeUrl}
-                        className="w-full h-full origin-top-left"
-                        style={{
-                          width: `${DEVICE_PRESETS[devicePreset].width}px`,
-                          height: `${DEVICE_PRESETS[devicePreset].height}px`,
-                          transform: `scale(${Math.min(300 / DEVICE_PRESETS[devicePreset].width, 333 / DEVICE_PRESETS[devicePreset].height)})`,
-                        }}
-                        title="Device preview"
-                      />
+                  {previewMode === 'guest' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800">
+                        <strong>Note:</strong> You're in Guest Preview Mode. The Screen Capture API will record the <strong>actual browser tab</strong> you select, 
+                        so open the target page (with <code className="bg-amber-100 px-1 rounded">?_preview_auth=false</code>) in a separate tab before recording 
+                        to ensure you capture the unauthenticated experience.
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Setup Instructions */}
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3 text-left">
-                    <p className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                      📐 Recording at {DEVICE_PRESETS[devicePreset].name} size ({DEVICE_PRESETS[devicePreset].width} × {DEVICE_PRESETS[devicePreset].height}px)
-                    </p>
-                    <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                      <li>Click "Open Target Page" button below to open the page in a new tab</li>
-                      <li>In that new tab, press <kbd className="px-1.5 py-0.5 bg-blue-100 rounded text-[10px] font-mono">F12</kbd> (or <kbd className="px-1.5 py-0.5 bg-blue-100 rounded text-[10px] font-mono">Cmd+Option+I</kbd> on Mac) to open DevTools</li>
-                      <li>Click the "Toggle device toolbar" icon (📱) in DevTools</li>
-                      <li>Select dimensions: <strong>{DEVICE_PRESETS[devicePreset].width} × {DEVICE_PRESETS[devicePreset].height}</strong></li>
-                      <li>Then click "Start Recording" below and select that tab when prompted</li>
-                    </ol>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => window.open(iframeUrl, '_blank')}
-                      className="gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Open Target Page in New Tab
-                    </Button>
-
-                    <Button onClick={handleStart} size="lg" className="gap-2">
-                      <Circle className="w-4 h-4 fill-current" />
-                      Start Recording
-                    </Button>
-                  </div>
+                  )}
                 </div>
-
-                {previewMode === 'guest' && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-left">
-                    <p className="text-xs text-amber-800">
-                      <strong>Note:</strong> You're in Guest Preview Mode. The URL includes <code className="bg-amber-100 px-1 rounded">?_preview_auth=false</code> to show the unauthenticated experience.
-                    </p>
-                  </div>
-                )}
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">What to capture:</p>
                   <p className="text-sm">{screenshotHint || stepDescription}</p>
                 </div>
+
+                <Button onClick={handleStart} size="lg" className="gap-2">
+                  <Circle className="w-4 h-4 fill-current" />
+                  Start Recording
+                </Button>
               </div>
             )}
 
