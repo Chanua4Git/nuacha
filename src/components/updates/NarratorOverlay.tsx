@@ -66,7 +66,7 @@ export function NarratorOverlay({ videoUrl, displayMode, className, isMobile = f
   // Face + Voice mode: circular bubble overlay (desktop) or stacked (mobile)
   if (isMobile) {
     return (
-      <div className={cn("flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border", className)}>
+      <div className={cn("flex items-center gap-3 p-3 mx-[-8px] sm:mx-0 bg-muted/50 rounded-none sm:rounded-lg border border-border", className)}>
         <video
           ref={videoRef}
           src={videoUrl}
