@@ -117,7 +117,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
 
         if (event === 'SIGNED_IN') {
-          console.log('🔐 Auth: SIGNED_IN event, current path:', location.pathname);
+          const currentPath = window.location.pathname; // Use window.location to avoid stale closure
+          console.log('🔐 Auth: SIGNED_IN event, current path:', currentPath);
           
           // Check if this is a new user (created within last 5 minutes)
           if (currentSession?.user?.created_at) {
@@ -140,13 +141,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           if (isAuthDemoActive()) {
-            if (!location.pathname.startsWith('/authentication-demo')) {
+            if (!currentPath.startsWith('/authentication-demo')) {
               safeNavigate('/authentication-demo', { replace: true });
             }
           } else {
             // Check for intended path first, prioritizing user's intended destination
             const intendedPath = safeGetIntendedPath();
-            console.log('🔐 Auth: intended path:', intendedPath, 'current path:', location.pathname);
+            console.log('🔐 Auth: intended path:', intendedPath, 'current path:', currentPath);
             
             // Check for pending upload state from sessionStorage
             const pendingState = sessionStorage.getItem('pendingUploadState');
@@ -170,16 +171,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               return;
             }
             
-            // If already on a valid app route and no specific intended path, stay here
-            if (isAppRoute(location.pathname)) {
-              localStorage.removeItem('intendedPath'); // Clean up any stale intended path
-              console.log('🔐 Auth: staying on current app route:', location.pathname);
+            // If on auth pages (login/signup/reset-password), redirect to app
+            const AUTH_PAGES = ['/login', '/signup', '/reset-password'];
+            if (AUTH_PAGES.some(page => currentPath === page || currentPath.startsWith(`${page}/`))) {
+              console.log('🔐 Auth: On auth page, redirecting to /app');
+              safeNavigate('/app', { replace: true });
               return;
             }
             
-            // Default fallback
-            console.log('🔐 Auth: fallback navigation to root');
-            safeNavigate("/", { replace: true });
+            // If already on a valid app route and no specific intended path, stay here
+            if (isAppRoute(currentPath)) {
+              localStorage.removeItem('intendedPath'); // Clean up any stale intended path
+              console.log('🔐 Auth: staying on current app route:', currentPath);
+              return;
+            }
+            
+            // Default fallback - send to app dashboard
+            console.log('🔐 Auth: fallback navigation to /app');
+            safeNavigate("/app", { replace: true });
           }
         }
       }
