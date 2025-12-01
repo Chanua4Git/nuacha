@@ -63,37 +63,33 @@ export function NarratorOverlay({ videoUrl, displayMode, className, isMobile = f
     );
   }
 
-  // Face + Voice mode: circular bubble overlay (desktop) or stacked (mobile)
+  // Face + Voice mode: circular bubble overlay (desktop) or compact bubble (mobile)
   if (isMobile) {
     return (
-      <div className={cn("flex items-center gap-3 p-3 mx-[-8px] sm:mx-0 bg-muted/50 rounded-none sm:rounded-lg border border-border", className)}>
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          autoPlay
-          loop
-          playsInline
-          muted={isMuted}
-          className="w-16 h-16 object-cover rounded-full border-2 border-border shadow flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted-foreground mb-1">Your guide</p>
+      <div className={cn("flex justify-center mt-3", className)}>
+        <div className="relative">
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            autoPlay
+            loop
+            playsInline
+            muted={isMuted}
+            className="w-14 h-14 object-cover rounded-full border-2 border-border shadow-lg"
+            style={{ clipPath: 'circle(50%)' }}
+          />
+          {/* Tiny mute toggle overlaid at bottom-right */}
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={toggleMute}
-            className="h-7 text-xs"
+            className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-background/90 shadow-md"
+            title={isMuted ? 'Unmute narrator' : 'Mute narrator'}
           >
             {isMuted ? (
-              <>
-                <VolumeX className="w-3 h-3 mr-1" />
-                Unmute
-              </>
+              <VolumeX className="w-2.5 h-2.5" />
             ) : (
-              <>
-                <Volume2 className="w-3 h-3 mr-1" />
-                Mute
-              </>
+              <Volume2 className="w-2.5 h-2.5" />
             )}
           </Button>
         </div>
