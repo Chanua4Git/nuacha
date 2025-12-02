@@ -169,11 +169,12 @@ export function useGifRecorder(): UseGifRecorderResult {
   // Upload video file directly (for mobile users who record with native tools)
   const uploadVideo = useCallback((file: File) => {
     setError(null);
+    console.log('uploadVideo called:', file.name, 'type:', file.type, 'size:', file.size);
     
-    // Validate it's a video file
-    if (!file.type.startsWith('video/')) {
-      setError('Please upload a video file.');
-      return;
+    // Skip strict MIME validation - mobile browsers often return empty or incorrect types
+    // Trust the file picker with accept="video/*" instead
+    if (file.type && !file.type.startsWith('video/') && !file.type.startsWith('application/')) {
+      console.warn('Unexpected file type:', file.type, '- attempting to load anyway');
     }
 
     // Clear any previous recording
@@ -181,9 +182,11 @@ export function useGifRecorder(): UseGifRecorderResult {
       URL.revokeObjectURL(videoUrl);
     }
 
-    const blob = new Blob([file], { type: file.type });
-    setVideoBlob(blob);
-    setVideoUrl(URL.createObjectURL(blob));
+    // Use file directly - File is already a Blob
+    setVideoBlob(file);
+    setVideoUrl(URL.createObjectURL(file));
+    
+    console.log('Video state updated, hasRecording:', true);
   }, [videoUrl]);
 
   return {
