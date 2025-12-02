@@ -4,7 +4,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ChevronDown, ChevronUp, ExternalLink, Lightbulb, Maximize2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Lightbulb, Link, Maximize2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -116,6 +117,13 @@ export function LearningStepCard({
     }
   };
 
+  const handleCopyStepLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/updates?tab=learning&module=${moduleId}&step=${step.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Step link copied!');
+  };
+
   // Extract "Where to find it" and "Pro tip" from markdown
   const sections = step.detailedInstructions.split('\n\n');
   const mainContent = sections.filter(s => 
@@ -139,7 +147,18 @@ export function LearningStepCard({
             {/* Header */}
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground mb-1">{step.title}</h4>
+                <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2">
+                  {step.title}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyStepLink}
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    title="Copy link to this step"
+                  >
+                    <Link className="w-3 h-3" />
+                  </Button>
+                </h4>
                 <p className="text-sm text-muted-foreground">{step.description}</p>
               </div>
               
