@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Scissors, Zap, Save, X, Play, Pause, RotateCcw, Smartphone } from 'lucide-react';
+import { Scissors, Zap, Save, X, Play, Pause, RotateCcw, Smartphone, RotateCw } from 'lucide-react';
 import { useVideoTrimmer } from '@/hooks/useVideoTrimmer';
 import { toast } from 'sonner';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -20,12 +20,38 @@ const MOBILE_PRESETS = [
 
 type MobilePreset = typeof MOBILE_PRESETS[number];
 
+// Crop position options for Fill mode
+const CROP_POSITIONS = [
+  { id: 'top-left', label: '↖', x: 0, y: 0 },
+  { id: 'top-center', label: '↑', x: 0.5, y: 0 },
+  { id: 'top-right', label: '↗', x: 1, y: 0 },
+  { id: 'center-left', label: '←', x: 0, y: 0.5 },
+  { id: 'center', label: '●', x: 0.5, y: 0.5 },
+  { id: 'center-right', label: '→', x: 1, y: 0.5 },
+  { id: 'bottom-left', label: '↙', x: 0, y: 1 },
+  { id: 'bottom-center', label: '↓', x: 0.5, y: 1 },
+  { id: 'bottom-right', label: '↘', x: 1, y: 1 },
+] as const;
+
+type CropPosition = typeof CROP_POSITIONS[number];
+type MobileMode = 'fit' | 'fill';
+
 interface GifEditorProps {
   open: boolean;
   gifBlob: Blob;
   onSave: (editedBlob: Blob) => void;
   onCancel: () => void;
 }
+
+// Helper to build FIT filter (scale to fit, add padding)
+const buildFitFilter = (width: number, height: number): string => {
+  return `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(${width}-iw)/2:(${height}-ih)/2:color=black`;
+};
+
+// Helper to build FILL filter (scale to cover, then crop with position)
+const buildFillFilter = (width: number, height: number, cropPos: CropPosition): string => {
+  return `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}:(in_w-${width})*${cropPos.x}:(in_h-${height})*${cropPos.y}`;
+};
 
 export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [gifUrl, setGifUrl] = useState<string>('');
@@ -36,13 +62,34 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [gifKey, setGifKey] = useState<number>(0);
   const [fileSize, setFileSize] = useState<string>('');
   const [videoDuration, setVideoDuration] = useState<number>(0);
+  
+  // Track original and current blob for reset functionality
+  const [originalBlob, setOriginalBlob] = useState<Blob>(gifBlob);
   const [currentBlob, setCurrentBlob] = useState<Blob>(gifBlob);
+  const [isTrimmed, setIsTrimmed] = useState<boolean>(false);
+  
   const [isCropping, setIsCropping] = useState<boolean>(false);
   const [cropProgress, setCropProgress] = useState<number>(0);
   const [selectedPreset, setSelectedPreset] = useState<MobilePreset | null>(null);
+  
+  // Fit/Fill mode state
+  const [mobileMode, setMobileMode] = useState<MobileMode>('fill');
+  // Crop position state (default: top-center since most UI is near top)
+  const [cropPosition, setCropPosition] = useState<CropPosition>(CROP_POSITIONS[1]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
+
+  // Reset state when input blob changes (new recording)
+  useEffect(() => {
+    setOriginalBlob(gifBlob);
+    setCurrentBlob(gifBlob);
+    setIsTrimmed(false);
+    setTrimStart(0);
+    setTrimEnd(100);
+    setSelectedPreset(null);
+  }, [gifBlob]);
 
   useEffect(() => {
     if (currentBlob) {
@@ -94,13 +141,24 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
     try {
       const trimmedBlob = await trimVideo(currentBlob, startTime, endTime);
       setCurrentBlob(trimmedBlob);
+      setIsTrimmed(true);
       toast.success('Trim applied! Review the result.');
     } catch (error) {
       // Error already toasted in hook
     }
   }
 
+  const handleResetTrim = () => {
+    setCurrentBlob(originalBlob);
+    setIsTrimmed(false);
+    setTrimStart(0);
+    setTrimEnd(100);
+    setSelectedPreset(null);
+    toast.info('Reset to original recording');
+  };
+
   const handleSave = () => {
+    // Save whatever the current blob is (includes all trims/crops applied)
     onSave(currentBlob);
   };
 
@@ -134,29 +192,35 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
       const ffmpeg = ffmpegRef.current;
       const { width, height } = preset;
 
+      // Determine input file extension based on blob type
+      const inputExt = currentBlob.type === 'video/mp4' ? 'mp4' : 'webm';
+      const inputFile = `input.${inputExt}`;
+
       // Write input file
-      await ffmpeg.writeFile('input.webm', await fetchFile(currentBlob));
+      await ffmpeg.writeFile(inputFile, await fetchFile(currentBlob));
 
       // TWO-PASS MEMORY-SAFE PROCESSING
       // Pass 1: Downsample to max 1280px wide first (reduces memory pressure significantly)
-      // This prevents "out of memory" errors when processing large screen recordings (e.g., 3420x1790)
       console.log('Pass 1: Downsampling to 1280px wide...');
       await ffmpeg.exec([
-        '-i', 'input.webm',
-        '-vf', 'scale=1280:-2',      // Scale to 1280 wide, auto height maintaining aspect ratio
-        '-c:v', 'libx264',           // H.264 is faster and uses less memory than VP9
-        '-preset', 'ultrafast',      // Speed over compression for intermediate file
+        '-i', inputFile,
+        '-vf', 'scale=1280:-2',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
         '-crf', '23',
-        '-threads', '1',             // Single thread to reduce memory spikes
+        '-threads', '1',
         'intermediate.mp4'
       ]);
 
-      // Pass 2: Scale to fit preset and center-crop to exact mobile dimensions
-      // Now working with ~1280px video instead of 3420px, much more manageable
-      console.log(`Pass 2: Cropping to ${width}x${height}...`);
+      // Pass 2: Apply Fit or Fill based on selected mode
+      const filterString = mobileMode === 'fit'
+        ? buildFitFilter(width, height)
+        : buildFillFilter(width, height, cropPosition);
+      
+      console.log(`Pass 2: Applying ${mobileMode} filter to ${width}x${height}...`);
       await ffmpeg.exec([
         '-i', 'intermediate.mp4',
-        '-vf', `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`,
+        '-vf', filterString,
         '-c:v', 'libx264',
         '-preset', 'fast',
         '-crf', '23',
@@ -172,15 +236,16 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
       );
 
       // Clean up all files
-      await ffmpeg.deleteFile('input.webm');
+      await ffmpeg.deleteFile(inputFile);
       await ffmpeg.deleteFile('intermediate.mp4');
       await ffmpeg.deleteFile('output.mp4');
 
       setCurrentBlob(croppedBlob);
-      toast.success(`Cropped to ${preset.label} (${width}×${height})!`);
+      const modeLabel = mobileMode === 'fit' ? 'fitted' : 'cropped';
+      toast.success(`Video ${modeLabel} to ${preset.label} (${width}×${height})!`);
     } catch (error) {
       console.error('Crop error:', error);
-      toast.error('Failed to crop video. Try trimming first to reduce size.');
+      toast.error('Failed to process video. Try trimming first to reduce size.');
     } finally {
       setIsCropping(false);
       setCropProgress(0);
@@ -196,7 +261,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
 
   return (
     <Dialog open={open} onOpenChange={onCancel}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Your GIF</DialogTitle>
         </DialogHeader>
@@ -334,7 +399,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button 
                 onClick={handleApplyTrim} 
                 disabled={isTrimming || !videoDuration}
@@ -343,20 +408,83 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
               >
                 {isTrimming ? `Processing... ${progress}%` : 'Apply Trim'}
               </Button>
+              {(isTrimmed || selectedPreset) && (
+                <Button
+                  onClick={handleResetTrim}
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  Reset to Original
+                </Button>
+              )}
               {isTrimming && (
                 <span className="text-xs text-muted-foreground">This may take a moment...</span>
               )}
             </div>
           </div>
 
-          {/* Mobile Crop Presets - Always visible */}
+          {/* Mobile Output Mode */}
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Smartphone className="w-4 h-4" />
-              Crop to Mobile Size
+              Mobile Output Mode
             </Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant={mobileMode === 'fit' ? 'default' : 'outline'}
+                onClick={() => setMobileMode('fit')}
+                size="sm"
+                className="flex-1"
+              >
+                Fit (no crop)
+              </Button>
+              <Button
+                variant={mobileMode === 'fill' ? 'default' : 'outline'}
+                onClick={() => setMobileMode('fill')}
+                size="sm"
+                className="flex-1"
+              >
+                Fill (crop edges)
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Record at any size, then crop to a mobile viewport. This is what will show in the Learning Center.
+              {mobileMode === 'fit' 
+                ? 'Keeps all content visible. May add black bars on sides if aspect ratios differ.'
+                : 'Fills the mobile frame completely. May cut off left/right or top/bottom edges.'}
+            </p>
+          </div>
+
+          {/* Crop Focus Control - Only visible in Fill mode */}
+          {mobileMode === 'fill' && (
+            <div className="space-y-3">
+              <Label>Crop Focus</Label>
+              <p className="text-xs text-muted-foreground">
+                Choose which part of the screen to keep when cropping
+              </p>
+              <div className="grid grid-cols-3 gap-1 w-fit">
+                {CROP_POSITIONS.map((pos) => (
+                  <Button
+                    key={pos.id}
+                    variant={cropPosition.id === pos.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCropPosition(pos)}
+                    className="w-10 h-10 p-0 text-lg"
+                    title={pos.id.replace('-', ' ')}
+                  >
+                    {pos.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Crop Presets */}
+          <div className="space-y-3">
+            <Label>Crop to Mobile Size</Label>
+            <p className="text-xs text-muted-foreground">
+              Click a preset to apply the selected output mode ({mobileMode === 'fit' ? 'Fit' : 'Fill'}).
             </p>
             <div className="flex flex-wrap gap-2">
               {MOBILE_PRESETS.map((preset) => (
@@ -373,7 +501,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
               ))}
             </div>
             {isCropping && (
-              <p className="text-xs text-muted-foreground">Cropping… {cropProgress}% (this may take a few seconds)</p>
+              <p className="text-xs text-muted-foreground">Processing… {cropProgress}% (this may take a few seconds)</p>
             )}
           </div>
         </div>

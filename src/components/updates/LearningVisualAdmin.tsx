@@ -91,9 +91,11 @@ export function LearningVisualAdmin() {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
         
-        // Check for GIF first (highest priority) - stored as .webm
-        const hasGif = await checkVisualExists(module.id, step.id, 'gif', 'webm');
-        if (hasGif) {
+        // Check for GIF first (highest priority) - check both webm AND mp4
+        const hasGifWebm = await checkVisualExists(module.id, step.id, 'gif', 'webm');
+        const hasGifMp4 = await checkVisualExists(module.id, step.id, 'gif', 'mp4');
+        
+        if (hasGifWebm || hasGifMp4) {
           statusMap.set(key, 'exists');
           typeMap.set(key, 'gif');
           continue;
@@ -595,12 +597,19 @@ export function LearningVisualAdmin() {
                                   <HoverCardTrigger asChild>
                                   {type === 'gif' ? (
                                     <video
-                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'webm')}
+                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'mp4')}
                                       autoPlay
                                       loop
                                       muted
                                       playsInline
                                       className="h-8 w-12 object-cover rounded border border-border cursor-pointer"
+                                      onError={(e) => {
+                                        // Fallback to webm if mp4 fails
+                                        const target = e.target as HTMLVideoElement;
+                                        if (!target.src.endsWith('.webm')) {
+                                          target.src = getLearningVisualUrl(module.id, step.id, 'gif', 'webm');
+                                        }
+                                      }}
                                     />
                                   ) : (
                                     <img 
@@ -618,12 +627,18 @@ export function LearningVisualAdmin() {
                                 <HoverCardContent className="w-80 p-2" side="right">
                                   {type === 'gif' ? (
                                     <video
-                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'webm')}
+                                      src={getLearningVisualUrl(module.id, step.id, 'gif', 'mp4')}
                                       autoPlay
                                       loop
                                       muted
                                       playsInline
                                       className="w-full rounded"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLVideoElement;
+                                        if (!target.src.endsWith('.webm')) {
+                                          target.src = getLearningVisualUrl(module.id, step.id, 'gif', 'webm');
+                                        }
+                                      }}
                                     />
                                   ) : (
                                     <img 
