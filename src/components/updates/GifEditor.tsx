@@ -137,34 +137,50 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
       // Write input file
       await ffmpeg.writeFile('input.webm', await fetchFile(currentBlob));
 
-      // Scale to fit preset while preserving aspect ratio, then center-crop
-      // This filter scales the video so the smallest dimension fits, then crops to exact size
-      const filter = `scale='if(gt(iw/ih,${width}/${height}),-2,${width})':'if(gt(iw/ih,${width}/${height}),${height},-2)',crop=${width}:${height}`;
-
+      // TWO-PASS MEMORY-SAFE PROCESSING
+      // Pass 1: Downsample to max 1280px wide first (reduces memory pressure significantly)
+      // This prevents "out of memory" errors when processing large screen recordings (e.g., 3420x1790)
+      console.log('Pass 1: Downsampling to 1280px wide...');
       await ffmpeg.exec([
         '-i', 'input.webm',
-        '-vf', filter,
-        '-c:v', 'libvpx-vp9',
+        '-vf', 'scale=1280:-2',      // Scale to 1280 wide, auto height maintaining aspect ratio
+        '-c:v', 'libx264',           // H.264 is faster and uses less memory than VP9
+        '-preset', 'ultrafast',      // Speed over compression for intermediate file
+        '-crf', '23',
+        '-threads', '1',             // Single thread to reduce memory spikes
+        'intermediate.mp4'
+      ]);
+
+      // Pass 2: Scale to fit preset and center-crop to exact mobile dimensions
+      // Now working with ~1280px video instead of 3420px, much more manageable
+      console.log(`Pass 2: Cropping to ${width}x${height}...`);
+      await ffmpeg.exec([
+        '-i', 'intermediate.mp4',
+        '-vf', `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`,
+        '-c:v', 'libx264',
         '-preset', 'fast',
-        'output.webm'
+        '-crf', '23',
+        '-threads', '1',
+        'output.mp4'
       ]);
 
       // Read output
-      const data = await ffmpeg.readFile('output.webm');
+      const data = await ffmpeg.readFile('output.mp4');
       const croppedBlob = new Blob(
         [data instanceof Uint8Array ? data : new Uint8Array(data as any)], 
-        { type: 'video/webm' }
+        { type: 'video/mp4' }
       );
 
-      // Clean up
+      // Clean up all files
       await ffmpeg.deleteFile('input.webm');
-      await ffmpeg.deleteFile('output.webm');
+      await ffmpeg.deleteFile('intermediate.mp4');
+      await ffmpeg.deleteFile('output.mp4');
 
       setCurrentBlob(croppedBlob);
       toast.success(`Cropped to ${preset.label} (${width}×${height})!`);
     } catch (error) {
       console.error('Crop error:', error);
-      toast.error('Failed to crop video. Please try again.');
+      toast.error('Failed to crop video. Try trimming first to reduce size.');
     } finally {
       setIsCropping(false);
       setCropProgress(0);
