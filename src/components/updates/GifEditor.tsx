@@ -3,22 +3,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Scissors, Zap, Save, X, Play, Pause, RotateCcw, Crop } from 'lucide-react';
+import { Scissors, Zap, Save, X, Play, Pause, RotateCcw, Smartphone } from 'lucide-react';
 import { useVideoTrimmer } from '@/hooks/useVideoTrimmer';
 import { toast } from 'sonner';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
+// Internal mobile presets - no props needed
+const MOBILE_PRESETS = [
+  { id: 'iphone-se', label: 'iPhone SE', width: 375, height: 667 },
+  { id: 'iphone-12', label: 'iPhone 12/13/14', width: 390, height: 844 },
+  { id: 'iphone-14-max', label: 'iPhone 14 Pro Max', width: 430, height: 932 },
+  { id: 'android-sm', label: 'Android Small', width: 360, height: 640 },
+  { id: 'android-lg', label: 'Android Large', width: 412, height: 915 },
+];
+
+type MobilePreset = typeof MOBILE_PRESETS[number];
 
 interface GifEditorProps {
   open: boolean;
   gifBlob: Blob;
   onSave: (editedBlob: Blob) => void;
   onCancel: () => void;
-  deviceWidth?: number;
-  deviceHeight?: number;
 }
 
-export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, deviceHeight }: GifEditorProps) {
+export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [gifUrl, setGifUrl] = useState<string>('');
   const [speed, setSpeed] = useState<number>(1);
   const [trimStart, setTrimStart] = useState<number>(0);
@@ -30,7 +39,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, device
   const [currentBlob, setCurrentBlob] = useState<Blob>(gifBlob);
   const [isCropping, setIsCropping] = useState<boolean>(false);
   const [cropProgress, setCropProgress] = useState<number>(0);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [selectedPreset, setSelectedPreset] = useState<MobilePreset | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
@@ -95,14 +104,10 @@ export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, device
     onSave(currentBlob);
   };
 
-  const handleCropToMobile = async () => {
-    if (!deviceWidth || !deviceHeight) {
-      toast.error('No device dimensions provided for cropping');
-      return;
-    }
-
+  const handleCropToPreset = async (preset: MobilePreset) => {
     setIsCropping(true);
     setCropProgress(0);
+    setSelectedPreset(preset);
 
     try {
       // Load FFmpeg if not already loaded
@@ -127,15 +132,18 @@ export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, device
       }
 
       const ffmpeg = ffmpegRef.current;
+      const { width, height } = preset;
 
       // Write input file
       await ffmpeg.writeFile('input.webm', await fetchFile(currentBlob));
 
-      // Crop to mobile dimensions (center crop)
-      // We'll crop from center of video to mobile dimensions
+      // Scale to fit preset while preserving aspect ratio, then center-crop
+      // This filter scales the video so the smallest dimension fits, then crops to exact size
+      const filter = `scale='if(gt(iw/ih,${width}/${height}),-2,${width})':'if(gt(iw/ih,${width}/${height}),${height},-2)',crop=${width}:${height}`;
+
       await ffmpeg.exec([
         '-i', 'input.webm',
-        '-vf', `crop=${deviceWidth}:${deviceHeight}`,
+        '-vf', filter,
         '-c:v', 'libvpx-vp9',
         '-preset', 'fast',
         'output.webm'
@@ -153,7 +161,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, device
       await ffmpeg.deleteFile('output.webm');
 
       setCurrentBlob(croppedBlob);
-      toast.success('Video cropped to mobile dimensions!');
+      toast.success(`Cropped to ${preset.label} (${width}×${height})!`);
     } catch (error) {
       console.error('Crop error:', error);
       toast.error('Failed to crop video. Please try again.');
@@ -325,31 +333,33 @@ export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, device
             </div>
           </div>
 
-          {/* Crop Control */}
-          {deviceWidth && deviceHeight && (
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Crop className="w-4 h-4" />
-                Crop to Mobile Size
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Crops the video to {deviceWidth}×{deviceHeight}px (mobile preview area)
-              </p>
-              <Button 
-                onClick={handleCropToMobile} 
-                disabled={isCropping}
-                size="sm"
-                variant="secondary"
-                className="gap-2"
-              >
-                <Crop className="w-4 h-4" />
-                {isCropping ? `Cropping... ${cropProgress}%` : `Crop to Mobile (${deviceWidth}×${deviceHeight})`}
-              </Button>
-              {isCropping && (
-                <span className="text-xs text-muted-foreground">This may take a moment...</span>
-              )}
+          {/* Mobile Crop Presets - Always visible */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4" />
+              Crop to Mobile Size
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Record at any size, then crop to a mobile viewport. This is what will show in the Learning Center.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {MOBILE_PRESETS.map((preset) => (
+                <Button
+                  key={preset.id}
+                  variant={selectedPreset?.id === preset.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleCropToPreset(preset)}
+                  disabled={isCropping}
+                >
+                  {preset.label}
+                  <span className="text-xs opacity-70 ml-1">({preset.width}×{preset.height})</span>
+                </Button>
+              ))}
             </div>
-          )}
+            {isCropping && (
+              <p className="text-xs text-muted-foreground">Cropping… {cropProgress}% (this may take a few seconds)</p>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
