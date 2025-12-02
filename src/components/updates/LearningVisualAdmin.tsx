@@ -75,8 +75,6 @@ export function LearningVisualAdmin() {
     moduleId: string;
     stepId: string;
     stepTitle: string;
-    deviceWidth?: number;
-    deviceHeight?: number;
   } | null>(null);
 
   // Check which visuals already exist
@@ -294,8 +292,6 @@ export function LearningVisualAdmin() {
       moduleId: recordingStep.moduleId,
       stepId: recordingStep.stepId,
       stepTitle: recordingStep.stepTitle,
-      deviceWidth: (gifBlob as any).deviceWidth,
-      deviceHeight: (gifBlob as any).deviceHeight,
     });
 
     console.log('✅ Setting recordingStep to null (closing recording panel)...');
@@ -905,8 +901,6 @@ export function LearningVisualAdmin() {
         <GifEditor
           open={!!editingGif}
           gifBlob={editingGif.blob}
-          deviceWidth={editingGif.deviceWidth}
-          deviceHeight={editingGif.deviceHeight}
           onSave={handleGifSave}
           onCancel={() => setEditingGif(null)}
         />

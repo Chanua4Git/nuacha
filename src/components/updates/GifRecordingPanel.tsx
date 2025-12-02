@@ -2,18 +2,9 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor, ExternalLink } from 'lucide-react';
+import { Circle, Square, ChevronRight, ChevronLeft, Film } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
-import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
-
-type DevicePreset = 'mobile' | 'tablet' | 'desktop';
-
-const DEVICE_PRESETS = {
-  mobile: { name: 'Mobile', width: 375, height: 667, icon: Smartphone },
-  tablet: { name: 'Tablet', width: 768, height: 1024, icon: Tablet },
-  desktop: { name: 'Desktop', width: 1280, height: 800, icon: Monitor },
-};
 
 interface GifRecordingPanelProps {
   open: boolean;
@@ -46,8 +37,6 @@ export function GifRecordingPanel({
   totalSteps,
 }: GifRecordingPanelProps) {
   const [showGuide, setShowGuide] = useState(true);
-  const [devicePreset, setDevicePreset] = useState<DevicePreset>('mobile');
-  const [previewMode, setPreviewMode] = useState<'guest' | 'authenticated'>('guest');
   
   const {
     isRecording,
@@ -76,11 +65,6 @@ export function GifRecordingPanel({
 
   const handleUseRecording = () => {
     if (videoBlob) {
-      // Pass iframe dimensions for crop reference
-      const { width, height } = DEVICE_PRESETS[devicePreset];
-      // Store device preset in blob for later crop reference
-      (videoBlob as any).deviceWidth = width;
-      (videoBlob as any).deviceHeight = height;
       onRecordingComplete(videoBlob);
     }
   };
@@ -89,14 +73,9 @@ export function GifRecordingPanel({
     reset();
   };
 
-  // Build iframe URL based on preview mode
-  const iframeUrl = previewMode === 'guest' 
-    ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
-    : targetPath;
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3">
             <DialogTitle>Recording: {stepTitle}</DialogTitle>
@@ -124,83 +103,12 @@ export function GifRecordingPanel({
             
             {/* State: Idle (no recording yet) */}
             {!isRecording && !hasRecording && (
-              <div className="w-full space-y-6">
-                <div className="space-y-3 text-center">
+              <div className="w-full space-y-6 max-w-xl mx-auto text-center">
+                <div className="space-y-3">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
                   <p className="text-sm text-muted-foreground">
-                    This will record your screen. Follow the steps below to capture your learning demonstration.
+                    Click Start, select your browser tab with the app, and perform the interaction.
                   </p>
-                  
-                  {/* Device preset selector */}
-                  <div className="flex justify-center gap-2">
-                    {Object.entries(DEVICE_PRESETS).map(([key, preset]) => {
-                      const Icon = preset.icon;
-                      return (
-                        <Button
-                          key={key}
-                          variant={devicePreset === key ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDevicePreset(key as DevicePreset)}
-                          className="gap-2"
-                        >
-                          <Icon className="w-4 h-4" />
-                          {preset.name}
-                          <span className="text-xs opacity-70">{preset.width}×{preset.height}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Preview Mode Toggle */}
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      variant={previewMode === 'guest' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewMode('guest')}
-                    >
-                      👤 Guest View
-                    </Button>
-                    <Button
-                      variant={previewMode === 'authenticated' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewMode('authenticated')}
-                    >
-                      🔐 Authenticated View
-                    </Button>
-                  </div>
-
-                  {previewMode === 'guest' && (
-                    <div className="text-xs text-center text-amber-600 space-y-1">
-                      <p>⚠️ <strong>For true guest view:</strong> Open the preview URL in an <strong>Incognito/Private window</strong> or a different browser where you're not logged in.</p>
-                      <p className="text-muted-foreground">The Guest View toggle only works for components using useAuthPreview().</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Instructions */}
-                <div className="max-w-2xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3 text-left">
-                  <p className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                    🎬 Recording Workflow
-                  </p>
-                  <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
-                    <li>Click <strong>"Open Preview Window"</strong> below to open the target page</li>
-                    <li><strong>In the preview tab, open DevTools (F12)</strong> and click the device toggle icon 📱 to enable responsive mode</li>
-                    <li>Select your device size (e.g., "iPhone 12 Pro" for 390×844) or set custom dimensions</li>
-                    <li>Arrange and interact with the preview to set up your desired UI state</li>
-                    <li>Return to this admin page and click <strong>"Start Recording"</strong></li>
-                    <li>In Chrome's picker, <strong className="text-red-700">select the preview tab</strong> (NOT this admin tab)</li>
-                    <li>Interact with the preview to demonstrate the feature, then click <strong>"Stop Recording"</strong></li>
-                  </ol>
-                  
-                  {/* Keyboard shortcuts reference */}
-                  <div className="flex flex-wrap justify-center gap-2 pt-2 border-t border-blue-200">
-                    <span className="bg-white px-2 py-1 rounded text-xs text-blue-900">
-                      📱 DevTools: <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">F12</kbd> then <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">Cmd+Shift+M</kbd>
-                    </span>
-                    <span className="bg-white px-2 py-1 rounded text-xs text-blue-900">
-                      🥷 Incognito: <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">Cmd+Shift+N</kbd>
-                    </span>
-                  </div>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
@@ -208,27 +116,14 @@ export function GifRecordingPanel({
                   <p className="text-sm">{screenshotHint || stepDescription}</p>
                 </div>
 
-                {/* Open Preview Window button */}
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={() => window.open(iframeUrl, '_blank')}
-                    size="lg"
-                    variant="outline"
-                    className="gap-2 flex-col h-auto py-3"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ExternalLink className="w-5 h-5" />
-                      Open Preview Window
-                    </span>
-                    <span className="text-xs opacity-70 font-normal">(then use DevTools for sizing)</span>
-                  </Button>
-                </div>
-
-                {/* Start recording button */}
                 <Button onClick={handleStart} size="lg" className="w-full gap-2">
                   <Circle className="w-4 h-4 fill-current" />
                   Start Recording
                 </Button>
+
+                <p className="text-xs text-muted-foreground">
+                  💡 Record at any screen size. You can crop to mobile in the editor afterward.
+                </p>
               </div>
             )}
 
@@ -263,7 +158,7 @@ export function GifRecordingPanel({
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Preview Recording</h3>
                   <p className="text-sm text-muted-foreground">
-                    This is the video that will be converted to a GIF and added to the learning step.
+                    Review your recording. You can trim and crop to mobile in the editor.
                   </p>
                 </div>
 
@@ -290,7 +185,7 @@ export function GifRecordingPanel({
                 </div>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  Note: Video will be converted to GIF format when saved.
+                  Next: Trim start/end and crop to mobile size in the editor.
                 </p>
               </div>
             )}
