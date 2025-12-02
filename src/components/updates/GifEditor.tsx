@@ -62,6 +62,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [gifKey, setGifKey] = useState<number>(0);
   const [fileSize, setFileSize] = useState<string>('');
   const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [isLoadingDuration, setIsLoadingDuration] = useState<boolean>(true);
   
   // Track original and current blob for reset functionality
   const [originalBlob, setOriginalBlob] = useState<Blob>(gifBlob);
@@ -86,6 +87,17 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
 
+  // Helper to check if duration is valid
+  const isDurationValid = (d: number): boolean => {
+    return d > 0 && d !== Infinity && !isNaN(d);
+  };
+
+  // Helper to format duration safely
+  const formatDuration = (d: number): string => {
+    if (!isDurationValid(d)) return 'Loading...';
+    return `${d.toFixed(1)}s`;
+  };
+
   // Reset state when input blob changes (new recording)
   useEffect(() => {
     setOriginalBlob(gifBlob);
@@ -96,6 +108,8 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
     setSelectedPreset(null);
     setVideoDimensions(null);
     setPreviewPreset(null);
+    setIsLoadingDuration(true);
+    setVideoDuration(0);
   }, [gifBlob]);
 
   useEffect(() => {
@@ -113,11 +127,41 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setVideoDuration(videoRef.current.duration);
+      const video = videoRef.current;
+      
+      // Capture dimensions immediately
       setVideoDimensions({
-        width: videoRef.current.videoWidth,
-        height: videoRef.current.videoHeight
+        width: video.videoWidth,
+        height: video.videoHeight
       });
+      
+      // Check if duration is valid (WebM often reports Infinity initially)
+      if (isDurationValid(video.duration)) {
+        setVideoDuration(video.duration);
+        setIsLoadingDuration(false);
+      } else {
+        // WebM duration workaround: seek to end to force duration calculation
+        console.log('Duration invalid, triggering seek workaround...');
+        setIsLoadingDuration(true);
+        video.currentTime = Number.MAX_SAFE_INTEGER;
+      }
+    }
+  };
+
+  // Handle seek completion - used for WebM duration detection workaround
+  const handleSeeked = () => {
+    if (videoRef.current && isLoadingDuration) {
+      const video = videoRef.current;
+      
+      // After seeking to "infinity", the browser now knows the real duration
+      if (isDurationValid(video.duration)) {
+        console.log('Real duration detected:', video.duration);
+        setVideoDuration(video.duration);
+        setIsLoadingDuration(false);
+        
+        // Seek back to start for normal playback
+        video.currentTime = 0;
+      }
     }
   };
 
@@ -333,6 +377,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                     muted
                     playsInline
                     onLoadedMetadata={handleLoadedMetadata}
+                    onSeeked={handleSeeked}
                     className="max-h-96 rounded"
                   />
                   
@@ -450,11 +495,10 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                 <Scissors className="w-4 h-4" />
                 Trim Duration
               </Label>
-              {videoDuration > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  Duration: {videoDuration.toFixed(1)}s
-                </span>
-              )}
+              <span className="text-xs text-muted-foreground">
+                Duration: {formatDuration(videoDuration)}
+                {isLoadingDuration && <span className="ml-1 text-amber-600">⏳</span>}
+              </span>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-4">
@@ -465,12 +509,12 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                   max={100}
                   step={1}
                   className="flex-1"
-                  disabled={isTrimming}
+                  disabled={isTrimming || isLoadingDuration}
                 />
                 <span className="text-sm font-medium w-16">
-                  {videoDuration > 0 
+                  {isDurationValid(videoDuration)
                     ? `${((trimStart / 100) * videoDuration).toFixed(1)}s`
-                    : `${trimStart}%`
+                    : 'Loading...'
                   }
                 </span>
               </div>
@@ -482,12 +526,12 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
                   max={100}
                   step={1}
                   className="flex-1"
-                  disabled={isTrimming}
+                  disabled={isTrimming || isLoadingDuration}
                 />
                 <span className="text-sm font-medium w-16">
-                  {videoDuration > 0 
+                  {isDurationValid(videoDuration)
                     ? `${((trimEnd / 100) * videoDuration).toFixed(1)}s`
-                    : `${trimEnd}%`
+                    : 'Loading...'
                   }
                 </span>
               </div>
@@ -495,7 +539,7 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Button 
                 onClick={handleApplyTrim} 
-                disabled={isTrimming || !videoDuration}
+                disabled={isTrimming || isLoadingDuration || !isDurationValid(videoDuration)}
                 size="sm"
                 variant="secondary"
               >
