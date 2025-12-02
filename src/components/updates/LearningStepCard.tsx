@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ChevronDown, ChevronUp, ExternalLink, Lightbulb, Link, Maximize2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Lightbulb, Link, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists } from '@/utils/learningVisuals';
+import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists, getAllClipsForStep } from '@/utils/learningVisuals';
 import { cn } from '@/lib/utils';
 import { NarratorOverlay } from './NarratorOverlay';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -35,68 +35,62 @@ export function LearningStepCard({
   const [isVisualExpanded, setIsVisualExpanded] = useState(false);
   const [hasVisual, setHasVisual] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const [visualUrl, setVisualUrl] = useState<string>('');
   const [hasNarrator, setHasNarrator] = useState(false);
   const [narratorUrl, setNarratorUrl] = useState<string>('');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  // Check for visuals and narrator on mount
-  useState(() => {
-    const checkAndSetVisual = async () => {
-      // Check for GIF first (highest priority) - stored as .webm
-      const gifUrl = getLearningVisualUrl(moduleId, step.id, 'gif', 'webm');
-      const gifVideo = document.createElement('video');
-      gifVideo.src = gifUrl;
+  // Multi-clip support
+  const [clips, setClips] = useState<string[]>([]);
+  const [activeClip, setActiveClip] = useState(0);
+  const [staticVisualUrl, setStaticVisualUrl] = useState<string>('');
+
+  // Load clips and visuals on mount
+  useEffect(() => {
+    const loadContent = async () => {
+      setImageLoading(true);
       
-      const gifExists = await new Promise((resolve) => {
-        gifVideo.onloadeddata = () => resolve(true);
-        gifVideo.onerror = () => resolve(false);
-      });
+      // Check for GIF clips first (highest priority)
+      const gifClips = await getAllClipsForStep(moduleId, step.id);
       
-      if (gifExists) {
-        setVisualUrl(gifUrl);
+      if (gifClips.length > 0) {
+        setClips(gifClips);
         setHasVisual(true);
+        setImageLoading(false);
         return;
       }
       
       // Check for screenshot second
       const screenshotUrl = getLearningVisualUrl(moduleId, step.id, 'screenshot');
-      const screenshotImg = new Image();
-      screenshotImg.src = screenshotUrl;
-      
-      const screenshotExists = await new Promise((resolve) => {
-        screenshotImg.onload = () => resolve(true);
-        screenshotImg.onerror = () => resolve(false);
-      });
-      
-      if (screenshotExists) {
-        setVisualUrl(screenshotUrl);
-        setHasVisual(true);
-        return;
-      }
+      try {
+        const screenshotRes = await fetch(screenshotUrl, { method: 'HEAD' });
+        if (screenshotRes.ok) {
+          setStaticVisualUrl(screenshotUrl);
+          setHasVisual(true);
+          setImageLoading(false);
+          return;
+        }
+      } catch {}
       
       // Check for AI-generated third
       const aiUrl = getLearningVisualUrl(moduleId, step.id, 'ai-generated');
-      const aiImg = new Image();
-      aiImg.src = aiUrl;
-      
-      const aiExists = await new Promise((resolve) => {
-        aiImg.onload = () => resolve(true);
-        aiImg.onerror = () => resolve(false);
-      });
-      
-      if (aiExists) {
-        setVisualUrl(aiUrl);
-        setHasVisual(true);
-        return;
-      }
+      try {
+        const aiRes = await fetch(aiUrl, { method: 'HEAD' });
+        if (aiRes.ok) {
+          setStaticVisualUrl(aiUrl);
+          setHasVisual(true);
+          setImageLoading(false);
+          return;
+        }
+      } catch {}
       
       // Use custom visual URL if provided
       if (step.visual?.url) {
-        setVisualUrl(step.visual.url);
+        setStaticVisualUrl(step.visual.url);
         setHasVisual(true);
       }
+      
+      setImageLoading(false);
     };
     
     const checkNarrator = async () => {
@@ -107,9 +101,9 @@ export function LearningStepCard({
       }
     };
     
-    checkAndSetVisual();
+    loadContent();
     checkNarrator();
-  });
+  }, [moduleId, step.id, step.visual?.url]);
 
   const handleCTAClick = () => {
     if (step.ctaButton?.path) {
@@ -124,6 +118,14 @@ export function LearningStepCard({
     toast.success('Step link copied!');
   };
 
+  const handlePrevClip = () => {
+    setActiveClip(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextClip = () => {
+    setActiveClip(prev => Math.min(clips.length - 1, prev + 1));
+  };
+
   // Extract "Where to find it" and "Pro tip" from markdown
   const sections = step.detailedInstructions.split('\n\n');
   const mainContent = sections.filter(s => 
@@ -133,6 +135,10 @@ export function LearningStepCard({
   
   const whereToFind = sections.find(s => s.toLowerCase().includes('where to find it'));
   const proTip = sections.find(s => s.toLowerCase().includes('pro tip'));
+
+  // Determine if current visual is a video
+  const currentVisualUrl = clips.length > 0 ? clips[activeClip] : staticVisualUrl;
+  const isVideo = currentVisualUrl?.endsWith('.webm') || currentVisualUrl?.endsWith('.mp4') || currentVisualUrl?.includes('/gif/');
 
   return (
     <Card className="border-l-4 border-l-primary/30 hover:border-l-primary transition-colors">
@@ -194,63 +200,107 @@ export function LearningStepCard({
               <div className="space-y-4 mt-3 pt-3 border-t">
                 {/* Visual Content */}
                 {imageLoading && <Skeleton className="w-full h-40 rounded-lg" />}
-                <div className={cn(
-                  "relative w-full rounded-lg sm:rounded-lg border border-border bg-muted/30 overflow-hidden",
-                  "mx-[-8px] sm:mx-0 w-[calc(100%+16px)] sm:w-full",
-                  !hasVisual && "hidden"
-                )}>
-                  {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
-                    <video 
-                      src={visualUrl}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
-                      onLoadedData={() => { 
-                        setHasVisual(true); 
-                        setImageLoading(false); 
-                      }}
-                      onError={() => { 
-                        setHasVisual(false); 
-                        setImageLoading(false); 
-                      }}
-                    />
-                  ) : (
-                    <img 
-                      src={visualUrl}
-                      alt={step.visual?.alt || step.title}
-                      className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
-                      onLoad={() => { 
-                        setHasVisual(true); 
-                        setImageLoading(false); 
-                      }}
-                      onError={() => { 
-                        setHasVisual(false); 
-                        setImageLoading(false); 
-                      }}
-                    />
-                  )}
-                  
-                  {/* Expand Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsVisualExpanded(true)}
-                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow"
-                    title="View fullscreen"
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </Button>
-                  
-                  {/* Narrator Overlay - Only on desktop */}
-                  {!isMobile && hasNarrator && narratorUrl && (
-                    <NarratorOverlay
-                      videoUrl={narratorUrl}
-                      displayMode={step.narrator?.displayMode || 'face-voice'}
-                    />
-                  )}
-                </div>
+                
+                {hasVisual && !imageLoading && (
+                  <div className={cn(
+                    "relative w-full rounded-lg sm:rounded-lg border border-border bg-muted/30 overflow-hidden",
+                    "mx-[-8px] sm:mx-0 w-[calc(100%+16px)] sm:w-full"
+                  )}>
+                    {isVideo ? (
+                      <video 
+                        key={currentVisualUrl}
+                        src={currentVisualUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
+                        onLoadedData={() => setHasVisual(true)}
+                        onError={() => setHasVisual(false)}
+                      />
+                    ) : (
+                      <img 
+                        src={currentVisualUrl}
+                        alt={step.visual?.alt || step.title}
+                        className="w-full max-h-72 md:max-h-80 lg:max-h-96 object-contain mx-auto"
+                        onLoad={() => setHasVisual(true)}
+                        onError={() => setHasVisual(false)}
+                      />
+                    )}
+                    
+                    {/* Multi-clip navigation */}
+                    {clips.length > 1 && (
+                      <>
+                        {/* Prev/Next buttons */}
+                        <div className="absolute inset-y-0 left-2 flex items-center">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            onClick={handlePrevClip}
+                            disabled={activeClip === 0}
+                            className="h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="absolute inset-y-0 right-2 flex items-center">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            onClick={handleNextClip}
+                            disabled={activeClip === clips.length - 1}
+                            className="h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Clip indicator */}
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-background/80 px-3 py-1 rounded-full">
+                          <span className="text-xs font-medium">
+                            {activeClip + 1} / {clips.length}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Expand Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsVisualExpanded(true)}
+                      className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow"
+                      title="View fullscreen"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Narrator Overlay - Only on desktop */}
+                    {!isMobile && hasNarrator && narratorUrl && (
+                      <NarratorOverlay
+                        videoUrl={narratorUrl}
+                        displayMode={step.narrator?.displayMode || 'face-voice'}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Clip dots for quick navigation */}
+                {clips.length > 1 && (
+                  <div className="flex justify-center gap-2">
+                    {clips.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveClip(i)}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-colors",
+                          i === activeClip ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                        )}
+                        aria-label={`Go to clip ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {/* Narrator - Below visual on mobile */}
                 {isMobile && hasNarrator && narratorUrl && (
@@ -264,9 +314,9 @@ export function LearningStepCard({
                 {/* Fullscreen Dialog */}
                 <Dialog open={isVisualExpanded} onOpenChange={setIsVisualExpanded}>
                   <DialogContent className="max-w-[95vw] max-h-[90vh] p-2">
-                    {visualUrl.endsWith('.webm') || visualUrl.includes('/gif/') ? (
+                    {isVideo ? (
                       <video 
-                        src={visualUrl}
+                        src={currentVisualUrl}
                         autoPlay
                         loop
                         muted
@@ -275,7 +325,7 @@ export function LearningStepCard({
                       />
                     ) : (
                       <img 
-                        src={visualUrl}
+                        src={currentVisualUrl}
                         alt={step.visual?.alt || step.title}
                         className="w-full h-full object-contain"
                       />
