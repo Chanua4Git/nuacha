@@ -4,18 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Clock, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Check, Link } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { LearningModule } from '@/constants/learningCenterData';
 import { LearningStepCard } from './LearningStepCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
+import { toast } from 'sonner';
 
 interface LearningModuleCardProps {
   module: LearningModule;
+  initialExpanded?: boolean;
+  highlightStepId?: string | null;
 }
 
-export function LearningModuleCard({ module }: LearningModuleCardProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function LearningModuleCard({ module, initialExpanded = false, highlightStepId = null }: LearningModuleCardProps) {
+  const [isOpen, setIsOpen] = useState(initialExpanded);
   const {
     getModuleProgress,
     markStepComplete,
@@ -44,6 +47,12 @@ export function LearningModuleCard({ module }: LearningModuleCardProps) {
     }
   };
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/updates?tab=learning&module=${module.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="hover:shadow-md transition-shadow">
@@ -58,12 +67,23 @@ export function LearningModuleCard({ module }: LearningModuleCardProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-foreground mb-1 flex items-center gap-2">
-                    {module.title}
-                    {progress.completed && (
-                      <Check className="w-5 h-5 text-green-600" />
-                    )}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+                      {module.title}
+                      {progress.completed && (
+                        <Check className="w-5 h-5 text-green-600" />
+                      )}
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleCopyLink}
+                      className="h-7 w-7"
+                      title="Copy link to this module"
+                    >
+                      <Link className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <p className="text-sm text-muted-foreground mb-2">{module.description}</p>
                   
                   {/* Badges */}
@@ -144,6 +164,7 @@ export function LearningModuleCard({ module }: LearningModuleCardProps) {
                 moduleId={module.id}
                 isCompleted={isStepCompleted(module.id, step.id)}
                 onToggleComplete={() => handleStepToggle(step.id)}
+                initialExpanded={step.id === highlightStepId}
               />
             ))}
           </CollapsibleContent>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +17,14 @@ const trackIcons = {
 };
 
 export function LearningCenter() {
+  const [searchParams] = useSearchParams();
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const { getOverallProgress, resetProgress } = useLearningProgress();
   const overallProgress = getOverallProgress(learningModules.length);
+
+  // Read URL parameters for deep linking
+  const urlModuleId = searchParams.get('module');
+  const urlStepId = searchParams.get('step');
 
   // Filter modules by selected track
   const filteredModules = selectedTrack
@@ -91,7 +97,12 @@ export function LearningCenter() {
           </CardHeader>
           <CardContent className="space-y-4">
             {startHereModules.map(module => (
-              <LearningModuleCard key={module.id} module={module} />
+              <LearningModuleCard 
+                key={module.id} 
+                module={module}
+                initialExpanded={urlModuleId === module.id}
+                highlightStepId={urlModuleId === module.id ? urlStepId : null}
+              />
             ))}
           </CardContent>
         </Card>
@@ -132,7 +143,12 @@ export function LearningCenter() {
       {/* Modules Grid */}
       <div className="space-y-4">
         {filteredModules.map(module => (
-          <LearningModuleCard key={module.id} module={module} />
+          <LearningModuleCard 
+            key={module.id} 
+            module={module}
+            initialExpanded={urlModuleId === module.id}
+            highlightStepId={urlModuleId === module.id ? urlStepId : null}
+          />
         ))}
       </div>
 
