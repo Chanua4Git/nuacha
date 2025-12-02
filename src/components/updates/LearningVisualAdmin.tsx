@@ -588,7 +588,7 @@ export function LearningVisualAdmin() {
                           className="py-4 border-b last:border-0 space-y-3"
                         >
                           {/* Step Header with Visual Status */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               <span className="text-sm font-medium">
                                 {idx + 1}. {step.title}
@@ -648,7 +648,7 @@ export function LearningVisualAdmin() {
                               </HoverCard>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 ml-4">
+                          <div className="flex flex-wrap items-center gap-2 sm:ml-4">
                             <Badge 
                               variant={status === 'exists' ? 'default' : isProcessing ? 'secondary' : 'outline'}
                               className="gap-1"
@@ -755,7 +755,7 @@ export function LearningVisualAdmin() {
 
                         {/* Narrator Section */}
                         <div className="pl-8 bg-muted/30 rounded-lg p-3 space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <Mic className="w-4 h-4 text-muted-foreground" />
                               <span className="text-sm font-medium">Narrator Video</span>
@@ -764,7 +764,7 @@ export function LearningVisualAdmin() {
                               </Badge>
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <input
                                 ref={(el) => {
                                   if (el) narratorInputRefs.current.set(key, el);
@@ -819,24 +819,26 @@ export function LearningVisualAdmin() {
                               <RadioGroup
                                 value={narratorMode}
                                 onValueChange={(value) => handleNarratorModeChange(module.id, step.id, value as NarratorDisplayMode)}
-                                className="flex gap-4"
+                                className="flex flex-col sm:flex-row gap-2 sm:gap-4"
                               >
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="face-voice" id={`${key}-face-voice`} />
                                   <Label htmlFor={`${key}-face-voice`} className="text-xs font-normal cursor-pointer">
-                                    Face + Voice (circular bubble)
+                                    <span className="hidden sm:inline">Face + Voice (circular bubble)</span>
+                                    <span className="sm:hidden">Face + Voice</span>
                                   </Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="voice-only" id={`${key}-voice-only`} />
                                   <Label htmlFor={`${key}-voice-only`} className="text-xs font-normal cursor-pointer">
-                                    Voice Only (audio plays, no video)
+                                    <span className="hidden sm:inline">Voice Only (audio plays, no video)</span>
+                                    <span className="sm:hidden">Voice Only</span>
                                   </Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="disabled" id={`${key}-disabled`} />
                                   <Label htmlFor={`${key}-disabled`} className="text-xs font-normal cursor-pointer">
-                                    Disabled (muted)
+                                    Disabled
                                   </Label>
                                 </div>
                               </RadioGroup>
