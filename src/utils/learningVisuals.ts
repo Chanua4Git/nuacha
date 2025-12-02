@@ -294,16 +294,24 @@ export const checkLegacyGif = async (
   moduleId: string,
   stepId: string
 ): Promise<string | null> => {
-  const extensions = ['mp4', 'webm'];
+  // Check webm first (primary format), then mp4, then gif
+  const extensions = ['webm', 'mp4', 'gif'];
   
   for (const ext of extensions) {
     const url = getLearningVisualUrl(moduleId, stepId, 'gif', ext);
     console.log(`[checkLegacyGif] Checking: ${url}`);
     try {
       const response = await fetch(url, { method: 'HEAD' });
-      console.log(`[checkLegacyGif] Response for ${ext}:`, response.ok, response.status);
-      if (response.ok) {
+      const contentLength = response.headers.get('content-length');
+      const hasContent = contentLength && parseInt(contentLength) > 0;
+      
+      console.log(`[checkLegacyGif] Response for ${ext}:`, response.ok, response.status, `size: ${contentLength}`);
+      
+      if (response.ok && hasContent) {
+        console.log(`[checkLegacyGif] Valid file found: ${url} (${contentLength} bytes)`);
         return url;
+      } else if (response.ok && !hasContent) {
+        console.log(`[checkLegacyGif] Skipping empty file: ${url}`);
       }
     } catch (err) {
       console.log(`[checkLegacyGif] Error checking ${ext}:`, err);
