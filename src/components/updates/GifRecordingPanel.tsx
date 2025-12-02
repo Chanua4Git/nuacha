@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ChevronRight, ChevronLeft, Film } from 'lucide-react';
+import { Circle, Square, ChevronRight, ChevronLeft, Film, Upload, Smartphone } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
 
@@ -37,6 +37,7 @@ export function GifRecordingPanel({
   totalSteps,
 }: GifRecordingPanelProps) {
   const [showGuide, setShowGuide] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const {
     isRecording,
@@ -47,6 +48,9 @@ export function GifRecordingPanel({
     startRecording,
     stopRecording,
     reset,
+    uploadVideo,
+    isMobile,
+    supportsScreenCapture,
   } = useGifRecorder();
 
   useEffect(() => {
@@ -73,12 +77,29 @@ export function GifRecordingPanel({
     reset();
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadVideo(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Show mobile UI if on mobile device OR if screen capture isn't supported
+  const showMobileUI = isMobile || !supportsScreenCapture;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3">
-            <DialogTitle>Recording: {stepTitle}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {showMobileUI && <Smartphone className="h-4 w-4" />}
+              Recording: {stepTitle}
+            </DialogTitle>
 
             <div className="flex items-center gap-3">
               {isRecording && (
@@ -86,6 +107,9 @@ export function GifRecordingPanel({
                   <Circle className="w-2 h-2 fill-current animate-pulse" />
                   REC
                 </Badge>
+              )}
+              {showMobileUI && (
+                <Badge variant="secondary">Mobile Mode</Badge>
               )}
             </div>
           </div>
@@ -101,8 +125,60 @@ export function GifRecordingPanel({
           {/* Main content area */}
           <div className="flex-1 relative border border-border rounded-lg overflow-y-auto bg-muted p-6 flex flex-col justify-center">
             
-            {/* State: Idle (no recording yet) */}
-            {!isRecording && !hasRecording && (
+            {/* MOBILE UI: Native recording instructions + upload */}
+            {showMobileUI && !hasRecording && (
+              <div className="w-full space-y-6 max-w-xl mx-auto text-center">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
+                    <Smartphone className="w-5 h-5" />
+                    Recording on Mobile
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use your device's built-in screen recording, then upload the file here.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border text-left space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How to record:</p>
+                  <ul className="text-sm space-y-2">
+                    <li className="flex gap-2">
+                      <span className="font-medium">iPhone/iPad:</span>
+                      <span className="text-muted-foreground">Control Center → Screen Recording button</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-medium">Android:</span>
+                      <span className="text-muted-foreground">Pull down Quick Settings → Screen Record</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">What to capture:</p>
+                  <p className="text-sm">{screenshotHint || stepDescription}</p>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                <Button onClick={handleUploadClick} size="lg" className="w-full gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload Screen Recording
+                </Button>
+
+                <p className="text-xs text-muted-foreground">
+                  ✨ Your recording is already mobile-sized — no cropping needed!
+                </p>
+              </div>
+            )}
+
+            {/* DESKTOP UI: Screen Capture API */}
+            {!showMobileUI && !isRecording && !hasRecording && (
               <div className="w-full space-y-6 max-w-xl mx-auto text-center">
                 <div className="space-y-3">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
@@ -127,8 +203,8 @@ export function GifRecordingPanel({
               </div>
             )}
 
-            {/* State: Recording */}
-            {isRecording && (
+            {/* State: Recording (desktop only) */}
+            {!showMobileUI && isRecording && (
               <div className="max-w-2xl mx-auto space-y-6 text-center">
                 <div className="space-y-3">
                   <div className="inline-flex items-center gap-2 text-destructive font-semibold text-lg">
@@ -152,13 +228,16 @@ export function GifRecordingPanel({
               </div>
             )}
 
-            {/* State: Recorded (preview) */}
-            {!isRecording && hasRecording && (
+            {/* State: Recorded (preview) - both mobile and desktop */}
+            {hasRecording && (
               <div className="max-w-3xl mx-auto space-y-4 w-full">
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Preview Recording</h3>
                   <p className="text-sm text-muted-foreground">
-                    Review your recording. You can trim and crop to mobile in the editor.
+                    {showMobileUI 
+                      ? "Review your recording. You can trim it in the editor if needed."
+                      : "Review your recording. You can trim and crop to mobile in the editor."
+                    }
                   </p>
                 </div>
 
@@ -185,7 +264,10 @@ export function GifRecordingPanel({
                 </div>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  Next: Trim start/end and crop to mobile size in the editor.
+                  {showMobileUI 
+                    ? "Next: Trim start/end in the editor if needed."
+                    : "Next: Trim start/end and crop to mobile size in the editor."
+                  }
                 </p>
               </div>
             )}

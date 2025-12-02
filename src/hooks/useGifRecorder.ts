@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 export interface UseGifRecorderResult {
   isRecording: boolean;
@@ -9,6 +9,9 @@ export interface UseGifRecorderResult {
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   reset: () => void;
+  uploadVideo: (file: File) => void;
+  isMobile: boolean;
+  supportsScreenCapture: boolean;
 }
 
 /**
@@ -16,7 +19,8 @@ export interface UseGifRecorderResult {
  * 
  * Uses Screen Capture API + MediaRecorder to record actual screen pixels
  * (hover states, animations, cursor movements) as a WebM video.
- * The video can then be converted to GIF.
+ * On mobile devices where Screen Capture isn't supported, provides
+ * an upload method for native screen recordings.
  */
 export function useGifRecorder(): UseGifRecorderResult {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -27,6 +31,17 @@ export function useGifRecorder(): UseGifRecorderResult {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Device detection
+  const isMobile = useMemo(() => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }, []);
+
+  const supportsScreenCapture = useMemo(() => {
+    return typeof navigator !== 'undefined' && 
+           'mediaDevices' in navigator && 
+           'getDisplayMedia' in navigator.mediaDevices;
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -45,6 +60,12 @@ export function useGifRecorder(): UseGifRecorderResult {
 
     // Prevent double start
     if (isRecording || mediaRecorderRef.current) {
+      return;
+    }
+
+    // Check if screen capture is supported
+    if (!supportsScreenCapture) {
+      setError('Screen capture is not supported on this device. Please use the upload option.');
       return;
     }
 
@@ -115,7 +136,7 @@ export function useGifRecorder(): UseGifRecorderResult {
       mediaRecorderRef.current = null;
       setIsRecording(false);
     }
-  }, [isRecording]);
+  }, [isRecording, supportsScreenCapture]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -145,6 +166,26 @@ export function useGifRecorder(): UseGifRecorderResult {
     setError(null);
   }, [videoUrl]);
 
+  // Upload video file directly (for mobile users who record with native tools)
+  const uploadVideo = useCallback((file: File) => {
+    setError(null);
+    
+    // Validate it's a video file
+    if (!file.type.startsWith('video/')) {
+      setError('Please upload a video file.');
+      return;
+    }
+
+    // Clear any previous recording
+    if (videoUrl) {
+      URL.revokeObjectURL(videoUrl);
+    }
+
+    const blob = new Blob([file], { type: file.type });
+    setVideoBlob(blob);
+    setVideoUrl(URL.createObjectURL(blob));
+  }, [videoUrl]);
+
   return {
     isRecording,
     hasRecording: !!videoBlob,
@@ -154,5 +195,8 @@ export function useGifRecorder(): UseGifRecorderResult {
     startRecording,
     stopRecording,
     reset,
+    uploadVideo,
+    isMobile,
+    supportsScreenCapture,
   };
 }
