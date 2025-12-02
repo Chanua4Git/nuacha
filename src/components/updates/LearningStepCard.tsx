@@ -19,6 +19,7 @@ interface LearningStepCardProps {
   moduleId: string;
   isCompleted: boolean;
   onToggleComplete: () => void;
+  initialExpanded?: boolean;
 }
 
 export function LearningStepCard({
@@ -26,9 +27,10 @@ export function LearningStepCard({
   stepNumber,
   moduleId,
   isCompleted,
-  onToggleComplete
+  onToggleComplete,
+  initialExpanded = false
 }: LearningStepCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [isVisualExpanded, setIsVisualExpanded] = useState(false);
   const [hasVisual, setHasVisual] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
