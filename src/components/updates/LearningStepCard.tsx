@@ -49,9 +49,11 @@ export function LearningStepCard({
   useEffect(() => {
     const loadContent = async () => {
       setImageLoading(true);
+      console.log(`[LearningStepCard] Loading content for ${moduleId}/${step.id}`);
       
       // Check for GIF clips first (highest priority)
       const gifClips = await getAllClipsForStep(moduleId, step.id);
+      console.log(`[LearningStepCard] GIF clips found:`, gifClips);
       
       if (gifClips.length > 0) {
         setClips(gifClips);
@@ -65,6 +67,7 @@ export function LearningStepCard({
       try {
         const screenshotRes = await fetch(screenshotUrl, { method: 'HEAD' });
         if (screenshotRes.ok) {
+          console.log(`[LearningStepCard] Screenshot found:`, screenshotUrl);
           setStaticVisualUrl(screenshotUrl);
           setHasVisual(true);
           setImageLoading(false);
@@ -77,6 +80,7 @@ export function LearningStepCard({
       try {
         const aiRes = await fetch(aiUrl, { method: 'HEAD' });
         if (aiRes.ok) {
+          console.log(`[LearningStepCard] AI visual found:`, aiUrl);
           setStaticVisualUrl(aiUrl);
           setHasVisual(true);
           setImageLoading(false);
@@ -90,11 +94,13 @@ export function LearningStepCard({
         setHasVisual(true);
       }
       
+      console.log(`[LearningStepCard] No visuals found for ${moduleId}/${step.id}`);
       setImageLoading(false);
     };
     
     const checkNarrator = async () => {
       const extension = await checkNarratorExists(moduleId, step.id);
+      console.log(`[LearningStepCard] Narrator check for ${moduleId}/${step.id}:`, extension);
       if (extension) {
         setHasNarrator(true);
         setNarratorUrl(getNarratorVideoUrl(moduleId, step.id, extension));
@@ -274,14 +280,16 @@ export function LearningStepCard({
                     >
                       <Maximize2 className="w-4 h-4" />
                     </Button>
-                    
-                    {/* Narrator Overlay - Only on desktop */}
-                    {!isMobile && hasNarrator && narratorUrl && (
-                      <NarratorOverlay
-                        videoUrl={narratorUrl}
-                        displayMode={step.narrator?.displayMode || 'face-voice'}
-                      />
-                    )}
+                  </div>
+                )}
+
+                {/* Desktop Narrator - Independent of visual content */}
+                {!isMobile && hasNarrator && narratorUrl && (
+                  <div className="flex justify-end mt-2">
+                    <NarratorOverlay
+                      videoUrl={narratorUrl}
+                      displayMode={step.narrator?.displayMode || 'face-voice'}
+                    />
                   </div>
                 )}
 

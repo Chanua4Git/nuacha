@@ -298,13 +298,15 @@ export const checkLegacyGif = async (
   
   for (const ext of extensions) {
     const url = getLearningVisualUrl(moduleId, stepId, 'gif', ext);
+    console.log(`[checkLegacyGif] Checking: ${url}`);
     try {
       const response = await fetch(url, { method: 'HEAD' });
+      console.log(`[checkLegacyGif] Response for ${ext}:`, response.ok, response.status);
       if (response.ok) {
         return url;
       }
-    } catch {
-      // Continue checking
+    } catch (err) {
+      console.log(`[checkLegacyGif] Error checking ${ext}:`, err);
     }
   }
   
@@ -319,8 +321,11 @@ export const getAllClipsForStep = async (
   moduleId: string,
   stepId: string
 ): Promise<string[]> => {
+  console.log(`[getAllClipsForStep] Checking clips for ${moduleId}/${stepId}`);
+  
   // First check for indexed clips
   const indexedClips = await getExistingClips(moduleId, stepId);
+  console.log(`[getAllClipsForStep] Indexed clips:`, indexedClips);
   
   if (indexedClips.length > 0) {
     return indexedClips.map(c => c.url);
@@ -328,6 +333,8 @@ export const getAllClipsForStep = async (
   
   // Fall back to legacy single-file check
   const legacyUrl = await checkLegacyGif(moduleId, stepId);
+  console.log(`[getAllClipsForStep] Legacy check result:`, legacyUrl);
+  
   if (legacyUrl) {
     return [legacyUrl];
   }
