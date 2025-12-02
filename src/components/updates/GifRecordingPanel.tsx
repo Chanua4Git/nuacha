@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, User, Ghost, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor, ExternalLink } from 'lucide-react';
+import { Circle, Square, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
@@ -46,7 +46,6 @@ export function GifRecordingPanel({
   totalSteps,
 }: GifRecordingPanelProps) {
   const [showGuide, setShowGuide] = useState(true);
-  const [previewMode] = useState<'authenticated' | 'guest'>('guest');
   const [devicePreset, setDevicePreset] = useState<DevicePreset>('mobile');
   
   const {
@@ -76,8 +75,11 @@ export function GifRecordingPanel({
 
   const handleUseRecording = () => {
     if (videoBlob) {
-      // TODO: Convert videoBlob to GIF
-      // For now, pass the video blob directly
+      // Pass iframe dimensions for crop reference
+      const { width, height } = DEVICE_PRESETS[devicePreset];
+      // Store device preset in blob for later crop reference
+      (videoBlob as any).deviceWidth = width;
+      (videoBlob as any).deviceHeight = height;
       onRecordingComplete(videoBlob);
     }
   };
@@ -86,16 +88,8 @@ export function GifRecordingPanel({
     reset();
   };
 
-  // Build iframe URL with preview mode parameter (kept for reference, but not used for capture)
-  const iframeUrl = previewMode === 'guest' 
-    ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
-    : targetPath;
-
-  const openSizedWindow = () => {
-    const { width, height } = DEVICE_PRESETS[devicePreset];
-    const features = `width=${width},height=${height},resizable=no,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no`;
-    window.open(iframeUrl, 'nuacha-preview', features);
-  };
+  // Build iframe URL - always use guest preview mode for learning content
+  const iframeUrl = `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -127,8 +121,8 @@ export function GifRecordingPanel({
             
             {/* State: Idle (no recording yet) */}
             {!isRecording && !hasRecording && (
-              <div className="max-w-2xl mx-auto space-y-6 text-center">
-                <div className="space-y-3">
+              <div className="w-full space-y-6">
+                <div className="space-y-3 text-center">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
                   
                   {/* Device preset selector */}
@@ -150,26 +144,44 @@ export function GifRecordingPanel({
                       );
                     })}
                   </div>
-
-                  {/* Open in sized window button */}
-                  <Button onClick={openSizedWindow} variant="outline" size="lg" className="gap-2">
-                    <ExternalLink className="w-4 h-4" />
-                    Open at {DEVICE_PRESETS[devicePreset].name} Size ({DEVICE_PRESETS[devicePreset].width}×{DEVICE_PRESETS[devicePreset].height})
-                  </Button>
                 </div>
 
-                {/* Instructions for popup window workflow */}
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2 text-left">
+                {/* Embedded mobile preview iframe */}
+                <div className="flex justify-center">
+                  <div 
+                    className="relative border-4 border-primary rounded-lg overflow-hidden shadow-xl"
+                    style={{ 
+                      width: `${DEVICE_PRESETS[devicePreset].width}px`, 
+                      height: `${DEVICE_PRESETS[devicePreset].height}px` 
+                    }}
+                  >
+                    <iframe
+                      src={iframeUrl}
+                      className="w-full h-full border-0"
+                      title="Mobile preview"
+                    />
+                    <div className="absolute top-0 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-br">
+                      📱 {DEVICE_PRESETS[devicePreset].width}×{DEVICE_PRESETS[devicePreset].height}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Instructions for embedded iframe workflow */}
+                <div className="max-w-2xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2 text-left">
                   <p className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                    📐 Recording at {DEVICE_PRESETS[devicePreset].name} size ({DEVICE_PRESETS[devicePreset].width} × {DEVICE_PRESETS[devicePreset].height}px)
+                    🎬 How to Record Mobile GIF
                   </p>
                   <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
-                    <li>Click "Open at {DEVICE_PRESETS[devicePreset].name} Size" above to open a popup window at exact dimensions</li>
-                    <li>Interact with the popup to set up the desired UI state</li>
-                    <li>Click "Start Recording" below</li>
-                    <li>When prompted, select the <strong>popup window</strong> (not the main browser)</li>
-                    <li>Record your interaction, then click "Stop Recording"</li>
+                    <li>Interact with the <strong>mobile preview above</strong> to set up the desired UI state</li>
+                    <li>Click <strong>"Start Recording"</strong> below</li>
+                    <li>When prompted, select <strong>this browser tab</strong> (not a window)</li>
+                    <li>Perform your interaction in the mobile preview</li>
+                    <li>Click <strong>"Stop Recording"</strong></li>
+                    <li>In the editor, use <strong>"Crop to Mobile"</strong> to isolate just the preview area</li>
                   </ol>
+                  <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
+                    💡 <strong>Tip:</strong> Make sure the mobile preview stays visible in your screen capture!
+                  </p>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">

@@ -3,18 +3,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Scissors, Zap, Save, X, Play, Pause, RotateCcw } from 'lucide-react';
+import { Scissors, Zap, Save, X, Play, Pause, RotateCcw, Crop } from 'lucide-react';
 import { useVideoTrimmer } from '@/hooks/useVideoTrimmer';
 import { toast } from 'sonner';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 interface GifEditorProps {
   open: boolean;
   gifBlob: Blob;
   onSave: (editedBlob: Blob) => void;
   onCancel: () => void;
+  deviceWidth?: number;
+  deviceHeight?: number;
 }
 
-export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
+export function GifEditor({ open, gifBlob, onSave, onCancel, deviceWidth, deviceHeight }: GifEditorProps) {
   const [gifUrl, setGifUrl] = useState<string>('');
   const [speed, setSpeed] = useState<number>(1);
   const [trimStart, setTrimStart] = useState<number>(0);
@@ -24,8 +28,11 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const [fileSize, setFileSize] = useState<string>('');
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [currentBlob, setCurrentBlob] = useState<Blob>(gifBlob);
+  const [isCropping, setIsCropping] = useState<boolean>(false);
+  const [cropProgress, setCropProgress] = useState<number>(0);
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
   const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
 
   useEffect(() => {
@@ -86,6 +93,74 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
 
   const handleSave = () => {
     onSave(currentBlob);
+  };
+
+  const handleCropToMobile = async () => {
+    if (!deviceWidth || !deviceHeight) {
+      toast.error('No device dimensions provided for cropping');
+      return;
+    }
+
+    setIsCropping(true);
+    setCropProgress(0);
+
+    try {
+      // Load FFmpeg if not already loaded
+      if (!ffmpegRef.current) {
+        const ffmpeg = new FFmpeg();
+        
+        ffmpeg.on('log', ({ message }) => {
+          console.log('FFmpeg:', message);
+        });
+
+        ffmpeg.on('progress', ({ progress }) => {
+          setCropProgress(Math.round(progress * 100));
+        });
+
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        });
+
+        ffmpegRef.current = ffmpeg;
+      }
+
+      const ffmpeg = ffmpegRef.current;
+
+      // Write input file
+      await ffmpeg.writeFile('input.webm', await fetchFile(currentBlob));
+
+      // Crop to mobile dimensions (center crop)
+      // We'll crop from center of video to mobile dimensions
+      await ffmpeg.exec([
+        '-i', 'input.webm',
+        '-vf', `crop=${deviceWidth}:${deviceHeight}`,
+        '-c:v', 'libvpx-vp9',
+        '-preset', 'fast',
+        'output.webm'
+      ]);
+
+      // Read output
+      const data = await ffmpeg.readFile('output.webm');
+      const croppedBlob = new Blob(
+        [data instanceof Uint8Array ? data : new Uint8Array(data as any)], 
+        { type: 'video/webm' }
+      );
+
+      // Clean up
+      await ffmpeg.deleteFile('input.webm');
+      await ffmpeg.deleteFile('output.webm');
+
+      setCurrentBlob(croppedBlob);
+      toast.success('Video cropped to mobile dimensions!');
+    } catch (error) {
+      console.error('Crop error:', error);
+      toast.error('Failed to crop video. Please try again.');
+    } finally {
+      setIsCropping(false);
+      setCropProgress(0);
+    }
   };
 
   const speedOptions = [
@@ -249,6 +324,32 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
               )}
             </div>
           </div>
+
+          {/* Crop Control */}
+          {deviceWidth && deviceHeight && (
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Crop className="w-4 h-4" />
+                Crop to Mobile Size
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Crops the video to {deviceWidth}×{deviceHeight}px (mobile preview area)
+              </p>
+              <Button 
+                onClick={handleCropToMobile} 
+                disabled={isCropping}
+                size="sm"
+                variant="secondary"
+                className="gap-2"
+              >
+                <Crop className="w-4 h-4" />
+                {isCropping ? `Cropping... ${cropProgress}%` : `Crop to Mobile (${deviceWidth}×${deviceHeight})`}
+              </Button>
+              {isCropping && (
+                <span className="text-xs text-muted-foreground">This may take a moment...</span>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
