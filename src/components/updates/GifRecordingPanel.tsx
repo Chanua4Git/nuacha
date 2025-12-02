@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Circle, Square, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor } from 'lucide-react';
+import { Circle, Square, ChevronRight, ChevronLeft, Film, Smartphone, Tablet, Monitor, ExternalLink } from 'lucide-react';
 import { useGifRecorder } from '@/hooks/useGifRecorder';
 import { cn } from '@/lib/utils';
 import { AdminCaptureGuide } from './AdminCaptureGuide';
@@ -127,6 +127,9 @@ export function GifRecordingPanel({
               <div className="w-full space-y-6">
                 <div className="space-y-3 text-center">
                   <h3 className="text-xl font-semibold">Ready to Record</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This will record your screen. Follow the steps below to capture your learning demonstration.
+                  </p>
                   
                   {/* Device preset selector */}
                   <div className="flex justify-center gap-2">
@@ -173,41 +176,21 @@ export function GifRecordingPanel({
                   )}
                 </div>
 
-                {/* Embedded mobile preview iframe */}
-                <div className="flex justify-center">
-                  <div 
-                    className="relative border-4 border-primary rounded-lg overflow-hidden shadow-xl"
-                    style={{ 
-                      width: `${DEVICE_PRESETS[devicePreset].width}px`, 
-                      height: `${DEVICE_PRESETS[devicePreset].height}px` 
-                    }}
-                  >
-                    <iframe
-                      src={iframeUrl}
-                      className="w-full h-full border-0"
-                      title="Mobile preview"
-                    />
-                    <div className="absolute top-0 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-br flex items-center gap-1">
-                      {previewMode === 'guest' ? '👤' : '🔐'} {DEVICE_PRESETS[devicePreset].width}×{DEVICE_PRESETS[devicePreset].height}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Instructions for embedded iframe workflow */}
-                <div className="max-w-2xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2 text-left">
+                {/* Instructions */}
+                <div className="max-w-2xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3 text-left">
                   <p className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                    🎬 How to Record Mobile GIF
+                    🎬 Recording Workflow
                   </p>
-                  <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
-                    <li>Interact with the <strong>mobile preview above</strong> to set up the desired UI state</li>
-                    <li>Click <strong>"Start Recording"</strong> below</li>
-                    <li>When prompted, select <strong>this browser tab</strong> (not a window)</li>
-                    <li>Perform your interaction in the mobile preview</li>
-                    <li>Click <strong>"Stop Recording"</strong></li>
-                    <li>In the editor, use <strong>"Crop to Mobile"</strong> to isolate just the preview area</li>
+                  <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
+                    <li>Click <strong>"Open Preview Window"</strong> below to open the target page in a new tab</li>
+                    <li>Arrange and interact with the preview tab to set up your desired UI state</li>
+                    <li>Return to this admin page and click <strong>"Start Recording"</strong></li>
+                    <li>In Chrome's picker, <strong className="text-red-700">select the preview tab</strong> (NOT this admin tab)</li>
+                    <li>Interact with the preview to demonstrate the feature</li>
+                    <li>Click <strong>"Stop Recording"</strong> when finished</li>
                   </ol>
                   <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
-                    💡 <strong>Tip:</strong> Make sure the mobile preview stays visible in your screen capture!
+                    💡 <strong>Tip:</strong> Use DevTools responsive mode (Cmd+Shift+M or Ctrl+Shift+M) in the preview tab for exact device sizing
                   </p>
                 </div>
 
@@ -216,7 +199,21 @@ export function GifRecordingPanel({
                   <p className="text-sm">{screenshotHint || stepDescription}</p>
                 </div>
 
-                <Button onClick={handleStart} size="lg" className="gap-2">
+                {/* Open Preview Window button */}
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={() => window.open(iframeUrl, '_blank', `width=${DEVICE_PRESETS[devicePreset].width},height=${DEVICE_PRESETS[devicePreset].height}`)}
+                    size="lg"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    Open Preview Window
+                  </Button>
+                </div>
+
+                {/* Start recording button */}
+                <Button onClick={handleStart} size="lg" className="w-full gap-2">
                   <Circle className="w-4 h-4 fill-current" />
                   Start Recording
                 </Button>
