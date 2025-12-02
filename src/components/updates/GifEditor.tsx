@@ -77,6 +77,11 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   // Crop position state (default: top-center since most UI is near top)
   const [cropPosition, setCropPosition] = useState<CropPosition>(CROP_POSITIONS[1]);
   
+  // Video dimensions for crop preview overlay
+  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
+  // Preset being hovered for live preview
+  const [previewPreset, setPreviewPreset] = useState<MobilePreset | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const { trimVideo, isLoading: isTrimming, progress } = useVideoTrimmer();
@@ -89,6 +94,8 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
     setTrimStart(0);
     setTrimEnd(100);
     setSelectedPreset(null);
+    setVideoDimensions(null);
+    setPreviewPreset(null);
   }, [gifBlob]);
 
   useEffect(() => {
@@ -107,7 +114,46 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setVideoDuration(videoRef.current.duration);
+      setVideoDimensions({
+        width: videoRef.current.videoWidth,
+        height: videoRef.current.videoHeight
+      });
     }
+  };
+
+  // Calculate crop overlay position for Fill mode preview
+  const calculateCropOverlay = (
+    videoWidth: number,
+    videoHeight: number,
+    targetWidth: number,
+    targetHeight: number,
+    cropPos: CropPosition
+  ): { left: string; top: string; width: string; height: string } => {
+    // Calculate how FFmpeg scales in Fill mode (force_original_aspect_ratio=increase)
+    const scaleX = targetWidth / videoWidth;
+    const scaleY = targetHeight / videoHeight;
+    const scale = Math.max(scaleX, scaleY); // Fill uses MAX to cover the frame
+    
+    const scaledWidth = videoWidth * scale;
+    const scaledHeight = videoHeight * scale;
+    
+    // The crop rectangle size relative to scaled video
+    const cropWidthRatio = targetWidth / scaledWidth;
+    const cropHeightRatio = targetHeight / scaledHeight;
+    
+    // Calculate crop offset based on position (0-1 values)
+    const maxOffsetX = 1 - cropWidthRatio;
+    const maxOffsetY = 1 - cropHeightRatio;
+    
+    const offsetX = maxOffsetX * cropPos.x;
+    const offsetY = maxOffsetY * cropPos.y;
+    
+    return {
+      left: `${offsetX * 100}%`,
+      top: `${offsetY * 100}%`,
+      width: `${cropWidthRatio * 100}%`,
+      height: `${cropHeightRatio * 100}%`
+    };
   };
 
   const togglePlayPause = () => {
@@ -277,17 +323,64 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             </div>
             <div className="relative flex justify-center border border-border rounded-lg bg-muted p-4">
               {isPlaying ? (
-                <video
-                  ref={videoRef}
-                  key={gifKey}
-                  src={gifUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  onLoadedMetadata={handleLoadedMetadata}
-                  className="max-h-96 rounded"
-                />
+                <div className="relative inline-block">
+                  <video
+                    ref={videoRef}
+                    key={gifKey}
+                    src={gifUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onLoadedMetadata={handleLoadedMetadata}
+                    className="max-h-96 rounded"
+                  />
+                  
+                  {/* Crop preview overlay - only show in Fill mode with a preset hovered */}
+                  {mobileMode === 'fill' && previewPreset && videoDimensions && (
+                    <div className="absolute inset-0 pointer-events-none rounded overflow-hidden">
+                      {/* Dark overlay covering entire video */}
+                      <div className="absolute inset-0 bg-black/60" />
+                      
+                      {/* Clear "window" showing kept area */}
+                      {(() => {
+                        const overlay = calculateCropOverlay(
+                          videoDimensions.width,
+                          videoDimensions.height,
+                          previewPreset.width,
+                          previewPreset.height,
+                          cropPosition
+                        );
+                        return (
+                          <div 
+                            className="absolute bg-transparent border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
+                            style={{
+                              left: overlay.left,
+                              top: overlay.top,
+                              width: overlay.width,
+                              height: overlay.height,
+                              boxShadow: 'none', // Clear inner area
+                              background: 'transparent',
+                            }}
+                          >
+                            {/* Inner clear area with inverse clipping */}
+                            <div className="absolute inset-0 bg-black/0" />
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Preset info badge */}
+                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded font-medium">
+                        {previewPreset.label} ({previewPreset.width}×{previewPreset.height})
+                      </div>
+                      
+                      {/* Crop position indicator */}
+                      <div className="absolute bottom-2 left-2 bg-background/90 text-foreground text-xs px-2 py-1 rounded">
+                        Focus: {cropPosition.id.replace('-', ' ')}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center max-h-96 text-muted-foreground">
                   Video paused
@@ -484,15 +577,19 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
           <div className="space-y-3">
             <Label>Crop to Mobile Size</Label>
             <p className="text-xs text-muted-foreground">
-              Click a preset to apply the selected output mode ({mobileMode === 'fit' ? 'Fit' : 'Fill'}).
+              {mobileMode === 'fill' 
+                ? 'Hover a preset to preview the crop area. Click to apply.'
+                : 'Click a preset to apply Fit mode (adds padding if needed).'}
             </p>
             <div className="flex flex-wrap gap-2">
               {MOBILE_PRESETS.map((preset) => (
                 <Button
                   key={preset.id}
-                  variant={selectedPreset?.id === preset.id ? 'default' : 'outline'}
+                  variant={selectedPreset?.id === preset.id ? 'default' : previewPreset?.id === preset.id ? 'secondary' : 'outline'}
                   size="sm"
                   onClick={() => handleCropToPreset(preset)}
+                  onMouseEnter={() => mobileMode === 'fill' && setPreviewPreset(preset)}
+                  onMouseLeave={() => setPreviewPreset(null)}
                   disabled={isCropping}
                 >
                   {preset.label}
@@ -502,6 +599,9 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             </div>
             {isCropping && (
               <p className="text-xs text-muted-foreground">Processing… {cropProgress}% (this may take a few seconds)</p>
+            )}
+            {mobileMode === 'fill' && !isCropping && (
+              <p className="text-xs text-primary">Tip: Change crop focus above, then hover presets to see where the crop will land</p>
             )}
           </div>
         </div>
