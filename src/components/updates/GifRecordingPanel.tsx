@@ -47,6 +47,7 @@ export function GifRecordingPanel({
 }: GifRecordingPanelProps) {
   const [showGuide, setShowGuide] = useState(true);
   const [devicePreset, setDevicePreset] = useState<DevicePreset>('mobile');
+  const [previewMode, setPreviewMode] = useState<'guest' | 'authenticated'>('guest');
   
   const {
     isRecording,
@@ -88,8 +89,10 @@ export function GifRecordingPanel({
     reset();
   };
 
-  // Build iframe URL - always use guest preview mode for learning content
-  const iframeUrl = `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`;
+  // Build iframe URL based on preview mode
+  const iframeUrl = previewMode === 'guest' 
+    ? `${targetPath}${targetPath.includes('?') ? '&' : '?'}_preview_auth=false`
+    : targetPath;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -117,7 +120,7 @@ export function GifRecordingPanel({
 
         <div className="flex-1 flex overflow-hidden gap-3">
           {/* Main content area */}
-          <div className="flex-1 relative border border-border rounded-lg overflow-hidden bg-muted p-6 flex flex-col justify-center">
+          <div className="flex-1 relative border border-border rounded-lg overflow-y-auto bg-muted p-6 flex flex-col justify-center">
             
             {/* State: Idle (no recording yet) */}
             {!isRecording && !hasRecording && (
@@ -144,6 +147,30 @@ export function GifRecordingPanel({
                       );
                     })}
                   </div>
+
+                  {/* Preview Mode Toggle */}
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      variant={previewMode === 'guest' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreviewMode('guest')}
+                    >
+                      👤 Guest View
+                    </Button>
+                    <Button
+                      variant={previewMode === 'authenticated' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreviewMode('authenticated')}
+                    >
+                      🔐 Authenticated View
+                    </Button>
+                  </div>
+
+                  {previewMode === 'guest' && (
+                    <p className="text-xs text-center text-amber-600">
+                      ⚠️ Note: Some components may still show authenticated content. For fully accurate guest view, components need to use useAuthPreview().
+                    </p>
+                  )}
                 </div>
 
                 {/* Embedded mobile preview iframe */}
@@ -160,8 +187,8 @@ export function GifRecordingPanel({
                       className="w-full h-full border-0"
                       title="Mobile preview"
                     />
-                    <div className="absolute top-0 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-br">
-                      📱 {DEVICE_PRESETS[devicePreset].width}×{DEVICE_PRESETS[devicePreset].height}
+                    <div className="absolute top-0 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-br flex items-center gap-1">
+                      {previewMode === 'guest' ? '👤' : '🔐'} {DEVICE_PRESETS[devicePreset].width}×{DEVICE_PRESETS[devicePreset].height}
                     </div>
                   </div>
                 </div>
