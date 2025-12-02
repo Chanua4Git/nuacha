@@ -20,6 +20,12 @@ const MOBILE_PRESETS = [
 
 type MobilePreset = typeof MOBILE_PRESETS[number];
 
+// Check if video dimensions are already mobile-sized (no cropping needed)
+const isAlreadyMobileSized = (width: number, height: number): boolean => {
+  // Consider mobile-sized if portrait orientation and width <= 450px
+  return width <= 450 && height > width;
+};
+
 // Crop position options for Fill mode
 const CROP_POSITIONS = [
   { id: 'top-left', label: '↖', x: 0, y: 0 },
@@ -562,92 +568,109 @@ export function GifEditor({ open, gifBlob, onSave, onCancel }: GifEditorProps) {
             </div>
           </div>
 
-          {/* Mobile Output Mode */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4" />
-              Mobile Output Mode
-            </Label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant={mobileMode === 'fit' ? 'default' : 'outline'}
-                onClick={() => setMobileMode('fit')}
-                size="sm"
-                className="flex-1"
-              >
-                Fit (no crop)
-              </Button>
-              <Button
-                variant={mobileMode === 'fill' ? 'default' : 'outline'}
-                onClick={() => setMobileMode('fill')}
-                size="sm"
-                className="flex-1"
-              >
-                Fill (crop edges)
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {mobileMode === 'fit' 
-                ? 'Keeps all content visible. May add black bars on sides if aspect ratios differ.'
-                : 'Fills the mobile frame completely. May cut off left/right or top/bottom edges.'}
-            </p>
-          </div>
-
-          {/* Crop Focus Control - Only visible in Fill mode */}
-          {mobileMode === 'fill' && (
-            <div className="space-y-3">
-              <Label>Crop Focus</Label>
-              <p className="text-xs text-muted-foreground">
-                Choose which part of the screen to keep when cropping
-              </p>
-              <div className="grid grid-cols-3 gap-1 w-fit">
-                {CROP_POSITIONS.map((pos) => (
-                  <Button
-                    key={pos.id}
-                    variant={cropPosition.id === pos.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCropPosition(pos)}
-                    className="w-10 h-10 p-0 text-lg"
-                    title={pos.id.replace('-', ' ')}
-                  >
-                    {pos.label}
-                  </Button>
-                ))}
+          {/* Mobile Size Detection */}
+          {videoDimensions && isAlreadyMobileSized(videoDimensions.width, videoDimensions.height) && (
+            <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <Smartphone className="w-5 h-5 text-primary flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-primary">Already mobile-sized!</p>
+                <p className="text-xs text-muted-foreground">
+                  Your recording is {videoDimensions.width}×{videoDimensions.height} — no cropping needed.
+                </p>
               </div>
             </div>
           )}
 
-          {/* Mobile Crop Presets */}
-          <div className="space-y-3">
-            <Label>Crop to Mobile Size</Label>
-            <p className="text-xs text-muted-foreground">
-              {mobileMode === 'fill' 
-                ? 'Hover a preset to preview the crop area. Click to apply.'
-                : 'Click a preset to apply Fit mode (adds padding if needed).'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {MOBILE_PRESETS.map((preset) => (
-                <Button
-                  key={preset.id}
-                  variant={selectedPreset?.id === preset.id ? 'default' : previewPreset?.id === preset.id ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => handleCropToPreset(preset)}
-                  onMouseEnter={() => mobileMode === 'fill' && setPreviewPreset(preset)}
-                  onMouseLeave={() => setPreviewPreset(null)}
-                  disabled={isCropping}
-                >
-                  {preset.label}
-                  <span className="text-xs opacity-70 ml-1">({preset.width}×{preset.height})</span>
-                </Button>
-              ))}
-            </div>
-            {isCropping && (
-              <p className="text-xs text-muted-foreground">Processing… {cropProgress}% (this may take a few seconds)</p>
-            )}
-            {mobileMode === 'fill' && !isCropping && (
-              <p className="text-xs text-primary">Tip: Change crop focus above, then hover presets to see where the crop will land</p>
-            )}
-          </div>
+          {/* Mobile Output Mode - Only show if NOT already mobile-sized */}
+          {(!videoDimensions || !isAlreadyMobileSized(videoDimensions.width, videoDimensions.height)) && (
+            <>
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  Mobile Output Mode
+                </Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant={mobileMode === 'fit' ? 'default' : 'outline'}
+                    onClick={() => setMobileMode('fit')}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Fit (no crop)
+                  </Button>
+                  <Button
+                    variant={mobileMode === 'fill' ? 'default' : 'outline'}
+                    onClick={() => setMobileMode('fill')}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Fill (crop edges)
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {mobileMode === 'fit' 
+                    ? 'Keeps all content visible. May add black bars on sides if aspect ratios differ.'
+                    : 'Fills the mobile frame completely. May cut off left/right or top/bottom edges.'}
+                </p>
+              </div>
+
+              {/* Crop Focus Control - Only visible in Fill mode */}
+              {mobileMode === 'fill' && (
+                <div className="space-y-3">
+                  <Label>Crop Focus</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Choose which part of the screen to keep when cropping
+                  </p>
+                  <div className="grid grid-cols-3 gap-1 w-fit">
+                    {CROP_POSITIONS.map((pos) => (
+                      <Button
+                        key={pos.id}
+                        variant={cropPosition.id === pos.id ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCropPosition(pos)}
+                        className="w-10 h-10 p-0 text-lg"
+                        title={pos.id.replace('-', ' ')}
+                      >
+                        {pos.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Crop Presets */}
+              <div className="space-y-3">
+                <Label>Crop to Mobile Size</Label>
+                <p className="text-xs text-muted-foreground">
+                  {mobileMode === 'fill' 
+                    ? 'Hover a preset to preview the crop area. Click to apply.'
+                    : 'Click a preset to apply Fit mode (adds padding if needed).'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {MOBILE_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.id}
+                      variant={selectedPreset?.id === preset.id ? 'default' : previewPreset?.id === preset.id ? 'secondary' : 'outline'}
+                      size="sm"
+                      onClick={() => handleCropToPreset(preset)}
+                      onMouseEnter={() => mobileMode === 'fill' && setPreviewPreset(preset)}
+                      onMouseLeave={() => setPreviewPreset(null)}
+                      disabled={isCropping}
+                    >
+                      {preset.label}
+                      <span className="text-xs opacity-70 ml-1">({preset.width}×{preset.height})</span>
+                    </Button>
+                  ))}
+                </div>
+                {isCropping && (
+                  <p className="text-xs text-muted-foreground">Processing… {cropProgress}% (this may take a few seconds)</p>
+                )}
+                {mobileMode === 'fill' && !isCropping && (
+                  <p className="text-xs text-primary">Tip: Change crop focus above, then hover presets to see where the crop will land</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <DialogFooter>
