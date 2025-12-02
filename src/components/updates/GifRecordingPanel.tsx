@@ -170,9 +170,10 @@ export function GifRecordingPanel({
                   </div>
 
                   {previewMode === 'guest' && (
-                    <p className="text-xs text-center text-amber-600">
-                      ⚠️ Note: Some components may still show authenticated content. For fully accurate guest view, components need to use useAuthPreview().
-                    </p>
+                    <div className="text-xs text-center text-amber-600 space-y-1">
+                      <p>⚠️ <strong>For true guest view:</strong> Open the preview URL in an <strong>Incognito/Private window</strong> or a different browser where you're not logged in.</p>
+                      <p className="text-muted-foreground">The Guest View toggle only works for components using useAuthPreview().</p>
+                    </div>
                   )}
                 </div>
 
@@ -182,16 +183,24 @@ export function GifRecordingPanel({
                     🎬 Recording Workflow
                   </p>
                   <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
-                    <li>Click <strong>"Open Preview Window"</strong> below to open the target page in a new tab</li>
-                    <li>Arrange and interact with the preview tab to set up your desired UI state</li>
+                    <li>Click <strong>"Open Preview Window"</strong> below to open the target page</li>
+                    <li><strong>In the preview tab, open DevTools (F12)</strong> and click the device toggle icon 📱 to enable responsive mode</li>
+                    <li>Select your device size (e.g., "iPhone 12 Pro" for 390×844) or set custom dimensions</li>
+                    <li>Arrange and interact with the preview to set up your desired UI state</li>
                     <li>Return to this admin page and click <strong>"Start Recording"</strong></li>
                     <li>In Chrome's picker, <strong className="text-red-700">select the preview tab</strong> (NOT this admin tab)</li>
-                    <li>Interact with the preview to demonstrate the feature</li>
-                    <li>Click <strong>"Stop Recording"</strong> when finished</li>
+                    <li>Interact with the preview to demonstrate the feature, then click <strong>"Stop Recording"</strong></li>
                   </ol>
-                  <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
-                    💡 <strong>Tip:</strong> Use DevTools responsive mode (Cmd+Shift+M or Ctrl+Shift+M) in the preview tab for exact device sizing
-                  </p>
+                  
+                  {/* Keyboard shortcuts reference */}
+                  <div className="flex flex-wrap justify-center gap-2 pt-2 border-t border-blue-200">
+                    <span className="bg-white px-2 py-1 rounded text-xs text-blue-900">
+                      📱 DevTools: <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">F12</kbd> then <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">Cmd+Shift+M</kbd>
+                    </span>
+                    <span className="bg-white px-2 py-1 rounded text-xs text-blue-900">
+                      🥷 Incognito: <kbd className="bg-blue-100 px-1.5 py-0.5 rounded font-mono">Cmd+Shift+N</kbd>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="p-4 bg-background rounded-lg border border-border text-left space-y-2">
@@ -202,13 +211,16 @@ export function GifRecordingPanel({
                 {/* Open Preview Window button */}
                 <div className="flex justify-center">
                   <Button 
-                    onClick={() => window.open(iframeUrl, '_blank', `width=${DEVICE_PRESETS[devicePreset].width},height=${DEVICE_PRESETS[devicePreset].height}`)}
+                    onClick={() => window.open(iframeUrl, '_blank')}
                     size="lg"
                     variant="outline"
-                    className="gap-2"
+                    className="gap-2 flex-col h-auto py-3"
                   >
-                    <ExternalLink className="w-5 h-5" />
-                    Open Preview Window
+                    <span className="flex items-center gap-2">
+                      <ExternalLink className="w-5 h-5" />
+                      Open Preview Window
+                    </span>
+                    <span className="text-xs opacity-70 font-normal">(then use DevTools for sizing)</span>
                   </Button>
                 </div>
 
