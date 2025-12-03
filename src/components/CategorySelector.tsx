@@ -68,13 +68,19 @@ const CategorySelector = ({
     return unifiedCategories;
   }, [user, unifiedCategories]);
   
+  // Memoize lineItems transformation to prevent infinite render loops
+  const memoizedLineItemsForSuggestions = useMemo(() => {
+    if (!lineItems) return undefined;
+    return lineItems.map(item => ({ 
+      description: item.description, 
+      confidence: 0.8 // Default confidence for type compatibility
+    } as any));
+  }, [lineItems]);
+
   // Get smart suggestions based on place and line items
   const { suggestions, isLoading: suggestionsLoading } = useSmartCategorySuggestions(
     place,
-    lineItems ? lineItems.map(item => ({ 
-      description: item.description, 
-      confidence: 0.8 // Default confidence for type compatibility
-    } as any)) : undefined,
+    memoizedLineItemsForSuggestions,
     selectedFamily?.id,
     allCategories
   );
