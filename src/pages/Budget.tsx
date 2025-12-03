@@ -79,6 +79,9 @@ export default function Budget() {
               : 'Create a realistic, mom-tested budget template that truly reflects your monthly expenses'
             }
           </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            💡 Nuacha helps you organize and visualize your finances — it's not a substitute for professional financial advice. You know your situation best.
+          </p>
         </div>
       </div>
 

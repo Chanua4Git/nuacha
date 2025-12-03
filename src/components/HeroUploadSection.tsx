@@ -111,10 +111,14 @@ const HeroUploadSection = ({
           </div>
 
           {/* Reassuring message */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-[#C3DCD1]/30">
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-[#C3DCD1]/30 space-y-3">
             <p className="text-[#5C5C5C] text-sm leading-relaxed">
               ✨ <span className="font-medium">Your privacy matters to us.</span> We handle your receipts with the utmost care and gentleness. 
               Take your time, breathe, and let us guide you toward financial serenity.
+            </p>
+            <p className="text-[#5C5C5C]/80 text-xs leading-relaxed">
+              💡 <span className="font-medium">Please note:</span> Nuacha is a budgeting and expense tracking tool, not financial advice. 
+              For personalized financial guidance, please consult a qualified professional.
             </p>
           </div>
         </div>
