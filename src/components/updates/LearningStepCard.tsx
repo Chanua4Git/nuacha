@@ -47,6 +47,8 @@ export function LearningStepCard({
 
   // Load clips and visuals on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const loadContent = async () => {
       setImageLoading(true);
       console.log(`[LearningStepCard] Loading content for ${moduleId}/${step.id}`);
@@ -54,6 +56,8 @@ export function LearningStepCard({
       // Check for GIF clips first (highest priority) - filters by active status
       const gifClips = await getAllClipsForStep(moduleId, step.id, true);
       console.log(`[LearningStepCard] Active GIF clips found:`, gifClips);
+      
+      if (!isMounted) return;
       
       if (gifClips.length > 0) {
         setClips(gifClips);
@@ -66,6 +70,7 @@ export function LearningStepCard({
       const screenshotUrl = getLearningVisualUrl(moduleId, step.id, 'screenshot');
       try {
         const screenshotRes = await fetch(screenshotUrl, { method: 'HEAD' });
+        if (!isMounted) return;
         if (screenshotRes.ok) {
           console.log(`[LearningStepCard] Screenshot found:`, screenshotUrl);
           setStaticVisualUrl(screenshotUrl);
@@ -75,10 +80,13 @@ export function LearningStepCard({
         }
       } catch {}
       
+      if (!isMounted) return;
+      
       // Check for AI-generated third
       const aiUrl = getLearningVisualUrl(moduleId, step.id, 'ai-generated');
       try {
         const aiRes = await fetch(aiUrl, { method: 'HEAD' });
+        if (!isMounted) return;
         if (aiRes.ok) {
           console.log(`[LearningStepCard] AI visual found:`, aiUrl);
           setStaticVisualUrl(aiUrl);
@@ -87,6 +95,8 @@ export function LearningStepCard({
           return;
         }
       } catch {}
+      
+      if (!isMounted) return;
       
       // Use custom visual URL if provided
       if (step.visual?.url) {
@@ -100,6 +110,7 @@ export function LearningStepCard({
     
     const checkNarrator = async () => {
       const extension = await checkNarratorExists(moduleId, step.id);
+      if (!isMounted) return;
       console.log(`[LearningStepCard] Narrator check for ${moduleId}/${step.id}:`, extension);
       if (extension) {
         setHasNarrator(true);
@@ -107,8 +118,21 @@ export function LearningStepCard({
       }
     };
     
+    // Add timeout fallback - if loading takes too long, stop showing skeleton
+    const timeoutId = setTimeout(() => {
+      if (isMounted && imageLoading) {
+        console.warn(`[LearningStepCard] Content loading timed out for ${moduleId}/${step.id}`);
+        setImageLoading(false);
+      }
+    }, 8000); // 8 second timeout
+    
     loadContent();
     checkNarrator();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [moduleId, step.id, step.visual?.url]);
 
   const handleCTAClick = () => {

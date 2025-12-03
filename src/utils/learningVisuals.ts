@@ -211,18 +211,86 @@ export const getLearningClipUrl = (
 };
 
 /**
- * Check how many indexed clips exist for a step (checks up to 10)
- * Also checks for legacy non-indexed clips (index 0)
+ * Check how many indexed clips exist for a step using Supabase Storage list API
+ * More reliable than HEAD requests, especially on mobile
  * Returns array of { index, extension, url, isLegacy } for found clips
  */
 export const getExistingClips = async (
   moduleId: string,
   stepId: string
 ): Promise<Array<{ index: number; extension: string; url: string; isLegacy?: boolean }>> => {
+  console.log(`[getExistingClips] Listing files for ${moduleId}/${stepId}`);
+  
+  try {
+    // Use Supabase Storage list() API - much more reliable than HEAD requests
+    const { data, error } = await supabase.storage
+      .from('learning-visuals')
+      .list(`gif/${moduleId}`, {
+        limit: 100,
+        search: stepId
+      });
+    
+    if (error) {
+      console.error('[getExistingClips] List error, falling back to HEAD requests:', error);
+      return getExistingClipsViaHeadRequests(moduleId, stepId);
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('[getExistingClips] No files found via list API');
+      return [];
+    }
+    
+    console.log(`[getExistingClips] Found ${data.length} files:`, data.map(f => f.name));
+    
+    const foundClips: Array<{ index: number; extension: string; url: string; isLegacy?: boolean }> = [];
+    const supabaseUrl = 'https://fjrxqeyexlusjwzzecal.supabase.co';
+    
+    for (const file of data) {
+      // Skip if file doesn't start with our stepId
+      if (!file.name.startsWith(stepId)) continue;
+      
+      // Skip empty files
+      if (file.metadata?.size === 0) continue;
+      
+      // Parse filename: "step-2-2_1.mp4" (indexed) or "step-2-2.mp4" (legacy)
+      const indexedMatch = file.name.match(new RegExp(`^${stepId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_(\\d+)\\.(\\w+)$`));
+      const legacyMatch = file.name.match(new RegExp(`^${stepId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.(\\w+)$`));
+      
+      if (indexedMatch) {
+        const index = parseInt(indexedMatch[1]);
+        const extension = indexedMatch[2];
+        const url = `${supabaseUrl}/storage/v1/object/public/learning-visuals/gif/${moduleId}/${file.name}`;
+        foundClips.push({ index, extension, url, isLegacy: false });
+      } else if (legacyMatch) {
+        const extension = legacyMatch[1];
+        const url = `${supabaseUrl}/storage/v1/object/public/learning-visuals/gif/${moduleId}/${file.name}`;
+        foundClips.push({ index: 0, extension, url, isLegacy: true });
+      }
+    }
+    
+    // Sort by index
+    foundClips.sort((a, b) => a.index - b.index);
+    
+    console.log(`[getExistingClips] Parsed clips:`, foundClips);
+    return foundClips;
+    
+  } catch (error) {
+    console.error('[getExistingClips] Error, falling back to HEAD requests:', error);
+    return getExistingClipsViaHeadRequests(moduleId, stepId);
+  }
+};
+
+/**
+ * Fallback: Check clips using HEAD requests (less reliable on mobile)
+ */
+const getExistingClipsViaHeadRequests = async (
+  moduleId: string,
+  stepId: string
+): Promise<Array<{ index: number; extension: string; url: string; isLegacy?: boolean }>> => {
   const extensions = ['mp4', 'webm'];
   const foundClips: Array<{ index: number; extension: string; url: string; isLegacy?: boolean }> = [];
   
-  // First check for legacy non-indexed clip (stored at stepId.ext instead of stepId_1.ext)
+  // First check for legacy non-indexed clip
   for (const ext of extensions) {
     const legacyUrl = getLearningVisualUrl(moduleId, stepId, 'gif', ext);
     try {
