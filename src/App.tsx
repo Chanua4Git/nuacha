@@ -21,7 +21,7 @@ import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
 import { ExpenseProvider } from "./context/ExpenseContext";
-import AuthDemoDebugPanel from "./auth/components/AuthDemoDebugPanel";
+
 import Reports from "./pages/Reports";
 import Budget from "./pages/Budget";
 import DemoBudget from "./pages/DemoBudget";
@@ -77,8 +77,6 @@ const App = () => {
     }
   }, []);
 
-  // Enable debug panel during development
-  const showDebugPanel = import.meta.env.DEV;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -145,7 +143,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
-                <AuthDemoDebugPanel visible={showDebugPanel} />
+                
               </div>
             </OnboardingProvider>
             </TooltipProvider>
