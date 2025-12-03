@@ -8,7 +8,7 @@ import { Sparkles, Wallet, PieChart, Zap, RotateCcw } from 'lucide-react';
 import { learningTracks, learningModules } from '@/constants/learningCenterData';
 import { LearningModuleCard } from './LearningModuleCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
-import { getModuleStatus, type ModuleStatus } from '@/utils/learningVisuals';
+import { useModuleStatus } from '@/hooks/useModuleStatus';
 
 const trackIcons = {
   'Sparkles': Sparkles,
@@ -21,6 +21,7 @@ export function LearningCenter() {
   const [searchParams] = useSearchParams();
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const { getOverallProgress, resetProgress } = useLearningProgress();
+  const { getModuleStatus, loading: statusLoading } = useModuleStatus();
   const overallProgress = getOverallProgress(learningModules.length);
 
   // Read URL parameters for deep linking
