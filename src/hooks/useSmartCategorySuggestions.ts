@@ -184,6 +184,12 @@ export const useSmartCategorySuggestions = (
       clearTimeout(debounceTimeoutRef.current);
     }
 
+    // Set loading IMMEDIATELY to prevent premature auto-selection in CategorySelector
+    // This ensures suggestionsLoading is true during the debounce delay
+    if (place && categories.length > 0) {
+      setIsLoading(true);
+    }
+
     console.log('🔍 Smart Suggestions Hook called with:', {
       place,
       lineItemsCount: lineItems?.length || 0,
