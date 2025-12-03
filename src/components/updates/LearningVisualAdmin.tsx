@@ -3,10 +3,21 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Image, Loader2, Upload, Camera, Mic } from 'lucide-react';
+import { ChevronDown, Image, Loader2, Upload, Camera, Mic, Plus, Trash2 } from 'lucide-react';
 import { learningModules, type NarratorDisplayMode } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
-import { checkVisualExists, uploadLearningVisual, getLearningVisualUrl, uploadNarratorVideo, getNarratorVideoUrl, checkNarratorExists } from '@/utils/learningVisuals';
+import { 
+  checkVisualExists, 
+  uploadLearningVisual, 
+  getLearningVisualUrl, 
+  uploadNarratorVideo, 
+  getNarratorVideoUrl, 
+  checkNarratorExists,
+  uploadLearningClip,
+  getExistingClips,
+  getNextClipIndex,
+  deleteLearningClip
+} from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
@@ -22,6 +33,12 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 type VisualStatus = 'exists' | 'missing' | 'generating' | 'uploading' | 'recording';
 type VisualType = 'gif' | 'screenshot' | 'ai-generated' | 'missing';
 
+interface ClipInfo {
+  index: number;
+  extension: string;
+  url: string;
+}
+
 export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
   const { compressVideo, isCompressing, progress, stage, estimateCompressedSize } = useVideoCompressor();
@@ -29,10 +46,16 @@ export function LearningVisualAdmin() {
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [narratorStatus, setNarratorStatus] = useState<Map<string, boolean>>(new Map());
   const [narratorModes, setNarratorModes] = useState<Map<string, NarratorDisplayMode>>(new Map());
-  const [narratorExtensions, setNarratorExtensions] = useState<Map<string, string>>(new Map()); // Track video format
+  const [narratorExtensions, setNarratorExtensions] = useState<Map<string, string>>(new Map());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const narratorInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const clipInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  
+  // Multi-clip tracking
+  const [stepClips, setStepClips] = useState<Map<string, ClipInfo[]>>(new Map());
+  const [loadingClips, setLoadingClips] = useState<Set<string>>(new Set());
+  
   const [compressingNarrator, setCompressingNarrator] = useState<{
     key: string;
     originalSizeMB: number;
@@ -81,7 +104,48 @@ export function LearningVisualAdmin() {
   useEffect(() => {
     checkAllVisualsExist();
     checkAllNarrators();
+    loadAllClips();
   }, []);
+
+  // Load all clips for all steps
+  const loadAllClips = async () => {
+    const clipsMap = new Map<string, ClipInfo[]>();
+    
+    for (const module of learningModules) {
+      for (const step of module.steps) {
+        const key = `${module.id}-${step.id}`;
+        const clips = await getExistingClips(module.id, step.id);
+        if (clips.length > 0) {
+          clipsMap.set(key, clips);
+        }
+      }
+    }
+    
+    setStepClips(clipsMap);
+  };
+
+  // Load clips for a specific step
+  const loadClipsForStep = async (moduleId: string, stepId: string) => {
+    const key = `${moduleId}-${stepId}`;
+    setLoadingClips(prev => new Set(prev).add(key));
+    
+    const clips = await getExistingClips(moduleId, stepId);
+    setStepClips(prev => {
+      const next = new Map(prev);
+      if (clips.length > 0) {
+        next.set(key, clips);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+    
+    setLoadingClips(prev => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
 
   const checkAllVisualsExist = async () => {
     const statusMap = new Map<string, VisualStatus>();
@@ -91,7 +155,15 @@ export function LearningVisualAdmin() {
       for (const step of module.steps) {
         const key = `${module.id}-${step.id}`;
         
-        // Check for GIF first (highest priority) - check both webm AND mp4
+        // Check for indexed clips first (new multi-clip system)
+        const clips = await getExistingClips(module.id, step.id);
+        if (clips.length > 0) {
+          statusMap.set(key, 'exists');
+          typeMap.set(key, 'gif');
+          continue;
+        }
+        
+        // Check for legacy GIF (single file) - check both webm AND mp4
         const hasGifWebm = await checkVisualExists(module.id, step.id, 'gif', 'webm');
         const hasGifMp4 = await checkVisualExists(module.id, step.id, 'gif', 'mp4');
         
@@ -310,19 +382,126 @@ export function LearningVisualAdmin() {
     setEditingGif(null);
 
     try {
-      const url = await uploadLearningVisual(editedBlob, moduleId, stepId, 'gif');
+      // Use indexed upload for multi-clip support
+      const nextIndex = await getNextClipIndex(moduleId, stepId);
+      const url = await uploadLearningClip(editedBlob, moduleId, stepId, nextIndex);
       
       if (url) {
         setVisualStatus(prev => new Map(prev).set(key, 'exists'));
         setVisualTypes(prev => new Map(prev).set(key, 'gif'));
-        toast.success(`GIF saved for "${stepTitle}"`);
+        // Refresh clips for this step
+        await loadClipsForStep(moduleId, stepId);
+        toast.success(`Clip ${nextIndex} saved for "${stepTitle}"`);
       } else {
         throw new Error('Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
       setVisualStatus(prev => new Map(prev).set(key, 'missing'));
-      toast.error('Failed to upload GIF. Please try again.');
+      toast.error('Failed to upload clip. Please try again.');
+    }
+  };
+
+  // Handle adding a clip via file upload
+  const handleAddClipFileSelect = (moduleId: string, stepId: string) => {
+    const key = `${moduleId}-${stepId}`;
+    const input = clipInputRefs.current.get(key);
+    input?.click();
+  };
+
+  const handleAddClipUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    stepId: string,
+    stepTitle: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type (video only)
+    if (!file.type.startsWith('video/')) {
+      toast.error('Invalid file type. Please upload a video file (MP4, WebM, MOV)');
+      return;
+    }
+
+    const key = `${moduleId}-${stepId}`;
+    const fileSizeMB = file.size / (1024 * 1024);
+    const needsCompression = fileSizeMB >= 5;
+
+    let videoToUpload: Blob = file;
+
+    try {
+      setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
+
+      // Compress if file is 5MB or larger
+      if (needsCompression) {
+        toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+        videoToUpload = await compressVideo(file);
+        
+        const compressedSizeMB = videoToUpload.size / (1024 * 1024);
+        if (compressedSizeMB >= 5) {
+          toast.warning(`Compressed video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
+        }
+      }
+
+      // Upload as indexed clip
+      const nextIndex = await getNextClipIndex(moduleId, stepId);
+      const url = await uploadLearningClip(videoToUpload, moduleId, stepId, nextIndex);
+      
+      if (url) {
+        setVisualStatus(prev => new Map(prev).set(key, 'exists'));
+        setVisualTypes(prev => new Map(prev).set(key, 'gif'));
+        await loadClipsForStep(moduleId, stepId);
+        toast.success(`Clip ${nextIndex} added for "${stepTitle}"`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Clip upload error:', error);
+      toast.error('Failed to upload clip. Please try again.');
+    }
+    
+    event.target.value = '';
+  };
+
+  // Handle deleting a specific clip
+  const handleDeleteClip = async (
+    moduleId: string,
+    stepId: string,
+    clipIndex: number,
+    extension: string,
+    stepTitle: string
+  ) => {
+    const key = `${moduleId}-${stepId}`;
+    
+    const confirmed = window.confirm(`Delete clip ${clipIndex} from "${stepTitle}"?`);
+    if (!confirmed) return;
+
+    try {
+      const success = await deleteLearningClip(moduleId, stepId, clipIndex, extension);
+      
+      if (success) {
+        await loadClipsForStep(moduleId, stepId);
+        toast.success(`Clip ${clipIndex} deleted`);
+        
+        // Update visual status if no clips remain
+        const remainingClips = stepClips.get(key) || [];
+        if (remainingClips.length <= 1) {
+          // Check if there are any other visuals
+          const hasScreenshot = await checkVisualExists(moduleId, stepId, 'screenshot');
+          const hasAI = await checkVisualExists(moduleId, stepId, 'ai-generated');
+          
+          if (!hasScreenshot && !hasAI) {
+            setVisualStatus(prev => new Map(prev).set(key, 'missing'));
+            setVisualTypes(prev => new Map(prev).set(key, 'missing'));
+          }
+        }
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete clip error:', error);
+      toast.error('Failed to delete clip. Please try again.');
     }
   };
 
@@ -763,6 +942,107 @@ export function LearningVisualAdmin() {
                             </Button>
                           </div>
                         </div>
+
+                        {/* Multi-Clip Section */}
+                        {(() => {
+                          const clips = stepClips.get(key) || [];
+                          const isLoadingClipsForStep = loadingClips.has(key);
+                          const clipCount = clips.length;
+                          
+                          return (
+                            <div className="pl-8 bg-primary/5 rounded-lg p-3 space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Camera className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm font-medium">Video Clips</span>
+                                  <Badge variant={clipCount > 0 ? 'default' : 'outline'} className="text-xs">
+                                    {isLoadingClipsForStep ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      clipCount > 0 ? `📹 ${clipCount} clip${clipCount > 1 ? 's' : ''}` : '❌ No clips'
+                                    )}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {/* Hidden file input for adding clips */}
+                                  <input
+                                    ref={(el) => {
+                                      if (el) clipInputRefs.current.set(key, el);
+                                    }}
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    onChange={(e) => handleAddClipUpload(e, module.id, step.id, step.title)}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleAddClipFileSelect(module.id, step.id)}
+                                    disabled={isProcessing}
+                                    className="gap-1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    Add Clip
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Clip Thumbnails */}
+                              {clipCount > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {clips.map((clip) => (
+                                    <div 
+                                      key={`${clip.index}-${clip.extension}`}
+                                      className="relative group"
+                                    >
+                                      <HoverCard>
+                                        <HoverCardTrigger asChild>
+                                          <video
+                                            src={clip.url}
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            className="h-12 w-16 object-cover rounded border border-border cursor-pointer"
+                                          />
+                                        </HoverCardTrigger>
+                                        <HoverCardContent className="w-80 p-2" side="top">
+                                          <video
+                                            src={clip.url}
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            className="w-full rounded"
+                                          />
+                                          <p className="text-xs text-muted-foreground mt-2 text-center">
+                                            Clip {clip.index} • {clip.extension.toUpperCase()}
+                                          </p>
+                                        </HoverCardContent>
+                                      </HoverCard>
+                                      
+                                      {/* Clip index badge */}
+                                      <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium">
+                                        {clip.index}
+                                      </span>
+                                      
+                                      {/* Delete button */}
+                                      <Button
+                                        size="icon"
+                                        variant="destructive"
+                                        className="absolute -top-1 -right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => handleDeleteClip(module.id, step.id, clip.index, clip.extension, step.title)}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* Narrator Section */}
                         <div className="pl-8 bg-muted/30 rounded-lg p-3 space-y-3">
