@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CategoryWithCamelCase, ReceiptLineItem } from '@/types/expense';
 import { useAuth } from '@/auth/contexts/AuthProvider';
@@ -176,8 +176,14 @@ export const useSmartCategorySuggestions = (
   const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Clear any pending debounce
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
     console.log('🔍 Smart Suggestions Hook called with:', {
       place,
       lineItemsCount: lineItems?.length || 0,
@@ -398,7 +404,16 @@ export const useSmartCategorySuggestions = (
       }
     };
 
-    generateSuggestions();
+    // Debounce to prevent rapid re-renders during OCR data population
+    debounceTimeoutRef.current = setTimeout(() => {
+      generateSuggestions();
+    }, 150);
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, [user, familyId, place, lineItems, categories]);
 
   return {
