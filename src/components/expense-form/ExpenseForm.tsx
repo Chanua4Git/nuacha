@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
@@ -674,10 +674,25 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     }
   }, [ocrResult]);
   
-  // Calculate receipt completion status
-  const partialDetection = ocrResult ? detectPartialReceipt(ocrResult) : null;
-  const isComplete = ocrResult ? isReceiptComplete(ocrResult) : false;
+  // Calculate receipt completion status - memoized to prevent infinite re-renders
+  const partialDetection = useMemo(() => 
+    ocrResult ? detectPartialReceipt(ocrResult) : null, 
+    [ocrResult]
+  );
+  const isComplete = useMemo(() => 
+    ocrResult ? isReceiptComplete(ocrResult) : false, 
+    [ocrResult]
+  );
   const totalPages = receiptPages.length + (imagePreview && ocrResult ? 1 : 0);
+  
+  // Memoize lineItems array to prevent infinite re-render loop in CategorySelector
+  const memoizedLineItems = useMemo(() => {
+    if (!ocrResult?.lineItems) return undefined;
+    return ocrResult.lineItems.map(item => ({ 
+      description: item.description, 
+      confidence: 0.8
+    } as any));
+  }, [ocrResult?.lineItems]);
 
   // Show family setup modal if user has scanned receipt but no families
   if (showFamilySetupModal) {
@@ -943,11 +958,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 value={category}
                 onChange={setCategory}
                 place={place || ocrResult?.storeDetails?.name}
-                lineItems={ocrResult?.lineItems ? ocrResult.lineItems.map(item => ({ 
-                  description: item.description, 
-                  confidence: 0.8 // Default confidence for type compatibility
-                } as any)) : undefined}
-                autoSelectTopSuggestion={autoSelectCategory}  // 🔥 Pass auto-select flag
+                lineItems={memoizedLineItems}
+                autoSelectTopSuggestion={autoSelectCategory}
               />
               
               <RecurringDateSelector
