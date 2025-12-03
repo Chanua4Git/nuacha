@@ -26,10 +26,10 @@ export function LearningCenter() {
   const urlModuleId = searchParams.get('module');
   const urlStepId = searchParams.get('step');
 
-  // Filter modules by selected track
+  // Filter modules by selected track (exclude Start Here when showing all, since it's in highlighted rail)
   const filteredModules = selectedTrack
     ? learningModules.filter(m => m.track === selectedTrack)
-    : learningModules;
+    : learningModules.filter(m => m.track !== 'Start Here');
 
   // Get Start Here modules for the highlighted rail
   const startHereModules = learningModules.filter(m => m.track === 'Start Here');
