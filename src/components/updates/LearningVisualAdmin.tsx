@@ -16,7 +16,10 @@ import {
   uploadLearningClip,
   getExistingClips,
   getNextClipIndex,
-  deleteLearningClip
+  deleteLearningClip,
+  deleteLearningVisual,
+  isClipActive,
+  setClipActiveStatus
 } from '@/utils/learningVisuals';
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -37,6 +40,8 @@ interface ClipInfo {
   index: number;
   extension: string;
   url: string;
+  isLegacy?: boolean;
+  isActive?: boolean;
 }
 
 export function LearningVisualAdmin() {
@@ -107,7 +112,7 @@ export function LearningVisualAdmin() {
     loadAllClips();
   }, []);
 
-  // Load all clips for all steps
+  // Load all clips for all steps with active status
   const loadAllClips = async () => {
     const clipsMap = new Map<string, ClipInfo[]>();
     
@@ -116,7 +121,12 @@ export function LearningVisualAdmin() {
         const key = `${module.id}-${step.id}`;
         const clips = await getExistingClips(module.id, step.id);
         if (clips.length > 0) {
-          clipsMap.set(key, clips);
+          // Add active status to each clip
+          const clipsWithStatus = clips.map(clip => ({
+            ...clip,
+            isActive: isClipActive(module.id, step.id, clip.index)
+          }));
+          clipsMap.set(key, clipsWithStatus);
         }
       }
     }
@@ -124,16 +134,22 @@ export function LearningVisualAdmin() {
     setStepClips(clipsMap);
   };
 
-  // Load clips for a specific step
+  // Load clips for a specific step with active status
   const loadClipsForStep = async (moduleId: string, stepId: string) => {
     const key = `${moduleId}-${stepId}`;
     setLoadingClips(prev => new Set(prev).add(key));
     
     const clips = await getExistingClips(moduleId, stepId);
+    // Add active status to each clip
+    const clipsWithStatus = clips.map(clip => ({
+      ...clip,
+      isActive: isClipActive(moduleId, stepId, clip.index)
+    }));
+    
     setStepClips(prev => {
       const next = new Map(prev);
-      if (clips.length > 0) {
-        next.set(key, clips);
+      if (clipsWithStatus.length > 0) {
+        next.set(key, clipsWithStatus);
       } else {
         next.delete(key);
       }
@@ -145,6 +161,55 @@ export function LearningVisualAdmin() {
       next.delete(key);
       return next;
     });
+  };
+
+  // Toggle clip active status
+  const handleToggleClipActive = (moduleId: string, stepId: string, clipIndex: number) => {
+    const key = `${moduleId}-${stepId}`;
+    const currentClips = stepClips.get(key) || [];
+    const clip = currentClips.find(c => c.index === clipIndex);
+    
+    if (!clip) return;
+    
+    const newActive = !clip.isActive;
+    setClipActiveStatus(`${moduleId}/${stepId}_${clipIndex}`, newActive);
+    
+    // Update local state
+    setStepClips(prev => {
+      const next = new Map(prev);
+      const clips = next.get(key) || [];
+      next.set(key, clips.map(c => 
+        c.index === clipIndex ? { ...c, isActive: newActive } : c
+      ));
+      return next;
+    });
+    
+    toast.success(newActive ? 'Clip activated' : 'Clip hidden from users');
+  };
+
+  // Delete legacy clip
+  const handleDeleteLegacyClip = async (
+    moduleId: string,
+    stepId: string,
+    extension: string,
+    stepTitle: string
+  ) => {
+    const confirmed = window.confirm(`Delete legacy clip from "${stepTitle}"?`);
+    if (!confirmed) return;
+
+    try {
+      const success = await deleteLearningVisual(moduleId, stepId, 'gif', extension);
+      
+      if (success) {
+        await loadClipsForStep(moduleId, stepId);
+        toast.success('Legacy clip deleted');
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete legacy clip error:', error);
+      toast.error('Failed to delete clip. Please try again.');
+    }
   };
 
   const checkAllVisualsExist = async () => {
@@ -990,11 +1055,11 @@ export function LearningVisualAdmin() {
                               
                               {/* Clip Thumbnails */}
                               {clipCount > 0 && (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-3">
                                   {clips.map((clip) => (
                                     <div 
                                       key={`${clip.index}-${clip.extension}`}
-                                      className="relative group"
+                                      className={`relative group ${clip.isActive === false ? 'opacity-50' : ''}`}
                                     >
                                       <HoverCard>
                                         <HoverCardTrigger asChild>
@@ -1017,27 +1082,51 @@ export function LearningVisualAdmin() {
                                             className="w-full rounded"
                                           />
                                           <p className="text-xs text-muted-foreground mt-2 text-center">
-                                            Clip {clip.index} • {clip.extension.toUpperCase()}
+                                            {clip.isLegacy ? 'Legacy Clip' : `Clip ${clip.index}`} • {clip.extension.toUpperCase()}
                                           </p>
                                         </HoverCardContent>
                                       </HoverCard>
                                       
-                                      {/* Clip index badge */}
-                                      <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium">
-                                        {clip.index}
+                                      {/* Clip index badge with legacy indicator */}
+                                      <span className={`absolute -top-1 -left-1 text-primary-foreground text-[10px] px-1 h-4 rounded-full flex items-center justify-center font-medium ${clip.isLegacy ? 'bg-amber-500' : 'bg-primary'}`}>
+                                        {clip.isLegacy ? 'L' : clip.index}
                                       </span>
+                                      
+                                      {/* Active toggle button */}
+                                      <Button
+                                        size="icon"
+                                        variant={clip.isActive !== false ? 'secondary' : 'outline'}
+                                        className="absolute -bottom-1 -left-1 w-5 h-5"
+                                        onClick={() => handleToggleClipActive(module.id, step.id, clip.index)}
+                                        title={clip.isActive !== false ? 'Visible to users (click to hide)' : 'Hidden from users (click to show)'}
+                                      >
+                                        <span className="text-[10px]">{clip.isActive !== false ? '👁' : '🚫'}</span>
+                                      </Button>
                                       
                                       {/* Delete button */}
                                       <Button
                                         size="icon"
                                         variant="destructive"
                                         className="absolute -top-1 -right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => handleDeleteClip(module.id, step.id, clip.index, clip.extension, step.title)}
+                                        onClick={() => clip.isLegacy 
+                                          ? handleDeleteLegacyClip(module.id, step.id, clip.extension, step.title)
+                                          : handleDeleteClip(module.id, step.id, clip.index, clip.extension, step.title)
+                                        }
                                       >
                                         <Trash2 className="w-3 h-3" />
                                       </Button>
                                     </div>
                                   ))}
+                                </div>
+                              )}
+                              
+                              {/* Legend for clip controls */}
+                              {clipCount > 0 && (
+                                <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground mt-2">
+                                  <span><span className="bg-amber-500 text-white px-1 rounded">L</span> = Legacy clip</span>
+                                  <span><span className="bg-primary text-primary-foreground px-1 rounded">1</span> = Indexed clip</span>
+                                  <span>👁 = Visible to users</span>
+                                  <span>🚫 = Hidden from users</span>
                                 </div>
                               )}
                             </div>

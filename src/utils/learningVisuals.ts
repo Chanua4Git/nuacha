@@ -212,22 +212,44 @@ export const getLearningClipUrl = (
 
 /**
  * Check how many indexed clips exist for a step (checks up to 10)
- * Returns array of { index, extension } for found clips
+ * Also checks for legacy non-indexed clips (index 0)
+ * Returns array of { index, extension, url, isLegacy } for found clips
  */
 export const getExistingClips = async (
   moduleId: string,
   stepId: string
-): Promise<Array<{ index: number; extension: string; url: string }>> => {
+): Promise<Array<{ index: number; extension: string; url: string; isLegacy?: boolean }>> => {
   const extensions = ['mp4', 'webm'];
-  const foundClips: Array<{ index: number; extension: string; url: string }> = [];
+  const foundClips: Array<{ index: number; extension: string; url: string; isLegacy?: boolean }> = [];
   
+  // First check for legacy non-indexed clip (stored at stepId.ext instead of stepId_1.ext)
+  for (const ext of extensions) {
+    const legacyUrl = getLearningVisualUrl(moduleId, stepId, 'gif', ext);
+    try {
+      const response = await fetch(legacyUrl, { method: 'HEAD' });
+      const contentLength = response.headers.get('content-length');
+      const hasContent = contentLength && parseInt(contentLength) > 0;
+      
+      if (response.ok && hasContent) {
+        foundClips.push({ index: 0, extension: ext, url: legacyUrl, isLegacy: true });
+        break;
+      }
+    } catch {
+      // Continue checking
+    }
+  }
+  
+  // Then check for indexed clips (1, 2, 3, etc.)
   for (let i = 1; i <= 10; i++) {
     let found = false;
     for (const ext of extensions) {
       const url = getLearningClipUrl(moduleId, stepId, i, ext);
       try {
         const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok) {
+        const contentLength = response.headers.get('content-length');
+        const hasContent = contentLength && parseInt(contentLength) > 0;
+        
+        if (response.ok && hasContent) {
           foundClips.push({ index: i, extension: ext, url });
           found = true;
           break;
@@ -236,8 +258,8 @@ export const getExistingClips = async (
         // Continue checking
       }
     }
-    // Stop at first missing index (clips must be sequential)
-    if (!found && i > 1 && foundClips.length > 0) break;
+    // Stop at first missing index after finding at least one indexed clip
+    if (!found && i > 1 && foundClips.some(c => c.index >= 1)) break;
   }
   
   return foundClips;
@@ -322,30 +344,81 @@ export const checkLegacyGif = async (
 };
 
 /**
- * Get all clips for a step (includes legacy single-file check)
+ * Get all clips for a step (includes legacy and indexed)
+ * Filters by active status from localStorage
  * Returns array of URLs in order
  */
 export const getAllClipsForStep = async (
   moduleId: string,
-  stepId: string
+  stepId: string,
+  filterActive: boolean = true
 ): Promise<string[]> => {
   console.log(`[getAllClipsForStep] Checking clips for ${moduleId}/${stepId}`);
   
-  // First check for indexed clips
-  const indexedClips = await getExistingClips(moduleId, stepId);
-  console.log(`[getAllClipsForStep] Indexed clips:`, indexedClips);
+  // Get all clips (now includes legacy at index 0)
+  const allClips = await getExistingClips(moduleId, stepId);
+  console.log(`[getAllClipsForStep] All clips found:`, allClips);
   
-  if (indexedClips.length > 0) {
-    return indexedClips.map(c => c.url);
+  if (allClips.length === 0) {
+    return [];
   }
   
-  // Fall back to legacy single-file check
-  const legacyUrl = await checkLegacyGif(moduleId, stepId);
-  console.log(`[getAllClipsForStep] Legacy check result:`, legacyUrl);
-  
-  if (legacyUrl) {
-    return [legacyUrl];
+  // Filter by active status if requested
+  if (filterActive && typeof window !== 'undefined') {
+    const activeStatus = getClipActiveStatus();
+    const activeClips = allClips.filter(clip => {
+      const clipKey = `${moduleId}/${stepId}_${clip.index}`;
+      // Default to active if not explicitly set
+      return activeStatus[clipKey] !== false;
+    });
+    
+    console.log(`[getAllClipsForStep] Active clips:`, activeClips);
+    return activeClips.map(c => c.url);
   }
   
-  return [];
+  return allClips.map(c => c.url);
+};
+
+// ============================================
+// CLIP ACTIVE STATUS MANAGEMENT
+// ============================================
+
+const CLIP_STATUS_KEY = 'learning-clip-active-status';
+
+/**
+ * Get clip active status from localStorage
+ */
+export const getClipActiveStatus = (): Record<string, boolean> => {
+  if (typeof window === 'undefined') return {};
+  
+  try {
+    const stored = localStorage.getItem(CLIP_STATUS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * Set clip active status
+ */
+export const setClipActiveStatus = (clipKey: string, isActive: boolean): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const current = getClipActiveStatus();
+    current[clipKey] = isActive;
+    localStorage.setItem(CLIP_STATUS_KEY, JSON.stringify(current));
+  } catch {
+    console.error('Failed to save clip status');
+  }
+};
+
+/**
+ * Check if a clip is active (defaults to true)
+ */
+export const isClipActive = (moduleId: string, stepId: string, index: number): boolean => {
+  const status = getClipActiveStatus();
+  const clipKey = `${moduleId}/${stepId}_${index}`;
+  return status[clipKey] !== false;
 };

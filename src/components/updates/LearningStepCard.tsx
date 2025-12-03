@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { LearningStep } from '@/constants/learningCenterData';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists, getAllClipsForStep } from '@/utils/learningVisuals';
+import { getLearningVisualUrl, getNarratorVideoUrl, checkNarratorExists, getAllClipsForStep, getClipActiveStatus } from '@/utils/learningVisuals';
 import { cn } from '@/lib/utils';
 import { NarratorOverlay } from './NarratorOverlay';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -51,9 +51,9 @@ export function LearningStepCard({
       setImageLoading(true);
       console.log(`[LearningStepCard] Loading content for ${moduleId}/${step.id}`);
       
-      // Check for GIF clips first (highest priority)
-      const gifClips = await getAllClipsForStep(moduleId, step.id);
-      console.log(`[LearningStepCard] GIF clips found:`, gifClips);
+      // Check for GIF clips first (highest priority) - filters by active status
+      const gifClips = await getAllClipsForStep(moduleId, step.id, true);
+      console.log(`[LearningStepCard] Active GIF clips found:`, gifClips);
       
       if (gifClips.length > 0) {
         setClips(gifClips);
