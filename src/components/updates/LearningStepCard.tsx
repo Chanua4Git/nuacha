@@ -280,15 +280,24 @@ export function LearningStepCard({
                     >
                       <Maximize2 className="w-4 h-4" />
                     </Button>
+                    
+                    {/* Desktop Narrator - Inside visual container for overlay effect */}
+                    {!isMobile && hasNarrator && narratorUrl && (
+                      <NarratorOverlay
+                        videoUrl={narratorUrl}
+                        displayMode={step.narrator?.displayMode || 'face-voice'}
+                      />
+                    )}
                   </div>
                 )}
 
-                {/* Desktop Narrator - Independent of visual content */}
-                {!isMobile && hasNarrator && narratorUrl && (
-                  <div className="flex justify-end mt-2">
+                {/* Desktop Narrator fallback - Centered when no visual present */}
+                {!hasVisual && !isMobile && hasNarrator && narratorUrl && (
+                  <div className="flex justify-center">
                     <NarratorOverlay
                       videoUrl={narratorUrl}
                       displayMode={step.narrator?.displayMode || 'face-voice'}
+                      isMobile={true}
                     />
                   </div>
                 )}
