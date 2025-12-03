@@ -346,8 +346,11 @@ const Landing = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h3 className="font-playfair text-lg mb-4">About Nuacha</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-3">
                   Complete financial management for families and Trinidad & Tobago businesses.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Nuacha is a financial organization tool and does not provide financial advice.
                 </p>
               </div>
               <div>
