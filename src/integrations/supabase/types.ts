@@ -814,6 +814,30 @@ export type Database = {
           },
         ]
       }
+      learning_module_status: {
+        Row: {
+          id: string
+          module_id: string
+          status: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       nis_earnings_classes: {
         Row: {
           created_at: string

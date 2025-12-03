@@ -19,12 +19,9 @@ import {
   deleteLearningClip,
   deleteLearningVisual,
   isClipActive,
-  setClipActiveStatus,
-  getModuleStatus,
-  setModuleStatus,
-  getAllModuleStatuses,
-  type ModuleStatus
+  setClipActiveStatus
 } from '@/utils/learningVisuals';
+import { useModuleStatus, type ModuleStatus } from '@/hooks/useModuleStatus';
 import {
   Select,
   SelectContent,
@@ -58,6 +55,7 @@ interface ClipInfo {
 export function LearningVisualAdmin() {
   const { generateVisual, generateBatchVisuals, isGenerating } = useLearningVisualGenerator();
   const { compressVideo, isCompressing, progress, stage, estimateCompressedSize } = useVideoCompressor();
+  const { statuses: moduleStatuses, setModuleStatus: updateModuleStatus, loading: statusLoading } = useModuleStatus();
   const [visualStatus, setVisualStatus] = useState<Map<string, VisualStatus>>(new Map());
   const [visualTypes, setVisualTypes] = useState<Map<string, VisualType>>(new Map());
   const [narratorStatus, setNarratorStatus] = useState<Map<string, boolean>>(new Map());
@@ -71,9 +69,6 @@ export function LearningVisualAdmin() {
   // Multi-clip tracking
   const [stepClips, setStepClips] = useState<Map<string, ClipInfo[]>>(new Map());
   const [loadingClips, setLoadingClips] = useState<Set<string>>(new Set());
-  
-  // Module status management
-  const [moduleStatuses, setModuleStatuses] = useState<Record<string, ModuleStatus>>({});
   
   const [compressingNarrator, setCompressingNarrator] = useState<{
     key: string;
@@ -119,25 +114,27 @@ export function LearningVisualAdmin() {
     stepTitle: string;
   } | null>(null);
 
-  // Check which visuals already exist and load module statuses
+  // Check which visuals already exist
   useEffect(() => {
     checkAllVisualsExist();
     checkAllNarrators();
     loadAllClips();
-    setModuleStatuses(getAllModuleStatuses());
   }, []);
 
   // Handle module status change
-  const handleModuleStatusChange = (moduleId: string, status: ModuleStatus) => {
-    setModuleStatus(moduleId, status);
-    setModuleStatuses(prev => ({ ...prev, [moduleId]: status }));
+  const handleModuleStatusChange = async (moduleId: string, status: ModuleStatus) => {
+    const success = await updateModuleStatus(moduleId, status);
     
-    const statusLabels = {
-      'active': 'Active (visible to users)',
-      'hidden': 'Hidden (invisible to users)',
-      'coming-soon': 'Coming Soon (greyed out teaser)'
-    };
-    toast.success(`Module status set to: ${statusLabels[status]}`);
+    if (success) {
+      const statusLabels = {
+        'active': 'Active (visible to users)',
+        'hidden': 'Hidden (invisible to users)',
+        'coming-soon': 'Coming Soon (greyed out teaser)'
+      };
+      toast.success(`Module status set to: ${statusLabels[status]}`);
+    } else {
+      toast.error('Failed to update module status');
+    }
   };
 
   // Load all clips for all steps with active status
