@@ -516,21 +516,30 @@ export function LearningVisualAdmin() {
 
     const key = `${moduleId}-${stepId}`;
     const fileSizeMB = file.size / (1024 * 1024);
-    const needsCompression = fileSizeMB >= 5;
+    
+    // Check if format needs conversion (MOV, etc.) OR if size needs compression
+    const isAllowedFormat = file.type === 'video/mp4' || file.type === 'video/webm';
+    const needsProcessing = !isAllowedFormat || fileSizeMB >= 5;
 
     let videoToUpload: Blob = file;
 
     try {
       setVisualStatus(prev => new Map(prev).set(key, 'uploading'));
 
-      // Compress if file is 5MB or larger
-      if (needsCompression) {
-        toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+      // Convert/compress if needed
+      if (needsProcessing) {
+        if (!isAllowedFormat) {
+          const formatName = file.type.split('/')[1]?.toUpperCase() || 'video';
+          toast.info(`Converting ${formatName} to MP4...`);
+        } else {
+          toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+        }
+        
         videoToUpload = await compressVideo(file);
         
         const compressedSizeMB = videoToUpload.size / (1024 * 1024);
         if (compressedSizeMB >= 5) {
-          toast.warning(`Compressed video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
+          toast.warning(`Video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
         }
       }
 
@@ -618,26 +627,35 @@ export function LearningVisualAdmin() {
 
     const key = `${moduleId}-${stepId}`;
     const fileSizeMB = file.size / (1024 * 1024);
-    const needsCompression = fileSizeMB >= 5;
+    
+    // Check if format needs conversion (MOV, etc.) OR if size needs compression
+    const isAllowedFormat = file.type === 'video/mp4' || file.type === 'video/webm';
+    const needsProcessing = !isAllowedFormat || fileSizeMB >= 5;
 
     let videoToUpload: Blob = file;
 
     try {
-      // Compress if file is 5MB or larger
-      if (needsCompression) {
+      // Convert/compress if needed
+      if (needsProcessing) {
         setCompressingNarrator({
           key,
           originalSizeMB: fileSizeMB,
           stepTitle
         });
 
-        toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+        if (!isAllowedFormat) {
+          const formatName = file.type.split('/')[1]?.toUpperCase() || 'video';
+          toast.info(`Converting ${formatName} to MP4...`);
+        } else {
+          toast.info(`Video is ${fileSizeMB.toFixed(1)}MB. Compressing...`);
+        }
+        
         videoToUpload = await compressVideo(file);
 
         // Check compressed size
         const compressedSizeMB = videoToUpload.size / (1024 * 1024);
         if (compressedSizeMB >= 5) {
-          toast.warning(`Compressed video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
+          toast.warning(`Video is still ${compressedSizeMB.toFixed(1)}MB. Consider using a shorter video.`);
         }
 
         setCompressingNarrator(null);
@@ -650,8 +668,8 @@ export function LearningVisualAdmin() {
         setNarratorStatus(prev => new Map(prev).set(key, true));
         setNarratorExtensions(prev => new Map(prev).set(key, 'mp4'));
         
-        if (needsCompression) {
-          toast.success(`Narrator video compressed and uploaded for "${stepTitle}"`);
+        if (needsProcessing) {
+          toast.success(`Narrator video converted and uploaded for "${stepTitle}"`);
         } else {
           toast.success(`Narrator video uploaded for "${stepTitle}"`);
         }
