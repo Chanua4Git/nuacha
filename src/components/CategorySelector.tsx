@@ -112,7 +112,7 @@ const CategorySelector = ({
       lastAutoSelectKey.current = currentReceiptKey;
       const topSuggestion = suggestions[0];
       
-      if (topSuggestion.confidence >= 50) {
+      if (topSuggestion.confidence >= 40) {
         console.log(`🎯 Auto-selecting top category: ${topSuggestion.category.name} (${topSuggestion.confidence}% confidence)`);
         onChange(topSuggestion.categoryId);
       } else {

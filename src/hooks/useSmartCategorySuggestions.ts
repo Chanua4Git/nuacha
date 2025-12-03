@@ -219,7 +219,7 @@ export const useSmartCategorySuggestions = (
             const baselineOnlySuggestions = baselineSuggestions.map(bs => ({
               categoryId: bs.categoryId,
               category: bs.category,
-              confidence: Math.round((bs.merchantScore + bs.lineItemScore) * 50), // Convert to percentage
+              confidence: Math.round(Math.max(bs.merchantScore, bs.lineItemScore) * 100), // Use highest signal for confidence
               score: bs.merchantScore + bs.lineItemScore,
               reasons: [
                 ...(bs.merchantScore > 0 ? [`Smart match for "${place}"`] : []),
