@@ -8,6 +8,7 @@ import { Sparkles, Wallet, PieChart, Zap, RotateCcw } from 'lucide-react';
 import { learningTracks, learningModules } from '@/constants/learningCenterData';
 import { LearningModuleCard } from './LearningModuleCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
+import { getModuleStatus, type ModuleStatus } from '@/utils/learningVisuals';
 
 const trackIcons = {
   'Sparkles': Sparkles,
@@ -27,12 +28,13 @@ export function LearningCenter() {
   const urlStepId = searchParams.get('step');
 
   // Filter modules by selected track (exclude Start Here when showing all, since it's in highlighted rail)
+  // Also exclude hidden modules from user view
   const filteredModules = selectedTrack
-    ? learningModules.filter(m => m.track === selectedTrack)
-    : learningModules.filter(m => m.track !== 'Start Here');
+    ? learningModules.filter(m => m.track === selectedTrack && getModuleStatus(m.id) !== 'hidden')
+    : learningModules.filter(m => m.track !== 'Start Here' && getModuleStatus(m.id) !== 'hidden');
 
-  // Get Start Here modules for the highlighted rail
-  const startHereModules = learningModules.filter(m => m.track === 'Start Here');
+  // Get Start Here modules for the highlighted rail (exclude hidden)
+  const startHereModules = learningModules.filter(m => m.track === 'Start Here' && getModuleStatus(m.id) !== 'hidden');
 
   return (
     <div className="space-y-8">
@@ -102,6 +104,7 @@ export function LearningCenter() {
                 module={module}
                 initialExpanded={urlModuleId === module.id}
                 highlightStepId={urlModuleId === module.id ? urlStepId : null}
+                moduleStatus={getModuleStatus(module.id)}
               />
             ))}
           </CardContent>
@@ -148,6 +151,7 @@ export function LearningCenter() {
             module={module}
             initialExpanded={urlModuleId === module.id}
             highlightStepId={urlModuleId === module.id ? urlStepId : null}
+            moduleStatus={getModuleStatus(module.id)}
           />
         ))}
       </div>
