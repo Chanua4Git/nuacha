@@ -150,32 +150,6 @@ Top of any page → Navigation bar
 After you have signed in, bookmark /dashboard to jump straight into your expense tracker dashboard.`,
         screenshotHint: 'Navigation bar with all menu items visible',
         ctaButton: { label: 'Explore Navigation', path: '/' }
-      },
-      {
-        id: 'step-1-3',
-        title: 'Demo Mode vs Full App',
-        description: 'What you can try without an account.',
-        detailedInstructions: `Nuacha lets you explore features before you create an account.
-
-**Without an account, you can:**
-
-- Scan a receipt and watch OCR in action.
-- View sample expense data in demo mode.
-- Explore the budget builder interface.
-- Try the Trinidad & Tobago payroll calculator.
-
-**With an account, you unlock:**
-
-- Saving your expenses permanently.
-- Creating multiple families.
-- Building personalized budgets.
-- Tracking spending over time.
-- Generating reports.
-
-**Where to find demo:**
-Click "Try Demo" in the navigation, or simply scan a receipt from the landing page to start.`,
-        screenshotHint: 'Demo mode interface showing sample data',
-        ctaButton: { label: 'Try Demo', path: '/demo' }
       }
     ]
   },
