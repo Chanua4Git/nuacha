@@ -422,3 +422,57 @@ export const isClipActive = (moduleId: string, stepId: string, index: number): b
   const clipKey = `${moduleId}/${stepId}_${index}`;
   return status[clipKey] !== false;
 };
+
+// ============================================
+// MODULE STATUS MANAGEMENT (Active/Hidden/Coming Soon)
+// ============================================
+
+export type ModuleStatus = 'active' | 'hidden' | 'coming-soon';
+
+const MODULE_STATUS_KEY = 'learning-module-status';
+
+/**
+ * Get module status from localStorage
+ */
+export const getModuleStatus = (moduleId: string): ModuleStatus => {
+  if (typeof window === 'undefined') return 'active';
+  
+  try {
+    const stored = localStorage.getItem(MODULE_STATUS_KEY);
+    if (!stored) return 'active';
+    const statuses = JSON.parse(stored);
+    return statuses[moduleId] || 'active';
+  } catch {
+    return 'active';
+  }
+};
+
+/**
+ * Set module status
+ */
+export const setModuleStatus = (moduleId: string, status: ModuleStatus): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const stored = localStorage.getItem(MODULE_STATUS_KEY);
+    const statuses = stored ? JSON.parse(stored) : {};
+    statuses[moduleId] = status;
+    localStorage.setItem(MODULE_STATUS_KEY, JSON.stringify(statuses));
+  } catch {
+    console.error('Failed to save module status');
+  }
+};
+
+/**
+ * Get all module statuses
+ */
+export const getAllModuleStatuses = (): Record<string, ModuleStatus> => {
+  if (typeof window === 'undefined') return {};
+  
+  try {
+    const stored = localStorage.getItem(MODULE_STATUS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};

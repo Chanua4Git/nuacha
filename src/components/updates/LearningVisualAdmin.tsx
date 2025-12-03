@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Image, Loader2, Upload, Camera, Mic, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Image, Loader2, Upload, Camera, Mic, Plus, Trash2, Eye, EyeOff, Timer } from 'lucide-react';
 import { learningModules, type NarratorDisplayMode } from '@/constants/learningCenterData';
 import { useLearningVisualGenerator } from '@/hooks/useLearningVisualGenerator';
 import { 
@@ -19,8 +19,19 @@ import {
   deleteLearningClip,
   deleteLearningVisual,
   isClipActive,
-  setClipActiveStatus
+  setClipActiveStatus,
+  getModuleStatus,
+  setModuleStatus,
+  getAllModuleStatuses,
+  type ModuleStatus
 } from '@/utils/learningVisuals';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ScreenshotAnnotationEditor } from './ScreenshotAnnotationEditor';
@@ -60,6 +71,9 @@ export function LearningVisualAdmin() {
   // Multi-clip tracking
   const [stepClips, setStepClips] = useState<Map<string, ClipInfo[]>>(new Map());
   const [loadingClips, setLoadingClips] = useState<Set<string>>(new Set());
+  
+  // Module status management
+  const [moduleStatuses, setModuleStatuses] = useState<Record<string, ModuleStatus>>({});
   
   const [compressingNarrator, setCompressingNarrator] = useState<{
     key: string;
@@ -105,12 +119,26 @@ export function LearningVisualAdmin() {
     stepTitle: string;
   } | null>(null);
 
-  // Check which visuals already exist
+  // Check which visuals already exist and load module statuses
   useEffect(() => {
     checkAllVisualsExist();
     checkAllNarrators();
     loadAllClips();
+    setModuleStatuses(getAllModuleStatuses());
   }, []);
+
+  // Handle module status change
+  const handleModuleStatusChange = (moduleId: string, status: ModuleStatus) => {
+    setModuleStatus(moduleId, status);
+    setModuleStatuses(prev => ({ ...prev, [moduleId]: status }));
+    
+    const statusLabels = {
+      'active': 'Active (visible to users)',
+      'hidden': 'Hidden (invisible to users)',
+      'coming-soon': 'Coming Soon (greyed out teaser)'
+    };
+    toast.success(`Module status set to: ${statusLabels[status]}`);
+  };
 
   // Load all clips for all steps with active status
   const loadAllClips = async () => {
@@ -777,11 +805,13 @@ export function LearningVisualAdmin() {
           ).length;
           const isOpen = openModules.has(module.id);
 
+          const currentStatus = moduleStatuses[module.id] || 'active';
+          
           return (
             <Card key={module.id}>
               <Collapsible open={isOpen} onOpenChange={() => toggleModule(module.id)}>
                 <CardHeader className="cursor-pointer" onClick={() => toggleModule(module.id)}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <CollapsibleTrigger asChild>
@@ -792,13 +822,67 @@ export function LearningVisualAdmin() {
                           </Button>
                         </CollapsibleTrigger>
                         <div>
-                          <h3 className="font-semibold">{module.title}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{module.title}</h3>
+                            {currentStatus === 'hidden' && (
+                              <Badge variant="outline" className="text-xs gap-1 bg-destructive/10 text-destructive border-destructive/30">
+                                <EyeOff className="w-3 h-3" />
+                                Hidden
+                              </Badge>
+                            )}
+                            {currentStatus === 'coming-soon' && (
+                              <Badge variant="outline" className="text-xs gap-1 bg-amber-100 text-amber-800 border-amber-300">
+                                <Timer className="w-3 h-3" />
+                                Coming Soon
+                              </Badge>
+                            )}
+                            {currentStatus === 'active' && (
+                              <Badge variant="outline" className="text-xs gap-1 bg-green-100 text-green-800 border-green-300">
+                                <Eye className="w-3 h-3" />
+                                Active
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             {moduleStepsExists}/{moduleStepsTotal} steps completed
                           </p>
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Module Status Selector */}
+                    <Select
+                      value={currentStatus}
+                      onValueChange={(value: ModuleStatus) => handleModuleStatusChange(module.id, value)}
+                    >
+                      <SelectTrigger 
+                        className="w-[140px]" 
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-green-600" />
+                            Active
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="hidden">
+                          <div className="flex items-center gap-2">
+                            <EyeOff className="w-4 h-4 text-destructive" />
+                            Hidden
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="coming-soon">
+                          <div className="flex items-center gap-2">
+                            <Timer className="w-4 h-4 text-amber-600" />
+                            Coming Soon
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
                     <Button 
                       size="sm" 
                       variant="outline"

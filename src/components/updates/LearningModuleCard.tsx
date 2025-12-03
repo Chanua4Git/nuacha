@@ -4,20 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Clock, Check, Link } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Check, Link, Timer } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { LearningModule } from '@/constants/learningCenterData';
 import { LearningStepCard } from './LearningStepCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
 import { toast } from 'sonner';
+import { type ModuleStatus } from '@/utils/learningVisuals';
 
 interface LearningModuleCardProps {
   module: LearningModule;
   initialExpanded?: boolean;
   highlightStepId?: string | null;
+  moduleStatus?: ModuleStatus;
 }
 
-export function LearningModuleCard({ module, initialExpanded = false, highlightStepId = null }: LearningModuleCardProps) {
+export function LearningModuleCard({ module, initialExpanded = false, highlightStepId = null, moduleStatus = 'active' }: LearningModuleCardProps) {
+  const isComingSoon = moduleStatus === 'coming-soon';
   const [isOpen, setIsOpen] = useState(initialExpanded);
   const {
     getModuleProgress,
@@ -54,8 +57,8 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="hover:shadow-md transition-shadow">
+    <Collapsible open={isOpen} onOpenChange={isComingSoon ? undefined : setIsOpen}>
+      <Card className={`hover:shadow-md transition-shadow ${isComingSoon ? 'opacity-60 grayscale' : ''}`}>
         <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
           <div className="flex items-start gap-2 sm:gap-4">
             {/* Icon */}
@@ -70,8 +73,14 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
                       {module.title}
-                      {progress.completed && (
+                      {progress.completed && !isComingSoon && (
                         <Check className="w-5 h-5 text-green-600" />
+                      )}
+                      {isComingSoon && (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 gap-1">
+                          <Timer className="w-3 h-3" />
+                          Coming Soon
+                        </Badge>
                       )}
                     </h3>
                     <Button
@@ -121,37 +130,46 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
         <CardContent className="px-3 sm:px-6 pt-0 pb-3 sm:pb-6">
           {/* Action Buttons */}
           <div className="flex items-center gap-2 mb-3">
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                {isOpen ? (
-                  <>
-                    <ChevronUp className="w-4 h-4" />
-                    Hide Steps
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4" />
-                    {progress.completedCount > 0 ? 'Continue' : 'Start'}
-                  </>
-                )}
+            {isComingSoon ? (
+              <Button variant="outline" size="sm" disabled className="gap-2">
+                <Timer className="w-4 h-4" />
+                Coming Soon
               </Button>
-            </CollapsibleTrigger>
+            ) : (
+              <>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    {isOpen ? (
+                      <>
+                        <ChevronUp className="w-4 h-4" />
+                        Hide Steps
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        {progress.completedCount > 0 ? 'Continue' : 'Start'}
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleModuleToggle}
-              className="gap-2"
-            >
-              {progress.completed ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Completed
-                </>
-              ) : (
-                'Mark Complete'
-              )}
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleModuleToggle}
+                  className="gap-2"
+                >
+                  {progress.completed ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Completed
+                    </>
+                  ) : (
+                    'Mark Complete'
+                  )}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Steps List */}
