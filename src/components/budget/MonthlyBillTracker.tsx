@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 interface MonthlyBillTrackerProps {
   familyId: string | null;
   month: Date;
+  onPaymentAdded?: () => void;
 }
 
 const BillRow = ({
@@ -148,9 +149,16 @@ const BillRow = ({
   );
 };
 
-export const MonthlyBillTracker = ({ familyId, month }: MonthlyBillTrackerProps) => {
+export const MonthlyBillTracker = ({ familyId, month, onPaymentAdded }: MonthlyBillTrackerProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const { payments, summary, isLoading, addPayment, removePaymentEntry } = useRecurringPayments(familyId, month);
+
+  const handleAddPayment = async (key: string, amount: number) => {
+    const success = await addPayment(key, amount);
+    if (success && onPaymentAdded) {
+      onPaymentAdded();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -223,7 +231,7 @@ export const MonthlyBillTracker = ({ familyId, month }: MonthlyBillTrackerProps)
                 <BillRow
                   key={payment.category_key}
                   payment={payment}
-                  onAddPayment={addPayment}
+                  onAddPayment={handleAddPayment}
                   onRemoveEntry={removePaymentEntry}
                 />
               ))}

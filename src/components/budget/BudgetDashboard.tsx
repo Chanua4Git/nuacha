@@ -28,7 +28,7 @@ export default function BudgetDashboard() {
   const [showCombinedView, setShowCombinedView] = useState(false);
   
   const { selectedFamily } = useExpense();
-  const { summary, loading, error } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate, selectedFamily?.id);
+  const { summary, loading, error, refetch: refetchSummary } = useBudgetSummary(selectedPeriod.startDate, selectedPeriod.endDate, selectedFamily?.id);
   const { templates, isLoading: templatesLoading, getDefaultTemplate } = useBudgetTemplates(selectedFamily?.id);
   const activeTemplate = getDefaultTemplate();
 
@@ -336,7 +336,8 @@ export default function BudgetDashboard() {
       {/* Monthly Bill Tracker */}
       <MonthlyBillTracker 
         familyId={selectedFamily?.id || null} 
-        month={selectedPeriod.startDate} 
+        month={selectedPeriod.startDate}
+        onPaymentAdded={refetchSummary}
       />
 
       {/* Unpaid Labor Value Section */}
