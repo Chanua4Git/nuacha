@@ -148,8 +148,8 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
         (categories || []).map(cat => [cat.id, cat])
       );
 
-      // Calculate expenses by group
-      const expensesByGroup = {
+      // Calculate ACTUAL expenses by group (only recorded expenses, not template planned)
+      const actualExpensesByGroup = {
         needs: 0,
         wants: 0,
         savings: 0
@@ -181,34 +181,38 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
         
         // Add to appropriate group
         if (category && category.group_type) {
-          expensesByGroup[category.group_type] += expense.amount;
+          actualExpensesByGroup[category.group_type as keyof typeof actualExpensesByGroup] += expense.amount;
         } else {
           // Default to 'wants' if no category found
-          expensesByGroup.wants += expense.amount;
+          actualExpensesByGroup.wants += expense.amount;
         }
       });
 
-      // Combine template expenses with regular expenses
-      expensesByGroup.needs += templateExpensesByGroup.needs;
-      expensesByGroup.wants += templateExpensesByGroup.wants;
-      expensesByGroup.savings += templateExpensesByGroup.savings;
+      // Keep template (planned) expenses separate - do NOT combine with actual
+      const plannedExpensesByGroup = templateExpensesByGroup;
 
-      const totalExpenses = Object.values(expensesByGroup).reduce((sum, amount) => sum + amount, 0);
-      const totalWithUnpaidLabor = totalExpenses + templateUnpaidLabor;
+      // Total ACTUAL expenses only (what user actually spent)
+      const totalActualExpenses = Object.values(actualExpensesByGroup).reduce((sum, amount) => sum + amount, 0);
+      
+      // Total PLANNED expenses (from budget template)
+      const totalPlannedExpenses = Object.values(plannedExpensesByGroup).reduce((sum, amount) => sum + amount, 0);
 
-      // Calculate percentages and variances
+      // Calculate percentages and variances based on ACTUAL spending
       const byGroup = {
         needs: {
-          total: expensesByGroup.needs,
-          percentage: totalIncome > 0 ? (expensesByGroup.needs / totalIncome) * 100 : 0
+          total: actualExpensesByGroup.needs,
+          percentage: totalIncome > 0 ? (actualExpensesByGroup.needs / totalIncome) * 100 : 0,
+          planned: plannedExpensesByGroup.needs
         },
         wants: {
-          total: expensesByGroup.wants,
-          percentage: totalIncome > 0 ? (expensesByGroup.wants / totalIncome) * 100 : 0
+          total: actualExpensesByGroup.wants,
+          percentage: totalIncome > 0 ? (actualExpensesByGroup.wants / totalIncome) * 100 : 0,
+          planned: plannedExpensesByGroup.wants
         },
         savings: {
-          total: expensesByGroup.savings,
-          percentage: totalIncome > 0 ? (expensesByGroup.savings / totalIncome) * 100 : 0
+          total: actualExpensesByGroup.savings,
+          percentage: totalIncome > 0 ? (actualExpensesByGroup.savings / totalIncome) * 100 : 0,
+          planned: plannedExpensesByGroup.savings
         }
       };
 
@@ -232,9 +236,10 @@ export function useBudgetSummary(startDate: Date, endDate?: Date, familyId?: str
 
       setSummary({
         totalIncome,
-        totalExpenses: totalExpenses, // Cash expenses only - DO NOT include unpaid labor
+        totalExpenses: totalActualExpenses, // ACTUAL cash expenses only
+        totalPlannedExpenses, // Planned budget from template
         byGroup,
-        surplus: totalIncome - totalExpenses, // Surplus based on cash flow only
+        surplus: totalIncome - totalActualExpenses, // Surplus based on actual spending
         ruleComparison,
         unpaidLaborValue: templateUnpaidLabor
       });

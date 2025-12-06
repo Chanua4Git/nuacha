@@ -61,11 +61,12 @@ export interface BudgetPeriod {
 
 export interface BudgetSummary {
   totalIncome: number;
-  totalExpenses: number;
+  totalExpenses: number; // Actual recorded expenses only
+  totalPlannedExpenses?: number; // Planned budget from template
   byGroup: {
-    needs: { total: number; percentage: number };
-    wants: { total: number; percentage: number };
-    savings: { total: number; percentage: number };
+    needs: { total: number; percentage: number; planned?: number };
+    wants: { total: number; percentage: number; planned?: number };
+    savings: { total: number; percentage: number; planned?: number };
   };
   surplus: number;
   ruleComparison: {
