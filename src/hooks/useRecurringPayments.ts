@@ -144,14 +144,24 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
   const addPayment = useCallback(async (
     categoryKey: string,
     amount: number
-  ) => {
-    if (!user || !familyId) return;
+  ): Promise<boolean> => {
+    if (!user || !familyId) return false;
 
     const payment = payments.find(p => p.category_key === categoryKey);
-    if (!payment) return;
+    if (!payment) return false;
 
     try {
-      // Create a new expense record
+      // Find the matching budget category ID
+      const { data: budgetCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', payment.category_name)
+        .eq('is_budget_category', true)
+        .is('family_id', null)
+        .maybeSingle();
+
+      // Create a new expense record with budget_category_id
       const { data: expenseData, error: expenseError } = await supabase
         .from('expenses')
         .insert({
@@ -160,8 +170,9 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
           amount: amount,
           date: format(new Date(), 'yyyy-MM-dd'),
           place: 'Monthly Bill',
-          category: payment.category_name,
-          expense_type: 'actual', // Fixed: use 'actual' instead of 'recurring'
+          category: budgetCategory?.id || payment.category_name,
+          budget_category_id: budgetCategory?.id || null,
+          expense_type: 'actual',
         })
         .select()
         .single();
@@ -186,9 +197,11 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
       }));
 
       toast.success(`Added ${payment.category_name} payment of $${amount.toFixed(2)}`);
+      return true;
     } catch (err) {
       console.error('Error adding payment:', err);
       toast.error('Failed to record payment');
+      return false;
     }
   }, [user, familyId, payments]);
 
