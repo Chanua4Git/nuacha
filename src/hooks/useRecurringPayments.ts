@@ -3,7 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useBudgetTemplates } from './useBudgetTemplates';
 import { toast } from 'sonner';
-import { format, startOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+
+export interface PaymentEntry {
+  id: string;
+  amount: number;
+  date: string;
+}
 
 export interface RecurringPayment {
   id?: string;
@@ -15,17 +21,15 @@ export interface RecurringPayment {
   group_type: string;
   month: string;
   budgeted_amount: number;
-  actual_paid: number | null;
-  payment_date: string | null;
-  is_paid: boolean;
-  expense_id: string | null;
+  total_paid: number; // Running total of all payments
+  payment_entries: PaymentEntry[]; // Individual payment records
   notes: string | null;
 }
 
 export interface RecurringPaymentSummary {
   totalBudgeted: number;
   totalPaid: number;
-  paidCount: number;
+  categoriesWithPayments: number;
   totalCount: number;
   payments: RecurringPayment[];
 }
@@ -37,7 +41,9 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const monthStr = format(startOfMonth(month), 'yyyy-MM-dd');
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
+  const monthStr = format(monthStart, 'yyyy-MM-dd');
 
   // Get essential expenses from the active budget template
   const getTemplateEssentials = useCallback(() => {
@@ -56,7 +62,7 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
       }));
   }, [templates]);
 
-  // Fetch existing payments for the month
+  // Fetch existing payments for the month by querying expenses
   const fetchPayments = useCallback(async () => {
     if (!user || !familyId) {
       setIsLoading(false);
@@ -67,27 +73,42 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from('monthly_recurring_payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('family_id', familyId)
-        .eq('month', monthStr);
-
-      if (fetchError) throw fetchError;
-
       const essentials = getTemplateEssentials();
       
-      // Merge template essentials with existing payment records
+      // Fetch all expenses for this family in this month
+      const { data: expenses, error: expenseError } = await supabase
+        .from('expenses')
+        .select('id, description, amount, date, category')
+        .eq('family_id', familyId)
+        .gte('date', format(monthStart, 'yyyy-MM-dd'))
+        .lte('date', format(monthEnd, 'yyyy-MM-dd'));
+
+      if (expenseError) throw expenseError;
+
+      // Build payment records by matching expenses to essential categories
       const mergedPayments: RecurringPayment[] = essentials.map(essential => {
-        const existingPayment = data?.find(p => p.category_key === essential.category_key);
-        
-        if (existingPayment) {
-          return {
-            ...existingPayment,
-            budgeted_amount: essential.budgeted_amount, // Always use template amount
-          } as RecurringPayment;
-        }
+        // Find all expenses that match this category (by name in description or category)
+        const matchingExpenses = (expenses || []).filter(exp => {
+          const expDescription = exp.description?.toLowerCase() || '';
+          const expCategory = exp.category?.toLowerCase() || '';
+          const categoryName = essential.category_name.toLowerCase();
+          const categoryKey = essential.category_key.toLowerCase();
+          
+          return expDescription.includes(categoryName) || 
+                 expDescription.includes(categoryKey) ||
+                 expCategory.includes(categoryName) ||
+                 expCategory.includes(categoryKey) ||
+                 // Also match if expense was created by bill tracker (has category name as description)
+                 expDescription === categoryName;
+        });
+
+        const paymentEntries: PaymentEntry[] = matchingExpenses.map(exp => ({
+          id: exp.id,
+          amount: exp.amount,
+          date: exp.date,
+        }));
+
+        const totalPaid = paymentEntries.reduce((sum, entry) => sum + entry.amount, 0);
 
         return {
           user_id: user.id,
@@ -98,10 +119,8 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
           group_type: essential.group_type,
           month: monthStr,
           budgeted_amount: essential.budgeted_amount,
-          actual_paid: null,
-          payment_date: null,
-          is_paid: false,
-          expense_id: null,
+          total_paid: totalPaid,
+          payment_entries: paymentEntries,
           notes: null,
         };
       });
@@ -113,17 +132,16 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, familyId, monthStr, getTemplateEssentials]);
+  }, [user, familyId, monthStr, monthStart, monthEnd, getTemplateEssentials]);
 
   useEffect(() => {
     fetchPayments();
   }, [fetchPayments]);
 
-  // Record a payment
-  const recordPayment = useCallback(async (
+  // Add a new payment (creates a new expense entry)
+  const addPayment = useCallback(async (
     categoryKey: string,
-    actualPaid: number,
-    createExpense: boolean = true
+    amount: number
   ) => {
     if (!user || !familyId) return;
 
@@ -131,113 +149,101 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
     if (!payment) return;
 
     try {
-      let expenseId = payment.expense_id;
+      // Create a new expense record
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('expenses')
+        .insert({
+          family_id: familyId,
+          description: payment.category_name,
+          amount: amount,
+          date: format(new Date(), 'yyyy-MM-dd'),
+          place: 'Monthly Bill',
+          category: payment.category_name,
+          expense_type: 'actual', // Fixed: use 'actual' instead of 'recurring'
+        })
+        .select()
+        .single();
 
-      // Create expense record if requested
-      if (createExpense && !expenseId) {
-        const { data: expenseData, error: expenseError } = await supabase
-          .from('expenses')
-          .insert({
-            family_id: familyId,
-            description: payment.category_name,
-            amount: actualPaid,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            place: 'Recurring Bill',
-            category: payment.category_name,
-            expense_type: 'recurring',
-          })
-          .select()
-          .single();
+      if (expenseError) throw expenseError;
 
-        if (expenseError) throw expenseError;
-        expenseId = expenseData.id;
-      } else if (createExpense && expenseId) {
-        // Update existing expense
-        await supabase
-          .from('expenses')
-          .update({ amount: actualPaid })
-          .eq('id', expenseId);
-      }
+      // Update local state with new entry
+      setPayments(prev => prev.map(p => {
+        if (p.category_key === categoryKey) {
+          const newEntry: PaymentEntry = {
+            id: expenseData.id,
+            amount: amount,
+            date: expenseData.date,
+          };
+          return {
+            ...p,
+            total_paid: p.total_paid + amount,
+            payment_entries: [...p.payment_entries, newEntry],
+          };
+        }
+        return p;
+      }));
 
-      // Upsert the recurring payment record
-      const paymentData = {
-        user_id: user.id,
-        family_id: familyId,
-        template_id: payment.template_id,
-        category_key: categoryKey,
-        category_name: payment.category_name,
-        group_type: payment.group_type,
-        month: monthStr,
-        budgeted_amount: payment.budgeted_amount,
-        actual_paid: actualPaid,
-        payment_date: format(new Date(), 'yyyy-MM-dd'),
-        is_paid: true,
-        expense_id: expenseId,
-      };
-
-      const { error: upsertError } = await supabase
-        .from('monthly_recurring_payments')
-        .upsert(paymentData, {
-          onConflict: 'user_id,family_id,category_key,month',
-        });
-
-      if (upsertError) throw upsertError;
-
-      // Update local state
-      setPayments(prev => prev.map(p => 
-        p.category_key === categoryKey 
-          ? { ...p, actual_paid: actualPaid, is_paid: true, expense_id: expenseId }
-          : p
-      ));
-
-      toast.success(`${payment.category_name} marked as paid`);
+      toast.success(`Added ${payment.category_name} payment of $${amount.toFixed(2)}`);
     } catch (err) {
-      console.error('Error recording payment:', err);
+      console.error('Error adding payment:', err);
       toast.error('Failed to record payment');
     }
-  }, [user, familyId, monthStr, payments]);
+  }, [user, familyId, payments]);
 
-  // Mark payment as unpaid (remove)
-  const removePayment = useCallback(async (categoryKey: string) => {
+  // Remove a specific payment entry
+  const removePaymentEntry = useCallback(async (categoryKey: string, entryId: string) => {
     if (!user || !familyId) return;
 
     const payment = payments.find(p => p.category_key === categoryKey);
-    if (!payment?.id) return;
+    if (!payment) return;
+
+    const entry = payment.payment_entries.find(e => e.id === entryId);
+    if (!entry) return;
 
     try {
-      // Delete the expense if one was created
-      if (payment.expense_id) {
-        await supabase
-          .from('expenses')
-          .delete()
-          .eq('id', payment.expense_id);
-      }
-
-      // Delete the recurring payment record
-      await supabase
-        .from('monthly_recurring_payments')
+      // Delete the expense record
+      const { error: deleteError } = await supabase
+        .from('expenses')
         .delete()
-        .eq('id', payment.id);
+        .eq('id', entryId);
+
+      if (deleteError) throw deleteError;
 
       // Update local state
-      setPayments(prev => prev.map(p => 
-        p.category_key === categoryKey 
-          ? { ...p, actual_paid: null, is_paid: false, expense_id: null, id: undefined }
-          : p
-      ));
+      setPayments(prev => prev.map(p => {
+        if (p.category_key === categoryKey) {
+          const updatedEntries = p.payment_entries.filter(e => e.id !== entryId);
+          return {
+            ...p,
+            total_paid: p.total_paid - entry.amount,
+            payment_entries: updatedEntries,
+          };
+        }
+        return p;
+      }));
 
-      toast.success(`${payment.category_name} unmarked`);
+      toast.success(`Removed payment from ${payment.category_name}`);
     } catch (err) {
       console.error('Error removing payment:', err);
       toast.error('Failed to remove payment');
     }
   }, [user, familyId, payments]);
 
+  // Remove the most recent payment for a category
+  const removeLastPayment = useCallback(async (categoryKey: string) => {
+    const payment = payments.find(p => p.category_key === categoryKey);
+    if (!payment || payment.payment_entries.length === 0) return;
+
+    // Get the most recent entry
+    const lastEntry = payment.payment_entries[payment.payment_entries.length - 1];
+    await removePaymentEntry(categoryKey, lastEntry.id);
+  }, [payments, removePaymentEntry]);
+
   // Calculate summary
   const summary: RecurringPaymentSummary = {
     totalBudgeted: payments.reduce((sum, p) => sum + p.budgeted_amount, 0),
-    totalPaid: payments.reduce((sum, p) => sum + (p.actual_paid || 0), 0),
-    paidCount: payments.filter(p => p.is_paid).length,
+    totalPaid: payments.reduce((sum, p) => sum + p.total_paid, 0),
+    categoriesWithPayments: payments.filter(p => p.payment_entries.length > 0).length,
     totalCount: payments.length,
     payments,
   };
@@ -247,8 +253,9 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
     summary,
     isLoading,
     error,
-    recordPayment,
-    removePayment,
+    addPayment,
+    removePaymentEntry,
+    removeLastPayment,
     refetch: fetchPayments,
   };
 };
