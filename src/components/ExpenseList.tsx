@@ -19,15 +19,27 @@ import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
 import { useMemo, useState } from 'react';
+import PeriodSelector, { PeriodSelection } from '@/components/budget/PeriodSelector';
 
 const ExpenseList = () => {
   const expenseContext = useContextAwareExpense();
   const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   
+  // Initialize to current month for consistency with /budget
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>(() => {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      type: 'monthly',
+      startDate,
+      endDate,
+      displayName: startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    };
+  });
+  
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates'>('all');
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
@@ -42,27 +54,8 @@ const ExpenseList = () => {
   
   const clearFilters = () => {
     setFilters({});
-    setStartDate(undefined);
-    setEndDate(undefined);
     setSearchTerm('');
   };
-  
-  // Update date filters when calendar selections change
-  useMemo(() => {
-    if (startDate) {
-      updateFilter('startDate', format(startDate, 'yyyy-MM-dd'));
-    } else {
-      const { startDate, ...rest } = filters;
-      setFilters(rest);
-    }
-    
-    if (endDate) {
-      updateFilter('endDate', format(endDate, 'yyyy-MM-dd'));
-    } else {
-      const { endDate, ...rest } = filters;
-      setFilters(rest);
-    }
-  }, [startDate, endDate]);
   
   // Update search term filter
   useMemo(() => {
@@ -74,10 +67,11 @@ const ExpenseList = () => {
     }
   }, [searchTerm]);
   
+  // Use period dates for filtering (consistent with /budget)
   const expenses = filteredExpenses({
     categoryId: filters.categoryIds?.[0],
-    startDate: filters.startDate,
-    endDate: filters.endDate,
+    startDate: format(selectedPeriod.startDate, 'yyyy-MM-dd'),
+    endDate: format(selectedPeriod.endDate, 'yyyy-MM-dd'),
     minAmount: filters.minAmount,
     maxAmount: filters.maxAmount,
     searchTerm: filters.searchTerm
@@ -127,61 +121,63 @@ const ExpenseList = () => {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h2 className="text-xl font-semibold">Expenses</h2>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-[200px]"
-            />
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="relative"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              {activeFilterCount > (searchTerm ? 1 : 0) && (
-                <Badge 
-                  className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
-                  variant="destructive"
-                >
-                  {activeFilterCount - (searchTerm ? 1 : 0)}
-                </Badge>
-              )}
-            </Button>
-            <Button
-              variant={showBulkSelect ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowBulkSelect(!showBulkSelect)}
-            >
-              {showBulkSelect ? 'Cancel' : 'Select'}
-            </Button>
-            {showBulkSelect && selectedExpenses.size > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete ({selectedExpenses.size})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Selected Expenses</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {selectedExpenses.size} expense{selectedExpenses.size > 1 ? 's' : ''}? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+          <PeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
+        </div>
+        
+        <div className="flex justify-end items-center gap-2 mb-4">
+          <Input
+            placeholder="Search expenses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-[200px]"
+          />
+          <Button 
+            variant="outline" 
+            size="icon"
+            className="relative"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4" />
+            {activeFilterCount > (searchTerm ? 1 : 0) && (
+              <Badge 
+                className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
+                variant="destructive"
+              >
+                {activeFilterCount - (searchTerm ? 1 : 0)}
+              </Badge>
             )}
-          </div>
+          </Button>
+          <Button
+            variant={showBulkSelect ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowBulkSelect(!showBulkSelect)}
+          >
+            {showBulkSelect ? 'Cancel' : 'Select'}
+          </Button>
+          {showBulkSelect && selectedExpenses.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete ({selectedExpenses.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Selected Expenses</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedExpenses.size} expense{selectedExpenses.size > 1 ? 's' : ''}? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'duplicates')}>
@@ -251,70 +247,17 @@ const ExpenseList = () => {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <CategorySelector
-                  value={filters.categoryIds?.[0]}
-                  onChange={(value) => updateFilter('categoryIds', value ? [value] : undefined)}
-                />
-              </div>
-              
-              <div>
-                <div className="flex items-center mb-2">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <label className="text-sm font-medium">Date Range</label>
-                </div>
-                <div className="flex space-x-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "justify-start text-left font-normal flex-1",
-                          !startDate && "text-muted-foreground"
-                        )}
-                      >
-                        {startDate ? format(startDate, "MMM d, yyyy") : <span>Start date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "justify-start text-left font-normal flex-1",
-                          !endDate && "text-muted-foreground"
-                        )}
-                      >
-                        {endDate ? format(endDate, "MMM d, yyyy") : <span>End date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+            <div>
+              <CategorySelector
+                value={filters.categoryIds?.[0]}
+                onChange={(value) => updateFilter('categoryIds', value ? [value] : undefined)}
+              />
             </div>
           </div>
         )}
         
         <div className="bg-accent/30 p-4 rounded-lg">
+          <div className="text-sm text-muted-foreground mb-2">{selectedPeriod.displayName}</div>
           <div className="flex justify-between items-center">
             <div>
               <span className="text-sm text-muted-foreground">Total Amount</span>
