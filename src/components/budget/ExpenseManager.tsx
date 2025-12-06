@@ -8,10 +8,12 @@ import { useFamilies } from '@/hooks/useFamilies';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
 import { useBudgetCategoryInit } from '@/hooks/useBudgetCategoryInit';
+import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { formatTTD, toMonthly } from '@/utils/budgetUtils';
 import { BudgetGroupType } from '@/types/budget';
 import { Plus, TrendingUp, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 export default function ExpenseManager() {
   const { user } = useAuth();
@@ -21,6 +23,19 @@ export default function ExpenseManager() {
   
   // Initialize budget categories for the user if they don't exist
   useBudgetCategoryInit();
+  
+  // Get budget template for the selected family (or first family if 'all')
+  const templateFamilyId = selectedFamilyId !== 'all' ? selectedFamilyId : families[0]?.id;
+  const { getDefaultTemplate, isLoading: templatesLoading } = useBudgetTemplates(templateFamilyId);
+  const template = getDefaultTemplate();
+  
+  // Calculate budgeted amount from template for each group
+  const getBudgetedAmount = (groupType: 'needs' | 'wants' | 'savings'): number => {
+    if (!template?.template_data) return 0;
+    const groupData = template.template_data[groupType];
+    if (!groupData || typeof groupData !== 'object') return 0;
+    return Object.values(groupData).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+  };
   
   // Set default family when families are loaded
   useEffect(() => {
@@ -242,20 +257,92 @@ export default function ExpenseManager() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(groupTitles).map(([groupType, title]) => {
               const categories = categoriesByGroup[groupType] || [];
-              const totalSpent = categories.reduce((sum, cat) => 
+              const actualSpent = categories.reduce((sum, cat) => 
                 sum + (expensesByCategory[cat.id] || 0), 0);
+              const budgeted = getBudgetedAmount(groupType as 'needs' | 'wants' | 'savings');
+              const remaining = budgeted - actualSpent;
+              const percentUsed = budgeted > 0 ? Math.min((actualSpent / budgeted) * 100, 100) : 0;
               
               return (
                 <div key={groupType} className="text-center p-4 rounded-lg border">
                   <h3 className="font-medium text-sm text-muted-foreground">{title}</h3>
-                  <div className="text-2xl font-bold mt-1">{formatTTD(totalSpent)}</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {categories.length} categories
+                  
+                  {/* Budgeted amount */}
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Budgeted: {formatTTD(budgeted)}
                   </div>
+                  
+                  {/* Actual spending - prominent */}
+                  <div className="text-2xl font-bold mt-1">
+                    {formatTTD(actualSpent)}
+                  </div>
+                  
+                  {/* Progress bar */}
+                  {budgeted > 0 && (
+                    <Progress 
+                      value={percentUsed} 
+                      className={`h-2 mt-2 ${
+                        actualSpent > budgeted ? '[&>div]:bg-destructive' : 
+                        percentUsed > 80 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'
+                      }`}
+                    />
+                  )}
+                  
+                  {/* Remaining/Over budget */}
+                  {budgeted > 0 ? (
+                    <div className={`text-sm mt-1 ${remaining >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {remaining >= 0 
+                        ? `${formatTTD(remaining)} remaining` 
+                        : `${formatTTD(-remaining)} over budget`}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {categories.length} categories
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+          
+          {/* Summary totals row */}
+          {template && (
+            <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+              <div>
+                <span className="text-sm text-muted-foreground">Total Budgeted</span>
+                <div className="font-bold">
+                  {formatTTD(
+                    getBudgetedAmount('needs') + 
+                    getBudgetedAmount('wants') + 
+                    getBudgetedAmount('savings')
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">Total Spent</span>
+                <div className="font-bold text-lg">
+                  {formatTTD(
+                    Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0)
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">Status</span>
+                {(() => {
+                  const totalBudgeted = getBudgetedAmount('needs') + getBudgetedAmount('wants') + getBudgetedAmount('savings');
+                  const totalSpent = Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0);
+                  const totalRemaining = totalBudgeted - totalSpent;
+                  return (
+                    <div className={`font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {totalRemaining >= 0 
+                        ? `${formatTTD(totalRemaining)} left` 
+                        : `${formatTTD(-totalRemaining)} over`}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
