@@ -838,6 +838,85 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_recurring_payments: {
+        Row: {
+          actual_paid: number | null
+          budgeted_amount: number
+          category_key: string
+          category_name: string
+          created_at: string
+          expense_id: string | null
+          family_id: string | null
+          group_type: string
+          id: string
+          is_paid: boolean
+          month: string
+          notes: string | null
+          payment_date: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_paid?: number | null
+          budgeted_amount?: number
+          category_key: string
+          category_name: string
+          created_at?: string
+          expense_id?: string | null
+          family_id?: string | null
+          group_type?: string
+          id?: string
+          is_paid?: boolean
+          month: string
+          notes?: string | null
+          payment_date?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_paid?: number | null
+          budgeted_amount?: number
+          category_key?: string
+          category_name?: string
+          created_at?: string
+          expense_id?: string | null
+          family_id?: string | null
+          group_type?: string
+          id?: string
+          is_paid?: boolean
+          month?: string
+          notes?: string | null
+          payment_date?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_recurring_payments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_recurring_payments_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_recurring_payments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "budget_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nis_earnings_classes: {
         Row: {
           created_at: string
