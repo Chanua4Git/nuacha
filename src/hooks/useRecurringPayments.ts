@@ -36,7 +36,7 @@ export interface RecurringPaymentSummary {
 
 export const useRecurringPayments = (familyId: string | null, month: Date) => {
   const { user } = useAuth();
-  const { templates } = useBudgetTemplates(familyId || undefined);
+  const { templates, isLoading: templatesLoading } = useBudgetTemplates(familyId || undefined);
   const [payments, setPayments] = useState<RecurringPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +45,23 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
   const monthEnd = endOfMonth(month);
   const monthStr = format(monthStart, 'yyyy-MM-dd');
 
-  // Get essential expenses from the active budget template
-  const getTemplateEssentials = useCallback(() => {
+  // Fetch existing payments for the month by querying expenses
+  const fetchPayments = useCallback(async () => {
+    if (!user || !familyId || templatesLoading) {
+      if (!templatesLoading) setIsLoading(false);
+      return;
+    }
+
+    // Get essential expenses from the active budget template (inline to avoid dependency issues)
     const activeTemplate = templates.find(t => t.is_default) || templates[0];
-    if (!activeTemplate?.template_data?.needs) return [];
+    if (!activeTemplate?.template_data?.needs) {
+      setPayments([]);
+      setIsLoading(false);
+      return;
+    }
 
     const needs = activeTemplate.template_data.needs as Record<string, number>;
-    return Object.entries(needs)
+    const essentials = Object.entries(needs)
       .filter(([_, amount]) => amount > 0)
       .map(([key, amount]) => ({
         category_key: key,
@@ -60,21 +70,11 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
         group_type: 'needs',
         template_id: activeTemplate.id,
       }));
-  }, [templates]);
-
-  // Fetch existing payments for the month by querying expenses
-  const fetchPayments = useCallback(async () => {
-    if (!user || !familyId) {
-      setIsLoading(false);
-      return;
-    }
 
     try {
       setIsLoading(true);
       setError(null);
 
-      const essentials = getTemplateEssentials();
-      
       // Fetch all expenses for this family in this month
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
@@ -98,7 +98,6 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
                  expDescription.includes(categoryKey) ||
                  expCategory.includes(categoryName) ||
                  expCategory.includes(categoryKey) ||
-                 // Also match if expense was created by bill tracker (has category name as description)
                  expDescription === categoryName;
         });
 
@@ -132,11 +131,14 @@ export const useRecurringPayments = (familyId: string | null, month: Date) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, familyId, monthStr, monthStart, monthEnd, getTemplateEssentials]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, familyId, monthStr, templatesLoading, templates.length]);
 
   useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+    if (!templatesLoading) {
+      fetchPayments();
+    }
+  }, [fetchPayments, templatesLoading]);
 
   // Add a new payment (creates a new expense entry)
   const addPayment = useCallback(async (
