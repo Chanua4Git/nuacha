@@ -109,14 +109,22 @@ export default function ExpenseManager() {
   });
 
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-    // Match expenses to budget categories using same logic as useBudgetSummary
-    // Find category by UUID first (preferred), then fallback to name matching
-    let category = budgetCategories.find(cat => cat.id === expense.category);
+    // Match expenses to budget categories - prioritize budget_category_id (most reliable)
+    let category = null;
+    
+    // 1. Try explicit budget_category_id first (set by Bill Tracker)
+    if (expense.budgetCategoryId) {
+      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
+    }
+    
+    // 2. Try category field as UUID
+    if (!category) {
+      category = budgetCategories.find(cat => cat.id === expense.category);
+    }
+    
+    // 3. Fallback to name matching
     if (!category) {
       category = budgetCategories.find(cat => cat.name === expense.category);
-    }
-    if (!category && expense.budgetCategoryId) {
-      category = budgetCategories.find(cat => cat.id === expense.budgetCategoryId);
     }
     
     if (category) {
@@ -314,9 +322,15 @@ export default function ExpenseManager() {
                 </TableHeader>
                 <TableBody>
                   {categories.map((category) => {
-                    const categoryExpenses = monthlyExpenses.filter(
-                      expense => expense.budgetCategoryId === category.id
-                    );
+                    const categoryExpenses = monthlyExpenses.filter(expense => {
+                      // Match by budgetCategoryId (explicit link from Bill Tracker)
+                      if (expense.budgetCategoryId === category.id) return true;
+                      // Match by category field as ID
+                      if (expense.category === category.id) return true;
+                      // Match by category name
+                      if (expense.category === category.name) return true;
+                      return false;
+                    });
                     const totalSpent = expensesByCategory[category.id] || 0;
                     
                     return (
