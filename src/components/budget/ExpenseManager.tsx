@@ -123,6 +123,9 @@ export default function ExpenseManager() {
     return expenseDate >= startOfMonth && expenseDate <= endOfMonth;
   });
 
+  // Total actual spending for the month (ALL expenses, regardless of category mapping)
+  const totalActualSpending = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
   const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
     // Match expenses to budget categories - prioritize budget_category_id (most reliable)
     let category = null;
@@ -321,17 +324,14 @@ export default function ExpenseManager() {
               <div>
                 <span className="text-sm text-muted-foreground">Total Spent</span>
                 <div className="font-bold text-lg">
-                  {formatTTD(
-                    Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0)
-                  )}
+                  {formatTTD(totalActualSpending)}
                 </div>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Status</span>
                 {(() => {
                   const totalBudgeted = getBudgetedAmount('needs') + getBudgetedAmount('wants') + getBudgetedAmount('savings');
-                  const totalSpent = Object.values(expensesByCategory).reduce((sum, val) => sum + val, 0);
-                  const totalRemaining = totalBudgeted - totalSpent;
+                  const totalRemaining = totalBudgeted - totalActualSpending;
                   return (
                     <div className={`font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                       {totalRemaining >= 0 
