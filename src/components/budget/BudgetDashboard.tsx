@@ -15,6 +15,7 @@ import { useBudgetTemplates } from '@/hooks/useBudgetTemplates';
 import { useExpense } from '@/context/ExpenseContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { MonthlyBillTracker } from './MonthlyBillTracker';
 
 export default function BudgetDashboard() {
   const navigate = useNavigate();
@@ -331,6 +332,12 @@ export default function BudgetDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Bill Tracker */}
+      <MonthlyBillTracker 
+        familyId={selectedFamily?.id || null} 
+        month={selectedPeriod.startDate} 
+      />
 
       {/* Unpaid Labor Value Section */}
       {summary.unpaidLaborValue && summary.unpaidLaborValue > 0 && (
