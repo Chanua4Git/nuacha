@@ -266,7 +266,7 @@ export default function BudgetDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-1">
-              Cash Expenses
+              Actual Spending
               <Info className="h-3 w-3 text-muted-foreground" />
             </CardTitle>
             <Banknote className="h-4 w-4 text-muted-foreground" />
@@ -274,8 +274,13 @@ export default function BudgetDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{formatTTD(summary.totalExpenses)}</div>
             <p className="text-xs text-muted-foreground">
-              {summary.totalIncome > 0 ? Math.round((summary.totalExpenses / summary.totalIncome) * 100) : 0}% of income
+              {summary.totalIncome > 0 ? Math.round((summary.totalExpenses / summary.totalIncome) * 100) : 0}% of income for {selectedPeriod.displayName}
             </p>
+            {summary.totalPlannedExpenses && summary.totalPlannedExpenses > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                of {formatTTD(summary.totalPlannedExpenses)} planned
+              </p>
+            )}
           </CardContent>
         </Card>
 
