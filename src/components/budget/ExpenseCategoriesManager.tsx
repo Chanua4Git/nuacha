@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { comprehensiveCategories } from '@/data/comprehensiveCategories';
@@ -224,20 +225,24 @@ export const ExpenseCategoriesManager = () => {
     };
   }, [defaultTemplate]);
 
+  // Total actual spending for the month (ALL expenses)
+  const totalActualSpending = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
   const groupTotals = {
     needs: getAllCategoriesInGroup('needs').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0),
     wants: getAllCategoriesInGroup('wants').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0),
     savings: getAllCategoriesInGroup('savings').reduce((sum, cat) => sum + (expensesByCategory[cat.id]?.total || 0), 0)
   };
 
-  // Combined totals (template + manual)
-  const combinedTotals = {
-    needs: groupTotals.needs + templateExpenses.needs,
-    wants: groupTotals.wants + templateExpenses.wants,
-    savings: groupTotals.savings + templateExpenses.savings
+  // Budgeted amounts from template
+  const budgetedAmounts = {
+    needs: templateExpenses.needs,
+    wants: templateExpenses.wants,
+    savings: templateExpenses.savings
   };
 
-  const totalSpending = combinedTotals.needs + combinedTotals.wants + combinedTotals.savings;
+  const totalBudgeted = budgetedAmounts.needs + budgetedAmounts.wants + budgetedAmounts.savings;
+  const totalRemaining = totalBudgeted - totalActualSpending;
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setSelectedMonth(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
@@ -399,55 +404,111 @@ export const ExpenseCategoriesManager = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            Combined expenses for {format(selectedMonth, 'MMMM yyyy')} - {selectedFamily.name}
+            Monthly Overview - {format(selectedMonth, 'MMMM yyyy')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">${combinedTotals.needs.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground">🔴 Needs (Essential)</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.needs.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.needs.toFixed(2)}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Needs */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">🔴 Needs (Essential)</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Budgeted</span>
+                  <span>${budgetedAmounts.needs.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Spent</span>
+                  <span className="font-medium">${groupTotals.needs.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  value={budgetedAmounts.needs > 0 ? Math.min((groupTotals.needs / budgetedAmounts.needs) * 100, 100) : 0} 
+                  className="h-2"
+                />
+                <div className="text-xs text-right">
+                  {budgetedAmounts.needs - groupTotals.needs >= 0 ? (
+                    <span className="text-green-600">${(budgetedAmounts.needs - groupTotals.needs).toFixed(2)} remaining</span>
+                  ) : (
+                    <span className="text-destructive">${Math.abs(budgetedAmounts.needs - groupTotals.needs).toFixed(2)} over budget</span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">${combinedTotals.wants.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground">🟡 Wants (Lifestyle)</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.wants.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.wants.toFixed(2)}</div>
+
+            {/* Wants */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">🟡 Wants (Lifestyle)</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Budgeted</span>
+                  <span>${budgetedAmounts.wants.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Spent</span>
+                  <span className="font-medium">${groupTotals.wants.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  value={budgetedAmounts.wants > 0 ? Math.min((groupTotals.wants / budgetedAmounts.wants) * 100, 100) : 0} 
+                  className="h-2"
+                />
+                <div className="text-xs text-right">
+                  {budgetedAmounts.wants - groupTotals.wants >= 0 ? (
+                    <span className="text-green-600">${(budgetedAmounts.wants - groupTotals.wants).toFixed(2)} remaining</span>
+                  ) : (
+                    <span className="text-destructive">${Math.abs(budgetedAmounts.wants - groupTotals.wants).toFixed(2)} over budget</span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">${combinedTotals.savings.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground">💚 Savings & Investments</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>🎯 Template: ${templateExpenses.savings.toFixed(2)}</div>
-                <div>📱 Manual: ${groupTotals.savings.toFixed(2)}</div>
+
+            {/* Savings */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">💚 Savings & Investments</span>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                ${budgetSummary?.unpaidLaborValue ? budgetSummary.totalExpenses.toFixed(2) : (combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}
-              </div>
-              <div className="text-sm text-muted-foreground">💰 Total Value</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>💵 Cash: ${(combinedTotals.needs + combinedTotals.wants + combinedTotals.savings).toFixed(2)}</div>
-                {budgetSummary?.unpaidLaborValue && (
-                  <div className="text-purple-600">🤝 Unpaid Labor: ${budgetSummary.unpaidLaborValue.toFixed(2)}</div>
-                )}
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Budgeted</span>
+                  <span>${budgetedAmounts.savings.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Spent</span>
+                  <span className="font-medium">${groupTotals.savings.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  value={budgetedAmounts.savings > 0 ? Math.min((groupTotals.savings / budgetedAmounts.savings) * 100, 100) : 0} 
+                  className="h-2"
+                />
+                <div className="text-xs text-right">
+                  {budgetedAmounts.savings - groupTotals.savings >= 0 ? (
+                    <span className="text-green-600">${(budgetedAmounts.savings - groupTotals.savings).toFixed(2)} remaining</span>
+                  ) : (
+                    <span className="text-destructive">${Math.abs(budgetedAmounts.savings - groupTotals.savings).toFixed(2)} over budget</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
           
           {/* Total Summary */}
-          <div className="mt-6 pt-4 border-t text-center">
-            <div className="text-lg font-semibold">Total Combined: ${totalSpending.toFixed(2)}</div>
-            <div className="text-sm text-muted-foreground mt-1">
-              🎯 Template Planned: ${(templateExpenses.needs + templateExpenses.wants + templateExpenses.savings).toFixed(2)} | 
-              📱 Manual Entry: ${(groupTotals.needs + groupTotals.wants + groupTotals.savings).toFixed(2)}
+          <div className="mt-6 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+            <div>
+              <span className="text-sm text-muted-foreground">Total Budgeted</span>
+              <div className="font-bold text-lg">${totalBudgeted.toFixed(2)}</div>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Total Spent</span>
+              <div className="font-bold text-lg">${totalActualSpending.toFixed(2)}</div>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Status</span>
+              <div className={`font-bold text-lg ${totalRemaining >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                {totalRemaining >= 0 ? `$${totalRemaining.toFixed(2)} left` : `$${Math.abs(totalRemaining).toFixed(2)} over`}
+              </div>
             </div>
           </div>
         </CardContent>
