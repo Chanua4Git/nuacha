@@ -10,10 +10,13 @@ export interface ExpenseFilters {
   categoryId?: string;
   startDate?: string;
   endDate?: string;
+  specificDate?: string;
   place?: string;
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
+  hasReceipt?: boolean;
+  paymentMethod?: string;
 }
 
 export const useExpenses = (filters?: ExpenseFilters) => {
@@ -55,12 +58,17 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           query = query.eq('category', filters.categoryId);
         }
         
-        if (filters?.startDate) {
-          query = query.gte('date', filters.startDate);
-        }
-        
-        if (filters?.endDate) {
-          query = query.lte('date', filters.endDate);
+        // Specific date takes precedence over date range
+        if (filters?.specificDate) {
+          query = query.eq('date', filters.specificDate);
+        } else {
+          if (filters?.startDate) {
+            query = query.gte('date', filters.startDate);
+          }
+          
+          if (filters?.endDate) {
+            query = query.lte('date', filters.endDate);
+          }
         }
         
         if (filters?.place) {
@@ -79,8 +87,16 @@ export const useExpenses = (filters?: ExpenseFilters) => {
           query = query.or(`description.ilike.%${filters.searchTerm}%,place.ilike.%${filters.searchTerm}%`);
         }
         
-        // Sort by date, newest first
-        query = query.order('date', { ascending: false });
+        if (filters?.hasReceipt === true) {
+          query = query.not('receipt_image_url', 'is', null);
+        }
+        
+        if (filters?.paymentMethod) {
+          query = query.eq('payment_method', filters.paymentMethod);
+        }
+        
+        // Sort by date DESC, then by created_at DESC for same-day ordering
+        query = query.order('date', { ascending: false }).order('created_at', { ascending: false });
         
         const { data, error } = await query;
         
