@@ -1,29 +1,26 @@
-
-import React from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { useExpense } from '@/context/ExpenseContext';
-import type { ExpenseFilters } from '@/hooks/useFilters';
 import ExpenseCard from './ExpenseCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { CalendarIcon, Filter, X, Trash2, Copy, Search } from 'lucide-react';
-import CategorySelector from './CategorySelector';
+import { Filter, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
-import { useMemo, useState } from 'react';
 import PeriodSelector, { PeriodSelection } from '@/components/budget/PeriodSelector';
+import ExpenseFilterPanel, { ExpenseFilterValues } from './ExpenseFilterPanel';
+import ExpenseFilterChips from './ExpenseFilterChips';
+import { useCategories } from '@/hooks/useCategories';
 
 const ExpenseList = () => {
   const expenseContext = useContextAwareExpense();
   const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
+  const { categories } = useCategories();
   
   // Initialize to current month for consistency with /budget
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>(() => {
@@ -38,44 +35,85 @@ const ExpenseList = () => {
     };
   });
   
-  const [filters, setFilters] = useState<ExpenseFilters>({});
+  const [filters, setFilters] = useState<ExpenseFilterValues>({});
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates'>('all');
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [showBulkSelect, setShowBulkSelect] = useState(false);
   
-  const updateFilter = (key: keyof ExpenseFilters, value: any) => {
+  const updateFilter = useCallback((key: keyof ExpenseFilterValues, value: any) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
-  };
+  }, []);
   
-  const clearFilters = () => {
+  const removeFilter = useCallback((key: keyof ExpenseFilterValues) => {
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      delete newFilters[key];
+      return newFilters;
+    });
+  }, []);
+  
+  const clearFilters = useCallback(() => {
     setFilters({});
     setSearchTerm('');
-  };
+  }, []);
+
+  // Count active filters (excluding searchTerm which is shown separately)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.specificDate) count++;
+    if (filters.customStartDate || filters.customEndDate) count++;
+    if (filters.minAmount !== undefined || filters.maxAmount !== undefined) count++;
+    if (filters.categoryIds?.length) count++;
+    if (filters.place) count++;
+    if (filters.hasReceipt) count++;
+    if (filters.paymentMethod) count++;
+    return count;
+  }, [filters]);
+
+  // Get category name for filter chip display
+  const selectedCategoryName = useMemo(() => {
+    if (!filters.categoryIds?.length) return undefined;
+    const category = categories?.find(c => c.id === filters.categoryIds?.[0]);
+    return category?.name;
+  }, [filters.categoryIds, categories]);
   
-  // Update search term filter
-  useMemo(() => {
-    if (searchTerm) {
-      updateFilter('searchTerm', searchTerm);
+  // Build filter query - prioritize custom date filters over period selector
+  const expenses = useMemo(() => {
+    // Determine which dates to use
+    let startDate: string;
+    let endDate: string;
+    let specificDate: string | undefined;
+
+    if (filters.specificDate) {
+      // Specific date takes precedence
+      specificDate = filters.specificDate;
+      startDate = filters.specificDate;
+      endDate = filters.specificDate;
+    } else if (filters.customStartDate || filters.customEndDate) {
+      // Custom date range
+      startDate = filters.customStartDate || format(selectedPeriod.startDate, 'yyyy-MM-dd');
+      endDate = filters.customEndDate || format(selectedPeriod.endDate, 'yyyy-MM-dd');
     } else {
-      const { searchTerm, ...rest } = filters;
-      setFilters(rest);
+      // Default to period selector dates
+      startDate = format(selectedPeriod.startDate, 'yyyy-MM-dd');
+      endDate = format(selectedPeriod.endDate, 'yyyy-MM-dd');
     }
-  }, [searchTerm]);
-  
-  // Use period dates for filtering (consistent with /budget)
-  const expenses = filteredExpenses({
-    categoryId: filters.categoryIds?.[0],
-    startDate: format(selectedPeriod.startDate, 'yyyy-MM-dd'),
-    endDate: format(selectedPeriod.endDate, 'yyyy-MM-dd'),
-    minAmount: filters.minAmount,
-    maxAmount: filters.maxAmount,
-    searchTerm: filters.searchTerm
-  });
+
+    return filteredExpenses({
+      categoryId: filters.categoryIds?.[0],
+      startDate,
+      endDate,
+      minAmount: filters.minAmount,
+      maxAmount: filters.maxAmount,
+      searchTerm: searchTerm || filters.searchTerm,
+      place: filters.place,
+    });
+  }, [filteredExpenses, filters, selectedPeriod, searchTerm]);
   const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
   const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
@@ -84,7 +122,6 @@ const ExpenseList = () => {
     : expenses;
   
   const totalAmount = displayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const activeFilterCount = Object.keys(filters).length;
 
   const handleExpenseSelection = (expenseId: string, selected: boolean) => {
     const newSelected = new Set(selectedExpenses);
@@ -232,28 +269,21 @@ const ExpenseList = () => {
           </TabsContent>
         </Tabs>
         
+        {/* Active Filter Chips */}
+        <ExpenseFilterChips
+          filters={{ ...filters, searchTerm }}
+          onRemoveFilter={removeFilter}
+          categoryName={selectedCategoryName}
+        />
+
+        {/* Expanded Filter Panel */}
         {showFilters && (
-          <div className="bg-muted p-4 rounded-lg mb-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Filters</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 px-2 text-sm"
-                onClick={clearFilters}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
-            </div>
-            
-            <div>
-              <CategorySelector
-                value={filters.categoryIds?.[0]}
-                onChange={(value) => updateFilter('categoryIds', value ? [value] : undefined)}
-              />
-            </div>
-          </div>
+          <ExpenseFilterPanel
+            filters={filters}
+            onFilterChange={updateFilter}
+            onClearAll={clearFilters}
+            onClose={() => setShowFilters(false)}
+          />
         )}
         
         <div className="bg-accent/30 p-4 rounded-lg">

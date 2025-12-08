@@ -51,6 +51,7 @@ export interface ExpenseFilters {
   minAmount?: number;
   maxAmount?: number;
   searchTerm?: string;
+  place?: string;
 }
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
@@ -215,6 +216,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         const placeMatch = expense.place.toLowerCase().includes(term);
         
         if (!descriptionMatch && !placeMatch) {
+          return false;
+        }
+      }
+
+      // Place/vendor filter (separate from searchTerm)
+      if (filters.place) {
+        const placeFilter = filters.place.toLowerCase();
+        if (!expense.place.toLowerCase().includes(placeFilter)) {
           return false;
         }
       }
