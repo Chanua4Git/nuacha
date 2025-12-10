@@ -15,6 +15,18 @@ export interface DateCorrectionResult {
  * T&T uses DD/MM/YYYY format, so we prioritize this interpretation
  */
 function convertToISODate(dateString: string): { isoDate: string; wasConverted: boolean; issue?: string } {
+  // SAFETY CHECK: Skip if already in ISO format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    console.log('📅 Date already in ISO format, skipping conversion:', dateString);
+    return { isoDate: dateString, wasConverted: false };
+  }
+  
+  // SAFETY CHECK: Skip if contains letters (human-readable format like "Dec 7, 2025")
+  if (/[a-zA-Z]/.test(dateString)) {
+    console.log('📅 Date in text format, skipping conversion:', dateString);
+    return { isoDate: dateString, wasConverted: false };
+  }
+  
   // Match patterns like DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
   const ddmmPattern = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/;
   const match = dateString.match(ddmmPattern);
