@@ -109,43 +109,65 @@ export function validateAndCorrectDate(
 }
 
 /**
+ * Converts DD/MM/YYYY format to MM/DD/YYYY for JavaScript Date parsing
+ * T&T uses DD/MM/YYYY format, so we prioritize this interpretation
+ */
+function convertDDMMToMMDD(dateString: string): string {
+  // Match patterns like DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+  const ddmmPattern = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/;
+  const match = dateString.match(ddmmPattern);
+  
+  if (match) {
+    const [, first, second, year] = match;
+    const firstNum = parseInt(first);
+    const secondNum = parseInt(second);
+    
+    // If first number > 12, it MUST be a day (DD/MM format)
+    if (firstNum > 12 && secondNum <= 12) {
+      console.log('📅 Detected DD/MM format (first > 12):', dateString);
+      return `${second}/${first}/${year}`;
+    }
+    
+    // If second number > 12, it MUST be a day (MM/DD format already)
+    if (secondNum > 12 && firstNum <= 12) {
+      console.log('📅 Detected MM/DD format (second > 12):', dateString);
+      return `${first}/${second}/${year}`;
+    }
+    
+    // AMBIGUOUS CASE: Both numbers are ≤ 12
+    // T&T uses DD/MM/YYYY, so assume DD/MM format
+    // Swap to MM/DD for JavaScript parsing
+    console.log('📅 Ambiguous date, assuming T&T DD/MM format:', dateString);
+    return `${second}/${first}/${year}`;
+  }
+  
+  return dateString;
+}
+
+/**
  * Corrects common OCR mistakes in date strings
  */
 function correctCommonOcrMistakes(dateString: string): string {
   let corrected = dateString;
 
-  // Common OCR mistakes and corrections
-  const corrections = [
-    // Replace common character misreads
-    [/[oO0]/g, '0'], // O -> 0
-    [/[lI1]/g, '1'], // l,I -> 1
-    [/[S5]/g, '5'],  // S -> 5
-    [/[B8]/g, '8'],  // B -> 8
-    
-    // Fix common date format issues
-    [/(\d{1,2})[\s\-_.\/](\d{1,2})[\s\-_.\/](\d{2,4})/g, '$1/$2/$3'], // Normalize separators
-    [/(\d{1,2})[\s\-_.\/](\d{1,2})[\s\-_.\/](\d{2})$/g, '$1/$2/20$3'], // Add century to 2-digit years
-    
-    // Handle month/day swaps (common in different locales)
-    [/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, (match, p1, p2, p3) => {
-      const month = parseInt(p1);
-      const day = parseInt(p2);
-      
-      // If first number > 12, it's probably day/month format
-      if (month > 12 && day <= 12) {
-        return `${p2}/${p1}/${p3}`;
-      }
-      return match;
-    }]
+  // Step 1: Fix common character misreads
+  const charCorrections: [RegExp, string][] = [
+    [/[oO]/g, '0'], // O -> 0 (but be careful not to replace valid Os)
+    [/[lI]/g, '1'], // l,I -> 1
   ];
 
-  corrections.forEach(([pattern, replacement]) => {
-    if (typeof replacement === 'string') {
-      corrected = corrected.replace(pattern as RegExp, replacement);
-    } else {
-      corrected = corrected.replace(pattern as RegExp, replacement as any);
-    }
+  charCorrections.forEach(([pattern, replacement]) => {
+    corrected = corrected.replace(pattern, replacement);
   });
+
+  // Step 2: Normalize separators to /
+  corrected = corrected.replace(/(\d{1,2})[\s\-_.](\d{1,2})[\s\-_.](\d{2,4})/g, '$1/$2/$3');
+  
+  // Step 3: Add century to 2-digit years
+  corrected = corrected.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/, '$1/$2/20$3');
+  
+  // Step 4: Convert DD/MM/YYYY to MM/DD/YYYY for T&T format
+  corrected = convertDDMMToMMDD(corrected);
 
   console.log('🔧 Date correction:', { original: dateString, corrected });
   return corrected;
