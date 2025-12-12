@@ -381,7 +381,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             <Button 
               type="submit" 
               className="flex-1"
-              disabled={isSubmitting || loading || (isDirty && !isValid)}
+              disabled={isSubmitting || loading}
             >
               {(isSubmitting || loading) ? (
                 <>
