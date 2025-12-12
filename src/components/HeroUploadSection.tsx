@@ -67,23 +67,23 @@ const HeroUploadSection = ({
             <Button
               size="lg"
               onClick={handleCameraAction}
-              className="group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
+              className="group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 max-w-xs sm:max-w-none"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#5A7684]/80 to-[#5A7684] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="relative flex items-center space-x-3">
-                <div className="p-2 rounded-full bg-white/20 group-hover:bg-white/30 transition-colors duration-300">
-                  <Camera className="h-8 w-8" />
+                <div className="p-2 rounded-full bg-white/20 group-hover:bg-white/30 transition-colors duration-300 flex-shrink-0">
+                  <Camera className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
-                <div className="text-left">
-                  <div className="text-lg font-medium">Take a photo of Receipt</div>
-                  <div className="text-sm opacity-90">Take a photo of your receipt</div>
+                <div className="text-left min-w-0">
+                  <div className="text-base sm:text-lg font-medium truncate">Snap Receipt</div>
+                  <div className="text-xs sm:text-sm opacity-90 truncate">Take a photo</div>
                 </div>
               </div>
             </Button>
 
             <div className="text-[#5C5C5C] font-light">or</div>
 
-            <div className="relative">
+            <div className="relative max-w-xs sm:max-w-none">
               <input
                 type="file"
                 accept="image/*"
@@ -95,15 +95,15 @@ const HeroUploadSection = ({
                 size="lg"
                 onClick={handleUploadAction}
                 variant="outline"
-                className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
+                className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
               >
                 <div className="relative flex items-center space-x-3">
-                  <div className="p-2 rounded-full bg-[#5A7684]/10 group-hover:bg-white/20 transition-colors duration-300">
-                    <Upload className="h-8 w-8" />
+                  <div className="p-2 rounded-full bg-[#5A7684]/10 group-hover:bg-white/20 transition-colors duration-300 flex-shrink-0">
+                    <Upload className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
-                  <div className="text-left">
-                    <div className="text-lg font-medium">Upload Receipt</div>
-                    <div className="text-sm opacity-80 group-hover:opacity-90">Upload from your device</div>
+                  <div className="text-left min-w-0">
+                    <div className="text-base sm:text-lg font-medium truncate">Upload Receipt</div>
+                    <div className="text-xs sm:text-sm opacity-80 group-hover:opacity-90 truncate">From your device</div>
                   </div>
                 </div>
               </Button>
