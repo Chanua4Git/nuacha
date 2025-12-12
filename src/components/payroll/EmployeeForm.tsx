@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { EmployeeFormData } from '@/types/payroll';
+import { EmployeeFormData, ShiftFormData } from '@/types/payroll';
+import { ShiftEditor } from './ShiftEditor';
 
 // Form schema that accepts strings for numeric fields
 const employeeFormSchema = z.object({
@@ -18,7 +19,7 @@ const employeeFormSchema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
   national_id: z.string().optional(),
-  employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly']),
+  employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly', 'shift_based']),
   hourly_rate: z.string().optional(),
   monthly_salary: z.string().optional(),
   daily_rate: z.string().optional(),
@@ -32,6 +33,11 @@ const employeeFormSchema = z.object({
     const rate = Number(rateStr);
     return !isNaN(rate) && rate > 0;
   };
+
+  // shift_based doesn't need rate validation here - shifts handle that
+  if (data.employment_type === 'shift_based') {
+    return true;
+  }
 
   switch (data.employment_type) {
     case 'hourly':
@@ -65,7 +71,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   initialData,
   loading = false,
 }) => {
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shifts, setShifts] = useState<ShiftFormData[]>(initialData?.shifts || []);
+  
   const {
     register,
     handleSubmit,
@@ -78,6 +86,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: initialData ? {
       ...initialData,
+      employment_type: initialData.employment_type || 'monthly',
       // Convert numeric fields to strings for consistent form handling
       hourly_rate: initialData.hourly_rate?.toString() || '',
       monthly_salary: initialData.monthly_salary?.toString() || '',
@@ -104,25 +113,16 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   const employmentType = watch('employment_type');
   const isEditMode = Boolean(initialData);
 
-  // Debug logging for form state (temporary)
-  console.log('Form State Debug:', { 
-    isValid, 
-    isDirty, 
-    isEditMode, 
-    employmentType,
-    errors: Object.keys(errors),
-    formValues: {
-      employment_type: employmentType,
-      hourly_rate: watch('hourly_rate'),
-      monthly_salary: watch('monthly_salary'),
-      daily_rate: watch('daily_rate'),
-      weekly_rate: watch('weekly_rate')
-    }
-  });
-
   const handleFormSubmit = async (data: EmployeeFormValues) => {
     setIsSubmitting(true);
     clearErrors();
+    
+    // Validate shifts for shift_based employees
+    if (data.employment_type === 'shift_based' && shifts.length === 0) {
+      setError('root', { message: 'At least one shift configuration is required for shift-based employees' });
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       // Ensure numeric fields are properly converted
@@ -140,6 +140,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : undefined,
         nis_number: data.nis_number || undefined,
         date_hired: data.date_hired || undefined,
+        shifts: data.employment_type === 'shift_based' ? shifts : undefined,
       };
 
       await onSubmit(processedData);
@@ -196,6 +197,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <SelectItem value="daily">Daily</SelectItem>
               <SelectItem value="weekly">Weekly</SelectItem>
               <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="shift_based">Shift-Based (Multiple Rates)</SelectItem>
                 </SelectContent>
               </Select>
               {errors.employment_type && (
@@ -353,6 +355,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 </p>
               )}
             </div>
+          )}
+
+          {/* Shift Editor for shift-based employees */}
+          {employmentType === 'shift_based' && (
+            <ShiftEditor shifts={shifts} onChange={setShifts} />
           )}
 
           <div className="space-y-2">

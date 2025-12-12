@@ -9,7 +9,7 @@ export interface Employee {
   email?: string;
   phone?: string;
   national_id?: string; // TT National ID
-  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
@@ -18,6 +18,19 @@ export interface Employee {
   is_active: boolean;
   date_hired?: string;
   date_terminated?: string;
+  created_at?: string;
+  updated_at?: string;
+  shifts?: EmployeeShift[]; // For shift-based employees
+}
+
+export interface EmployeeShift {
+  id: string;
+  employee_id: string;
+  shift_name: string;
+  shift_hours?: string;
+  base_rate: number;
+  hourly_rate?: number;
+  is_default: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -100,13 +113,34 @@ export interface EmployeeFormData {
   email?: string;
   phone?: string;
   national_id?: string;
-  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
   weekly_rate?: number;
   nis_number?: string;
   date_hired?: string;
+  shifts?: ShiftFormData[];
+}
+
+export interface ShiftFormData {
+  shift_name: string;
+  shift_hours?: string;
+  base_rate: number;
+  hourly_rate?: number;
+  is_default: boolean;
+}
+
+// For Quick Pay Entry
+export interface QuickPayEntryData {
+  employee_id: string;
+  shift_id?: string;
+  date: string;
+  hours_worked?: number;
+  use_hourly: boolean;
+  hourly_rate?: number;
+  amount: number;
+  notes?: string;
 }
 
 export interface PayrollPeriodFormData {
