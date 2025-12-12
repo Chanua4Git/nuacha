@@ -535,7 +535,11 @@ const Payroll: React.FC = () => {
                             </Badge>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Rate: {employee.employment_type === 'hourly' ? `${formatTTCurrency(employee.hourly_rate || 0)}/hr` : employee.employment_type === 'daily' ? `${formatTTCurrency(employee.daily_rate || 0)}/day` : `${formatTTCurrency(employee.monthly_salary || 0)}/month`}
+                            Rate: {employee.employment_type === 'hourly' ? `${formatTTCurrency(employee.hourly_rate || 0)}/hr` 
+                              : employee.employment_type === 'daily' ? `${formatTTCurrency(employee.daily_rate || 0)}/day` 
+                              : employee.employment_type === 'weekly' ? `${formatTTCurrency(employee.weekly_rate || 0)}/week`
+                              : employee.employment_type === 'shift_based' ? 'Shift-based'
+                              : `${formatTTCurrency(employee.monthly_salary || 0)}/month`}
                             {employee.email && ` • ${employee.email}`}
                           </div>
                         </div>
