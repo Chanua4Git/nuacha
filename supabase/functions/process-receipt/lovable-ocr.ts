@@ -63,13 +63,14 @@ CRITICAL REQUIREMENTS:
 2. TOTAL AMOUNT: Extract the FINAL TOTAL paid (look for "TOTAL", "AMOUNT DUE", "GRAND TOTAL", or similar labels - usually at the bottom after tax)
    - If this is ONLY A PARTIAL RECEIPT (middle section without the final total), set total_amount to 0
 3. TRANSACTION DATE: Extract the date and convert to YYYY-MM-DD format
-   - CRITICAL DATE RULE: ALWAYS interpret slash/dash-separated dates as DD/MM/YYYY format
+   - CRITICAL DATE RULE: The FIRST number is the DAY, the SECOND number is the MONTH (DD/MM/YYYY format)
    - Examples that MUST be correct:
-     * "8/7/2025" → "2025-08-07" (August 7, 2025, NOT July 8 or November 7)
-     * "8/11/2025" → "2025-08-11" (August 11, 2025, NOT November 8)
-     * "15/3/2024" → "2024-03-15" (March 15, 2024)
-   - DOUBLE-CHECK: If the date you extracted is more than tomorrow, you made a mistake - use DD/MM/YYYY interpretation
-   - Most receipts worldwide use DD/MM/YYYY format
+     * "8/7/2025" → Day=8, Month=7 → "2025-07-08" (July 8, 2025)
+     * "11/12/2025" → Day=11, Month=12 → "2025-12-11" (December 11, 2025)
+     * "12/11/2025" → Day=12, Month=11 → "2025-11-12" (November 12, 2025)
+     * "15/3/2024" → Day=15, Month=3 → "2024-03-15" (March 15, 2024)
+   - REMEMBER: First number = DAY, Second number = MONTH. This is DD/MM/YYYY, NOT MM/DD/YYYY.
+   - DOUBLE-CHECK: If the date you extracted is more than tomorrow, you made a mistake
    - Common formats: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
 4. LINE ITEMS: For EACH product/service purchased, extract:
    - Full item description/name (exactly as printed)
