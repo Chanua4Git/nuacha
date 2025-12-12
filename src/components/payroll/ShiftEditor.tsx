@@ -28,6 +28,7 @@ const SHIFT_NAME_OPTIONS = [
 const SHIFT_HOURS_OPTIONS = [
   '8am-4pm',
   '8am-6pm',
+  '5pm-5am',
   '5pm-6am',
   '6pm-6am',
   '9am-5pm',
