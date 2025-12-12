@@ -27,6 +27,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { SubscriptionManager } from "@/components/payroll/SubscriptionManager";
 import { toast } from 'sonner';
 import { useFamilies } from '@/hooks/useFamilies';
+import { useCategories } from '@/hooks/useCategories';
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -73,6 +74,15 @@ const Payroll: React.FC = () => {
       } catch {}
     }
   }, [families, selectedFamilyId]);
+
+  // Fetch categories for the selected family
+  const { categories: familyCategories } = useCategories(selectedFamilyId || undefined);
+  
+  // Map categories to the format QuickPayEntry expects
+  const payrollCategories = React.useMemo(() => 
+    familyCategories.map(c => ({ id: c.id, name: c.name, color: c.color })),
+    [familyCategories]
+  );
   
   // Persist active tab across app switches
   const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'reports' | 'subscription'>(() => {
@@ -171,6 +181,8 @@ const Payroll: React.FC = () => {
     amount: number;
     hoursWorked?: number;
     notes?: string;
+    categoryId?: string;
+    categoryName?: string;
   }) => {
     try {
       // Create expense record for the payment
@@ -181,7 +193,8 @@ const Payroll: React.FC = () => {
           description: `Wages - ${data.employeeName}${data.shiftName ? ` - ${data.shiftName}` : ''}`,
           amount: data.amount,
           place: 'Payroll',
-          category: 'Wages/Payroll',
+          category: data.categoryName || 'Wages/Payroll',
+          budget_category_id: data.categoryId || null,
           date: data.date,
           expense_type: 'actual',
         });
@@ -511,11 +524,11 @@ const Payroll: React.FC = () => {
             <QuickPayEntry
               employees={employees}
               shifts={shifts}
+              categories={payrollCategories}
               onRecordPayment={handleRecordPayment}
               loading={loading}
             />
           )}
-
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>

@@ -11,9 +11,16 @@ import { Employee, EmployeeShift } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import { format } from 'date-fns';
 
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface QuickPayEntryProps {
   employees: Employee[];
   shifts: EmployeeShift[];
+  categories?: Category[];
   onRecordPayment: (data: {
     employeeId: string;
     employeeName: string;
@@ -23,6 +30,8 @@ interface QuickPayEntryProps {
     amount: number;
     hoursWorked?: number;
     notes?: string;
+    categoryId?: string;
+    categoryName?: string;
   }) => Promise<void>;
   loading?: boolean;
 }
@@ -30,6 +39,7 @@ interface QuickPayEntryProps {
 export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
   employees,
   shifts,
+  categories = [],
   onRecordPayment,
   loading = false,
 }) => {
@@ -41,7 +51,30 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
   const [customAmount, setCustomAmount] = useState<string>('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Find default category (Elderly Care / Support) or first available
+  const defaultCategory = useMemo(() => {
+    const elderlyCategory = categories.find(c => 
+      c.name.toLowerCase().includes('elderly') || 
+      c.name.toLowerCase().includes('care') ||
+      c.name.toLowerCase().includes('support')
+    );
+    return elderlyCategory || categories[0];
+  }, [categories]);
+
+  // Set default category when categories load
+  React.useEffect(() => {
+    if (categories.length > 0 && !selectedCategoryId && defaultCategory) {
+      setSelectedCategoryId(defaultCategory.id);
+    }
+  }, [categories, selectedCategoryId, defaultCategory]);
+
+  const selectedCategory = useMemo(() => 
+    categories.find(c => c.id === selectedCategoryId),
+    [categories, selectedCategoryId]
+  );
 
   const selectedEmployee = useMemo(() => 
     employees.find(e => e.id === selectedEmployeeId),
@@ -132,6 +165,8 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
         amount: calculatedAmount,
         hoursWorked: useHourly ? parseFloat(hoursWorked) : undefined,
         notes: notes || undefined,
+        categoryId: selectedCategoryId || undefined,
+        categoryName: selectedCategory?.name || undefined,
       });
 
       // Reset form after successful submission
@@ -143,6 +178,10 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
       setCustomAmount('');
       setNotes('');
       setDate(format(new Date(), 'yyyy-MM-dd'));
+      // Reset category to default
+      if (defaultCategory) {
+        setSelectedCategoryId(defaultCategory.id);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -274,6 +313,31 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
+
+            {/* Category Selection */}
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label>Expense Category *</Label>
+                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: cat.color }}
+                          />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="space-y-2">
