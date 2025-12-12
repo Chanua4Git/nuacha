@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
@@ -52,6 +53,26 @@ const Payroll: React.FC = () => {
   
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  
+  // Persist selected family for payroll expenses
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('payroll_selectedFamilyId') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Set default family when families load
+  React.useEffect(() => {
+    if (families.length > 0 && !selectedFamilyId) {
+      const defaultId = families[0].id;
+      setSelectedFamilyId(defaultId);
+      try {
+        sessionStorage.setItem('payroll_selectedFamilyId', defaultId);
+      } catch {}
+    }
+  }, [families, selectedFamilyId]);
   
   // Persist active tab across app switches
   const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'reports' | 'subscription'>(() => {
@@ -153,9 +174,10 @@ const Payroll: React.FC = () => {
   }) => {
     try {
       // Create expense record for the payment
-      if (user && families.length > 0) {
+      const familyId = selectedFamilyId || (families.length > 0 ? families[0].id : null);
+      if (user && familyId) {
         const { error } = await supabase.from('expenses').insert({
-          family_id: families[0].id,
+          family_id: familyId,
           description: `Wages - ${data.employeeName}${data.shiftName ? ` - ${data.shiftName}` : ''}`,
           amount: data.amount,
           place: 'Payroll',
@@ -443,6 +465,46 @@ const Payroll: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Family Selector for Payroll Expenses */}
+          {user && families.length > 0 && (
+            <Card className="bg-accent/10">
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Assign payroll expenses to:</span>
+                  </div>
+                  <Select
+                    value={selectedFamilyId}
+                    onValueChange={(value) => {
+                      setSelectedFamilyId(value);
+                      try {
+                        sessionStorage.setItem('payroll_selectedFamilyId', value);
+                      } catch {}
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Select family" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {families.map((family) => (
+                        <SelectItem key={family.id} value={family.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: family.color }}
+                            />
+                            {family.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Pay Entry */}
           {employees.length > 0 && (
