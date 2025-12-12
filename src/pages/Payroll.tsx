@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2 } from 'lucide-react';
+import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
+import { QuickPayEntry } from '@/components/payroll/QuickPayEntry';
 import { useUnifiedPayroll } from '@/hooks/useUnifiedPayroll';
+import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import PayrollLeadCaptureModal from '@/components/payroll/PayrollLeadCaptureModal';
@@ -15,20 +17,21 @@ import DemoBreadcrumbs from '@/components/DemoBreadcrumbs';
 import LeadCaptureForm from '@/components/demo/LeadCaptureForm';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Employee, PayrollEntry } from '@/types/payroll';
+import { Employee, PayrollEntry, EmployeeFormData } from '@/types/payroll';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import { PayPalPaymentButton } from "@/components/payroll/PayPalPaymentButton";
 import { usePayPalPayment } from "@/hooks/usePayPalPayment";
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { SubscriptionManager } from "@/components/payroll/SubscriptionManager";
-import { Crown } from "lucide-react";
+import { toast } from 'sonner';
+import { useFamilies } from '@/hooks/useFamilies';
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { captureOrder } = usePayPalPayment();
-  const { toast } = useToast();
+  const { toast: toastHook } = useToast();
   
   const {
     employees,
@@ -43,6 +46,10 @@ const Payroll: React.FC = () => {
     getEntriesForPeriod,
     isDemo,
   } = useUnifiedPayroll();
+  
+  const { shifts, addShiftsForEmployee, fetchAllShifts } = useEmployeeShifts();
+  const { families } = useFamilies();
+  
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   
@@ -81,7 +88,7 @@ const Payroll: React.FC = () => {
           window.history.replaceState({}, '', '/payroll');
         }
       } else if (cancelled === 'true') {
-        toast({
+        toastHook({
           title: "Payment Cancelled",
           description: "Your PayPal payment was cancelled.",
           variant: "destructive",
@@ -92,19 +99,27 @@ const Payroll: React.FC = () => {
     };
 
     handlePayPalReturn();
-  }, [searchParams, captureOrder, toast]);
-  const handleAddEmployee = async (data: any) => {
+  }, [searchParams, captureOrder, toastHook]);
+  
+  const handleAddEmployee = async (data: EmployeeFormData) => {
+    const { shifts: shiftData, ...employeeData } = data;
     const result = await addEmployee({
-      ...data,
+      ...employeeData,
       is_active: true
     });
     if (result) {
+      // If shift-based, add shifts for this employee
+      if (data.employment_type === 'shift_based' && shiftData && shiftData.length > 0) {
+        await addShiftsForEmployee(result.id, shiftData);
+      }
       setShowEmployeeForm(false);
     }
   };
-  const handleEditEmployee = async (data: any) => {
+  
+  const handleEditEmployee = async (data: EmployeeFormData) => {
     if (!editingEmployee) return;
-    await updateEmployee(editingEmployee.id, data);
+    const { shifts: shiftData, ...employeeData } = data;
+    await updateEmployee(editingEmployee.id, employeeData);
     setEditingEmployee(null);
     setShowEmployeeForm(false);
   };
@@ -122,12 +137,41 @@ const Payroll: React.FC = () => {
     setEditingEmployee(null);
   };
   const handleCalculationComplete = (employee: Employee, calculation: any, input: any) => {
-    // For now, just show success - in real app would save to payroll period
-    console.log('Payroll calculated:', {
-      employee,
-      calculation,
-      input
-    });
+    console.log('Payroll calculated:', { employee, calculation, input });
+  };
+
+  // Quick Pay Entry handler - records payment and creates expense
+  const handleRecordPayment = async (data: {
+    employeeId: string;
+    employeeName: string;
+    shiftId?: string;
+    shiftName?: string;
+    date: string;
+    amount: number;
+    hoursWorked?: number;
+    notes?: string;
+  }) => {
+    try {
+      // Create expense record for the payment
+      if (user && families.length > 0) {
+        const { error } = await supabase.from('expenses').insert({
+          family_id: families[0].id,
+          description: `Wages - ${data.employeeName}${data.shiftName ? ` - ${data.shiftName}` : ''}`,
+          amount: data.amount,
+          place: 'Payroll',
+          category: 'Wages/Payroll',
+          date: data.date,
+          expense_type: 'actual',
+        });
+        
+        if (error) throw error;
+      }
+      
+      toast.success(`Payment of ${formatTTCurrency(data.amount)} recorded for ${data.employeeName}`);
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      toast.error('Failed to record payment');
+    }
   };
 
   const exportEmployeeData = () => {
@@ -399,6 +443,16 @@ const Payroll: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Quick Pay Entry */}
+          {employees.length > 0 && (
+            <QuickPayEntry
+              employees={employees}
+              shifts={shifts}
+              onRecordPayment={handleRecordPayment}
+              loading={loading}
+            />
+          )}
 
           <Card>
             <CardHeader>

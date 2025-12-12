@@ -479,6 +479,50 @@ export type Database = {
           },
         ]
       }
+      employee_shifts: {
+        Row: {
+          base_rate: number
+          created_at: string | null
+          employee_id: string
+          hourly_rate: number | null
+          id: string
+          is_default: boolean | null
+          shift_hours: string | null
+          shift_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_rate?: number
+          created_at?: string | null
+          employee_id: string
+          hourly_rate?: number | null
+          id?: string
+          is_default?: boolean | null
+          shift_hours?: string | null
+          shift_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_rate?: number
+          created_at?: string | null
+          employee_id?: string
+          hourly_rate?: number | null
+          id?: string
+          is_default?: boolean | null
+          shift_hours?: string | null
+          shift_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string
