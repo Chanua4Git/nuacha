@@ -5,11 +5,35 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2 } from 'lucide-react';
 import { ShiftFormData } from '@/types/payroll';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ShiftEditorProps {
   shifts: ShiftFormData[];
   onChange: (shifts: ShiftFormData[]) => void;
 }
+
+const SHIFT_NAME_OPTIONS = [
+  'Day Shift',
+  'Night Shift',
+  'Extended Day',
+  'Weekend Day Shift',
+];
+
+const SHIFT_HOURS_OPTIONS = [
+  '8am-4pm',
+  '8am-6pm',
+  '5pm-6am',
+  '6pm-6am',
+  '9am-5pm',
+];
+
+const OTHER_VALUE = '__other__';
 
 const DEFAULT_SHIFT: ShiftFormData = {
   shift_name: '',
@@ -20,20 +44,48 @@ const DEFAULT_SHIFT: ShiftFormData = {
 };
 
 export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) => {
+  // Track which shifts are using "Other" for custom input
+  const [customNameFlags, setCustomNameFlags] = React.useState<Record<number, boolean>>({});
+  const [customHoursFlags, setCustomHoursFlags] = React.useState<Record<number, boolean>>({});
+
+  // Initialize custom flags based on existing data
+  React.useEffect(() => {
+    const nameFlags: Record<number, boolean> = {};
+    const hoursFlags: Record<number, boolean> = {};
+    
+    shifts.forEach((shift, index) => {
+      if (shift.shift_name && !SHIFT_NAME_OPTIONS.includes(shift.shift_name)) {
+        nameFlags[index] = true;
+      }
+      if (shift.shift_hours && !SHIFT_HOURS_OPTIONS.includes(shift.shift_hours)) {
+        hoursFlags[index] = true;
+      }
+    });
+    
+    setCustomNameFlags(nameFlags);
+    setCustomHoursFlags(hoursFlags);
+  }, [shifts.length]); // Only re-run when shifts array length changes
+
   const addShift = () => {
     const newShift = { 
       ...DEFAULT_SHIFT, 
-      is_default: shifts.length === 0 // First shift is default
+      is_default: shifts.length === 0
     };
     onChange([...shifts, newShift]);
   };
 
   const removeShift = (index: number) => {
     const updated = shifts.filter((_, i) => i !== index);
-    // If we removed the default, make the first one default
     if (updated.length > 0 && !updated.some(s => s.is_default)) {
       updated[0].is_default = true;
     }
+    // Clean up custom flags
+    const newNameFlags = { ...customNameFlags };
+    const newHoursFlags = { ...customHoursFlags };
+    delete newNameFlags[index];
+    delete newHoursFlags[index];
+    setCustomNameFlags(newNameFlags);
+    setCustomHoursFlags(newHoursFlags);
     onChange(updated);
   };
 
@@ -41,7 +93,6 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
     const updated = [...shifts];
     updated[index] = { ...updated[index], [field]: value };
     
-    // If setting as default, unset others
     if (field === 'is_default' && value === true) {
       updated.forEach((s, i) => {
         if (i !== index) s.is_default = false;
@@ -49,6 +100,40 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
     }
     
     onChange(updated);
+  };
+
+  const handleNameSelectChange = (index: number, value: string) => {
+    if (value === OTHER_VALUE) {
+      setCustomNameFlags({ ...customNameFlags, [index]: true });
+      updateShift(index, 'shift_name', '');
+    } else {
+      setCustomNameFlags({ ...customNameFlags, [index]: false });
+      updateShift(index, 'shift_name', value);
+    }
+  };
+
+  const handleHoursSelectChange = (index: number, value: string) => {
+    if (value === OTHER_VALUE) {
+      setCustomHoursFlags({ ...customHoursFlags, [index]: true });
+      updateShift(index, 'shift_hours', '');
+    } else {
+      setCustomHoursFlags({ ...customHoursFlags, [index]: false });
+      updateShift(index, 'shift_hours', value);
+    }
+  };
+
+  const getNameSelectValue = (shift: ShiftFormData, index: number): string => {
+    if (customNameFlags[index]) return OTHER_VALUE;
+    if (SHIFT_NAME_OPTIONS.includes(shift.shift_name)) return shift.shift_name;
+    if (shift.shift_name) return OTHER_VALUE;
+    return '';
+  };
+
+  const getHoursSelectValue = (shift: ShiftFormData, index: number): string => {
+    if (customHoursFlags[index]) return OTHER_VALUE;
+    if (SHIFT_HOURS_OPTIONS.includes(shift.shift_hours || '')) return shift.shift_hours || '';
+    if (shift.shift_hours) return OTHER_VALUE;
+    return '';
   };
 
   return (
@@ -92,19 +177,57 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-6">
                 <div className="space-y-2">
                   <Label>Shift Name *</Label>
-                  <Input
-                    value={shift.shift_name}
-                    onChange={(e) => updateShift(index, 'shift_name', e.target.value)}
-                    placeholder="e.g., Night Shift, Weekday Day"
-                  />
+                  <Select
+                    value={getNameSelectValue(shift, index)}
+                    onValueChange={(value) => handleNameSelectChange(index, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select shift name..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SHIFT_NAME_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {customNameFlags[index] && (
+                    <Input
+                      value={shift.shift_name}
+                      onChange={(e) => updateShift(index, 'shift_name', e.target.value)}
+                      placeholder="Enter custom shift name"
+                      className="mt-2"
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Shift Hours</Label>
-                  <Input
-                    value={shift.shift_hours || ''}
-                    onChange={(e) => updateShift(index, 'shift_hours', e.target.value)}
-                    placeholder="e.g., 5pm-6am, 8am-4pm"
-                  />
+                  <Select
+                    value={getHoursSelectValue(shift, index)}
+                    onValueChange={(value) => handleHoursSelectChange(index, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select shift hours..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SHIFT_HOURS_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {customHoursFlags[index] && (
+                    <Input
+                      value={shift.shift_hours || ''}
+                      onChange={(e) => updateShift(index, 'shift_hours', e.target.value)}
+                      placeholder="e.g., 7am-3pm"
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               </div>
 
