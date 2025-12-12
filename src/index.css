@@ -34,42 +34,47 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* Nuacha Brand Colors - Calm, Mindful Financial Tracking */
+    --background: 30 23% 97%;
+    --foreground: 0 0% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 18%;
 
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 198 19% 44%;
+    --primary-foreground: 30 23% 97%;
 
-    --secondary: 152 76% 40%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 147 28% 81%;
+    --secondary-foreground: 0 0% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 15% 94%;
+    --muted-foreground: 0 0% 36%;
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 36 50% 89%;
+    --accent-foreground: 0 0% 18%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 23% 97%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 198 19% 44%;
 
     --radius: 1rem;
 
-    /* Chart colors */
-    --chart-1: 199 89% 48%;
-    --chart-2: 152 76% 40%;
-    --chart-3: 262 83% 58%;
-    --chart-4: 45 93% 47%;
-    --chart-5: 332 81% 62%;
+    /* Nuacha Brand Extended */
+    --blush: 5 53% 86%;
+    --soft-green: 147 28% 81%;
+
+    /* Chart colors - Nuacha palette */
+    --chart-1: 198 19% 44%;
+    --chart-2: 147 28% 81%;
+    --chart-3: 36 50% 89%;
+    --chart-4: 5 53% 86%;
+    --chart-5: 198 19% 55%;
   }
 }
 
