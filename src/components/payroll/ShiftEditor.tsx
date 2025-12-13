@@ -13,9 +13,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+interface LabelOverrides {
+  title?: string;
+  shiftName?: string;
+  shiftHours?: string;
+  baseRate?: string;
+  hourlyRate?: string;
+  addButton?: string;
+  emptyStateTitle?: string;
+  emptyStateDesc?: string;
+}
+
 interface ShiftEditorProps {
   shifts: ShiftFormData[];
   onChange: (shifts: ShiftFormData[]) => void;
+  labelOverrides?: LabelOverrides;
+  hideHoursField?: boolean;
+  hideHourlyRate?: boolean;
 }
 
 const SHIFT_NAME_OPTIONS = [
@@ -44,7 +58,24 @@ const DEFAULT_SHIFT: ShiftFormData = {
   is_default: false,
 };
 
-export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) => {
+export const ShiftEditor: React.FC<ShiftEditorProps> = ({ 
+  shifts, 
+  onChange, 
+  labelOverrides,
+  hideHoursField = false,
+  hideHourlyRate = false,
+}) => {
+  // Merge default labels with overrides
+  const labels = {
+    title: labelOverrides?.title || 'Shift Configurations',
+    shiftName: labelOverrides?.shiftName || 'Shift Name',
+    shiftHours: labelOverrides?.shiftHours || 'Shift Hours',
+    baseRate: labelOverrides?.baseRate || 'Base Rate (TTD)',
+    hourlyRate: labelOverrides?.hourlyRate || 'Hourly Rate (TTD)',
+    addButton: labelOverrides?.addButton || 'Add Shift',
+    emptyStateTitle: labelOverrides?.emptyStateTitle || 'No shifts configured',
+    emptyStateDesc: labelOverrides?.emptyStateDesc || 'Add shifts to define different pay rates for this employee',
+  };
   // Track which shifts are using "Other" for custom input
   const [customNameFlags, setCustomNameFlags] = React.useState<Record<number, boolean>>({});
   const [customHoursFlags, setCustomHoursFlags] = React.useState<Record<number, boolean>>({});
@@ -140,17 +171,17 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-base font-medium">Shift Configurations</Label>
+        <Label className="text-base font-medium">{labels.title}</Label>
         <Button type="button" variant="outline" size="sm" onClick={addShift}>
           <Plus className="h-4 w-4 mr-1" />
-          Add Shift
+          {labels.addButton}
         </Button>
       </div>
 
       {shifts.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
-          <p>No shifts configured</p>
-          <p className="text-sm">Add shifts to define different pay rates for this employee</p>
+          <p>{labels.emptyStateTitle}</p>
+          <p className="text-sm">{labels.emptyStateDesc}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -175,66 +206,79 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-6">
+              <div className={`grid grid-cols-1 ${hideHoursField ? '' : 'md:grid-cols-2'} gap-3 pt-6`}>
                 <div className="space-y-2">
-                  <Label>Shift Name *</Label>
-                  <Select
-                    value={getNameSelectValue(shift, index)}
-                    onValueChange={(value) => handleNameSelectChange(index, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select shift name..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SHIFT_NAME_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {customNameFlags[index] && (
+                  <Label>{labels.shiftName} *</Label>
+                  {hideHoursField ? (
+                    // For contract workers, always use custom input (no predefined shift names)
                     <Input
                       value={shift.shift_name}
                       onChange={(e) => updateShift(index, 'shift_name', e.target.value)}
-                      placeholder="Enter custom shift name"
-                      className="mt-2"
+                      placeholder="e.g., Full Property, Quick Trim, Regular Visit"
                     />
+                  ) : (
+                    <>
+                      <Select
+                        value={getNameSelectValue(shift, index)}
+                        onValueChange={(value) => handleNameSelectChange(index, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select shift name..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SHIFT_NAME_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {customNameFlags[index] && (
+                        <Input
+                          value={shift.shift_name}
+                          onChange={(e) => updateShift(index, 'shift_name', e.target.value)}
+                          placeholder="Enter custom shift name"
+                          className="mt-2"
+                        />
+                      )}
+                    </>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label>Shift Hours</Label>
-                  <Select
-                    value={getHoursSelectValue(shift, index)}
-                    onValueChange={(value) => handleHoursSelectChange(index, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select shift hours..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SHIFT_HOURS_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {customHoursFlags[index] && (
-                    <Input
-                      value={shift.shift_hours || ''}
-                      onChange={(e) => updateShift(index, 'shift_hours', e.target.value)}
-                      placeholder="e.g., 7am-3pm"
-                      className="mt-2"
-                    />
-                  )}
-                </div>
+                {!hideHoursField && (
+                  <div className="space-y-2">
+                    <Label>{labels.shiftHours}</Label>
+                    <Select
+                      value={getHoursSelectValue(shift, index)}
+                      onValueChange={(value) => handleHoursSelectChange(index, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select shift hours..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHIFT_HOURS_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value={OTHER_VALUE}>Other (custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {customHoursFlags[index] && (
+                      <Input
+                        value={shift.shift_hours || ''}
+                        onChange={(e) => updateShift(index, 'shift_hours', e.target.value)}
+                        placeholder="e.g., 7am-3pm"
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className={`grid grid-cols-1 ${hideHourlyRate ? '' : 'md:grid-cols-2'} gap-3`}>
                 <div className="space-y-2">
-                  <Label>Base Rate (TTD) *</Label>
+                  <Label>{labels.baseRate} *</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -242,19 +286,23 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
                     onChange={(e) => updateShift(index, 'base_rate', parseFloat(e.target.value) || 0)}
                     placeholder="250.00"
                   />
-                  <p className="text-xs text-muted-foreground">Flat rate for this shift</p>
+                  <p className="text-xs text-muted-foreground">
+                    {hideHoursField ? 'Amount for this service' : 'Flat rate for this shift'}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label>Hourly Rate (TTD)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={shift.hourly_rate || ''}
-                    onChange={(e) => updateShift(index, 'hourly_rate', parseFloat(e.target.value) || undefined)}
-                    placeholder="35.00 (optional)"
-                  />
-                  <p className="text-xs text-muted-foreground">Optional - for hourly calculations</p>
-                </div>
+                {!hideHourlyRate && (
+                  <div className="space-y-2">
+                    <Label>{labels.hourlyRate}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={shift.hourly_rate || ''}
+                      onChange={(e) => updateShift(index, 'hourly_rate', parseFloat(e.target.value) || undefined)}
+                      placeholder="35.00 (optional)"
+                    />
+                    <p className="text-xs text-muted-foreground">Optional - for hourly calculations</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -263,7 +311,7 @@ export const ShiftEditor: React.FC<ShiftEditorProps> = ({ shifts, onChange }) =>
 
       {shifts.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          ★ marks the default shift that will be pre-selected in Quick Pay Entry
+          ★ marks the default {hideHoursField ? 'service' : 'shift'} that will be pre-selected in Quick Pay Entry
         </p>
       )}
     </div>

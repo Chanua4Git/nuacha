@@ -9,7 +9,7 @@ export interface Employee {
   email?: string;
   phone?: string;
   national_id?: string; // TT National ID
-  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based' | 'contract';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
@@ -113,7 +113,7 @@ export interface EmployeeFormData {
   email?: string;
   phone?: string;
   national_id?: string;
-  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based' | 'contract';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;

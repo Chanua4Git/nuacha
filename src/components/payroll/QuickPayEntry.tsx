@@ -119,6 +119,10 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
           return selectedEmployee.weekly_rate || 0;
         case 'monthly':
           return selectedEmployee.monthly_salary || 0;
+        case 'contract':
+        case 'shift_based':
+          // For contract/shift_based without a selected shift, require selection
+          return 0;
         default:
           return 0;
       }
@@ -220,13 +224,19 @@ export const QuickPayEntry: React.FC<QuickPayEntryProps> = ({
 
         {selectedEmployeeId && (
           <>
-            {/* Shift Selection (if shift-based or has shifts) */}
+            {/* Shift/Service Selection (if shift-based, contract, or has shifts) */}
             {employeeShifts.length > 0 && (
               <div className="space-y-2">
-                <Label>Shift Type</Label>
+                <Label>
+                  {selectedEmployee?.employment_type === 'contract' ? 'Service Type *' : 'Shift Type'}
+                </Label>
                 <Select value={selectedShiftId} onValueChange={setSelectedShiftId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select shift type" />
+                    <SelectValue placeholder={
+                      selectedEmployee?.employment_type === 'contract' 
+                        ? "Select service type" 
+                        : "Select shift type"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     {employeeShifts.map(shift => (

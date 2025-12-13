@@ -19,7 +19,7 @@ const employeeFormSchema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
   national_id: z.string().optional(),
-  employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly', 'shift_based']),
+  employment_type: z.enum(['hourly', 'monthly', 'daily', 'weekly', 'shift_based', 'contract']),
   hourly_rate: z.string().optional(),
   monthly_salary: z.string().optional(),
   daily_rate: z.string().optional(),
@@ -34,8 +34,8 @@ const employeeFormSchema = z.object({
     return !isNaN(rate) && rate > 0;
   };
 
-  // shift_based doesn't need rate validation here - shifts handle that
-  if (data.employment_type === 'shift_based') {
+  // shift_based and contract don't need rate validation here - shifts/services handle that
+  if (data.employment_type === 'shift_based' || data.employment_type === 'contract') {
     return true;
   }
 
@@ -117,9 +117,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     setIsSubmitting(true);
     clearErrors();
     
-    // Validate shifts for shift_based employees
-    if (data.employment_type === 'shift_based' && shifts.length === 0) {
-      setError('root', { message: 'At least one shift configuration is required for shift-based employees' });
+    // Validate shifts for shift_based and contract employees
+    if ((data.employment_type === 'shift_based' || data.employment_type === 'contract') && shifts.length === 0) {
+      const message = data.employment_type === 'contract' 
+        ? 'At least one service rate is required for contract workers'
+        : 'At least one shift configuration is required for shift-based employees';
+      setError('root', { message });
       setIsSubmitting(false);
       return;
     }
@@ -140,7 +143,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : undefined,
         nis_number: data.nis_number || undefined,
         date_hired: data.date_hired || undefined,
-        shifts: data.employment_type === 'shift_based' ? shifts : undefined,
+        shifts: (data.employment_type === 'shift_based' || data.employment_type === 'contract') ? shifts : undefined,
       };
 
       await onSubmit(processedData);
@@ -186,18 +189,19 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Select
                 value={employmentType}
                 onValueChange={(value) => 
-                  setValue('employment_type', value as 'hourly' | 'monthly' | 'daily' | 'weekly')
+                  setValue('employment_type', value as 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based' | 'contract')
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-              <SelectItem value="hourly">Hourly</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="shift_based">Shift-Based (Multiple Rates)</SelectItem>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="shift_based">Shift-Based (Multiple Rates)</SelectItem>
+                  <SelectItem value="contract">Contract / Per Visit</SelectItem>
                 </SelectContent>
               </Select>
               {errors.employment_type && (
@@ -360,6 +364,24 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
           {/* Shift Editor for shift-based employees */}
           {employmentType === 'shift_based' && (
             <ShiftEditor shifts={shifts} onChange={setShifts} />
+          )}
+
+          {/* Service Rate Editor for contract workers */}
+          {employmentType === 'contract' && (
+            <ShiftEditor 
+              shifts={shifts} 
+              onChange={setShifts} 
+              labelOverrides={{
+                title: 'Service Rates',
+                shiftName: 'Service Name',
+                baseRate: 'Rate (TTD)',
+                addButton: 'Add Service Rate',
+                emptyStateTitle: 'No service rates configured',
+                emptyStateDesc: 'Add service rates for this contract worker (e.g., Full Property @ $1200)',
+              }}
+              hideHoursField={true}
+              hideHourlyRate={true}
+            />
           )}
 
           <div className="space-y-2">
