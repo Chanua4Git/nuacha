@@ -28,6 +28,10 @@ import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import Updates from "./pages/Updates";
+import GetStarted from "./pages/GetStarted";
+import GetStartedFamilies from "./pages/GetStartedFamilies";
+import GetStartedBusiness from "./pages/GetStartedBusiness";
+import GetStartedEntrepreneurs from "./pages/GetStartedEntrepreneurs";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ScrollToTop from "@/components/navigation/ScrollToTop";
 
@@ -140,6 +144,10 @@ const App = () => {
                     } />
                     <Route path="/authentication-demo" element={<AuthenticationDemo />} />
                     <Route path="/download-purchase-success" element={<DownloadPurchaseSuccess />} />
+                    <Route path="/get-started" element={<GetStarted />} />
+                    <Route path="/get-started/families" element={<GetStartedFamilies />} />
+                    <Route path="/get-started/business" element={<GetStartedBusiness />} />
+                    <Route path="/get-started/entrepreneurs" element={<GetStartedEntrepreneurs />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
