@@ -14,7 +14,7 @@ import PlaceInput from './PlaceInput';
 import ReplacementSection from './ReplacementSection';
 import RecurringDateSelector, { DateMode, RecurrencePattern } from './RecurringDateSelector';
 import { toast } from 'sonner';
-import { OCRResult } from '@/types/expense';
+import { OCRResult, Family } from '@/types/expense';
 import { saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import { uploadReceiptToOrganizedStorage } from '@/utils/receipt/enhancedStorage';
 import { supabase } from '@/lib/supabase';
@@ -645,11 +645,22 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     }
   }, [initialOcrData, isDemo, selectedFamily, isLoading, showFamilySetupModal]);
   
-  const handleFamilyCreated = () => {
+  const handleFamilyCreated = (newFamily: Family) => {
+    setSelectedFamily(newFamily);
     setShowFamilySetupModal(false);
     toast.success("Family created successfully", {
       description: "You can now save your expense"
     });
+  };
+  
+  const handleFamilyModalOpenChange = (open: boolean) => {
+    if (!open && families.length === 0) {
+      toast.info("Please create a family first", {
+        description: "We need a family to save your expense to."
+      });
+    } else {
+      setShowFamilySetupModal(open);
+    }
   };
 
   const handleFamilySelected = (familyId: string) => {
@@ -702,7 +713,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
         open={showFamilySetupModal}
         families={families}
         onFamilySelected={handleFamilySelected}
-        onFamilyCreated={handleFamilyCreated} 
+        onFamilyCreated={handleFamilyCreated}
+        onOpenChange={handleFamilyModalOpenChange}
       />
         <Card className="w-full max-w-xl mx-auto">
           <CardHeader>

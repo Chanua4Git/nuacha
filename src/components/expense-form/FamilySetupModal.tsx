@@ -14,10 +14,11 @@ interface FamilySetupModalProps {
   open: boolean;
   families: Family[];
   onFamilySelected: (familyId: string) => void;
-  onFamilyCreated: () => void;
+  onFamilyCreated: (family: Family) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const FamilySetupModal = ({ open, families, onFamilySelected, onFamilyCreated }: FamilySetupModalProps) => {
+const FamilySetupModal = ({ open, families, onFamilySelected, onFamilyCreated, onOpenChange }: FamilySetupModalProps) => {
   const { createFamily } = useFamilies();
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [name, setName] = useState('');
@@ -33,17 +34,20 @@ const FamilySetupModal = ({ open, families, onFamilySelected, onFamilyCreated }:
 
     setIsSubmitting(true);
     try {
-      await createFamily({ name, color });
-      onFamilyCreated();
+      const newFamily = await createFamily({ name, color });
+      if (newFamily) {
+        onFamilyCreated(newFamily);
+      }
     } catch (error) {
       console.error('Error creating family:', error);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {hasExistingFamilies && !showCreateNew 
