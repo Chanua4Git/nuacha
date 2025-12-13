@@ -18,6 +18,9 @@ import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
 import { processReceiptWithEdgeFunction } from "@/utils/receipt/ocrProcessing";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthPreview } from "@/contexts/AuthPreviewContext";
+import { useScanUsageTracker } from "@/hooks/useScanUsageTracker";
+import { ScanLimitModal } from "@/components/ScanLimitModal";
+import { ScanUsageIndicator } from "@/components/ScanUsageIndicator";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -26,6 +29,10 @@ const Landing = () => {
   
   // Use preview-aware auth (respects ?_preview_auth=false)
   const { user } = useAuthPreview();
+  
+  // Scan usage tracking for freemium limits
+  const { canScan, incrementScan, getTimeUntilReset, getRemainingScans } = useScanUsageTracker();
+  const [showScanLimitModal, setShowScanLimitModal] = useState(false);
   
   // Receipt processing state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,6 +95,13 @@ const Landing = () => {
       return;
     }
     
+    // Check scan limit for unauthenticated users
+    if (!user && !canScan()) {
+      console.log('❌ Landing: Scan limit reached');
+      setShowScanLimitModal(true);
+      return;
+    }
+    
     // Immediate feedback that system is working
     toast("System is working for you! 🚀", {
       description: "Hold on, we're processing your receipt and will redirect you to complete the magic."
@@ -123,6 +137,12 @@ const Landing = () => {
       }
 
       console.log('✅ Landing: OCR processing successful:', ocrResult);
+      
+      // Increment scan count for unauthenticated users after successful scan
+      if (!user) {
+        incrementScan();
+        console.log('📊 Landing: Scan count incremented, remaining:', getRemainingScans());
+      }
 
       // Navigate to demo with processed data
       console.log('🧭 Landing: Navigating to /app?tab=add-expense with state:', {
@@ -178,6 +198,13 @@ const Landing = () => {
             }}
             className="hidden"
           />
+          
+          {/* Scan usage indicator for unauthenticated users */}
+          {!user && (
+            <div className="flex justify-center mt-4">
+              <ScanUsageIndicator />
+            </div>
+          )}
           
           {/* Optional shortcut link for authenticated users */}
           {user && (
@@ -428,6 +455,13 @@ const Landing = () => {
           isVisible={isProcessing}
           title="Processing your receipt..."
           description="We're extracting the details for you. This might take a moment."
+        />
+
+        {/* Scan Limit Modal - Shown when free scan limit is reached */}
+        <ScanLimitModal
+          open={showScanLimitModal}
+          onOpenChange={setShowScanLimitModal}
+          timeUntilReset={getTimeUntilReset()}
         />
       </div>
     </>;
