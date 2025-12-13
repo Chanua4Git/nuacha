@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useActiveSubscription, hasFeatureAccess } from './useActiveSubscription';
 
 interface ScanUsage {
   date: string; // YYYY-MM-DD
@@ -39,6 +40,10 @@ function saveUsageToStorage(usage: ScanUsage): void {
 
 export function useScanUsageTracker() {
   const [usage, setUsage] = useState<ScanUsage>(getUsageFromStorage);
+  const { hasActiveSubscription, planType, isLoading: subLoading } = useActiveSubscription();
+
+  // Check if user has unlimited scans via subscription
+  const hasUnlimitedScans = hasActiveSubscription && hasFeatureAccess(planType, 'unlimited_scans');
 
   // Refresh usage on mount and when date changes
   useEffect(() => {
@@ -47,9 +52,12 @@ export function useScanUsageTracker() {
   }, []);
 
   const canScan = useCallback((): boolean => {
+    // Subscribers get unlimited scans
+    if (hasUnlimitedScans) return true;
+    
     const currentUsage = getUsageFromStorage();
     return currentUsage.count < FREE_DAILY_SCAN_LIMIT;
-  }, []);
+  }, [hasUnlimitedScans]);
 
   const incrementScan = useCallback((): void => {
     const currentUsage = getUsageFromStorage();
@@ -62,9 +70,12 @@ export function useScanUsageTracker() {
   }, []);
 
   const getRemainingScans = useCallback((): number => {
+    // Subscribers have unlimited
+    if (hasUnlimitedScans) return Infinity;
+    
     const currentUsage = getUsageFromStorage();
     return Math.max(0, FREE_DAILY_SCAN_LIMIT - currentUsage.count);
-  }, []);
+  }, [hasUnlimitedScans]);
 
   const getNextResetTime = useCallback((): Date => {
     const tomorrow = new Date();
@@ -93,6 +104,8 @@ export function useScanUsageTracker() {
     getRemainingScans,
     getNextResetTime,
     getTimeUntilReset,
-    dailyLimit: FREE_DAILY_SCAN_LIMIT
+    dailyLimit: FREE_DAILY_SCAN_LIMIT,
+    hasUnlimitedScans,
+    isCheckingSubscription: subLoading
   };
 }

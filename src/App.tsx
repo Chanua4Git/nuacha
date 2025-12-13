@@ -34,6 +34,7 @@ import GetStartedBusiness from "./pages/GetStartedBusiness";
 import GetStartedEntrepreneurs from "./pages/GetStartedEntrepreneurs";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ScrollToTop from "@/components/navigation/ScrollToTop";
+import SubscriptionGate from "@/components/payment/SubscriptionGate";
 
 // Import onboarding helpers for development debugging
 import '@/utils/onboardingHelpers';
@@ -117,7 +118,9 @@ const App = () => {
                     } />
                     <Route path="/budget" element={
                       <ProtectedRoute>
-                        <Budget />
+                        <SubscriptionGate feature="budget" requiredPlan="families">
+                          <Budget />
+                        </SubscriptionGate>
                       </ProtectedRoute>
                     } />
                     <Route path="/receipts" element={
@@ -131,7 +134,13 @@ const App = () => {
                         <Options />
                       </ProtectedRoute>
                     } />
-                    <Route path="/payroll" element={<Payroll />} />
+                    <Route path="/payroll" element={
+                      <ProtectedRoute>
+                        <SubscriptionGate feature="payroll" requiredPlan="business">
+                          <Payroll />
+                        </SubscriptionGate>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/updates" element={<Updates />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
