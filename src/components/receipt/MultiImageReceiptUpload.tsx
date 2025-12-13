@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X, Camera, Upload, RefreshCw, Loader2, Plus, Layers } from 'lucide-react';
 import { removeBackground, loadImage } from '@/utils/receipt/backgroundRemoval';
+import { useScanUsageTracker } from '@/hooks/useScanUsageTracker';
+import { ScanLimitModal } from '@/components/ScanLimitModal';
 
 interface ReceiptSection {
   id: string;
@@ -38,6 +40,10 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Scan limit tracking
+  const { canScan, incrementScan, getTimeUntilReset, hasUnlimitedScans, isCheckingSubscription } = useScanUsageTracker();
+  const [showScanLimitModal, setShowScanLimitModal] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -120,6 +126,19 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
   };
 
   const processSection = async (sectionId: string, withBackgroundRemoval = false) => {
+    // Check scan limit before processing
+    if (!hasUnlimitedScans) {
+      if (isCheckingSubscription) {
+        toast.info("Just a moment...", { description: "Checking your account status" });
+        return;
+      }
+      if (!canScan()) {
+        console.log('🚫 Scan limit reached, showing modal');
+        setShowScanLimitModal(true);
+        return;
+      }
+    }
+    
     setSections(prev => prev.map(s => 
       s.id === sectionId ? { ...s, isProcessing: true } : s
     ));
@@ -161,6 +180,10 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
       ));
 
       if (extractedData && extractedData.confidence && extractedData.confidence > 0.3) {
+        // Increment scan count on successful OCR
+        if (!hasUnlimitedScans) {
+          incrementScan();
+        }
         toast.success('Section processed successfully');
       }
 
@@ -508,6 +531,12 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
         multiple={isLongReceiptMode}
         onChange={handleFileSelect}
         className="hidden"
+      />
+      
+      <ScanLimitModal 
+        open={showScanLimitModal} 
+        onOpenChange={setShowScanLimitModal}
+        timeUntilReset={getTimeUntilReset()}
       />
     </div>
   );

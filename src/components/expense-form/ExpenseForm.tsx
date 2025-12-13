@@ -35,6 +35,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import FamilySetupModal from './FamilySetupModal';
 import { useFamilies } from '@/hooks/useFamilies';
+import { useScanUsageTracker } from '@/hooks/useScanUsageTracker';
+import { ScanLimitModal } from '@/components/ScanLimitModal';
 
 interface ExpenseFormProps {
   initialOcrData?: OCRResult;
@@ -88,6 +90,10 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   // Multi-page receipt state
   const [receiptPages, setReceiptPages] = useState<ReceiptPage[]>([]);
   const [isMultiPageMode, setIsMultiPageMode] = useState(false);
+  
+  // Scan limit tracking
+  const { canScan, incrementScan, getTimeUntilReset, hasUnlimitedScans, isCheckingSubscription } = useScanUsageTracker();
+  const [showScanLimitModal, setShowScanLimitModal] = useState(false);
 
   // Date states
   const [dateMode, setDateMode] = useState<DateMode>('single');
@@ -129,6 +135,19 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const handleHeroFileSelect = async (file: File) => {
     console.log('🚀 ExpenseForm: HeroUploadSection file selected', file);
     
+    // Check scan limit before processing
+    if (!hasUnlimitedScans) {
+      if (isCheckingSubscription) {
+        toast.info("Just a moment...", { description: "Checking your account status" });
+        return;
+      }
+      if (!canScan()) {
+        console.log('🚫 Scan limit reached, showing modal');
+        setShowScanLimitModal(true);
+        return;
+      }
+    }
+    
     // Set preview immediately for user feedback
     setReceiptImage(file);
     const previewUrl = URL.createObjectURL(file);
@@ -149,6 +168,10 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       toast.dismiss('ocr-processing');
       
       if (validateOCRResult(extractedData)) {
+        // Increment scan count on successful OCR
+        if (!hasUnlimitedScans) {
+          incrementScan();
+        }
         handleOcrData(extractedData, previewUrl);
         toast.success('Receipt details gently applied');
       } else {
@@ -1085,6 +1108,12 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
         isVisible={isSubmitting}
         title="Saving your expense..."
         description="We're recording this expense and organizing your receipt. Just a moment."
+      />
+      
+      <ScanLimitModal 
+        open={showScanLimitModal} 
+        onOpenChange={setShowScanLimitModal}
+        timeUntilReset={getTimeUntilReset()}
       />
     </Card>
   );
