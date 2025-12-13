@@ -1,7 +1,6 @@
-
 import { useExpense } from '@/context/ExpenseContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Users, Tag, Calculator, RefreshCw, Settings, CheckCircle, ArrowUpRight, Tags, Zap, Trash2 } from 'lucide-react';
+import { Users, Tag, Calculator, RefreshCw, Settings, CheckCircle, ArrowUpRight, Tags, Zap, Trash2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import CategoryManager from '@/components/accounting/CategoryManager';
@@ -12,6 +11,8 @@ import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import { CategoryCleanupBanner } from '@/components/CategoryCleanupBanner';
 import { useComprehensiveCategoryCleanup } from '@/hooks/useComprehensiveCategoryCleanup';
 import { useEnhancedCategorySync } from '@/hooks/useEnhancedCategorySync';
+import { SubscriptionOrdersTable } from '@/components/admin/SubscriptionOrdersTable';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 const Options = () => {
   const { selectedFamily } = useExpense();
@@ -24,6 +25,7 @@ const Options = () => {
     runFullCategoryOptimization,
     isProcessing: isEnhancedProcessing 
   } = useEnhancedCategorySync();
+  const { isAdmin } = useAdminRole();
 
   // Combine processing states
   const isAnyProcessing = isProcessing || isEnhancedProcessing;
@@ -77,6 +79,12 @@ const Options = () => {
               <Settings className="h-4 w-4 mr-2" />
               Category Management
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="subscriptions">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Subscriptions
+              </TabsTrigger>
+            )}
             </TabsList>
 
             <TabsContent value="families" className="mt-0">
@@ -216,6 +224,12 @@ const Options = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="subscriptions" className="mt-0">
+              <SubscriptionOrdersTable />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

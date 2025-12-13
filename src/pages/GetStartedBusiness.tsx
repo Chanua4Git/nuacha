@@ -129,6 +129,7 @@ const GetStartedBusiness = () => {
         totalValue="$61/month"
         actualPrice="$14.99"
         badge="Business Plan - Early Adopter Pricing"
+        planType="business"
       />
       
       <TestimonialsSection
@@ -141,7 +142,8 @@ const GetStartedBusiness = () => {
       <FinalCTA
         headline="Ready to simplify your business finances?"
         subheadline="Join T&T business owners who've found a better way."
-        ctaText="Start Your Free Trial"
+        ctaText="Start Now"
+        planType="business"
       />
     </div>
   );

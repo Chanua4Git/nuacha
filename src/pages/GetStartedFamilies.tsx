@@ -128,6 +128,7 @@ const GetStartedFamilies = () => {
         totalValue="$59/month"
         actualPrice="$9.99"
         badge="Family Plan - Early Adopter Pricing"
+        planType="families"
       />
       
       <TestimonialsSection
@@ -140,6 +141,7 @@ const GetStartedFamilies = () => {
       <FinalCTA
         headline="Ready to stop wondering where the money went?"
         subheadline="Join hundreds of families already finding peace with Nuacha."
+        planType="families"
       />
     </div>
   );
