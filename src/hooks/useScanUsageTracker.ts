@@ -70,6 +70,16 @@ export function useScanUsageTracker() {
     };
     saveUsageToStorage(newUsage);
     setUsage(newUsage);
+    
+    // Verify persistence immediately
+    const verified = getUsageFromStorage();
+    console.log('📊 Scan usage incremented:', { 
+      previous: currentUsage.count, 
+      new: newUsage.count,
+      verified: verified.count,
+      limit: FREE_DAILY_SCAN_LIMIT,
+      remaining: FREE_DAILY_SCAN_LIMIT - verified.count
+    });
   }, []);
 
   const getRemainingScans = useCallback((): number => {

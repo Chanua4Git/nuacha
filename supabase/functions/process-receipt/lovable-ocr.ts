@@ -213,58 +213,52 @@ Be extremely precise with decimal points and currency amounts. Each line item MU
 
 function normalizeExtractedData(data: any): NormalizedResult {
   try {
-    // Parse and validate the date
+    // Parse and validate the date with T&T DD/MM/YYYY priority
     let parsedDate: Date | null = null;
     if (data.date) {
-      parsedDate = new Date(data.date);
+      // Check if date is already in YYYY-MM-DD format from AI
+      if (data.date.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
+        const parts = data.date.split('-');
+        const year = parts[0];
+        const secondPart = parseInt(parts[1]); // What AI thinks is month
+        const thirdPart = parseInt(parts[2]);   // What AI thinks is day
+        
+        // T&T DATE RULE: For ambiguous dates where both values <= 12,
+        // ALWAYS interpret as DD/MM (T&T standard), not MM/DD (US standard)
+        // The AI may have returned YYYY-MM-DD thinking month-first, but receipt was DD/MM
+        if (secondPart <= 12 && thirdPart <= 12 && secondPart !== thirdPart) {
+          // Swap: treat secondPart as day, thirdPart as month
+          const correctedDateStr = `${year}-${thirdPart.toString().padStart(2, '0')}-${secondPart.toString().padStart(2, '0')}`;
+          console.log(`🔄 T&T date format correction (ambiguous): ${data.date} → ${correctedDateStr} (enforcing DD/MM)`);
+          parsedDate = new Date(correctedDateStr);
+        } else {
+          // Unambiguous: one value > 12, so parsing is clear
+          parsedDate = new Date(data.date);
+        }
+      } else {
+        // Input might be in DD/MM/YYYY or other format
+        const parts = data.date.split(/[-\/\.]/);
+        if (parts.length === 3) {
+          const first = parseInt(parts[0]);
+          const second = parseInt(parts[1]);
+          const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+          
+          // T&T: First number is DAY, second is MONTH
+          const correctedDateStr = `${year}-${second.toString().padStart(2, '0')}-${first.toString().padStart(2, '0')}`;
+          console.log(`🔄 T&T date format parse: ${data.date} → ${correctedDateStr}`);
+          parsedDate = new Date(correctedDateStr);
+        } else {
+          parsedDate = new Date(data.date);
+        }
+      }
+      
+      // Final validation: reject invalid dates
       if (isNaN(parsedDate.getTime())) {
+        console.warn(`⚠️ Could not parse date: ${data.date}`);
         parsedDate = null;
       } else {
-        // Validate: if date is more than 1 day in the future, it's likely wrong
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        if (parsedDate > tomorrow) {
-          console.warn(`⚠️ Date ${data.date} is in the future, likely misinterpreted`);
-          
-          // Check if the date is already in YYYY-MM-DD format
-          if (data.date.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
-            // Input is YYYY-MM-DD, AI may have swapped day/month
-            const parts = data.date.split('-');
-            const year = parts[0];
-            const firstNum = parts[1];  // Could be month or day
-            const secondNum = parts[2];  // Could be day or month
-            
-            // Try swapping: YYYY-MM-DD → YYYY-DD-MM (interpret as DD/MM input)
-            if (parseInt(firstNum) <= 31 && parseInt(secondNum) <= 12) {
-              const correctedDateStr = `${year}-${secondNum.padStart(2, '0')}-${firstNum.padStart(2, '0')}`;
-              const correctedDate = new Date(correctedDateStr);
-              
-              if (!isNaN(correctedDate.getTime()) && correctedDate <= tomorrow) {
-                console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr} (swapped day/month)`);
-                parsedDate = correctedDate;
-              }
-            }
-          } else {
-            // Input might be in DD/MM/YYYY format, parse it correctly
-            const parts = data.date.split(/[-\/\.]/);
-            if (parts.length === 3) {
-              const potentialDay = parts[0];
-              const potentialMonth = parts[1];
-              const year = parts[2];
-              
-              if (parseInt(potentialDay) <= 31 && parseInt(potentialMonth) <= 12) {
-                const correctedDateStr = `${year}-${potentialMonth.padStart(2, '0')}-${potentialDay.padStart(2, '0')}`;
-                const correctedDate = new Date(correctedDateStr);
-                
-                if (!isNaN(correctedDate.getTime()) && correctedDate <= tomorrow) {
-                  console.log(`✅ Corrected date from ${data.date} to ${correctedDateStr}`);
-                  parsedDate = correctedDate;
-                }
-              }
-            }
-          }
-        }
+        // Log the final parsed date for verification
+        console.log(`✅ Final parsed date: ${parsedDate.toISOString().split('T')[0]} from input: ${data.date}`);
       }
     }
 

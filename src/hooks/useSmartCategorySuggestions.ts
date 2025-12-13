@@ -21,6 +21,43 @@ interface SuggestionFactors {
 
 // Trinidad and Tobago vendor patterns for smart categorization
 const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
+  // ============ GLOBAL HOTEL CHAINS ============
+  'hyatt': { category: 'Accommodation', confidence: 0.95 },
+  'marriott': { category: 'Accommodation', confidence: 0.95 },
+  'hilton': { category: 'Accommodation', confidence: 0.95 },
+  'sheraton': { category: 'Accommodation', confidence: 0.95 },
+  'westin': { category: 'Accommodation', confidence: 0.95 },
+  'holiday inn': { category: 'Accommodation', confidence: 0.95 },
+  'best western': { category: 'Accommodation', confidence: 0.95 },
+  'radisson': { category: 'Accommodation', confidence: 0.95 },
+  'intercontinental': { category: 'Accommodation', confidence: 0.95 },
+  'four seasons': { category: 'Accommodation', confidence: 0.95 },
+  'ritz carlton': { category: 'Accommodation', confidence: 0.95 },
+  'doubletree': { category: 'Accommodation', confidence: 0.95 },
+  'courtyard': { category: 'Accommodation', confidence: 0.90 },
+  'fairfield': { category: 'Accommodation', confidence: 0.95 },
+  'hampton inn': { category: 'Accommodation', confidence: 0.95 },
+  'la quinta': { category: 'Accommodation', confidence: 0.95 },
+  'wyndham': { category: 'Accommodation', confidence: 0.95 },
+  'ihg': { category: 'Accommodation', confidence: 0.95 },
+  'accor': { category: 'Accommodation', confidence: 0.95 },
+  'airbnb': { category: 'Accommodation', confidence: 0.95 },
+  'vrbo': { category: 'Accommodation', confidence: 0.95 },
+  'hotel': { category: 'Accommodation', confidence: 0.85 },
+  'resort': { category: 'Accommodation', confidence: 0.85 },
+  'motel': { category: 'Accommodation', confidence: 0.85 },
+  'inn': { category: 'Accommodation', confidence: 0.80 },
+  'lodge': { category: 'Accommodation', confidence: 0.80 },
+  
+  // T&T Hotels
+  'kapok hotel': { category: 'Accommodation', confidence: 0.95 },
+  'courtyard marriott': { category: 'Accommodation', confidence: 0.95 },
+  'crews inn': { category: 'Accommodation', confidence: 0.95 },
+  'cascadia': { category: 'Accommodation', confidence: 0.95 },
+  'normandie': { category: 'Accommodation', confidence: 0.95 },
+  'cara suites': { category: 'Accommodation', confidence: 0.95 },
+  'magdalena grand': { category: 'Accommodation', confidence: 0.95 },
+  
   // T&T Grocery Stores
   'jta': { category: 'Groceries', confidence: 0.95 },
   'massy stores': { category: 'Groceries', confidence: 0.95 },
@@ -51,6 +88,7 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
   'restaurant': { category: 'Dining out', confidence: 0.9 },
   'bar': { category: 'Dining out', confidence: 0.85 },
   'grill': { category: 'Dining out', confidence: 0.9 },
+  'lobby bar': { category: 'Dining out', confidence: 0.90 },
   
   // International chains present in T&T
   'starbucks': { category: 'Dining out', confidence: 0.95 },
@@ -95,6 +133,18 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
 
 // Line item intelligence for coffee/food items
 const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: number } } = {
+  // Hotel/Accommodation items
+  'room rate': { category: 'Accommodation', confidence: 0.95 },
+  'room charge': { category: 'Accommodation', confidence: 0.95 },
+  'lodging': { category: 'Accommodation', confidence: 0.95 },
+  'nightly rate': { category: 'Accommodation', confidence: 0.95 },
+  'check-in': { category: 'Accommodation', confidence: 0.9 },
+  'check-out': { category: 'Accommodation', confidence: 0.9 },
+  'room service': { category: 'Dining out', confidence: 0.85 },
+  'minibar': { category: 'Dining out', confidence: 0.85 },
+  'in-room dining': { category: 'Dining out', confidence: 0.90 },
+  'ird': { category: 'Dining out', confidence: 0.85 },
+  
   // Coffee drinks and cafe items
   'cookie': { category: 'Dining out', confidence: 0.9 },
   'cookies': { category: 'Dining out', confidence: 0.9 },
@@ -111,6 +161,12 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'frappuccino': { category: 'Dining out', confidence: 0.9 },
   'coffee': { category: 'Dining out', confidence: 0.8 },
   'tea': { category: 'Dining out', confidence: 0.75 },
+  'spaghetti': { category: 'Dining out', confidence: 0.9 },
+  'marinara': { category: 'Dining out', confidence: 0.9 },
+  'caesar': { category: 'Dining out', confidence: 0.85 },
+  'salad': { category: 'Dining out', confidence: 0.8 },
+  'virgin': { category: 'Dining out', confidence: 0.75 },
+  'strawberry': { category: 'Dining out', confidence: 0.7 },
   
   // Fast food items
   'burger': { category: 'Dining out', confidence: 0.85 },
