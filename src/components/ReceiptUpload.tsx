@@ -8,6 +8,8 @@ import { processReceiptImage, validateOCRResult } from '@/utils/receipt';
 import { mergeReceiptPages, detectPartialReceipt, calculateLineItemsSubtotal, isReceiptComplete } from '@/utils/receipt/mergeReceipts';
 import { toast } from 'sonner';
 import { OCRResult } from '@/types/expense';
+import { useScanUsageTracker } from '@/hooks/useScanUsageTracker';
+import { ScanLimitModal } from '@/components/ScanLimitModal';
 
 interface ReceiptUploadProps {
   onImageUpload: (file: File) => void;
@@ -37,6 +39,10 @@ const ReceiptUpload = ({
     ocrResult: OCRResult;
   }>>([]);
   const [isMultiPageMode, setIsMultiPageMode] = useState(false);
+  
+  // Scan limit tracking
+  const { canScan, incrementScan, getTimeUntilReset, hasUnlimitedScans, isCheckingSubscription } = useScanUsageTracker();
+  const [showScanLimitModal, setShowScanLimitModal] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -140,6 +146,19 @@ const ReceiptUpload = ({
   };
 
   const processReceipt = async (file: File, isRetry = false) => {
+    // Check scan limit before processing
+    if (!hasUnlimitedScans) {
+      if (isCheckingSubscription) {
+        toast.info("Just a moment...", { description: "Checking your account status" });
+        return;
+      }
+      if (!canScan()) {
+        console.log('🚫 Scan limit reached, showing modal');
+        setShowScanLimitModal(true);
+        return;
+      }
+    }
+    
     setCurrentFile(file);
     onImageUpload(file);
     
@@ -149,6 +168,10 @@ const ReceiptUpload = ({
       setOcrResult(extractedData); // Store OCR result for multi-page handling
       
       if (validateOCRResult(extractedData)) {
+        // Increment scan count on successful OCR
+        if (!hasUnlimitedScans && !isRetry) {
+          incrementScan();
+        }
         onDataExtracted(extractedData);
         if (isRetry) {
           toast.success('Receipt details refreshed');
@@ -432,6 +455,11 @@ const ReceiptUpload = ({
           </div>
         </div>
       )}
+      <ScanLimitModal 
+        open={showScanLimitModal} 
+        onOpenChange={setShowScanLimitModal}
+        timeUntilReset={getTimeUntilReset()}
+      />
     </div>
   );
 };
