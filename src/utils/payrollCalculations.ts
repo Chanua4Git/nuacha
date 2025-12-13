@@ -26,7 +26,7 @@ export interface PayrollCalculationResult {
 }
 
 export interface EmployeeData {
-  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based';
+  employment_type: 'hourly' | 'monthly' | 'daily' | 'weekly' | 'shift_based' | 'contract';
   hourly_rate?: number;
   monthly_salary?: number;
   daily_rate?: number;
