@@ -52,12 +52,15 @@ export function useScanUsageTracker() {
   }, []);
 
   const canScan = useCallback((): boolean => {
+    // Still checking subscription status - block scans to prevent race condition
+    if (subLoading) return false;
+    
     // Subscribers get unlimited scans
     if (hasUnlimitedScans) return true;
     
     const currentUsage = getUsageFromStorage();
     return currentUsage.count < FREE_DAILY_SCAN_LIMIT;
-  }, [hasUnlimitedScans]);
+  }, [hasUnlimitedScans, subLoading]);
 
   const incrementScan = useCallback((): void => {
     const currentUsage = getUsageFromStorage();

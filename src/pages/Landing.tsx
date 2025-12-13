@@ -31,7 +31,7 @@ const Landing = () => {
   const { user } = useAuthPreview();
   
   // Scan usage tracking for freemium limits
-  const { canScan, incrementScan, getTimeUntilReset, getRemainingScans } = useScanUsageTracker();
+  const { canScan, incrementScan, getTimeUntilReset, getRemainingScans, hasUnlimitedScans, isCheckingSubscription } = useScanUsageTracker();
   const [showScanLimitModal, setShowScanLimitModal] = useState(false);
   
   // Receipt processing state
@@ -95,9 +95,9 @@ const Landing = () => {
       return;
     }
     
-    // Check scan limit for unauthenticated users
-    if (!user && !canScan()) {
-      console.log('❌ Landing: Scan limit reached');
+    // Check scan limit for all non-subscribers (authenticated or not)
+    if (!hasUnlimitedScans && !canScan()) {
+      console.log('❌ Landing: Scan limit reached for non-subscriber');
       setShowScanLimitModal(true);
       return;
     }
@@ -138,10 +138,10 @@ const Landing = () => {
 
       console.log('✅ Landing: OCR processing successful:', ocrResult);
       
-      // Increment scan count for unauthenticated users after successful scan
-      if (!user) {
+      // Increment scan count for all non-subscribers after successful scan
+      if (!hasUnlimitedScans) {
         incrementScan();
-        console.log('📊 Landing: Scan count incremented, remaining:', getRemainingScans());
+        console.log('📊 Landing: Scan count incremented for non-subscriber, remaining:', getRemainingScans());
       }
 
       // Navigate to demo with processed data
@@ -199,8 +199,8 @@ const Landing = () => {
             className="hidden"
           />
           
-          {/* Scan usage indicator for unauthenticated users */}
-          {!user && (
+          {/* Scan usage indicator for all non-subscribers */}
+          {!hasUnlimitedScans && !isCheckingSubscription && (
             <div className="flex justify-center mt-4">
               <ScanUsageIndicator />
             </div>
