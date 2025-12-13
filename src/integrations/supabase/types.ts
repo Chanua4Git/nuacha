@@ -1713,6 +1713,66 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_orders: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          billing_cycle: string
+          created_at: string
+          currency: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          order_reference: string
+          payment_confirmed: boolean | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
+          plan_type: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          order_reference: string
+          payment_confirmed?: boolean | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          plan_type: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          order_reference?: string
+          payment_confirmed?: boolean | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          plan_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string
@@ -1896,6 +1956,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_templates: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          message_template: string
+          name: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message_template: string
+          name: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message_template?: string
+          name?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
       }
     }
     Views: {

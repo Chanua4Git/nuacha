@@ -142,6 +142,7 @@ const GetStartedEntrepreneurs = () => {
         actualPrice="$19.99"
         badge="Entrepreneur Plan - Best Value"
         ctaText="Get Everything Now"
+        planType="entrepreneurs"
       />
       
       <TestimonialsSection
@@ -154,7 +155,8 @@ const GetStartedEntrepreneurs = () => {
       <FinalCTA
         headline="Ready to simplify your entire financial life?"
         subheadline="Business, family, everything—finally in one place."
-        ctaText="Start Your Free Trial"
+        ctaText="Start Now"
+        planType="entrepreneurs"
         benefits={[
           "All family features",
           "All business features", 
