@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { format } from 'date-fns';
 import { Filter, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,8 +17,14 @@ import PeriodSelector, { PeriodSelection } from '@/components/budget/PeriodSelec
 import ExpenseFilterPanel, { ExpenseFilterValues } from './ExpenseFilterPanel';
 import ExpenseFilterChips from './ExpenseFilterChips';
 import { useCategories } from '@/hooks/useCategories';
+import { Expense } from '@/types/expense';
+import DetailedReceiptView from './receipt/DetailedReceiptView';
 
-const ExpenseList = () => {
+interface ExpenseListProps {
+  onEditExpense?: (expense: Expense) => void;
+}
+
+const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const expenseContext = useContextAwareExpense();
   const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
   const { categories } = useCategories();
@@ -41,6 +48,9 @@ const ExpenseList = () => {
   const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates'>('all');
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [showBulkSelect, setShowBulkSelect] = useState(false);
+  
+  // Receipt detail view state
+  const [selectedExpenseForDetails, setSelectedExpenseForDetails] = useState<Expense | null>(null);
   
   const updateFilter = useCallback((key: keyof ExpenseFilterValues, value: any) => {
     setFilters(prev => ({
@@ -154,6 +164,16 @@ const ExpenseList = () => {
       toast.error('Failed to delete expense');
     }
   };
+
+  const handleEditExpense = (expense: Expense) => {
+    if (onEditExpense) {
+      onEditExpense(expense);
+    }
+  };
+
+  const handleViewDetails = (expense: Expense) => {
+    setSelectedExpenseForDetails(expense);
+  };
   
   return (
     <div>
@@ -253,6 +273,8 @@ const ExpenseList = () => {
                             key={expense.id}
                             expense={category}
                             onDelete={handleDeleteSingle}
+                            onEdit={onEditExpense ? handleEditExpense : undefined}
+                            onViewDetails={handleViewDetails}
                             isDuplicate={true}
                             duplicateConfidence={group.confidence}
                             isSelected={selectedExpenses.has(expense.id)}
@@ -308,6 +330,8 @@ const ExpenseList = () => {
               key={expense.id} 
               expense={expense}
               onDelete={handleDeleteSingle}
+              onEdit={onEditExpense ? handleEditExpense : undefined}
+              onViewDetails={handleViewDetails}
               isDuplicate={duplicateExpenseIds.has(expense.id)}
               isSelected={selectedExpenses.has(expense.id)}
               onSelectionChange={handleExpenseSelection}
@@ -322,6 +346,23 @@ const ExpenseList = () => {
           </p>
         </div>
       )}
+
+      {/* Receipt Detail Sheet */}
+      <Sheet open={!!selectedExpenseForDetails} onOpenChange={(open) => !open && setSelectedExpenseForDetails(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Receipt Details</SheetTitle>
+            <SheetDescription>
+              {selectedExpenseForDetails?.description} - ${selectedExpenseForDetails?.amount.toFixed(2)}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {selectedExpenseForDetails && (
+              <DetailedReceiptView expenseId={selectedExpenseForDetails.id} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
