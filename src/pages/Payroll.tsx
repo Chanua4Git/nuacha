@@ -193,7 +193,7 @@ const Payroll: React.FC = () => {
           description: `Wages - ${data.employeeName}${data.shiftName ? ` - ${data.shiftName}` : ''}`,
           amount: data.amount,
           place: 'Payroll',
-          category: data.categoryName || 'Wages/Payroll',
+          category: data.categoryId || null,
           budget_category_id: data.categoryId || null,
           date: data.date,
           expense_type: 'actual',

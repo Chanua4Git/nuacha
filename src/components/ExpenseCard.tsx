@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Expense } from '@/types/expense';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
-import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle } from 'lucide-react';
+import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExpenseTypeBadge from './ExpenseTypeBadge';
 import { DriveLinkButton } from './DriveLinkButton';
@@ -15,6 +15,7 @@ interface ExpenseCardProps {
   expense: Expense;
   onEdit?: (expense: Expense) => void;
   onDelete?: (expenseId: string) => void;
+  onViewDetails?: (expense: Expense) => void;
   isSelected?: boolean;
   onSelectionChange?: (expenseId: string, selected: boolean) => void;
   showBulkSelect?: boolean;
@@ -26,6 +27,7 @@ const ExpenseCard = ({
   expense, 
   onEdit, 
   onDelete, 
+  onViewDetails,
   isSelected = false, 
   onSelectionChange, 
   showBulkSelect = false,
@@ -35,6 +37,7 @@ const ExpenseCard = ({
   const { categories } = useExpense();
   
   const category = categories.find(c => c.id === expense.category);
+  const hasReceipt = !!expense.receiptImageUrl || !!expense.receiptUrl;
   
   return (
     <Card className={cn("mb-4 overflow-hidden", isDuplicate && "border-orange-200 bg-orange-50")}>
@@ -76,6 +79,17 @@ const ExpenseCard = ({
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {onViewDetails && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onViewDetails(expense)}
+                  className="h-8 w-8 p-0"
+                  title="View receipt details"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+              )}
               {onEdit && (
                 <Button
                   variant="ghost"
@@ -116,6 +130,13 @@ const ExpenseCard = ({
             type={expense.expenseType || 'actual'} 
             size="sm" 
           />
+          
+          {hasReceipt && (
+            <Badge variant="outline" className="text-xs">
+              <FileText className="h-3 w-3 mr-1" />
+              Has Receipt
+            </Badge>
+          )}
           
           {expense.needsReplacement && (
             <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">

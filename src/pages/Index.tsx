@@ -13,7 +13,8 @@ import { useAuthPreview } from '@/contexts/AuthPreviewContext';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useExpense } from '@/context/ExpenseContext';
 import { ensureEssentialFamilyCategories } from '@/utils/categorySync';
-import { OCRResult } from '@/types/expense';
+import { OCRResult, Expense } from '@/types/expense';
+import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -72,6 +73,12 @@ const Index = () => {
     }
   };
 
+  const handleEditExpense = (expense: Expense) => {
+    // For now, use the View Details sheet for editing receipt details
+    // Full expense editing will open the add-expense tab
+    toast.info('Use the View Details button to edit receipt line items and categories');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-8">
@@ -118,7 +125,7 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="expenses" className="mt-0">
-                <ExpenseList />
+                <ExpenseList onEditExpense={handleEditExpense} />
               </TabsContent>
               <TabsContent value="add-expense" className="mt-0">
                 <ExpenseForm 

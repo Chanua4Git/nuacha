@@ -4,11 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { useReceiptDetails } from '@/hooks/useReceiptDetails';
-import { CheckCircle, Edit, Loader2, Store, Tag, Trash2, CreditCard, Calendar, Receipt, Info } from 'lucide-react';
+import { CheckCircle, Edit, Loader2, Store, Tag, Trash2, CreditCard, Calendar, Receipt, Info, User } from 'lucide-react';
 import { ReceiptLineItem } from '@/types/receipt';
 import { useUnifiedCategories } from '@/hooks/useUnifiedCategories';
+import { useFamilyMembers } from '@/hooks/useFamilyMembers';
+import { useExpense } from '@/context/ExpenseContext';
 import { CategoryWithCamelCase } from '@/types/expense';
 
 interface DetailedReceiptViewProps {
@@ -18,6 +21,8 @@ interface DetailedReceiptViewProps {
 const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) => {
   const { receiptDetail, lineItems, isLoading, saveLineItem, deleteLineItem } = useReceiptDetails(expenseId);
   const { categories } = useUnifiedCategories({ mode: 'unified' });
+  const { selectedFamily } = useExpense();
+  const { members, isLoading: membersLoading } = useFamilyMembers(selectedFamily?.id);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<ReceiptLineItem | null>(null);
 
@@ -79,6 +84,26 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
     }
   };
 
+  const handleMemberChange = (memberId: string) => {
+    if (editItemData) {
+      setEditItemData({
+        ...editItemData,
+        memberId: memberId === 'none' ? undefined : memberId
+      });
+    }
+  };
+
+  const handleDirectMemberChange = async (item: ReceiptLineItem, memberId: string) => {
+    try {
+      await saveLineItem({
+        ...item,
+        memberId: memberId === 'none' ? undefined : memberId
+      });
+    } catch (error) {
+      console.error('Error updating member:', error);
+    }
+  };
+
   const acceptSuggestedCategory = (item: ReceiptLineItem) => {
     if (!item.suggestedCategoryId) return;
     
@@ -97,9 +122,11 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
     }).format(price);
   };
 
-  // Helper to find a category by ID
-  const getCategoryById = (id: string): CategoryWithCamelCase | undefined => {
-    return categories.find(c => c.id === id);
+  // Helper to get member name by ID
+  const getMemberName = (memberId?: string): string => {
+    if (!memberId) return 'Unassigned';
+    const member = members.find(m => m.id === memberId);
+    return member?.name || 'Unknown';
   };
 
   return (
@@ -159,146 +186,190 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead className="w-24">Qty</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right w-24">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lineItems.map((item) => (
-                  <TableRow key={item.id} className={editingItem === item.id ? "bg-muted/50" : ""}>
-                    {editingItem === item.id ? (
-                      // Editing mode
-                      <>
-                        <TableCell>
-                          <input 
-                            type="text"
-                            className="w-full border rounded p-1 text-sm"
-                            value={editItemData?.description || ''}
-                            onChange={(e) => setEditItemData({...editItemData!, description: e.target.value})}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <input 
-                            type="number" 
-                            className="w-20 border rounded p-1 text-sm"
-                            value={editItemData?.quantity || ''}
-                            onChange={(e) => setEditItemData({...editItemData!, quantity: parseFloat(e.target.value)})}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            className="w-24 border rounded p-1 text-sm text-right"
-                            value={editItemData?.totalPrice || ''}
-                            onChange={(e) => setEditItemData({...editItemData!, totalPrice: parseFloat(e.target.value)})}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <select 
-                            className="w-full border rounded p-1 text-sm"
-                            value={editItemData?.categoryId || ''}
-                            onChange={(e) => handleCategoryChange(e.target.value)}
-                          >
-                            <option value="">Select category</option>
-                            {categories.map((category) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        </TableCell>
-                        <TableCell className="text-right space-x-1">
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={handleCancelEdit}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            onClick={handleSaveItem}
-                          >
-                            Save
-                          </Button>
-                        </TableCell>
-                      </>
-                    ) : (
-                      // View mode
-                      <>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell>{item.quantity || 1}</TableCell>
-                        <TableCell className="text-right">{formatPrice(item.totalPrice)}</TableCell>
-                        <TableCell>
-                          {item.categoryId ? (
-                            <Badge 
-                              style={{ 
-                                backgroundColor: item.category?.color || '#888',
-                                color: '#fff' 
-                              }}
-                            >
-                              {item.category?.name || 'Unknown'}
-                            </Badge>
-                          ) : item.suggestedCategoryId ? (
-                            <div className="flex items-center gap-1">
-                              <Badge variant="outline" className="border-dashed">
-                                {item.suggestedCategory?.name || 'Suggested'}
-                              </Badge>
-                              <Button 
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                title="Accept suggestion"
-                                onClick={() => acceptSuggestedCategory(item)}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Badge variant="outline">Uncategorized</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right space-x-1">
-                          <Button 
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => item.id && handleDeleteItem(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </>
-                    )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead className="w-16">Qty</TableHead>
+                    <TableHead className="text-right w-24">Price</TableHead>
+                    <TableHead className="w-32">Category</TableHead>
+                    <TableHead className="w-32">Member</TableHead>
+                    <TableHead className="text-right w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-                
-                {/* Summary row */}
-                <TableRow>
-                  <TableCell colSpan={2} className="font-medium">Total</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatPrice(lineItems.reduce((sum, item) => sum + item.totalPrice, 0))}
-                  </TableCell>
-                  <TableCell colSpan={2}></TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {lineItems.map((item) => (
+                    <TableRow key={item.id} className={editingItem === item.id ? "bg-muted/50" : ""}>
+                      {editingItem === item.id ? (
+                        // Editing mode
+                        <>
+                          <TableCell>
+                            <input 
+                              type="text"
+                              className="w-full border rounded p-1 text-sm"
+                              value={editItemData?.description || ''}
+                              onChange={(e) => setEditItemData({...editItemData!, description: e.target.value})}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <input 
+                              type="number" 
+                              className="w-16 border rounded p-1 text-sm"
+                              value={editItemData?.quantity || ''}
+                              onChange={(e) => setEditItemData({...editItemData!, quantity: parseFloat(e.target.value)})}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              className="w-20 border rounded p-1 text-sm text-right"
+                              value={editItemData?.totalPrice || ''}
+                              onChange={(e) => setEditItemData({...editItemData!, totalPrice: parseFloat(e.target.value)})}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <select 
+                              className="w-full border rounded p-1 text-sm"
+                              value={editItemData?.categoryId || ''}
+                              onChange={(e) => handleCategoryChange(e.target.value)}
+                            >
+                              <option value="">Select category</option>
+                              {categories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                          </TableCell>
+                          <TableCell>
+                            <select 
+                              className="w-full border rounded p-1 text-sm"
+                              value={editItemData?.memberId || 'none'}
+                              onChange={(e) => handleMemberChange(e.target.value)}
+                            >
+                              <option value="none">Unassigned</option>
+                              {members.map((member) => (
+                                <option key={member.id} value={member.id}>
+                                  {member.name}
+                                </option>
+                              ))}
+                            </select>
+                          </TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={handleSaveItem}
+                            >
+                              Save
+                            </Button>
+                          </TableCell>
+                        </>
+                      ) : (
+                        // View mode
+                        <>
+                          <TableCell className="font-medium">{item.description}</TableCell>
+                          <TableCell>{item.quantity || 1}</TableCell>
+                          <TableCell className="text-right">{formatPrice(item.totalPrice)}</TableCell>
+                          <TableCell>
+                            {item.categoryId ? (
+                              <Badge 
+                                style={{ 
+                                  backgroundColor: item.category?.color || '#888',
+                                  color: '#fff' 
+                                }}
+                                className="text-xs"
+                              >
+                                {item.category?.name || 'Unknown'}
+                              </Badge>
+                            ) : item.suggestedCategoryId ? (
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="border-dashed text-xs">
+                                  {item.suggestedCategory?.name || 'Suggested'}
+                                </Badge>
+                                <Button 
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  title="Accept suggestion"
+                                  onClick={() => acceptSuggestedCategory(item)}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Uncategorized</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {members.length > 0 ? (
+                              <Select
+                                value={item.memberId || 'none'}
+                                onValueChange={(value) => handleDirectMemberChange(item, value)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue>
+                                    {item.memberId ? getMemberName(item.memberId) : 'Unassigned'}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Unassigned</SelectItem>
+                                  {members.map((member) => (
+                                    <SelectItem key={member.id} value={member.id}>
+                                      {member.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {item.memberId ? getMemberName(item.memberId) : 'Unassigned'}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button 
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => handleEditItem(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => item.id && handleDeleteItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                  
+                  {/* Summary row */}
+                  <TableRow>
+                    <TableCell colSpan={2} className="font-medium">Total</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatPrice(lineItems.reduce((sum, item) => sum + item.totalPrice, 0))}
+                    </TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
             
             <div className="mt-4">
               <Button
