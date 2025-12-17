@@ -104,6 +104,17 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
     }
   };
 
+  const handleDirectCategoryChange = async (item: ReceiptLineItem, categoryId: string) => {
+    try {
+      await saveLineItem({
+        ...item,
+        categoryId: categoryId === 'none' ? undefined : categoryId
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
+  };
+
   const acceptSuggestedCategory = (item: ReceiptLineItem) => {
     if (!item.suggestedCategoryId) return;
     
@@ -281,34 +292,52 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
                           <TableCell>{item.quantity || 1}</TableCell>
                           <TableCell className="text-right">{formatPrice(item.totalPrice)}</TableCell>
                           <TableCell>
-                            {item.categoryId ? (
-                              <Badge 
-                                style={{ 
-                                  backgroundColor: item.category?.color || '#888',
-                                  color: '#fff' 
-                                }}
-                                className="text-xs"
-                              >
-                                {item.category?.name || 'Unknown'}
-                              </Badge>
-                            ) : item.suggestedCategoryId ? (
-                              <div className="flex items-center gap-1">
-                                <Badge variant="outline" className="border-dashed text-xs">
-                                  {item.suggestedCategory?.name || 'Suggested'}
-                                </Badge>
-                                <Button 
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-6 w-6"
-                                  title="Accept suggestion"
-                                  onClick={() => acceptSuggestedCategory(item)}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">Uncategorized</Badge>
-                            )}
+                            <Select
+                              value={item.categoryId || 'none'}
+                              onValueChange={(value) => handleDirectCategoryChange(item, value)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue>
+                                  {item.categoryId ? (
+                                    <span className="flex items-center gap-1">
+                                      <span 
+                                        className="w-2 h-2 rounded-full" 
+                                        style={{ backgroundColor: item.category?.color || '#888' }}
+                                      />
+                                      {item.category?.name || 'Unknown'}
+                                    </span>
+                                  ) : item.suggestedCategoryId ? (
+                                    <span className="text-muted-foreground italic">
+                                      {item.suggestedCategory?.name} (suggested)
+                                    </span>
+                                  ) : (
+                                    'Select category'
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Uncategorized</SelectItem>
+                                {item.suggestedCategoryId && !item.categoryId && (
+                                  <SelectItem 
+                                    value={item.suggestedCategoryId}
+                                    className="border-b border-dashed"
+                                  >
+                                    ✓ {item.suggestedCategory?.name} (suggested)
+                                  </SelectItem>
+                                )}
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    <span className="flex items-center gap-2">
+                                      <span 
+                                        className="w-2 h-2 rounded-full" 
+                                        style={{ backgroundColor: category.color || '#888' }}
+                                      />
+                                      {category.name}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>
                             {members.length > 0 ? (

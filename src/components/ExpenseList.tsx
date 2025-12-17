@@ -26,7 +26,7 @@ interface ExpenseListProps {
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const expenseContext = useContextAwareExpense();
-  const { filteredExpenses, expenses: allExpenses, deleteExpense } = useExpense();
+  const { filteredExpenses, expenses: allExpenses, deleteExpense, updateExpense } = useExpense();
   const { categories } = useCategories();
   
   // Initialize to current month for consistency with /budget
@@ -174,6 +174,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const handleViewDetails = (expense: Expense) => {
     setSelectedExpenseForDetails(expense);
   };
+
+  const handleCategoryChange = async (expenseId: string, categoryId: string) => {
+    try {
+      await updateExpense(expenseId, { category: categoryId });
+      toast.success('Category updated');
+    } catch (error) {
+      toast.error('Failed to update category');
+    }
+  };
   
   return (
     <div>
@@ -275,6 +284,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
                             onDelete={handleDeleteSingle}
                             onEdit={onEditExpense ? handleEditExpense : undefined}
                             onViewDetails={handleViewDetails}
+                            onCategoryChange={handleCategoryChange}
                             isDuplicate={true}
                             duplicateConfidence={group.confidence}
                             isSelected={selectedExpenses.has(expense.id)}
@@ -332,6 +342,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
               onDelete={handleDeleteSingle}
               onEdit={onEditExpense ? handleEditExpense : undefined}
               onViewDetails={handleViewDetails}
+              onCategoryChange={handleCategoryChange}
               isDuplicate={duplicateExpenseIds.has(expense.id)}
               isSelected={selectedExpenses.has(expense.id)}
               onSelectionChange={handleExpenseSelection}
