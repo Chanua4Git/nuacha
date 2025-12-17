@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense } from '@/types/expense';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
@@ -16,6 +17,7 @@ interface ExpenseCardProps {
   onEdit?: (expense: Expense) => void;
   onDelete?: (expenseId: string) => void;
   onViewDetails?: (expense: Expense) => void;
+  onCategoryChange?: (expenseId: string, categoryId: string) => void;
   isSelected?: boolean;
   onSelectionChange?: (expenseId: string, selected: boolean) => void;
   showBulkSelect?: boolean;
@@ -28,6 +30,7 @@ const ExpenseCard = ({
   onEdit, 
   onDelete, 
   onViewDetails,
+  onCategoryChange,
   isSelected = false, 
   onSelectionChange, 
   showBulkSelect = false,
@@ -38,6 +41,12 @@ const ExpenseCard = ({
   
   const category = categories.find(c => c.id === expense.category);
   const hasReceipt = !!expense.receiptImageUrl || !!expense.receiptUrl;
+
+  const handleCategoryChange = (categoryId: string) => {
+    if (onCategoryChange && categoryId !== expense.category) {
+      onCategoryChange(expense.id, categoryId === 'none' ? '' : categoryId);
+    }
+  };
   
   return (
     <Card className={cn("mb-4 overflow-hidden", isDuplicate && "border-orange-200 bg-orange-50")}>
@@ -115,16 +124,49 @@ const ExpenseCard = ({
         </div>
         
         <div className="flex items-center mt-3 gap-2 flex-wrap">
-          <div 
-            className="inline-flex items-center px-2 py-1 rounded-full text-xs"
-            style={{ 
-              backgroundColor: `${category?.color}15`,
-              color: category?.color
-            }}
-          >
-            <TagIcon className="h-3 w-3 mr-1" />
-            {category?.name || 'Uncategorized'}
-          </div>
+          {onCategoryChange ? (
+            <Select
+              value={expense.category || 'none'}
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger className="h-7 w-auto min-w-[140px] text-xs">
+                <SelectValue>
+                  <span className="flex items-center gap-1">
+                    <span 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: category?.color || '#CBD5E1' }}
+                    />
+                    {category?.name || 'Uncategorized'}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Uncategorized</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span className="flex items-center gap-2">
+                      <span 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: cat.color || '#888' }}
+                      />
+                      {cat.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div 
+              className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+              style={{ 
+                backgroundColor: `${category?.color}15`,
+                color: category?.color
+              }}
+            >
+              <TagIcon className="h-3 w-3 mr-1" />
+              {category?.name || 'Uncategorized'}
+            </div>
+          )}
           
           <ExpenseTypeBadge 
             type={expense.expenseType || 'actual'} 
