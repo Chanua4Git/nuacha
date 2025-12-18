@@ -6,12 +6,20 @@ import FeatureUpsellPage from './FeatureUpsellPage';
 interface SubscriptionGateProps {
   children: React.ReactNode;
   feature: 'budget' | 'payroll' | 'unlimited_scans';
-  requiredPlan?: 'families' | 'business' | 'entrepreneurs';
+  requiredPlan?: 'staying_organized' | 'fully_streamlined';
 }
 
 const SubscriptionGate = ({ children, feature, requiredPlan }: SubscriptionGateProps) => {
   const { user, isLoading: authLoading } = useAuth();
   const { hasActiveSubscription, planType, isLoading: subLoading } = useActiveSubscription();
+
+  // Determine default required plan based on feature
+  const getDefaultRequiredPlan = (): 'staying_organized' | 'fully_streamlined' => {
+    if (feature === 'payroll') return 'fully_streamlined';
+    return 'staying_organized';
+  };
+
+  const effectiveRequiredPlan = requiredPlan || getDefaultRequiredPlan();
 
   // Show loading state while checking auth and subscription
   if (authLoading || subLoading) {
@@ -28,14 +36,14 @@ const SubscriptionGate = ({ children, feature, requiredPlan }: SubscriptionGateP
   // If not authenticated, ProtectedRoute should handle this
   // But just in case, show upsell
   if (!user) {
-    return <FeatureUpsellPage feature={feature} requiredPlan={requiredPlan || 'families'} />;
+    return <FeatureUpsellPage feature={feature} requiredPlan={effectiveRequiredPlan} />;
   }
 
   // Check if user has active subscription with access to this feature
   const hasAccess = hasActiveSubscription && hasFeatureAccess(planType, feature);
 
   if (!hasAccess) {
-    return <FeatureUpsellPage feature={feature} requiredPlan={requiredPlan || 'families'} />;
+    return <FeatureUpsellPage feature={feature} requiredPlan={effectiveRequiredPlan} />;
   }
 
   // User has access - render children
