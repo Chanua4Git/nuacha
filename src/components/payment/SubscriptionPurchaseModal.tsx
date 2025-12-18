@@ -6,9 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Copy, MessageCircle, CreditCard, Building2 } from 'lucide-react';
+import { Check, Copy, MessageCircle, Building2, HardDrive } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
-import { NUACHA_BANK_DETAILS, NUACHA_SUBSCRIPTION_PLANS, PlanType, BillingCycle, getPlanPrice } from '@/constants/nuachaPayment';
+import { 
+  NUACHA_BANK_DETAILS, 
+  PlanType, 
+  BillingCycle, 
+  getPlanPriceTTD,
+  getPlanPriceUSD,
+  formatTTD,
+  formatUSD,
+  getPlan,
+  formatStorageSize
+} from '@/constants/nuachaPayment';
 import { generatePaymentScreenshotMessage, generateNuachaWhatsAppUrl } from '@/utils/whatsapp';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,8 +39,14 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
   const { isLoading, order, createOrder } = useSubscriptionPurchase();
   const { toast } = useToast();
   
-  const plan = NUACHA_SUBSCRIPTION_PLANS[planType];
-  const price = getPlanPrice(planType, billingCycle);
+  const plan = getPlan(planType);
+  const priceTTD = getPlanPriceTTD(planType, billingCycle);
+  const priceUSD = getPlanPriceUSD(planType, billingCycle);
+
+  // Calculate yearly savings
+  const yearlySavings = billingCycle === 'yearly' 
+    ? Math.round(((plan.monthlyPriceTTD * 12) - plan.yearlyPriceTTD))
+    : 0;
 
   const handleSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +86,8 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
       order.order_reference,
       customerName,
       plan.name,
-      price
+      priceTTD,
+      priceUSD
     );
     
     const url = generateNuachaWhatsAppUrl(message);
@@ -112,30 +129,47 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
             <div className="space-y-3">
               <Label>Billing Cycle</Label>
               <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                  <TabsTrigger value="yearly">
+                  <TabsTrigger value="yearly" className="relative">
                     Yearly
-                    <Badge variant="secondary" className="ml-1 text-xs">Save 17%</Badge>
+                    <Badge variant="secondary" className="ml-1 text-xs bg-soft-green text-primary">
+                      Save 17%
+                    </Badge>
                   </TabsTrigger>
-                  <TabsTrigger value="lifetime">Lifetime</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <div className="text-center">
-                <span className="text-3xl font-bold text-primary">${price.toFixed(2)}</span>
+              
+              {/* Price Display - TTD Primary */}
+              <div className="text-center py-4 bg-muted/30 rounded-lg">
+                <span className="text-4xl font-bold text-primary">{formatTTD(priceTTD)}</span>
                 <span className="text-muted-foreground">
-                  {billingCycle === 'monthly' ? '/month' : billingCycle === 'yearly' ? '/year' : ' one-time'}
+                  {billingCycle === 'monthly' ? '/month' : '/year'}
                 </span>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {formatUSD(priceUSD)}
+                </div>
+                {yearlySavings > 0 && (
+                  <div className="text-sm text-primary mt-2">
+                    You save {formatTTD(yearlySavings)} per year!
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Features */}
+            {/* Storage & Features */}
             <Card className="bg-muted/30">
               <CardContent className="pt-4">
+                {/* Storage highlight */}
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                  <HardDrive className="h-5 w-5 text-primary" />
+                  <span className="font-medium">{formatStorageSize(plan.storageMB)} secure storage</span>
+                </div>
+                
                 <ul className="space-y-2">
-                  {plan.features.map((feature, i) => (
+                  {plan.features.slice(0, 6).map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
+                      <Check className="h-4 w-4 text-primary flex-shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -203,9 +237,14 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Amount: <span className="font-semibold">${price.toFixed(2)} USD</span>
-                  </p>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-lg font-semibold text-foreground">
+                      {formatTTD(priceTTD)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatUSD(priceUSD)}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

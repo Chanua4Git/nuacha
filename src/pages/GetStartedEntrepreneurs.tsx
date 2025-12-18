@@ -67,11 +67,12 @@ const GetStartedEntrepreneurs = () => {
   ];
 
   const valueItems = [
-    { feature: "Everything in Family Plan", value: "$59/mo" },
-    { feature: "Everything in Business Plan", value: "$61/mo" },
-    { feature: "Personal/Business Separation", value: "$10/mo" },
-    { feature: "Unified Dashboard View", value: "$8/mo" },
-    { feature: "Priority Support", value: "$10/mo" },
+    { feature: "25GB Secure Storage", value: "TT$100/mo" },
+    { feature: "Everything in Staying Organized", value: "TT$149/mo" },
+    { feature: "🇹🇹 NIS Payroll Calculator", value: "TT$80/mo" },
+    { feature: "Employee Shift Tracking", value: "TT$60/mo" },
+    { feature: "Quick Pay Entry", value: "TT$50/mo" },
+    { feature: "Priority Support", value: "TT$30/mo" },
   ];
 
   const testimonials = [
@@ -99,7 +100,7 @@ const GetStartedEntrepreneurs = () => {
     },
     {
       question: "Do I really get everything from both plans?",
-      answer: "Yes! The Entrepreneur plan includes ALL features from the Family plan AND the Business plan. Multi-family tracking, receipt scanning, NIS calculator, payroll management—everything.",
+      answer: "Yes! The Fully Streamlined plan includes ALL features from both household and business tracking. Multi-family tracking, receipt scanning, NIS calculator, payroll management—everything.",
     },
     {
       question: "Can I see a combined view of all my finances?",
@@ -111,7 +112,7 @@ const GetStartedEntrepreneurs = () => {
     },
     {
       question: "Is this worth the extra cost over a single plan?",
-      answer: "If you're managing both a business and a household, absolutely. You'd otherwise need two separate systems or spend hours reconciling. The Entrepreneur plan saves you time, stress, and likely money in the long run.",
+      answer: "If you're managing both a business and a household, absolutely. You'd otherwise need two separate systems or spend hours reconciling. The Fully Streamlined plan saves you time, stress, and likely money in the long run.",
     },
   ];
 
@@ -138,11 +139,13 @@ const GetStartedEntrepreneurs = () => {
       
       <ValueStackPricing
         items={valueItems}
-        totalValue="$148/month"
-        actualPrice="$19.99"
-        badge="Entrepreneur Plan - Best Value"
+        totalValue="TT$469/month"
+        actualPriceTTD="TT$349"
+        actualPriceUSD="~US$51.32"
+        storageTier="25GB storage included"
+        badge="Fully Streamlined - Best Value"
         ctaText="Get Everything Now"
-        planType="entrepreneurs"
+        planType="fully_streamlined"
       />
       
       <TestimonialsSection
@@ -156,7 +159,7 @@ const GetStartedEntrepreneurs = () => {
         headline="Ready to simplify your entire financial life?"
         subheadline="Business, family, everything—finally in one place."
         ctaText="Start Now"
-        planType="entrepreneurs"
+        planType="fully_streamlined"
         benefits={[
           "All family features",
           "All business features", 

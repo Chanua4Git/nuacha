@@ -57,12 +57,13 @@ const GetStartedBusiness = () => {
   ];
 
   const valueItems = [
-    { feature: "🇹🇹 NIS Payroll Calculator", value: "$15/mo" },
-    { feature: "Shift-Based Employee Management", value: "$12/mo" },
-    { feature: "Quick Pay Entry System", value: "$10/mo" },
-    { feature: "Smart Receipt Scanning", value: "$9/mo" },
-    { feature: "Financial Reports & Export", value: "$8/mo" },
-    { feature: "Business Expense Tracking", value: "$7/mo" },
+    { feature: "25GB Secure Storage", value: "TT$100/mo" },
+    { feature: "🇹🇹 NIS Payroll Calculator", value: "TT$80/mo" },
+    { feature: "Shift-Based Employee Management", value: "TT$60/mo" },
+    { feature: "Quick Pay Entry System", value: "TT$50/mo" },
+    { feature: "Unlimited Receipt Scanning", value: "TT$40/mo" },
+    { feature: "Financial Reports & Export", value: "TT$30/mo" },
+    { feature: "All Family Features", value: "TT$149/mo" },
   ];
 
   const testimonials = [
@@ -126,10 +127,12 @@ const GetStartedBusiness = () => {
       
       <ValueStackPricing
         items={valueItems}
-        totalValue="$61/month"
-        actualPrice="$14.99"
-        badge="Business Plan - Early Adopter Pricing"
-        planType="business"
+        totalValue="TT$509/month"
+        actualPriceTTD="TT$349"
+        actualPriceUSD="~US$51.32"
+        storageTier="25GB storage included"
+        badge="Fully Streamlined - For Households with Helpers"
+        planType="fully_streamlined"
       />
       
       <TestimonialsSection
@@ -143,7 +146,7 @@ const GetStartedBusiness = () => {
         headline="Ready to simplify your business finances?"
         subheadline="Join T&T business owners who've found a better way."
         ctaText="Start Now"
-        planType="business"
+        planType="fully_streamlined"
       />
     </div>
   );
