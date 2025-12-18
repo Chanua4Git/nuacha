@@ -118,7 +118,7 @@ const App = () => {
                     } />
                     <Route path="/budget" element={
                       <ProtectedRoute>
-                        <SubscriptionGate feature="budget" requiredPlan="families">
+                        <SubscriptionGate feature="budget" requiredPlan="staying_organized">
                           <Budget />
                         </SubscriptionGate>
                       </ProtectedRoute>
@@ -136,7 +136,7 @@ const App = () => {
                     } />
                     <Route path="/payroll" element={
                       <ProtectedRoute>
-                        <SubscriptionGate feature="payroll" requiredPlan="business">
+                        <SubscriptionGate feature="payroll" requiredPlan="fully_streamlined">
                           <Payroll />
                         </SubscriptionGate>
                       </ProtectedRoute>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useActiveSubscription, hasFeatureAccess } from './useActiveSubscription';
+import { useStorageUsage } from './useStorageUsage';
+import { NUACHA_SUBSCRIPTION_PLANS } from '@/constants/nuachaPayment';
 
 interface ScanUsage {
   date: string; // YYYY-MM-DD
@@ -7,7 +9,7 @@ interface ScanUsage {
 }
 
 const STORAGE_KEY = 'nuacha_scan_usage';
-const FREE_DAILY_SCAN_LIMIT = 3;
+const FREE_DAILY_SCAN_LIMIT = NUACHA_SUBSCRIPTION_PLANS.getting_tidy.dailyScanLimit || 3;
 
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
@@ -41,6 +43,7 @@ function saveUsageToStorage(usage: ScanUsage): void {
 export function useScanUsageTracker() {
   const [usage, setUsage] = useState<ScanUsage>(getUsageFromStorage);
   const { hasActiveSubscription, planType, isLoading: subLoading } = useActiveSubscription();
+  const { canUpload: hasStorageSpace, isLoading: storageLoading, percentUsed } = useStorageUsage();
 
   // Check if user has unlimited scans via subscription
   const hasUnlimitedScans = hasActiveSubscription && hasFeatureAccess(planType, 'unlimited_scans');
@@ -51,16 +54,24 @@ export function useScanUsageTracker() {
     setUsage(currentUsage);
   }, []);
 
+  /**
+   * Check if user can perform a scan
+   * - Free users: limited to FREE_DAILY_SCAN_LIMIT per day
+   * - Paid users: unlimited UNLESS storage is full
+   */
   const canScan = useCallback((): boolean => {
-    // Still checking subscription status - block scans to prevent race condition
-    if (subLoading) return false;
+    // Still checking - block scans to prevent race condition
+    if (subLoading || storageLoading) return false;
     
-    // Subscribers get unlimited scans
-    if (hasUnlimitedScans) return true;
+    // Paid subscribers can scan until storage is full
+    if (hasUnlimitedScans) {
+      return hasStorageSpace;
+    }
     
+    // Free users have daily limit
     const currentUsage = getUsageFromStorage();
     return currentUsage.count < FREE_DAILY_SCAN_LIMIT;
-  }, [hasUnlimitedScans, subLoading]);
+  }, [hasUnlimitedScans, hasStorageSpace, subLoading, storageLoading]);
 
   const incrementScan = useCallback((): void => {
     const currentUsage = getUsageFromStorage();
@@ -83,7 +94,7 @@ export function useScanUsageTracker() {
   }, []);
 
   const getRemainingScans = useCallback((): number => {
-    // Subscribers have unlimited
+    // Subscribers have unlimited (until storage full)
     if (hasUnlimitedScans) return Infinity;
     
     const currentUsage = getUsageFromStorage();
@@ -110,6 +121,19 @@ export function useScanUsageTracker() {
     return `${minutes} minutes`;
   }, [getNextResetTime]);
 
+  /**
+   * Get the reason why scanning is blocked
+   */
+  const getBlockedReason = useCallback((): 'daily_limit' | 'storage_full' | null => {
+    if (canScan()) return null;
+    
+    if (hasUnlimitedScans && !hasStorageSpace) {
+      return 'storage_full';
+    }
+    
+    return 'daily_limit';
+  }, [canScan, hasUnlimitedScans, hasStorageSpace]);
+
   return {
     usage,
     canScan,
@@ -117,8 +141,11 @@ export function useScanUsageTracker() {
     getRemainingScans,
     getNextResetTime,
     getTimeUntilReset,
+    getBlockedReason,
     dailyLimit: FREE_DAILY_SCAN_LIMIT,
     hasUnlimitedScans,
-    isCheckingSubscription: subLoading
+    hasStorageSpace,
+    storagePercentUsed: percentUsed,
+    isCheckingSubscription: subLoading || storageLoading
   };
 }

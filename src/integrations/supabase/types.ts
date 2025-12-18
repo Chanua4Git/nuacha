@@ -1717,6 +1717,8 @@ export type Database = {
         Row: {
           admin_notes: string | null
           amount: number
+          amount_ttd: number | null
+          amount_usd: number | null
           billing_cycle: string
           created_at: string
           currency: string
@@ -1730,12 +1732,15 @@ export type Database = {
           payment_confirmed_by: string | null
           plan_type: string
           status: string
+          storage_limit_mb: number | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           admin_notes?: string | null
           amount: number
+          amount_ttd?: number | null
+          amount_usd?: number | null
           billing_cycle?: string
           created_at?: string
           currency?: string
@@ -1749,12 +1754,15 @@ export type Database = {
           payment_confirmed_by?: string | null
           plan_type: string
           status?: string
+          storage_limit_mb?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           admin_notes?: string | null
           amount?: number
+          amount_ttd?: number | null
+          amount_usd?: number | null
           billing_cycle?: string
           created_at?: string
           currency?: string
@@ -1768,6 +1776,7 @@ export type Database = {
           payment_confirmed_by?: string | null
           plan_type?: string
           status?: string
+          storage_limit_mb?: number | null
           updated_at?: string
           user_id?: string | null
         }
