@@ -15,7 +15,7 @@ export const FinalCTA = ({
   headline = "Ready to find your financial peace?",
   subheadline = "Join hundreds of families and businesses already using Nuacha.",
   ctaText = "Get Started Now",
-  planType = "families",
+  planType = "staying_organized",
   benefits = [
     "Bank transfer payment",
     "Cancel anytime, no hard feelings",

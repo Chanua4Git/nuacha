@@ -5,16 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Calculator, 
   PiggyBank, 
-  Users, 
   Receipt, 
   ArrowRight, 
   Check,
-  Sparkles
+  Sparkles,
+  HardDrive
 } from 'lucide-react';
 
 interface FeatureUpsellPageProps {
   feature: 'budget' | 'payroll' | 'unlimited_scans';
-  requiredPlan: 'families' | 'business' | 'entrepreneurs';
+  requiredPlan: 'staying_organized' | 'fully_streamlined';
 }
 
 const FEATURE_CONFIG = {
@@ -60,26 +60,23 @@ const FEATURE_CONFIG = {
 };
 
 const PLAN_CONFIG = {
-  families: {
-    name: 'Families',
-    price: '$9.99',
+  staying_organized: {
+    name: 'Staying Organized',
+    priceTTD: 'TT$149',
+    priceUSD: '~US$21.91',
+    storage: '10GB',
     period: 'month',
     route: '/get-started/families',
-    features: ['Multi-family expense tracking', 'Unlimited receipt scanning', 'Budget builder', 'Smart categories'],
+    features: ['10GB storage', 'Unlimited receipt scanning', 'Multi-family tracking', 'Budget builder', 'Smart categories'],
   },
-  business: {
-    name: 'Business',
-    price: '$14.99',
+  fully_streamlined: {
+    name: 'Fully Streamlined',
+    priceTTD: 'TT$349',
+    priceUSD: '~US$51.32',
+    storage: '25GB',
     period: 'month',
     route: '/get-started/business',
-    features: ['Everything in Families', 'T&T Payroll calculator', 'NIS calculations', 'Employee management'],
-  },
-  entrepreneurs: {
-    name: 'Entrepreneurs',
-    price: '$19.99',
-    period: 'month',
-    route: '/get-started/entrepreneurs',
-    features: ['All features combined', 'Personal + business tracking', 'Advanced reports', 'Priority support'],
+    features: ['25GB storage', 'Everything in Staying Organized', 'T&T Payroll calculator', 'NIS calculations', 'Employee management'],
   },
 };
 
@@ -136,11 +133,20 @@ const FeatureUpsellPage = ({ feature, requiredPlan }: FeatureUpsellPageProps) =>
             </Badge>
             <CardTitle className="text-2xl font-serif">{planInfo.name}</CardTitle>
             <CardDescription>
-              <span className="text-3xl font-bold text-foreground">{planInfo.price}</span>
+              <span className="text-3xl font-bold text-foreground">{planInfo.priceTTD}</span>
               <span className="text-muted-foreground">/{planInfo.period}</span>
+              <div className="text-sm text-muted-foreground mt-1">
+                {planInfo.priceUSD}
+              </div>
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
+            {/* Storage highlight */}
+            <div className="flex items-center justify-center gap-2 mb-4 pb-4 border-b border-border">
+              <HardDrive className="h-5 w-5 text-primary" />
+              <span className="font-medium">{planInfo.storage} secure storage</span>
+            </div>
+            
             <ul className="space-y-2 mb-6">
               {planInfo.features.map((feat, index) => (
                 <li key={index} className="flex items-center gap-2 text-sm">

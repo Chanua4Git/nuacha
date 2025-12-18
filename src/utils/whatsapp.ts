@@ -1,4 +1,4 @@
-import { NUACHA_WHATSAPP_NUMBER } from '@/constants/nuachaPayment';
+import { NUACHA_WHATSAPP_NUMBER, formatTTD, formatUSD } from '@/constants/nuachaPayment';
 
 /**
  * Generate a WhatsApp URL with pre-filled message
@@ -43,20 +43,78 @@ export function replaceTemplateVariables(
 }
 
 /**
- * Generate payment screenshot message for customer
+ * Generate payment screenshot message for customer (TTD-first)
  */
 export function generatePaymentScreenshotMessage(
   orderReference: string,
   customerName: string,
   planType: string,
-  amount: number
+  amountTTD: number,
+  amountUSD?: number
 ): string {
+  const usdLine = amountUSD ? `\n(${formatUSD(amountUSD)})` : '';
+  
   return `Hi! I've completed my bank transfer for my Nuacha subscription.
 
 Order Reference: ${orderReference}
 Name: ${customerName}
 Plan: ${planType}
-Amount: $${amount.toFixed(2)} USD
+Amount: ${formatTTD(amountTTD)}${usdLine}
 
 [Please attach your payment screenshot]`;
 }
+
+/**
+ * WhatsApp message templates for admin nudges
+ */
+export const WHATSAPP_TEMPLATES = {
+  payment_reminder: `Hi {customer_name}! 👋
+
+Just a gentle reminder about your Nuacha subscription order (Ref: {order_reference}).
+
+Amount: {amount_ttd}
+({amount_usd})
+
+When you're ready, you can complete the bank transfer to:
+First Citizens Bank
+Account: XXXXXXXX
+Name: Nuacha Ltd
+
+Send us a screenshot of your transfer and we'll activate your account right away! 💚`,
+
+  payment_confirmation: `Hi {customer_name}! 🎉
+
+Great news! We've received your payment for Nuacha.
+
+Order: {order_reference}
+Plan: {plan_name}
+Amount: {amount_ttd}
+
+Your account is now active! You can start using all your premium features right away.
+
+Questions? Just message us here. Welcome to Nuacha! 💚`,
+
+  welcome_message: `Hi {customer_name}! 👋
+
+Welcome to Nuacha - a softer way to track spending. 💚
+
+Your {plan_name} account is all set up and ready to go. Here's what you can do:
+
+✨ Scan receipts with AI
+📊 Track expenses by family
+💰 Build budgets that work
+
+Need any help getting started? Just reply here and we'll guide you through!`,
+
+  renewal_reminder: `Hi {customer_name}! 👋
+
+Your Nuacha {plan_name} subscription is coming up for renewal on {renewal_date}.
+
+To continue enjoying unlimited scans, budget tools, and all your premium features, renew with a bank transfer of {amount_ttd}.
+
+Same bank details as before:
+First Citizens Bank
+Account: XXXXXXXX
+
+Send us your payment screenshot when ready. Thank you for being part of Nuacha! 💚`
+};

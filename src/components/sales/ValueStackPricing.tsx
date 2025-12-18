@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, HardDrive } from "lucide-react";
 import { SubscriptionPurchaseModal } from "@/components/payment/SubscriptionPurchaseModal";
 import { PlanType } from "@/constants/nuachaPayment";
 
@@ -13,23 +13,34 @@ interface ValueItem {
 interface ValueStackPricingProps {
   items: ValueItem[];
   totalValue: string;
-  actualPrice: string;
+  actualPriceTTD: string;
+  actualPriceUSD?: string;
+  storageTier?: string;
   pricePeriod?: string;
   ctaText?: string;
   planType?: PlanType;
   badge?: string;
+  // Legacy props for backward compatibility
+  actualPrice?: string;
 }
 
 export const ValueStackPricing = ({
   items,
   totalValue,
-  actualPrice,
+  actualPriceTTD,
+  actualPriceUSD,
+  storageTier,
   pricePeriod = "/month",
   ctaText = "Start Now",
-  planType = "families",
-  badge = "Early Adopter Pricing",
+  planType = "staying_organized",
+  badge = "Most Popular",
+  // Legacy support
+  actualPrice,
 }: ValueStackPricingProps) => {
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
+
+  // Support legacy actualPrice prop
+  const displayPriceTTD = actualPriceTTD || actualPrice || "TT$149";
 
   return (
     <>
@@ -48,6 +59,14 @@ export const ValueStackPricing = ({
                 <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
                   {badge}
                 </span>
+              </div>
+            )}
+
+            {/* Storage highlight */}
+            {storageTier && (
+              <div className="flex items-center justify-center gap-2 mb-6 pb-4 border-b border-border">
+                <HardDrive className="h-5 w-5 text-primary" />
+                <span className="font-medium text-foreground">{storageTier}</span>
               </div>
             )}
             
@@ -73,8 +92,13 @@ export const ValueStackPricing = ({
               <div className="flex items-center justify-between">
                 <span className="text-xl font-semibold text-foreground">Your Price:</span>
                 <div className="text-right">
-                  <span className="text-3xl sm:text-4xl font-bold text-primary">{actualPrice}</span>
+                  <span className="text-3xl sm:text-4xl font-bold text-primary">{displayPriceTTD}</span>
                   <span className="text-muted-foreground">{pricePeriod}</span>
+                  {actualPriceUSD && (
+                    <div className="text-sm text-muted-foreground">
+                      ({actualPriceUSD})
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -56,12 +56,13 @@ const GetStartedFamilies = () => {
   ];
 
   const valueItems = [
-    { feature: "AI-Powered Receipt Scanning", value: "$19/mo" },
-    { feature: "Multi-Family Expense Tracking", value: "$14/mo" },
-    { feature: "Budget Builder (50/30/20)", value: "$9/mo" },
-    { feature: "Per-Member Expense Assignment", value: "$7/mo" },
-    { feature: "Smart Reminders & Due Dates", value: "$5/mo" },
-    { feature: "Financial Reports & Export", value: "$5/mo" },
+    { feature: "10GB Secure Storage", value: "TT$50/mo" },
+    { feature: "Unlimited Receipt Scanning", value: "TT$40/mo" },
+    { feature: "Multi-Family Expense Tracking", value: "TT$35/mo" },
+    { feature: "Budget Builder (50/30/20)", value: "TT$25/mo" },
+    { feature: "Per-Member Expense Assignment", value: "TT$20/mo" },
+    { feature: "Smart Reminders & Due Dates", value: "TT$15/mo" },
+    { feature: "Financial Reports & Export", value: "TT$15/mo" },
   ];
 
   const testimonials = [
@@ -125,10 +126,12 @@ const GetStartedFamilies = () => {
       
       <ValueStackPricing
         items={valueItems}
-        totalValue="$59/month"
-        actualPrice="$9.99"
-        badge="Family Plan - Early Adopter Pricing"
-        planType="families"
+        totalValue="TT$200/month"
+        actualPriceTTD="TT$149"
+        actualPriceUSD="~US$21.91"
+        storageTier="10GB storage included"
+        badge="Staying Organized - Most Popular"
+        planType="staying_organized"
       />
       
       <TestimonialsSection
@@ -141,7 +144,7 @@ const GetStartedFamilies = () => {
       <FinalCTA
         headline="Ready to stop wondering where the money went?"
         subheadline="Join hundreds of families already finding peace with Nuacha."
-        planType="families"
+        planType="staying_organized"
       />
     </div>
   );
