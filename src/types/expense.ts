@@ -105,9 +105,7 @@ export interface OCRResult {
   place?: string;
   confidence?: number;
   error?: string;
-  type?: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR' | 'SCAN_LIMIT_EXCEEDED';
-  currentCount?: number;
-  dailyLimit?: number;
+  type?: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR';
   
   // Enhanced receipt details
   lineItems?: ReceiptLineItem[];

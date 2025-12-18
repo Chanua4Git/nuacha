@@ -3,7 +3,7 @@ import { OCRResult } from '@/types/expense';
 
 export type ReceiptImageError = {
   message: string;
-  type: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR' | 'SCAN_LIMIT_EXCEEDED';
+  type: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR';
 };
 
 export type MindeeResponse = {

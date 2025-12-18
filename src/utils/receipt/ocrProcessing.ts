@@ -7,20 +7,13 @@ import { ReceiptDetail, ReceiptLineItem } from '@/types/receipt';
 import { CategoryWithCamelCase } from '@/types/expense';
 import { validateAndCorrectDate, showDateValidationWarning } from './dateProcessing';
 
-export async function processReceiptWithEdgeFunction(receiptUrl: string, familyId?: string, userEmail?: string): Promise<OCRResult> {
+export async function processReceiptWithEdgeFunction(receiptUrl: string, familyId?: string): Promise<OCRResult> {
   try {
     console.log('📄 Processing receipt:', receiptUrl, 'for family:', familyId);
     
-    // Get user email if not provided
-    let emailForTracking = userEmail;
-    if (!emailForTracking) {
-      const { data: { user } } = await supabase.auth.getUser();
-      emailForTracking = user?.email || localStorage.getItem('nuacha_demo_email') || undefined;
-    }
-    
     // Check if this is a local file URL (for demo/unauthenticated users)
     const isLocalFileUrl = receiptUrl.startsWith('blob:');
-    let requestBody: any = { receiptUrl, familyId, userEmail: emailForTracking };
+    let requestBody: any = { receiptUrl, familyId };
     
     // For demo users (unauthenticated), we need to send the file directly
     if (isLocalFileUrl) {
@@ -47,8 +40,7 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string, familyI
           receiptBase64: base64Content,
           contentType: blob.type,
           isDemo: true,
-          familyId,
-          userEmail: emailForTracking
+          familyId
         };
         
         console.log('🎯 Demo mode: Base64 conversion complete, content type:', blob.type);
@@ -81,21 +73,6 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string, familyI
         error: "We couldn't process your receipt",
         type: 'SERVER_ERROR'
       };
-    }
-    
-    // Handle scan limit exceeded (server-side enforcement)
-    if (data.type === 'SCAN_LIMIT_EXCEEDED') {
-      console.warn('🚫 Server-side scan limit exceeded:', data);
-      toast.error("Daily scan limit reached", {
-        description: data.message || "Upgrade to continue scanning or try again tomorrow."
-      });
-      return {
-        confidence: 0,
-        error: data.message,
-        type: 'SCAN_LIMIT_EXCEEDED',
-        currentCount: data.currentCount,
-        dailyLimit: data.dailyLimit
-      } as OCRResult;
     }
     
     if (data.type === 'FETCH_ERROR') {

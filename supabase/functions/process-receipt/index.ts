@@ -12,11 +12,9 @@ const corsHeaders = {
 
 type ErrorResponse = {
   error: string;
-  type: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR' | 'SCAN_LIMIT_EXCEEDED';
+  type: 'UPLOAD_ERROR' | 'SERVER_ERROR' | 'OCR_CONFIDENCE_LOW' | 'IMAGE_FORMAT_ERROR' | 'FETCH_ERROR';
   message: string;
   confidence?: number;
-  currentCount?: number;
-  dailyLimit?: number;
 };
 
 /**
@@ -60,59 +58,7 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase admin client for scan tracking
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Parse request body first to get email for scan tracking
     const requestBody = await req.json();
-    const userEmail = requestBody.userEmail;
-    
-    // Get user ID from authorization header
-    let userId = null;
-    const authHeader = req.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      try {
-        const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-        userId = user?.id;
-      } catch (authError) {
-        console.log('⚠️ Auth error getting user:', authError);
-      }
-    }
-    
-    // SERVER-SIDE SCAN LIMIT VALIDATION
-    if (userEmail) {
-      console.log(`📊 Checking scan limit for: ${userEmail}`);
-      
-      const { data: usageData, error: usageError } = await supabaseAdmin.rpc('get_scan_usage', {
-        p_email: userEmail,
-        p_user_id: userId
-      });
-      
-      if (usageError) {
-        console.error('❌ Error checking scan usage:', usageError);
-      } else if (usageData && usageData.length > 0) {
-        const { current_count, daily_limit, has_subscription } = usageData[0];
-        console.log(`📊 Scan usage: ${current_count}/${daily_limit}, subscribed: ${has_subscription}`);
-        
-        // If not subscribed and at limit, reject the request
-        if (!has_subscription && current_count >= daily_limit) {
-          console.log(`🚫 Scan limit exceeded for ${userEmail}`);
-          return new Response(
-            JSON.stringify({
-              error: "Daily scan limit reached",
-              type: 'SCAN_LIMIT_EXCEEDED',
-              message: `You've used all ${daily_limit} free scans for today. Upgrade to continue scanning or try again tomorrow.`,
-              currentCount: current_count,
-              dailyLimit: daily_limit
-            }),
-            { status: 200, headers: corsHeaders }
-          );
-        }
-      }
-    }
-
-    let imageData: Blob;
     let imageData: Blob;
     let originalBase64: string | null = null;
     
@@ -578,23 +524,6 @@ serve(async (req) => {
     }
     
     console.log('✅ Successfully processed receipt');
-    
-    // INCREMENT SCAN COUNT after successful processing
-    if (userEmail) {
-      console.log(`📊 Incrementing scan count for: ${userEmail}`);
-      const { data: incrementData, error: incrementError } = await supabaseAdmin.rpc('increment_scan_count', {
-        p_email: userEmail,
-        p_user_id: userId,
-        p_ip_address: null
-      });
-      
-      if (incrementError) {
-        console.error('❌ Error incrementing scan count:', incrementError);
-      } else if (incrementData && incrementData.length > 0) {
-        const { current_count, is_allowed } = incrementData[0];
-        console.log(`✅ Scan count updated: ${current_count}, allowed: ${is_allowed}`);
-      }
-    }
     
     return new Response(
       JSON.stringify({

@@ -1713,39 +1713,6 @@ export type Database = {
         }
         Relationships: []
       }
-      scan_usage: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-          ip_address: unknown
-          scan_count: number
-          scan_date: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-          ip_address?: unknown
-          scan_count?: number
-          scan_date?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
-          ip_address?: unknown
-          scan_count?: number
-          scan_date?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       subscription_orders: {
         Row: {
           admin_notes: string | null
@@ -2063,27 +2030,12 @@ export type Database = {
         Args: { category_name: string; family_uuid: string; user_uuid: string }
         Returns: string
       }
-      get_scan_usage: {
-        Args: { p_email: string; p_user_id?: string }
-        Returns: {
-          current_count: number
-          daily_limit: number
-          has_subscription: boolean
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      increment_scan_count: {
-        Args: { p_email: string; p_ip_address?: unknown; p_user_id?: string }
-        Returns: {
-          current_count: number
-          is_allowed: boolean
-        }[]
       }
       map_all_expenses_to_budget_categories: { Args: never; Returns: undefined }
       map_expenses_to_budget_categories: { Args: never; Returns: undefined }
