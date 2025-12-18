@@ -323,8 +323,8 @@ const ExpenseFilterPanel: React.FC<ExpenseFilterPanelProps> = ({
         {/* Payment Method */}
         <div className="flex-1">
           <Select
-            value={filters.paymentMethod ?? ''}
-            onValueChange={(value) => onFilterChange('paymentMethod', value || undefined)}
+            value={filters.paymentMethod ?? 'all'}
+            onValueChange={(value) => onFilterChange('paymentMethod', value === 'all' ? undefined : value)}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
               <div className="flex items-center gap-2">
@@ -333,7 +333,7 @@ const ExpenseFilterPanel: React.FC<ExpenseFilterPanelProps> = ({
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All methods</SelectItem>
+              <SelectItem value="all">All methods</SelectItem>
               {PAYMENT_METHODS.map((method) => (
                 <SelectItem key={method.value} value={method.value}>
                   {method.label}
