@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Copy, MessageCircle, Building2, HardDrive } from 'lucide-react';
+import { Check, Copy, MessageCircle, Building2, HardDrive, ArrowRight } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { 
   NUACHA_BANK_DETAILS, 
@@ -29,6 +30,7 @@ interface SubscriptionPurchaseModalProps {
 }
 
 export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: SubscriptionPurchaseModalProps) {
+  const navigate = useNavigate();
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [customerName, setCustomerName] = useState('');
@@ -79,19 +81,22 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
     toast({ title: "Copied to clipboard" });
   };
 
-  const handleWhatsAppClick = () => {
+  const handleCompleteSubscription = () => {
     if (!order) return;
     
-    const message = generatePaymentScreenshotMessage(
-      order.order_reference,
-      customerName,
-      plan.name,
-      priceTTD,
-      priceUSD
-    );
+    // Store order info in localStorage for the dashboard to pick up
+    localStorage.setItem('nuacha_pending_order', JSON.stringify({
+      order_reference: order.order_reference,
+      plan_type: planType,
+      amount_ttd: priceTTD,
+      amount_usd: priceUSD,
+      customer_name: customerName,
+      customer_email: customerEmail
+    }));
     
-    const url = generateNuachaWhatsAppUrl(message);
-    window.open(url, '_blank');
+    // Close modal and redirect to dashboard
+    onOpenChange(false);
+    navigate('/dashboard');
   };
 
   const resetModal = () => {
@@ -292,18 +297,18 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
               <p className="text-xs">Include your order reference: <strong>{order?.order_reference}</strong></p>
             </div>
 
-            {/* WhatsApp Button */}
+            {/* Complete Button */}
             <Button 
               className="w-full gap-2" 
               size="lg"
-              onClick={handleWhatsAppClick}
+              onClick={handleCompleteSubscription}
             >
-              <MessageCircle className="h-5 w-5" />
-              Send Payment Screenshot via WhatsApp
+              Click to Complete Subscription
+              <ArrowRight className="h-5 w-5" />
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              We'll confirm your payment and activate your account within 24 hours.
+              You'll be redirected to your dashboard with payment instructions.
             </p>
           </div>
         )}

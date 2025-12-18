@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useUserProgress } from '@/hooks/useUserProgress';
+import { usePendingSubscription } from '@/hooks/usePendingSubscription';
+import { PendingPaymentBanner } from '@/components/dashboard/PendingPaymentBanner';
 
 const Dashboard = () => {
   const { user, isLoading, authDemoActive } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const progress = useUserProgress();
+  const { pendingOrder, isLoading: pendingLoading } = usePendingSubscription();
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
   const [isJustVerified, setIsJustVerified] = useState(false);
 
@@ -57,6 +60,17 @@ const Dashboard = () => {
   return (
     <>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Pending Payment Banner - Show prominently at top */}
+        {!pendingLoading && pendingOrder && (
+          <PendingPaymentBanner
+            orderReference={pendingOrder.order_reference}
+            planType={pendingOrder.plan_type}
+            amountTTD={pendingOrder.amount_ttd || 0}
+            amountUSD={pendingOrder.amount_usd || undefined}
+            customerName={pendingOrder.customer_name}
+          />
+        )}
+
         {authDemoActive && (
           <div className="mb-6 p-4 bg-soft-green/20 border border-soft-green rounded-lg">
             <h2 className="text-lg font-medium mb-2 text-primary">Demo Mode Active</h2>

@@ -3,12 +3,12 @@
 export const NUACHA_BANK_DETAILS = {
   bankName: "First Citizens Bank",
   branch: "Port of Spain",
-  accountNumber: "XXXXXXXX",
+  accountNumber: "2991223",
   accountHolder: "Nuacha Ltd",
   accountType: "Business Savings"
 };
 
-export const NUACHA_WHATSAPP_NUMBER = "18681234567";
+export const NUACHA_WHATSAPP_NUMBER = "18687865357";
 
 // TTD to USD conversion rate (approximate)
 export const TTD_TO_USD_RATE = 6.8;
