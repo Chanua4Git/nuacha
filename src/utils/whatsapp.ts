@@ -77,7 +77,7 @@ Amount: {amount_ttd}
 
 When you're ready, you can complete the bank transfer to:
 First Citizens Bank
-Account: XXXXXXXX
+Account: 2991223
 Name: Nuacha Ltd
 
 Send us a screenshot of your transfer and we'll activate your account right away! 💚`,
@@ -114,7 +114,7 @@ To continue enjoying unlimited scans, budget tools, and all your premium feature
 
 Same bank details as before:
 First Citizens Bank
-Account: XXXXXXXX
+Account: 2991223
 
 Send us your payment screenshot when ready. Thank you for being part of Nuacha! 💚`
 };
