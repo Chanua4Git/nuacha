@@ -1,7 +1,7 @@
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
@@ -29,9 +29,8 @@ import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import Updates from "./pages/Updates";
 import GetStarted from "./pages/GetStarted";
-import GetStartedFamilies from "./pages/GetStartedFamilies";
-import GetStartedBusiness from "./pages/GetStartedBusiness";
-import GetStartedEntrepreneurs from "./pages/GetStartedEntrepreneurs";
+import GetStartedStayingOrganized from "./pages/GetStartedStayingOrganized";
+import GetStartedFullyStreamlined from "./pages/GetStartedFullyStreamlined";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ScrollToTop from "@/components/navigation/ScrollToTop";
 import SubscriptionGate from "@/components/payment/SubscriptionGate";
@@ -154,9 +153,12 @@ const App = () => {
                     <Route path="/authentication-demo" element={<AuthenticationDemo />} />
                     <Route path="/download-purchase-success" element={<DownloadPurchaseSuccess />} />
                     <Route path="/get-started" element={<GetStarted />} />
-                    <Route path="/get-started/families" element={<GetStartedFamilies />} />
-                    <Route path="/get-started/business" element={<GetStartedBusiness />} />
-                    <Route path="/get-started/entrepreneurs" element={<GetStartedEntrepreneurs />} />
+                    <Route path="/get-started/staying-organized" element={<GetStartedStayingOrganized />} />
+                    <Route path="/get-started/fully-streamlined" element={<GetStartedFullyStreamlined />} />
+                    {/* Legacy URL redirects */}
+                    <Route path="/get-started/families" element={<Navigate to="/get-started/staying-organized" replace />} />
+                    <Route path="/get-started/business" element={<Navigate to="/get-started/fully-streamlined" replace />} />
+                    <Route path="/get-started/entrepreneurs" element={<Navigate to="/get-started/fully-streamlined" replace />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

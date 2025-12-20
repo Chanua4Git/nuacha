@@ -68,6 +68,7 @@ const Dashboard = () => {
             amountTTD={pendingOrder.amount_ttd || 0}
             amountUSD={pendingOrder.amount_usd || undefined}
             customerName={pendingOrder.customer_name}
+            billingCycle={pendingOrder.billing_cycle}
           />
         )}
 

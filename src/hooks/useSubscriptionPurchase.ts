@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateOrderReference } from '@/utils/orderReference';
-import { PlanType, BillingCycle, getPlanPrice } from '@/constants/nuachaPayment';
+import { PlanType, BillingCycle, getPlanPriceTTD, getPlanPriceUSD } from '@/constants/nuachaPayment';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreateOrderParams {
@@ -37,7 +37,8 @@ export function useSubscriptionPurchase() {
     
     try {
       const orderReference = generateOrderReference();
-      const amount = getPlanPrice(params.planType, params.billingCycle);
+      const amountTTD = getPlanPriceTTD(params.planType, params.billingCycle);
+      const amountUSD = getPlanPriceUSD(params.planType, params.billingCycle);
       
       const orderData = {
         order_reference: orderReference,
@@ -46,8 +47,10 @@ export function useSubscriptionPurchase() {
         customer_phone: params.customerPhone || null,
         plan_type: params.planType,
         billing_cycle: params.billingCycle,
-        amount,
-        currency: 'USD',
+        amount: amountTTD,
+        amount_ttd: amountTTD,
+        amount_usd: amountUSD,
+        currency: 'TTD',
         status: 'pending_payment'
       };
       

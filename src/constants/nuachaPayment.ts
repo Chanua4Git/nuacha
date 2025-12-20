@@ -4,7 +4,7 @@ export const NUACHA_BANK_DETAILS = {
   bankName: "First Citizens Bank",
   branch: "Port of Spain",
   accountNumber: "2991223",
-  accountHolder: "Nuacha Ltd",
+  accountHolder: "Chanua Johnson or By Chanua Properties, Gardens, Preservation",
   accountType: "Business Savings"
 };
 

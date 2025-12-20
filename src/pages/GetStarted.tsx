@@ -14,7 +14,7 @@ const GetStarted = () => {
         "Budget builder (50/30/20 rule)",
         "Smart receipt scanning",
       ],
-      route: "/get-started/families",
+      route: "/get-started/staying-organized",
       badge: "Most Popular",
     },
     {
@@ -28,7 +28,7 @@ const GetStarted = () => {
         "Quick pay entry",
         "Business expense reports",
       ],
-      route: "/get-started/business",
+      route: "/get-started/fully-streamlined",
       badge: "T&T Focused",
     },
     {
@@ -42,7 +42,7 @@ const GetStarted = () => {
         "Personal + business separation",
         "Complete financial picture",
       ],
-      route: "/get-started/entrepreneurs",
+      route: "/get-started/fully-streamlined",
       badge: "Best Value",
     },
   ];
