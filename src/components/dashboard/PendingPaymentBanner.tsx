@@ -11,7 +11,7 @@ import {
   BookOpen,
   ArrowRight
 } from 'lucide-react';
-import { NUACHA_BANK_DETAILS, formatTTD, formatUSD, getPlan, NUACHA_WHATSAPP_NUMBER } from '@/constants/nuachaPayment';
+import { NUACHA_BANK_DETAILS, formatTTD, formatUSD, getPlan, NUACHA_WHATSAPP_NUMBER, getPlanPriceTTD, getPlanPriceUSD, BillingCycle } from '@/constants/nuachaPayment';
 import { generatePaymentScreenshotMessage, generateNuachaWhatsAppUrl } from '@/utils/whatsapp';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ interface PendingPaymentBannerProps {
   amountTTD: number;
   amountUSD?: number;
   customerName: string;
+  billingCycle?: string;
 }
 
 export function PendingPaymentBanner({
@@ -29,12 +30,18 @@ export function PendingPaymentBanner({
   planType,
   amountTTD,
   amountUSD,
-  customerName
+  customerName,
+  billingCycle = 'monthly'
 }: PendingPaymentBannerProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const plan = getPlan(planType as any);
+  
+  // Calculate amounts from plan if database values are missing
+  const cycle = (billingCycle || 'monthly') as BillingCycle;
+  const calculatedAmountTTD = amountTTD || getPlanPriceTTD(planType as any, cycle);
+  const calculatedAmountUSD = amountUSD || getPlanPriceUSD(planType as any, cycle);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -48,8 +55,8 @@ export function PendingPaymentBanner({
       orderReference,
       customerName,
       plan?.name || planType,
-      amountTTD,
-      amountUSD
+      calculatedAmountTTD,
+      calculatedAmountUSD
     );
     
     const url = generateNuachaWhatsAppUrl(message);
@@ -106,9 +113,9 @@ export function PendingPaymentBanner({
             </div>
             <div className="mt-3 pt-3 border-t border-border">
               <p className="text-sm text-muted-foreground">Amount to pay:</p>
-              <p className="text-2xl font-bold text-primary">{formatTTD(amountTTD)}</p>
-              {amountUSD && (
-                <p className="text-sm text-muted-foreground">{formatUSD(amountUSD)}</p>
+              <p className="text-2xl font-bold text-primary">{formatTTD(calculatedAmountTTD)}</p>
+              {calculatedAmountUSD > 0 && (
+                <p className="text-sm text-muted-foreground">{formatUSD(calculatedAmountUSD)}</p>
               )}
             </div>
           </div>
@@ -172,7 +179,7 @@ export function PendingPaymentBanner({
               </div>
               <div>
                 <p className="font-medium text-sm">Make bank transfer</p>
-                <p className="text-xs text-muted-foreground">Transfer {formatTTD(amountTTD)} to account {NUACHA_BANK_DETAILS.accountNumber}</p>
+                <p className="text-xs text-muted-foreground">Transfer {formatTTD(calculatedAmountTTD)} to account {NUACHA_BANK_DETAILS.accountNumber}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

@@ -66,7 +66,7 @@ const PLAN_CONFIG = {
     priceUSD: '~US$21.91',
     storage: '10GB',
     period: 'month',
-    route: '/get-started/families',
+    route: '/get-started/staying-organized',
     features: ['10GB storage', 'Unlimited receipt scanning', 'Multi-family tracking', 'Budget builder', 'Smart categories'],
   },
   fully_streamlined: {
@@ -75,7 +75,7 @@ const PLAN_CONFIG = {
     priceUSD: '~US$51.32',
     storage: '25GB',
     period: 'month',
-    route: '/get-started/business',
+    route: '/get-started/fully-streamlined',
     features: ['25GB storage', 'Everything in Staying Organized', 'T&T Payroll calculator', 'NIS calculations', 'Employee management'],
   },
 };
