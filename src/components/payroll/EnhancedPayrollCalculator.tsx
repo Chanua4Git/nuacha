@@ -367,12 +367,16 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       totalCalculatedPay: totals.totalCalculatedPay + week.calculatedPay,
       totalRecordedPay: totals.totalRecordedPay + week.recordedPay,
       totalNISContributions: totals.totalNISContributions + week.totalNISContribution,
+      totalNISEmployee: totals.totalNISEmployee + week.nisEmployee,
+      totalNISEmployer: totals.totalNISEmployer + week.nisEmployer,
       totalNetPay: totals.totalNetPay + week.netPay,
       totalDaysWorked: totals.totalDaysWorked + week.recordedDaysWorked,
     }), {
       totalCalculatedPay: 0,
       totalRecordedPay: 0,
       totalNISContributions: 0,
+      totalNISEmployee: 0,
+      totalNISEmployer: 0,
       totalNetPay: 0,
       totalDaysWorked: 0,
     });
@@ -690,7 +694,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
             <TabsContent value="summary" className="space-y-6">
               {payrollPeriod && getTotalSummary() && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="text-sm text-muted-foreground">Total Days Worked</div>
@@ -705,8 +709,14 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                     </Card>
                     <Card>
                       <CardContent className="p-4">
-                        <div className="text-sm text-muted-foreground">Total NIS Contributions</div>
-                        <div className="text-2xl font-bold text-orange-600">{formatTTCurrency(getTotalSummary()?.totalNISContributions || 0)}</div>
+                        <div className="text-sm text-muted-foreground">NIS Employer Contributions</div>
+                        <div className="text-2xl font-bold text-blue-600">{formatTTCurrency(getTotalSummary()?.totalNISEmployer || 0)}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-sm text-muted-foreground">NIS Employee Contributions</div>
+                        <div className="text-2xl font-bold text-orange-600">{formatTTCurrency(getTotalSummary()?.totalNISEmployee || 0)}</div>
                       </CardContent>
                     </Card>
                     <Card>
