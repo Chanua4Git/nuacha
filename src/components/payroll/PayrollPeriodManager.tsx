@@ -29,6 +29,32 @@ export const PayrollPeriodManager: React.FC<PayrollPeriodManagerProps> = ({
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState<any>(null);
 
+  // Helper to get financial totals with fallback to payroll_data JSON
+  const getEffectiveTotals = (period: any) => {
+    const jsonTotals = period.payroll_data?.totals;
+    const hasDbTotals = period.total_net_pay > 0 || period.total_gross_pay > 0;
+    
+    if (hasDbTotals) {
+      return {
+        gross: period.total_gross_pay,
+        nisEmployee: period.total_nis_employee,
+        nisEmployer: period.total_nis_employer,
+        netPay: period.total_net_pay,
+      };
+    }
+    
+    if (jsonTotals) {
+      return {
+        gross: jsonTotals.totalCalculatedPay || 0,
+        nisEmployee: jsonTotals.totalNISEmployee || (jsonTotals.totalNISContributions ? jsonTotals.totalNISContributions / 2 : 0),
+        nisEmployer: jsonTotals.totalNISEmployer || (jsonTotals.totalNISContributions ? jsonTotals.totalNISContributions / 2 : 0),
+        netPay: jsonTotals.totalNetPay || 0,
+      };
+    }
+    
+    return { gross: 0, nisEmployee: 0, nisEmployer: 0, netPay: 0 };
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-500';
@@ -82,7 +108,7 @@ export const PayrollPeriodManager: React.FC<PayrollPeriodManagerProps> = ({
   };
 
   const canProcessPayment = (period: any) => {
-    return period.status === 'calculated' && period.total_net_pay > 0;
+    return period.status === 'calculated' && getEffectiveTotals(period).netPay > 0;
   };
 
   if (loading) {
@@ -157,11 +183,11 @@ export const PayrollPeriodManager: React.FC<PayrollPeriodManagerProps> = ({
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">
-                        {formatTTCurrency(period.total_net_pay)}
+                        {formatTTCurrency(getEffectiveTotals(period).netPay)}
                       </div>
-                      {period.total_gross_pay > 0 && (
+                      {getEffectiveTotals(period).gross > 0 && (
                         <div className="text-xs text-muted-foreground">
-                          Gross: {formatTTCurrency(period.total_gross_pay)}
+                          Gross: {formatTTCurrency(getEffectiveTotals(period).gross)}
                         </div>
                       )}
                     </TableCell>
@@ -201,10 +227,10 @@ export const PayrollPeriodManager: React.FC<PayrollPeriodManagerProps> = ({
                                   <div>
                                     <h4 className="font-medium mb-2">Financial Summary</h4>
                                     <div className="space-y-1 text-sm">
-                                      <div>Gross Pay: {formatTTCurrency(selectedPeriod.total_gross_pay)}</div>
-                                      <div>NIS Employee: {formatTTCurrency(selectedPeriod.total_nis_employee)}</div>
-                                      <div>NIS Employer: {formatTTCurrency(selectedPeriod.total_nis_employer)}</div>
-                                      <div className="font-medium">Net Pay: {formatTTCurrency(selectedPeriod.total_net_pay)}</div>
+                                      <div>Gross Pay: {formatTTCurrency(getEffectiveTotals(selectedPeriod).gross)}</div>
+                                      <div>NIS Employee: {formatTTCurrency(getEffectiveTotals(selectedPeriod).nisEmployee)}</div>
+                                      <div>NIS Employer: {formatTTCurrency(getEffectiveTotals(selectedPeriod).nisEmployer)}</div>
+                                      <div className="font-medium">Net Pay: {formatTTCurrency(getEffectiveTotals(selectedPeriod).netPay)}</div>
                                     </div>
                                   </div>
                                 </div>
