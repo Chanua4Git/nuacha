@@ -414,7 +414,11 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       notes: saveFormData.notes,
       transaction_id: saveFormData.transactionId,
       entered_date: saveFormData.enteredDate,
-      status: saveFormData.status
+      status: saveFormData.status,
+      total_gross_pay: totals.totalCalculatedPay,
+      total_nis_employee: totals.totalNISEmployee,
+      total_nis_employer: totals.totalNISEmployer,
+      total_net_pay: totals.totalNetPay,
     });
   };
 

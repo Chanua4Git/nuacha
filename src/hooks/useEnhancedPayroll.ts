@@ -98,6 +98,10 @@ export const useEnhancedPayroll = () => {
       transaction_id?: string;
       entered_date?: string;
       status?: 'draft' | 'calculated' | 'processed' | 'paid';
+      total_gross_pay?: number;
+      total_nis_employee?: number;
+      total_nis_employer?: number;
+      total_net_pay?: number;
     }
   ) => {
     if (!user) return null;
