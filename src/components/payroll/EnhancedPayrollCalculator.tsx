@@ -698,7 +698,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
             <TabsContent value="summary" className="space-y-6">
               {payrollPeriod && getTotalSummary() && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="text-sm text-muted-foreground">Total Days Worked</div>
@@ -721,6 +721,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                       <CardContent className="p-4">
                         <div className="text-sm text-muted-foreground">NIS Employee Contributions</div>
                         <div className="text-2xl font-bold text-orange-600">{formatTTCurrency(getTotalSummary()?.totalNISEmployee || 0)}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-sm text-muted-foreground">Total NIS Contributions</div>
+                        <div className="text-2xl font-bold text-purple-600">{formatTTCurrency((getTotalSummary()?.totalNISEmployer || 0) + (getTotalSummary()?.totalNISEmployee || 0))}</div>
                       </CardContent>
                     </Card>
                     <Card>
