@@ -21,6 +21,7 @@ import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { PayrollPeriodManager } from './PayrollPeriodManager';
 import { PayPalPaymentButton } from './PayPalPaymentButton';
+import { BulkTransactionEditor } from './BulkTransactionEditor';
 import { useEffect } from 'react';
 
 interface WeeklyCalculation {
