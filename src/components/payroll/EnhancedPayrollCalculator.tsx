@@ -887,6 +887,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
             {/* Manage Tab */}
             <TabsContent value="manage" className="space-y-6">
+              <BulkTransactionEditor />
               <PayrollPeriodManager onLoadPeriod={loadExistingPeriod} />
             </TabsContent>
           </Tabs>
