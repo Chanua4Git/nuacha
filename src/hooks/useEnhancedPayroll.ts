@@ -97,6 +97,7 @@ export const useEnhancedPayroll = () => {
       notes?: string;
       transaction_id?: string;
       entered_date?: string;
+      paid_date?: string;
       status?: 'draft' | 'calculated' | 'processed' | 'paid';
       total_gross_pay?: number;
       total_nis_employee?: number;
