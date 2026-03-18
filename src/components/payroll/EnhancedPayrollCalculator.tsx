@@ -21,6 +21,7 @@ import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { PayrollPeriodManager } from './PayrollPeriodManager';
 import { PayPalPaymentButton } from './PayPalPaymentButton';
+import { BulkTransactionEditor } from './BulkTransactionEditor';
 import { useEffect } from 'react';
 
 interface WeeklyCalculation {
@@ -886,6 +887,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
             {/* Manage Tab */}
             <TabsContent value="manage" className="space-y-6">
+              <BulkTransactionEditor />
               <PayrollPeriodManager onLoadPeriod={loadExistingPeriod} />
             </TabsContent>
           </Tabs>
