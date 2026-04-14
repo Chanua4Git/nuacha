@@ -308,7 +308,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       employment_type: selectedEmployee.employment_type,
       hourly_rate: selectedEmployee.hourly_rate,
       monthly_salary: selectedEmployee.monthly_salary,
-      daily_rate: selectedEmployee.daily_rate,
+      daily_rate: selectedEmployee.daily_rate || week.dailyRate8Hr,
     };
 
     const payrollInput: PayrollInput = {
