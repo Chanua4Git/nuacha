@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calculator, Download, DollarSign, Info } from 'lucide-react';
 import { Employee } from '@/types/payroll';
-import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
+import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
 import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnifiedPayrollCalculatorProps {
   employees: Employee[];
@@ -30,8 +31,22 @@ export const UnifiedPayrollCalculator: React.FC<UnifiedPayrollCalculatorProps> =
   const [otherAllowances, setOtherAllowances] = useState<number>(0);
   const [calculation, setCalculation] = useState<any>(null);
   const [errors, setErrors] = useState<string[]>([]);
-  
-  // Lead capture state for demo users
+  const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
+
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (data) setNisClasses(data as NISEarningsClass[]);
+      } catch (e) { console.error('Failed to fetch NIS classes:', e); }
+    };
+    fetchNISClasses();
+  }, []);
+
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [leadCaptureAction, setLeadCaptureAction] = useState<'save' | 'load' | 'export' | 'create_period' | 'advanced_features'>('export');
 
@@ -65,7 +80,7 @@ export const UnifiedPayrollCalculator: React.FC<UnifiedPayrollCalculatorProps> =
     }
 
     setErrors([]);
-    const result = calculatePayroll(employeeData, input);
+    const result = calculatePayroll(employeeData, input, nisClasses.length > 0 ? nisClasses : undefined);
     setCalculation(result);
 
     if (onCalculationComplete) {

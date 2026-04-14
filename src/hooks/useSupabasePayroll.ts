@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Employee, PayrollPeriod, PayrollEntry } from '@/types/payroll';
-import { calculatePayroll, EmployeeData, PayrollInput, CURRENT_TT_NIS_RATES } from '@/utils/payrollCalculations';
+import { calculatePayroll, EmployeeData, PayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/auth/contexts/AuthProvider';
@@ -9,9 +9,24 @@ export const useSupabasePayroll = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
   const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([]);
+  const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (data) setNisClasses(data as NISEarningsClass[]);
+      } catch (e) { console.error('Failed to fetch NIS classes:', e); }
+    };
+    fetchNISClasses();
+  }, []);
 
   // Fetch employees
   const fetchEmployees = async () => {
@@ -207,7 +222,7 @@ export const useSupabasePayroll = () => {
       daily_rate: employee.daily_rate,
     };
 
-    return calculatePayroll(employeeData, input, CURRENT_TT_NIS_RATES);
+    return calculatePayroll(employeeData, input, nisClasses.length > 0 ? nisClasses : undefined);
   };
 
   // Add payroll entry
@@ -395,6 +410,6 @@ export const useSupabasePayroll = () => {
     fetchEmployees,
     fetchPayrollPeriods,
     fetchPayrollEntries,
-    nisRates: [CURRENT_TT_NIS_RATES],
+    nisRates: nisClasses,
   };
 };

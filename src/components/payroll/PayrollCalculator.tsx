@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Download, DollarSign } from 'lucide-react';
 import { Employee } from '@/types/payroll';
-import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
+import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PayrollCalculatorProps {
   employees: Employee[];
@@ -26,6 +27,21 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const [otherAllowances, setOtherAllowances] = useState<number>(0);
   const [calculation, setCalculation] = useState<any>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
+
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (data) setNisClasses(data as NISEarningsClass[]);
+      } catch (e) { console.error('Failed to fetch NIS classes:', e); }
+    };
+    fetchNISClasses();
+  }, []);
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
@@ -57,7 +73,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     }
 
     setErrors([]);
-    const result = calculatePayroll(employeeData, input);
+    const result = calculatePayroll(employeeData, input, nisClasses.length > 0 ? nisClasses : undefined);
     setCalculation(result);
 
     if (onCalculationComplete) {
