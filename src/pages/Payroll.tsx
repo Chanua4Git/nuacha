@@ -33,7 +33,7 @@ import { EmployerSettingsForm } from '@/components/payroll/EmployerSettingsForm'
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { NI184Report } from '@/components/payroll/NI184Report';
 import { NI187Report } from '@/components/payroll/NI187Report';
-import { Select as ReportSelect, SelectContent as ReportSelectContent, SelectItem as ReportSelectItem, SelectTrigger as ReportSelectTrigger, SelectValue as ReportSelectValue } from '@/components/ui/select';
+
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
