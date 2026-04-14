@@ -1,97 +1,56 @@
 
 
-## Enhance Payroll to Support NI 184 and NI 187 Form Generation
+## Update NIS Rates to 2026 Compliance
 
-### What the forms require (gap analysis)
+### The Problem
 
-**NI 184 (Statement of Contribution Paid/Due)** -- per-employee detail form:
-- Employer trade name, registration number, service centre code, address, telephone
-- Contribution period (from/to dates), number of weeks in period
-- Per employee row: NIS number, surname + first name, date of birth, date employed/last date worked, salary for period, weekly contribution values (WK1-WK5), total contributions b/f
+Your database has **old 2024 NIS rates** (10 classes, max $1,500/week, effective 2024-01-01). The new rates effective **05 January 2026** have **16 classes (I-XVI)** with completely different brackets, a new contribution rate of **16.2%**, and a max bracket of $3,138+/week.
 
-**NI 187 (Summary of Contributions Due)** -- employer summary form:
-- Same employer header info
-- Pay period from/to
-- Number of employees
-- Contributions due total, penalty, interest, balance b/f, amount paid, balance c/f
-- Payment method (cash/cheque)
-- Section F for multi-month breakdowns
+**Angela's impact**: At $280/day × 5 days = $1,400/week, she falls in:
+- Old rates: Class 10 → Employee $19.80 / Employer $41.25 (wrong)
+- **New 2026 rates: Class VII** ($1,120-$1,299.99) → **Employee $65.30 / Employer $130.60**
 
-### What Nuacha already has
-- Employee: first_name, last_name, nis_number, national_id, date_hired, employment type, rates
-- Weekly calculator: days worked, NIS employee/employer contributions per week, calculated pay
-- Period summaries: total gross, NIS employee, NIS employer, net pay
-- Saved payroll periods with status tracking
+Your current payroll calculations are significantly under-reporting NIS contributions.
 
-### What is missing
+### What needs to change
 
-**Employee table** -- needs:
-- `date_of_birth` (DATE) -- required on NI 184
-- `last_date_worked` (DATE) -- optional, for terminated employees
+**1. Database migration: Replace NIS earnings classes**
+- Deactivate all old 2024 classes (`is_active = false`)
+- Insert all 16 new 2026 classes with correct brackets and contribution amounts from the official NIBTT document:
 
-**Employer profile** -- entirely missing. Need a new `employer_settings` table:
-- `trade_name` (TEXT) -- employer's business/trade name
-- `employer_reg_no` (TEXT) -- 5-digit NIS employer registration number
-- `service_centre_code` (TEXT) -- NIS service centre code
-- `address` (TEXT)
-- `telephone` (TEXT)
+| Class | Weekly Range | Employee $ | Employer $ |
+|-------|-------------|-----------|-----------|
+| I | 200-339.99 | 14.60 | 29.20 |
+| II | 340-449.99 | 21.30 | 42.60 |
+| III | 450-609.99 | 28.60 | 57.20 |
+| IV | 610-759.99 | 37.00 | 74.00 |
+| V | 760-929.99 | 45.60 | 91.20 |
+| VI | 930-1119.99 | 55.40 | 110.80 |
+| VII | 1120-1299.99 | 65.30 | 130.60 |
+| VIII | 1300-1489.99 | 75.30 | 150.60 |
+| IX | 1490-1709.99 | 86.40 | 172.80 |
+| X | 1710-1909.99 | 97.70 | 195.40 |
+| XI | 1910-2139.99 | 109.40 | 218.80 |
+| XII | 2140-2379.99 | 122.00 | 244.00 |
+| XIII | 2380-2629.99 | 135.30 | 270.60 |
+| XIV | 2630-2919.99 | 149.90 | 299.80 |
+| XV | 2920-3137.99 | 163.60 | 327.20 |
+| XVI | 3138+ | 169.50 | 339.00 |
 
-**Payroll period data** -- the weekly NIS contribution values per employee are calculated but not individually persisted in a way that maps to NI 184 columns (WK1 $, WK2 $, etc.). They exist in the `payroll_data` JSON blob but need to be extractable per-employee.
+**2. Update edge function threshold**
+- The `payroll-api` edge function has a hardcoded $200/week NIS threshold -- this stays correct (Class I starts at $200)
+- The max bracket logic needs updating since the old code caps at Class 10
 
-**NI 187 fields** -- need:
-- `balance_bf` (brought forward from prior period)
-- `penalty` and `interest` (if applicable)
-- Payment method tracking
+**3. Update class naming convention**
+- Old: "Class 1" through "Class 10"
+- New: Roman numerals "Class I" through "Class XVI" to match official NIBTT forms
 
-### Plan
-
-**1. Database migration: Add missing fields**
-- Add `date_of_birth` column to `employees` table
-- Create `employer_settings` table (user_id, trade_name, employer_reg_no, service_centre_code, address, telephone)
-- Add `balance_bf`, `penalty`, `interest`, `payment_method` columns to `payroll_periods` table (for NI 187)
-
-**2. Update Employee Form**
-- Add date of birth field to `EmployeeForm.tsx`
-- Update `EmployeeFormData` type in `types/payroll.ts`
-
-**3. Create Employer Settings UI**
-- New component `EmployerSettingsForm.tsx` on the payroll page (likely under a new "Settings" or within the "About" tab)
-- Fields: trade name, employer registration number, service centre code, address, telephone
-- Save/load from `employer_settings` table
-
-**4. Build NI 184 report generator**
-- New component `NI184Report.tsx`
-- Takes a saved payroll period + employee data
-- Renders a printable/exportable form matching the NI 184 layout:
-  - Header with employer info from `employer_settings`
-  - Period from/to, weeks count
-  - Table rows: one per employee with NIS number, name, DOB, date employed, salary for period, weekly contribution values (from the weekly calculator data), total
-- Export as PDF or print-friendly view
-
-**5. Build NI 187 report generator**
-- New component `NI187Report.tsx`
-- Summary form with employer info, period, employee count
-- Section B: balance b/f, contributions due (sum of all employee+employer NIS), penalty, interest, total, amount paid, balance c/f
-- Section F for multi-month periods
-- Export as PDF or print-friendly view
-
-**6. Add "Generate NIS Forms" button to Summary & Export tab**
-- Two buttons: "Generate NI 184" and "Generate NI 187"
-- Pre-fill from saved period data + employer settings
-- Allow user to enter balance b/f, penalty, interest before generating NI 187
-
-**7. Update Supabase types**
-- Regenerate or manually update `integrations/supabase/types.ts` for new columns/tables
-
-### For the Feb 01-28 2026 period example
-With the employee A N-Collymore at $280/day, 5 weeks, 19 total days worked:
-- Gross: $5,320 | NIS Employee: $237.40 | NIS Employer: $474.80 | Net: $5,082.60
-- NI 184 would show weekly breakdown: each week's contribution value in WK1-WK5 columns
-- NI 187 would show total contributions due: $237.40 + $474.80 = $712.20
+**4. No UI changes needed**
+- The calculators already pull rates from the database dynamically
+- Once the data is updated, all calculations (Enhanced Payroll Calculator, NIS Calculator, NI 184/187 reports) will automatically use the correct 2026 rates
 
 ### Technical details
-- Migration adds columns with sensible defaults (nullable for backward compatibility)
-- Employer settings is a single-row-per-user table with RLS
-- NI 184/187 reports use CSS `@media print` for clean printing
-- No changes to the payroll-api edge function needed -- this is presentation/data capture work
+- Single SQL migration: deactivate old rows, insert 16 new rows with `effective_date = '2026-01-05'`
+- Redeploy `payroll-api` edge function (minor: ensure Class XVI handles the "and over" case with a very high max like 99999.99)
+- Historical periods calculated before this update retain their saved values -- only new calculations use updated rates
 
