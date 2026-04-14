@@ -3,16 +3,37 @@
 export interface TTNISRates {
   min_weekly_wage: number;
   max_weekly_wage: number;
-  employee_rate: number; // e.g., 0.0300 for 3%
-  employer_rate: number; // e.g., 0.0625 for 6.25%
+  employee_rate: number;
+  employer_rate: number;
 }
 
-// Current TT NIS rates (2024)
+// @deprecated — Use NIS earnings classes from the database instead
 export const CURRENT_TT_NIS_RATES: TTNISRates = {
-  min_weekly_wage: 120.00,
-  max_weekly_wage: 1500.00,
-  employee_rate: 0.0300, // 3%
-  employer_rate: 0.0625, // 6.25%
+  min_weekly_wage: 200.00,
+  max_weekly_wage: 99999.99,
+  employee_rate: 0.054, // 5.4% (2026 employee portion of 16.2%)
+  employer_rate: 0.108, // 10.8% (2026 employer portion of 16.2%)
+};
+
+// NIS Earnings Class shape matching the nis_earnings_classes DB table
+export interface NISEarningsClass {
+  earnings_class: string;
+  min_weekly_earnings: number;
+  max_weekly_earnings: number;
+  employee_contribution: number;
+  employer_contribution: number;
+}
+
+// Find the NIS class for a given weekly earnings amount
+export const findNISClassForEarnings = (
+  weeklyEarnings: number,
+  nisClasses: NISEarningsClass[]
+): NISEarningsClass | null => {
+  if (!nisClasses || nisClasses.length === 0) return null;
+  return nisClasses.find(cls =>
+    weeklyEarnings >= cls.min_weekly_earnings &&
+    weeklyEarnings <= cls.max_weekly_earnings
+  ) || (weeklyEarnings > 0 ? nisClasses[nisClasses.length - 1] : null);
 };
 
 export interface PayrollCalculationResult {
@@ -40,26 +61,49 @@ export interface PayrollInput {
   other_allowances?: number;
 }
 
-// Calculate NIS Employee Contribution using IFS formula based on days worked
-export const calculateNISEmployeeByDays = (daysWorked: number): number => {
-  // Excel IFS formula: =IFS(K2=3, 37.2, K2=3.5, 45.1, K2=4, 53.2, K2=4.5, 53.2, K2=5, 61.4)
+// Calculate NIS contributions by looking up weekly earnings in the NIS classes table
+// weeklyEarnings = dailyRate × daysWorked (or provided directly)
+export const calculateNISByEarnings = (
+  weeklyEarnings: number,
+  nisClasses: NISEarningsClass[]
+): { employee: number; employer: number; nisClass: string } => {
+  const cls = findNISClassForEarnings(weeklyEarnings, nisClasses);
+  if (!cls) return { employee: 0, employer: 0, nisClass: 'N/A' };
+  return {
+    employee: cls.employee_contribution,
+    employer: cls.employer_contribution,
+    nisClass: cls.earnings_class,
+  };
+};
+
+// @deprecated — kept for backward compat; prefer calculateNISByEarnings
+export const calculateNISEmployeeByDays = (daysWorked: number, dailyRate?: number, nisClasses?: NISEarningsClass[]): number => {
+  if (nisClasses && nisClasses.length > 0 && dailyRate) {
+    const weeklyEarnings = dailyRate * daysWorked;
+    return calculateNISByEarnings(weeklyEarnings, nisClasses).employee;
+  }
+  // Legacy hardcoded fallback (2024 rates — should not be used)
   if (daysWorked === 3) return 37.2;
   if (daysWorked === 3.5) return 45.1;
   if (daysWorked === 4) return 53.2;
   if (daysWorked === 4.5) return 53.2;
   if (daysWorked === 5) return 61.4;
-  return 0; // Default for days not covered by the formula
+  return 0;
 };
 
-// Calculate NIS Employer Contribution using IFS formula based on days worked
-export const calculateNISEmployerByDays = (daysWorked: number): number => {
-  // Excel IFS formula: =IFS(K2=3,74.4,K2=3.5,90.2,K2=4,106.4,K2=4.5,106.4,K2=5,122.8)
+// @deprecated — kept for backward compat; prefer calculateNISByEarnings
+export const calculateNISEmployerByDays = (daysWorked: number, dailyRate?: number, nisClasses?: NISEarningsClass[]): number => {
+  if (nisClasses && nisClasses.length > 0 && dailyRate) {
+    const weeklyEarnings = dailyRate * daysWorked;
+    return calculateNISByEarnings(weeklyEarnings, nisClasses).employer;
+  }
+  // Legacy hardcoded fallback (2024 rates — should not be used)
   if (daysWorked === 3) return 74.4;
   if (daysWorked === 3.5) return 90.2;
   if (daysWorked === 4) return 106.4;
   if (daysWorked === 4.5) return 106.4;
   if (daysWorked === 5) return 122.8;
-  return 0; // Default for days not covered by the formula
+  return 0;
 };
 
 // Calculate NIS contributions using Excel IFS formula logic based on daily rate multipliers
@@ -153,25 +197,37 @@ export const calculateWeeklyWage = (
   }
 };
 
-// Perform complete payroll calculation using IFS-based NIS calculations
+// Perform complete payroll calculation using database-driven NIS classes
 export const calculatePayroll = (
   employee: EmployeeData,
   input: PayrollInput,
-  rates: TTNISRates = CURRENT_TT_NIS_RATES
+  ratesOrClasses?: TTNISRates | NISEarningsClass[]
 ): PayrollCalculationResult => {
   const gross_pay = calculateGrossPay(employee, input);
   const weekly_wage = calculateWeeklyWage(employee, input, gross_pay);
   
-  // Use IFS-based NIS calculations if days_worked is provided
   let employee_contribution: number;
   let employer_contribution: number;
-  
-  if (input.days_worked !== undefined) {
+
+  // Check if NIS classes array was passed (new 2026 approach)
+  const nisClasses = Array.isArray(ratesOrClasses) ? ratesOrClasses : undefined;
+  const rates = !Array.isArray(ratesOrClasses) ? ratesOrClasses : undefined;
+
+  if (nisClasses && nisClasses.length > 0) {
+    // Database-driven: compute weekly earnings and find matching class
+    let weeklyEarnings = weekly_wage;
+    if (input.days_worked !== undefined && employee.daily_rate) {
+      weeklyEarnings = employee.daily_rate * input.days_worked;
+    }
+    const nis = calculateNISByEarnings(weeklyEarnings, nisClasses);
+    employee_contribution = nis.employee;
+    employer_contribution = nis.employer;
+  } else if (input.days_worked !== undefined) {
+    // Legacy hardcoded fallback
     employee_contribution = calculateNISEmployeeByDays(input.days_worked);
     employer_contribution = calculateNISEmployerByDays(input.days_worked);
   } else {
-    // Fallback to the old method if days_worked is not provided
-    const nisContributions = calculateNISContributions(weekly_wage, rates);
+    const nisContributions = calculateNISContributions(weekly_wage, rates || CURRENT_TT_NIS_RATES);
     employee_contribution = nisContributions.employee_contribution;
     employer_contribution = nisContributions.employer_contribution;
   }
