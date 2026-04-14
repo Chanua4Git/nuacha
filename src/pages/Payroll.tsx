@@ -56,6 +56,7 @@ const Payroll: React.FC = () => {
   
   const { shifts, addShiftsForEmployee, fetchAllShifts } = useEmployeeShifts();
   const { families } = useFamilies();
+  const { settings: employerSettings } = useEmployerSettings();
   
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
