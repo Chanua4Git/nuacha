@@ -26,6 +26,7 @@ const employeeFormSchema = z.object({
   weekly_rate: z.string().optional(),
   nis_number: z.string().optional(),
   date_hired: z.string().optional(),
+  date_of_birth: z.string().optional(),
 }).refine((data) => {
   // Validate that the appropriate rate field is provided based on employment type
   const validateRate = (rateStr: string | undefined) => {
@@ -106,6 +107,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       weekly_rate: '',
       nis_number: '',
       date_hired: '',
+      date_of_birth: '',
     },
     mode: 'onChange',
   });
@@ -143,6 +145,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : undefined,
         nis_number: data.nis_number || undefined,
         date_hired: data.date_hired || undefined,
+        date_of_birth: data.date_of_birth || undefined,
         shifts: (data.employment_type === 'shift_based' || data.employment_type === 'contract') ? shifts : undefined,
       };
 
@@ -384,13 +387,23 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             />
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="date_hired">Date Hired</Label>
-            <Input
-              id="date_hired"
-              type="date"
-              {...register('date_hired')}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date_hired">Date Hired</Label>
+              <Input
+                id="date_hired"
+                type="date"
+                {...register('date_hired')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                {...register('date_of_birth')}
+              />
+            </div>
           </div>
 
           {errors.root && (
