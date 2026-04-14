@@ -13,6 +13,20 @@ export const useSimplePayroll = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (data) setNisClasses(data as NISEarningsClass[]);
+      } catch (e) { console.error('Failed to fetch NIS classes:', e); }
+    };
+    fetchNISClasses();
+  }, []);
+
   // Add employee
   const addEmployee = (employeeData: Omit<Employee, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     const newEmployee: Employee = {
