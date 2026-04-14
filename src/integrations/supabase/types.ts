@@ -528,6 +528,7 @@ export type Database = {
           created_at: string
           daily_rate: number | null
           date_hired: string | null
+          date_of_birth: string | null
           date_terminated: string | null
           email: string | null
           employee_number: string
@@ -550,6 +551,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           date_hired?: string | null
+          date_of_birth?: string | null
           date_terminated?: string | null
           email?: string | null
           employee_number: string
@@ -572,6 +574,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           date_hired?: string | null
+          date_of_birth?: string | null
           date_terminated?: string | null
           email?: string | null
           employee_number?: string
@@ -589,6 +592,42 @@ export type Database = {
           user_id?: string
           weekly_pay_schedule?: string | null
           weekly_rate?: number | null
+        }
+        Relationships: []
+      }
+      employer_settings: {
+        Row: {
+          address: string | null
+          created_at: string
+          employer_reg_no: string | null
+          id: string
+          service_centre_code: string | null
+          telephone: string | null
+          trade_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          employer_reg_no?: string | null
+          id?: string
+          service_centre_code?: string | null
+          telephone?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          employer_reg_no?: string | null
+          id?: string
+          service_centre_code?: string | null
+          telephone?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1260,6 +1299,10 @@ export type Database = {
           entered_date: string | null
           id: string
           name: string
+          nis_balance_bf: number | null
+          nis_interest: number | null
+          nis_payment_method: string | null
+          nis_penalty: number | null
           notes: string | null
           paid_date: string | null
           pay_date: string
@@ -1280,6 +1323,10 @@ export type Database = {
           entered_date?: string | null
           id?: string
           name: string
+          nis_balance_bf?: number | null
+          nis_interest?: number | null
+          nis_payment_method?: string | null
+          nis_penalty?: number | null
           notes?: string | null
           paid_date?: string | null
           pay_date: string
@@ -1300,6 +1347,10 @@ export type Database = {
           entered_date?: string | null
           id?: string
           name?: string
+          nis_balance_bf?: number | null
+          nis_interest?: number | null
+          nis_payment_method?: string | null
+          nis_penalty?: number | null
           notes?: string | null
           paid_date?: string | null
           pay_date?: string

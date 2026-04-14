@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home } from 'lucide-react';
+import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home, Building2 } from 'lucide-react';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
@@ -28,6 +29,11 @@ import { SubscriptionManager } from "@/components/payroll/SubscriptionManager";
 import { toast } from 'sonner';
 import { useFamilies } from '@/hooks/useFamilies';
 import { useCategories } from '@/hooks/useCategories';
+import { EmployerSettingsForm } from '@/components/payroll/EmployerSettingsForm';
+import { useEmployerSettings } from '@/hooks/useEmployerSettings';
+import { NI184Report } from '@/components/payroll/NI184Report';
+import { NI187Report } from '@/components/payroll/NI187Report';
+
 const Payroll: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -51,6 +57,7 @@ const Payroll: React.FC = () => {
   
   const { shifts, addShiftsForEmployee, fetchAllShifts } = useEmployeeShifts();
   const { families } = useFamilies();
+  const { settings: employerSettings } = useEmployerSettings();
   
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -95,6 +102,9 @@ const Payroll: React.FC = () => {
   });
   
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [nisReportPeriodId, setNisReportPeriodId] = useState<string>('');
+  const [showNI184, setShowNI184] = useState(false);
+  const [showNI187, setShowNI187] = useState(false);
 
   // Save active tab to sessionStorage whenever it changes
   const handleTabChange = (value: string) => {
@@ -407,6 +417,9 @@ const Payroll: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Employer Settings (authenticated only) */}
+          {user && <EmployerSettingsForm />}
+
           {/* FAQ Section */}
           <Card>
             <CardHeader>
@@ -656,7 +669,7 @@ const Payroll: React.FC = () => {
           <div>
             <h2 className="text-2xl font-bold mb-2">Payroll Reports</h2>
             <p className="text-muted-foreground">
-              Generate and export payroll reports
+              Generate and export payroll reports, including NIS forms
             </p>
           </div>
 
@@ -673,19 +686,102 @@ const Payroll: React.FC = () => {
                   <Download className="h-6 w-6" />
                   Employee Data (CSV)
                 </Button>
-                
-                <Button variant="outline" disabled={true} className="h-20 flex-col gap-2">
-                  <FileText className="h-6 w-6" />
-                  Payroll Summary (Coming Soon)
-                </Button>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p>• Employee Data: Export all employee information with rates and contact details</p>
-                <p>• Payroll Summary: Detailed payroll calculations with NIS contributions (Coming Soon)</p>
               </div>
             </CardContent>
           </Card>
+
+          {/* NIS Form Generation */}
+          {user && payrollPeriods.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Generate NIS Forms
+                </CardTitle>
+                <CardDescription>
+                  Select a payroll period to generate NI 184 or NI 187 forms
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Payroll Period</Label>
+                  <Select
+                    value={nisReportPeriodId}
+                    onValueChange={(value) => {
+                      setNisReportPeriodId(value);
+                      setShowNI184(false);
+                      setShowNI187(false);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {payrollPeriods.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name} ({p.start_date} — {p.end_date})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {nisReportPeriodId && (
+                  <div className="flex gap-3">
+                    <Button
+                      variant={showNI184 ? 'default' : 'outline'}
+                      onClick={() => { setShowNI184(!showNI184); setShowNI187(false); }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      NI 184 — Contributions Detail
+                    </Button>
+                    <Button
+                      variant={showNI187 ? 'default' : 'outline'}
+                      onClick={() => { setShowNI187(!showNI187); setShowNI184(false); }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      NI 187 — Summary
+                    </Button>
+                  </div>
+                )}
+
+                {!employerSettings?.trade_name && nisReportPeriodId && (
+                  <p className="text-sm text-muted-foreground">
+                    💡 Fill in your employer details in the <strong>About</strong> tab to pre-fill these forms.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* NI 184 Report */}
+          {showNI184 && nisReportPeriodId && (() => {
+            const period = payrollPeriods.find((p) => p.id === nisReportPeriodId);
+            if (!period) return null;
+            const periodEntries = getEntriesForPeriod(nisReportPeriodId);
+            return (
+              <NI184Report
+                period={period}
+                entries={periodEntries}
+                employees={employees}
+                employerSettings={employerSettings}
+              />
+            );
+          })()}
+
+          {/* NI 187 Report */}
+          {showNI187 && nisReportPeriodId && (() => {
+            const period = payrollPeriods.find((p) => p.id === nisReportPeriodId);
+            if (!period) return null;
+            const periodEntries = getEntriesForPeriod(nisReportPeriodId);
+            return (
+              <NI187Report
+                period={period}
+                entries={periodEntries}
+                employerSettings={employerSettings}
+              />
+            );
+          })()}
         </TabsContent>
 
         {user && (

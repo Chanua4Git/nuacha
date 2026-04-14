@@ -18,6 +18,7 @@ export interface Employee {
   is_active: boolean;
   date_hired?: string;
   date_terminated?: string;
+  date_of_birth?: string;
   created_at?: string;
   updated_at?: string;
   shifts?: EmployeeShift[]; // For shift-based employees
@@ -120,7 +121,21 @@ export interface EmployeeFormData {
   weekly_rate?: number;
   nis_number?: string;
   date_hired?: string;
+  date_of_birth?: string;
   shifts?: ShiftFormData[];
+}
+
+// Employer settings for NIS forms (NI 184 / NI 187)
+export interface EmployerSettings {
+  id: string;
+  user_id: string;
+  trade_name?: string;
+  employer_reg_no?: string;
+  service_centre_code?: string;
+  address?: string;
+  telephone?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ShiftFormData {
