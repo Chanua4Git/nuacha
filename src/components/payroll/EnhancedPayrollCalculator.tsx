@@ -15,7 +15,7 @@ import { Calculator, Download, DollarSign, Calendar as CalendarIcon, FileText, C
 import { format, startOfWeek, endOfWeek, eachWeekOfInterval, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Employee } from '@/types/payroll';
-import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
+import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
 import { useEnhancedPayroll } from '@/hooks/useEnhancedPayroll';
 import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
 import { useAuth } from '@/auth/contexts/AuthProvider';
@@ -23,6 +23,7 @@ import { PayrollPeriodManager } from './PayrollPeriodManager';
 import { PayPalPaymentButton } from './PayPalPaymentButton';
 import { BulkTransactionEditor } from './BulkTransactionEditor';
 import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WeeklyCalculation {
   weekNumber: number;
