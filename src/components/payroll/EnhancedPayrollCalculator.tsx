@@ -125,6 +125,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     } catch { return {}; }
   });
   
+  const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [activeTab, setActiveTabRaw] = useState<'setup' | 'calculator' | 'summary'>(() => {
     try {
