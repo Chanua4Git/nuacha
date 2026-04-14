@@ -27,8 +27,22 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const [otherAllowances, setOtherAllowances] = useState<number>(0);
   const [calculation, setCalculation] = useState<any>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
 
-  const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (data) setNisClasses(data as NISEarningsClass[]);
+      } catch (e) { console.error('Failed to fetch NIS classes:', e); }
+    };
+    fetchNISClasses();
+  }, []);
+
 
   const handleCalculate = () => {
     if (!selectedEmployee) {
@@ -58,7 +72,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     }
 
     setErrors([]);
-    const result = calculatePayroll(employeeData, input);
+    const result = calculatePayroll(employeeData, input, nisClasses.length > 0 ? nisClasses : undefined);
     setCalculation(result);
 
     if (onCalculationComplete) {
