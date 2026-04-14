@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calculator, Download, DollarSign, Info } from 'lucide-react';
 import { Employee } from '@/types/payroll';
-import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput } from '@/utils/payrollCalculations';
+import { calculatePayroll, formatTTCurrency, EmployeeData, PayrollInput, validatePayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
 import PayrollLeadCaptureModal from './PayrollLeadCaptureModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnifiedPayrollCalculatorProps {
   employees: Employee[];
