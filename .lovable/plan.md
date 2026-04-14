@@ -1,42 +1,38 @@
 
 
-## Fix Weekly Calculator NIS Values — Use 2026 Database Rates
+## Fix: NIS Calculating 4-Day Weeks as 5-Day Weeks
 
-### The Problem
+### Root Cause
 
-The weekly calculator shows old NIS values ($53.20/$106.40 for 4 days, $61.40/$122.80 for 5 days) because `payrollCalculations.ts` has **hardcoded lookup tables** that bypass the database entirely:
+Angela is stored as an **hourly** employee ($35/hr, no `daily_rate` in the database). The Enhanced Payroll Calculator correctly computes her 8-hour daily rate as $280 (`35 × 8`) for display, but when it calls `calculatePayroll`, it passes `daily_rate: undefined` (from the DB record).
 
+Inside `calculatePayroll`, the NIS lookup code has this logic:
 ```
-// OLD hardcoded values (lines 44-62)
-if (daysWorked === 4) return 53.2;  // should be 65.30
-if (daysWorked === 5) return 61.4;  // should be 75.30
+if (input.days_worked !== undefined && employee.daily_rate) {
+    weeklyEarnings = employee.daily_rate * input.days_worked;
+}
 ```
 
-The database migration updated the `nis_earnings_classes` table correctly, but the client-side `calculatePayroll` function never queries it.
+Since `employee.daily_rate` is `undefined`, this override **never triggers**. Instead, it uses `calculateWeeklyWage()` which for hourly employees always returns `hourlyRate × 40 = $1,400` -- a full 5-day week regardless of actual days worked.
+
+Result: 4 days and 5 days both map to Class VIII ($75.30 / $150.60) instead of 4 days mapping to Class VII ($65.30 / $130.60).
 
 ### The Fix
 
-**Replace hardcoded NIS lookups with database-driven class matching.** The approach:
+**In `EnhancedPayrollCalculator.tsx`, line ~307-312**: When building `employeeData` for the calculation, set `daily_rate` to the already-computed `dailyRate8Hr` from the week data. This ensures hourly employees who are tracked by days get the correct weekly earnings for NIS lookup.
 
-1. **Fetch NIS classes from database on component mount** — query `nis_earnings_classes` where `is_active = true`, cache in state
-2. **Update `calculateNISEmployeeByDays` and `calculateNISEmployerByDays`** — instead of hardcoded IFS values, calculate weekly earnings (daily_rate × days_worked), find the matching class from the fetched data, and return the class's contribution amounts
-3. **Update `CURRENT_TT_NIS_RATES`** — remove the old percentage-based constant since the 2026 system uses fixed contribution amounts per class, not percentages
-4. **Modify `calculatePayroll`** to accept an optional NIS classes array parameter, so the weekly calculator can pass the fetched classes
+```typescript
+const employeeData: EmployeeData = {
+  employment_type: selectedEmployee.employment_type,
+  hourly_rate: selectedEmployee.hourly_rate,
+  monthly_salary: selectedEmployee.monthly_salary,
+  daily_rate: selectedEmployee.daily_rate || week.dailyRate8Hr, // Use computed daily rate as fallback
+};
+```
 
-### Steps
+This single change ensures:
+- **4 days**: `280 × 4 = $1,120` → Class VII → Employee $65.30 / Employer $130.60
+- **5 days**: `280 × 5 = $1,400` → Class VIII → Employee $75.30 / Employer $150.60
 
-1. **Add a hook or utility to fetch NIS classes** from Supabase (`nis_earnings_classes` table, `is_active = true`)
-2. **Rewrite `calculateNISEmployeeByDays` and `calculateNISEmployerByDays`** to accept daily_rate + days_worked + NIS classes array, compute weekly earnings, find matching class, return fixed contribution amounts
-3. **Update `calculatePayroll`** signature to accept NIS classes instead of the old percentage-based rates
-4. **Update `EnhancedPayrollCalculator.tsx`** to fetch NIS classes on mount and pass them to calculations
-5. **Update `useSupabasePayroll.ts`, `useSimplePayroll.ts`, `useSupabasePayrollDemo.ts`** to fetch and use database classes
-6. **Remove or deprecate `CURRENT_TT_NIS_RATES`** constant
-
-### Expected Result
-
-For Angela at $280/day:
-- 4 days ($1,120/week) → Class VII: Employee **$65.30**, Employer **$130.60**, Total **$195.90**
-- 5 days ($1,400/week) → Class VIII: Employee **$75.30**, Employer **$150.60**, Total **$225.90**
-
-Matching your spreadsheet exactly.
+No other files need changes -- the calculation utility already handles `daily_rate × days_worked` correctly when `daily_rate` is provided.
 
