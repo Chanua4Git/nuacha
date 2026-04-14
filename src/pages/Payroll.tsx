@@ -101,6 +101,9 @@ const Payroll: React.FC = () => {
   });
   
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [nisReportPeriodId, setNisReportPeriodId] = useState<string>('');
+  const [showNI184, setShowNI184] = useState(false);
+  const [showNI187, setShowNI187] = useState(false);
 
   // Save active tab to sessionStorage whenever it changes
   const handleTabChange = (value: string) => {
