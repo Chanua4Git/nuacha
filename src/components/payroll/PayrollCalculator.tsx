@@ -43,8 +43,8 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     fetchNISClasses();
   }, []);
 
+  const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
-  const handleCalculate = () => {
     if (!selectedEmployee) {
       setErrors(['Please select an employee']);
       return;
