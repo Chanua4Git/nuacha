@@ -416,6 +416,9 @@ const Payroll: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Employer Settings (authenticated only) */}
+          {user && <EmployerSettingsForm />}
+
           {/* FAQ Section */}
           <Card>
             <CardHeader>
