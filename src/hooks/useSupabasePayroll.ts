@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Employee, PayrollPeriod, PayrollEntry } from '@/types/payroll';
-import { calculatePayroll, EmployeeData, PayrollInput, CURRENT_TT_NIS_RATES } from '@/utils/payrollCalculations';
+import { calculatePayroll, EmployeeData, PayrollInput, NISEarningsClass } from '@/utils/payrollCalculations';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/auth/contexts/AuthProvider';
