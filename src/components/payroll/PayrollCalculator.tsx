@@ -45,6 +45,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
+  const handleCalculate = () => {
     if (!selectedEmployee) {
       setErrors(['Please select an employee']);
       return;
