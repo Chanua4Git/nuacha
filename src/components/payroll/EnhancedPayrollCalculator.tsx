@@ -204,7 +204,25 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     } catch {}
   };
 
-  // Auto-save selectedEmployeeId
+  // Fetch NIS earnings classes from database
+  useEffect(() => {
+    const fetchNISClasses = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from('nis_earnings_classes')
+          .select('earnings_class, min_weekly_earnings, max_weekly_earnings, employee_contribution, employer_contribution')
+          .eq('is_active', true)
+          .order('min_weekly_earnings', { ascending: true });
+        if (!error && data) {
+          setNisClasses(data as NISEarningsClass[]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch NIS classes:', e);
+      }
+    };
+    fetchNISClasses();
+  }, []);
+
   useEffect(() => {
     try {
       if (selectedEmployeeId) sessionStorage.setItem('payroll_selectedEmployeeId', selectedEmployeeId);
@@ -299,8 +317,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       other_deductions: inputs.otherDeductions,
       other_allowances: inputs.otherAllowances,
     };
-
-    const calculation = calculatePayroll(employeeData, payrollInput);
+    const calculation = calculatePayroll(employeeData, payrollInput, nisClasses.length > 0 ? nisClasses : undefined);
 
     // Update the weekly calculation
     const updatedWeek: WeeklyCalculation = {
