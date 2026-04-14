@@ -1,97 +1,97 @@
 
 
-## Build a Payroll/NIS Calculation API Edge Function
+## Enhance Payroll to Support NI 184 and NI 187 Form Generation
 
-### What this does
-Creates a public API endpoint hosted in Nuacha's Supabase project that your other caregiving app can call to:
-1. Check if weekly pay exceeds $200 and determine if NIS applies
-2. Look up the correct NIS earnings class from the Trinidad & Tobago lookup table
-3. Return employer and employee contribution amounts for inclusion in payslips
+### What the forms require (gap analysis)
 
-### How the other app uses it
-Your other app sends a simple HTTP request with the caregiver's weekly earnings (or hours + rate), and gets back the NIS class, employee deduction, and employer deduction. The other app then includes these values in its payslip/receipt generation.
+**NI 184 (Statement of Contribution Paid/Due)** -- per-employee detail form:
+- Employer trade name, registration number, service centre code, address, telephone
+- Contribution period (from/to dates), number of weeks in period
+- Per employee row: NIS number, surname + first name, date of birth, date employed/last date worked, salary for period, weekly contribution values (WK1-WK5), total contributions b/f
 
-### What gets built
+**NI 187 (Summary of Contributions Due)** -- employer summary form:
+- Same employer header info
+- Pay period from/to
+- Number of employees
+- Contributions due total, penalty, interest, balance b/f, amount paid, balance c/f
+- Payment method (cash/cheque)
+- Section F for multi-month breakdowns
 
-**1. New Edge Function: `supabase/functions/payroll-api/index.ts`**
+### What Nuacha already has
+- Employee: first_name, last_name, nis_number, national_id, date_hired, employment type, rates
+- Weekly calculator: days worked, NIS employee/employer contributions per week, calculated pay
+- Period summaries: total gross, NIS employee, NIS employer, net pay
+- Saved payroll periods with status tracking
 
-A single edge function with these endpoints (via request body `action` field):
+### What is missing
 
-- **`calculate-nis`** -- The primary endpoint. Accepts weekly earnings (or hourly rate + hours), checks the $200/week threshold, looks up the NIS earnings class table, and returns:
-  - Whether NIS applies (weekly pay > $200)
-  - NIS earnings class (Class 1-10)
-  - Employee contribution amount
-  - Employer contribution amount
-  - Net pay after employee NIS deduction
+**Employee table** -- needs:
+- `date_of_birth` (DATE) -- required on NI 184
+- `last_date_worked` (DATE) -- optional, for terminated employees
 
-- **`get-nis-classes`** -- Returns the full NIS lookup table for reference/display in the other app
+**Employer profile** -- entirely missing. Need a new `employer_settings` table:
+- `trade_name` (TEXT) -- employer's business/trade name
+- `employer_reg_no` (TEXT) -- 5-digit NIS employer registration number
+- `service_centre_code` (TEXT) -- NIS service centre code
+- `address` (TEXT)
+- `telephone` (TEXT)
 
-Request format example:
-```json
-{
-  "action": "calculate-nis",
-  "weekly_earnings": 450,
-  "effective_date": "2024-01-01"
-}
-```
-Or with rate + hours:
-```json
-{
-  "action": "calculate-nis",
-  "hourly_rate": 50,
-  "hours_worked": 40
-}
-```
+**Payroll period data** -- the weekly NIS contribution values per employee are calculated but not individually persisted in a way that maps to NI 184 columns (WK1 $, WK2 $, etc.). They exist in the `payroll_data` JSON blob but need to be extractable per-employee.
 
-Response example:
-```json
-{
-  "nis_applicable": true,
-  "weekly_earnings": 450.00,
-  "nis_class": "Class 7",
-  "employee_contribution": 14.40,
-  "employer_contribution": 30.00,
-  "gross_pay": 450.00,
-  "net_pay_after_nis": 435.60
-}
-```
+**NI 187 fields** -- need:
+- `balance_bf` (brought forward from prior period)
+- `penalty` and `interest` (if applicable)
+- Payment method tracking
 
-If weekly pay is $200 or less:
-```json
-{
-  "nis_applicable": false,
-  "weekly_earnings": 180.00,
-  "nis_class": null,
-  "employee_contribution": 0,
-  "employer_contribution": 0,
-  "gross_pay": 180.00,
-  "net_pay_after_nis": 180.00
-}
-```
+### Plan
 
-**2. Security**
-- CORS headers for cross-origin calls from the other Lovable app
-- Input validation with Zod
-- No authentication required (public API) -- the NIS rates are public knowledge; no user data is exposed
-- Rate limiting can be added later if needed
+**1. Database migration: Add missing fields**
+- Add `date_of_birth` column to `employees` table
+- Create `employer_settings` table (user_id, trade_name, employer_reg_no, service_centre_code, address, telephone)
+- Add `balance_bf`, `penalty`, `interest`, `payment_method` columns to `payroll_periods` table (for NI 187)
 
-**3. How to call from the other app**
-The other app would call:
-```
-POST https://fjrxqeyexlusjwzzecal.supabase.co/functions/v1/payroll-api
-```
-With the JSON body above. No API key needed beyond the anon key in the header.
+**2. Update Employee Form**
+- Add date of birth field to `EmployeeForm.tsx`
+- Update `EmployeeFormData` type in `types/payroll.ts`
+
+**3. Create Employer Settings UI**
+- New component `EmployerSettingsForm.tsx` on the payroll page (likely under a new "Settings" or within the "About" tab)
+- Fields: trade name, employer registration number, service centre code, address, telephone
+- Save/load from `employer_settings` table
+
+**4. Build NI 184 report generator**
+- New component `NI184Report.tsx`
+- Takes a saved payroll period + employee data
+- Renders a printable/exportable form matching the NI 184 layout:
+  - Header with employer info from `employer_settings`
+  - Period from/to, weeks count
+  - Table rows: one per employee with NIS number, name, DOB, date employed, salary for period, weekly contribution values (from the weekly calculator data), total
+- Export as PDF or print-friendly view
+
+**5. Build NI 187 report generator**
+- New component `NI187Report.tsx`
+- Summary form with employer info, period, employee count
+- Section B: balance b/f, contributions due (sum of all employee+employer NIS), penalty, interest, total, amount paid, balance c/f
+- Section F for multi-month periods
+- Export as PDF or print-friendly view
+
+**6. Add "Generate NIS Forms" button to Summary & Export tab**
+- Two buttons: "Generate NI 184" and "Generate NI 187"
+- Pre-fill from saved period data + employer settings
+- Allow user to enter balance b/f, penalty, interest before generating NI 187
+
+**7. Update Supabase types**
+- Regenerate or manually update `integrations/supabase/types.ts` for new columns/tables
+
+### For the Feb 01-28 2026 period example
+With the employee A N-Collymore at $280/day, 5 weeks, 19 total days worked:
+- Gross: $5,320 | NIS Employee: $237.40 | NIS Employer: $474.80 | Net: $5,082.60
+- NI 184 would show weekly breakdown: each week's contribution value in WK1-WK5 columns
+- NI 187 would show total contributions due: $237.40 + $474.80 = $712.20
 
 ### Technical details
-- One new file: `supabase/functions/payroll-api/index.ts`
-- Queries the existing `nis_earnings_classes` table directly using `service_role` key (available in edge functions by default)
-- The $200/week threshold logic: if `weekly_earnings <= 200`, return zeroes; otherwise look up the class
-- No changes to existing Nuacha code or database schema
-
-### What you do in the other app afterward
-In the caregiving app's payroll/payslip flow:
-1. When a work log is approved, calculate weekly earnings from hours x rate
-2. Call this API with the weekly earnings
-3. If `nis_applicable` is true, deduct `employee_contribution` from the caregiver's pay and record `employer_contribution` as the family's liability
-4. Include both values on the generated payslip/receipt
+- Migration adds columns with sensible defaults (nullable for backward compatibility)
+- Employer settings is a single-row-per-user table with RLS
+- NI 184/187 reports use CSS `@media print` for clean printing
+- No changes to the payroll-api edge function needed -- this is presentation/data capture work
 
