@@ -18,6 +18,7 @@ export interface Employee {
   is_active: boolean;
   date_hired?: string;
   date_terminated?: string;
+  date_of_birth?: string;
   created_at?: string;
   updated_at?: string;
   shifts?: EmployeeShift[]; // For shift-based employees
