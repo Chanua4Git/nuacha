@@ -1,56 +1,42 @@
 
 
-## Update NIS Rates to 2026 Compliance
+## Fix Weekly Calculator NIS Values — Use 2026 Database Rates
 
 ### The Problem
 
-Your database has **old 2024 NIS rates** (10 classes, max $1,500/week, effective 2024-01-01). The new rates effective **05 January 2026** have **16 classes (I-XVI)** with completely different brackets, a new contribution rate of **16.2%**, and a max bracket of $3,138+/week.
+The weekly calculator shows old NIS values ($53.20/$106.40 for 4 days, $61.40/$122.80 for 5 days) because `payrollCalculations.ts` has **hardcoded lookup tables** that bypass the database entirely:
 
-**Angela's impact**: At $280/day × 5 days = $1,400/week, she falls in:
-- Old rates: Class 10 → Employee $19.80 / Employer $41.25 (wrong)
-- **New 2026 rates: Class VII** ($1,120-$1,299.99) → **Employee $65.30 / Employer $130.60**
+```
+// OLD hardcoded values (lines 44-62)
+if (daysWorked === 4) return 53.2;  // should be 65.30
+if (daysWorked === 5) return 61.4;  // should be 75.30
+```
 
-Your current payroll calculations are significantly under-reporting NIS contributions.
+The database migration updated the `nis_earnings_classes` table correctly, but the client-side `calculatePayroll` function never queries it.
 
-### What needs to change
+### The Fix
 
-**1. Database migration: Replace NIS earnings classes**
-- Deactivate all old 2024 classes (`is_active = false`)
-- Insert all 16 new 2026 classes with correct brackets and contribution amounts from the official NIBTT document:
+**Replace hardcoded NIS lookups with database-driven class matching.** The approach:
 
-| Class | Weekly Range | Employee $ | Employer $ |
-|-------|-------------|-----------|-----------|
-| I | 200-339.99 | 14.60 | 29.20 |
-| II | 340-449.99 | 21.30 | 42.60 |
-| III | 450-609.99 | 28.60 | 57.20 |
-| IV | 610-759.99 | 37.00 | 74.00 |
-| V | 760-929.99 | 45.60 | 91.20 |
-| VI | 930-1119.99 | 55.40 | 110.80 |
-| VII | 1120-1299.99 | 65.30 | 130.60 |
-| VIII | 1300-1489.99 | 75.30 | 150.60 |
-| IX | 1490-1709.99 | 86.40 | 172.80 |
-| X | 1710-1909.99 | 97.70 | 195.40 |
-| XI | 1910-2139.99 | 109.40 | 218.80 |
-| XII | 2140-2379.99 | 122.00 | 244.00 |
-| XIII | 2380-2629.99 | 135.30 | 270.60 |
-| XIV | 2630-2919.99 | 149.90 | 299.80 |
-| XV | 2920-3137.99 | 163.60 | 327.20 |
-| XVI | 3138+ | 169.50 | 339.00 |
+1. **Fetch NIS classes from database on component mount** — query `nis_earnings_classes` where `is_active = true`, cache in state
+2. **Update `calculateNISEmployeeByDays` and `calculateNISEmployerByDays`** — instead of hardcoded IFS values, calculate weekly earnings (daily_rate × days_worked), find the matching class from the fetched data, and return the class's contribution amounts
+3. **Update `CURRENT_TT_NIS_RATES`** — remove the old percentage-based constant since the 2026 system uses fixed contribution amounts per class, not percentages
+4. **Modify `calculatePayroll`** to accept an optional NIS classes array parameter, so the weekly calculator can pass the fetched classes
 
-**2. Update edge function threshold**
-- The `payroll-api` edge function has a hardcoded $200/week NIS threshold -- this stays correct (Class I starts at $200)
-- The max bracket logic needs updating since the old code caps at Class 10
+### Steps
 
-**3. Update class naming convention**
-- Old: "Class 1" through "Class 10"
-- New: Roman numerals "Class I" through "Class XVI" to match official NIBTT forms
+1. **Add a hook or utility to fetch NIS classes** from Supabase (`nis_earnings_classes` table, `is_active = true`)
+2. **Rewrite `calculateNISEmployeeByDays` and `calculateNISEmployerByDays`** to accept daily_rate + days_worked + NIS classes array, compute weekly earnings, find matching class, return fixed contribution amounts
+3. **Update `calculatePayroll`** signature to accept NIS classes instead of the old percentage-based rates
+4. **Update `EnhancedPayrollCalculator.tsx`** to fetch NIS classes on mount and pass them to calculations
+5. **Update `useSupabasePayroll.ts`, `useSimplePayroll.ts`, `useSupabasePayrollDemo.ts`** to fetch and use database classes
+6. **Remove or deprecate `CURRENT_TT_NIS_RATES`** constant
 
-**4. No UI changes needed**
-- The calculators already pull rates from the database dynamically
-- Once the data is updated, all calculations (Enhanced Payroll Calculator, NIS Calculator, NI 184/187 reports) will automatically use the correct 2026 rates
+### Expected Result
 
-### Technical details
-- Single SQL migration: deactivate old rows, insert 16 new rows with `effective_date = '2026-01-05'`
-- Redeploy `payroll-api` edge function (minor: ensure Class XVI handles the "and over" case with a very high max like 99999.99)
-- Historical periods calculated before this update retain their saved values -- only new calculations use updated rates
+For Angela at $280/day:
+- 4 days ($1,120/week) → Class VII: Employee **$65.30**, Employer **$130.60**, Total **$195.90**
+- 5 days ($1,400/week) → Class VIII: Employee **$75.30**, Employer **$150.60**, Total **$225.90**
+
+Matching your spreadsheet exactly.
 
