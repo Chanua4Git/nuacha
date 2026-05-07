@@ -103,7 +103,7 @@ export async function buildNi184Rows(
     let salaryForPeriod = 0;
     for (const w of windows) {
       // aggregate hours/days for this employee whose week_start_date falls in window
-      const weekEntries = empEntries.filter((e) => inWindow(e.week_start_date as any, w));
+      const weekEntries = empEntries.filter((e) => inWindow(e.week_start_date, w));
       const hours = weekEntries.reduce((s, e) => s + (Number(e.hours_worked) || 0), 0);
       const days = weekEntries.reduce((s, e) => s + (Number(e.days_worked) || 0), 0);
       const earnings = computeWeeklyEarnings(emp, hours, days);
