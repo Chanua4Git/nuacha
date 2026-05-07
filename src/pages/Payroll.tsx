@@ -33,6 +33,7 @@ import { EmployerSettingsForm } from '@/components/payroll/EmployerSettingsForm'
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { NI184Report } from '@/components/payroll/NI184Report';
 import { NI187Report } from '@/components/payroll/NI187Report';
+import { Ni184MonthlyExportDialog } from '@/components/payroll/Ni184MonthlyExportDialog';
 
 const Payroll: React.FC = () => {
   const { user } = useAuth();
