@@ -67,6 +67,12 @@ export interface PayrollEntry {
   calculated_at?: string;
   created_at?: string;
   updated_at?: string;
+  week_number?: number;
+  week_start_date?: string;
+  week_end_date?: string;
+  recorded_pay?: number;
+  variance_amount?: number;
+  variance_notes?: string;
   employee?: Employee; // For joined queries
 }
 
