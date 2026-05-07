@@ -687,6 +687,7 @@ const Payroll: React.FC = () => {
                   <Download className="h-6 w-6" />
                   Employee Data (CSV)
                 </Button>
+                <Ni184MonthlyExportDialog employees={employees} entries={payrollEntries} />
               </div>
             </CardContent>
           </Card>
