@@ -1,105 +1,60 @@
+# Fix Payroll Log Import — "Most months not displaying"
 
-## Goal
+## What's actually happening
 
-Give each employee a permanent **Payroll Log** showing every week and month they've ever been paid, plus one-click reports. Bulk-import Angela's full history (Jan 2020 → May 2026) from your spreadsheet so the log is populated from day one.
+Looking at the database, the import is broken in 3 ways. That's why you see **0 imported · 57 skipped · 10 failed**, only **2 entries** in the DB across 57 periods, duplicate "January 2026" rows, and start dates like `2024-01-05` for a January 2026 sheet.
 
----
+### Root causes
 
-## 1. Payroll Log (per employee)
+1. **Unique constraint blocking weekly rows.** `payroll_entries` has `UNIQUE (payroll_period_id, employee_id)`. The importer tries to insert 4–5 weeks per month for Angela in one batch — the unique constraint rejects every week after the first, the whole `insert([...])` call errors atomically, and **zero** entries get saved. The period row stays behind (no transaction rollback), so the log shows the month header with no rows underneath.
 
-New section on `/payroll` → "Payroll Log" tab, with employee selector. Two view modes via toggle:
+2. **Date parsing produces wrong years.** Several periods landed at `2024-01-05` etc. Cells stored as Excel serial numbers / strings get misread, putting "January 2026" into 2024. This also breaks the dedup check (next item).
 
-**Weekly view** (mirrors your April 2026 sheet)
-Columns: Week start | Week end | Pay day | Days worked | Pay/hr | Pay/day | Calculated Pay | NIS Employee | Calc Pay less NIS | Recorded Pay | NIS Employer | Total NIS | Variance | Notes
+3. **Dedup key derives `monthKey` from the (wrong) `start_date`.** On re-runs the importer compares the sheet's real monthKey (`2026-01`) to what's in the DB (`2024-01`), thinks the month isn't imported, and creates a duplicate period.
 
-Rows are grouped under collapsible **month headers** (e.g. "April 2026") with a subtotal row showing: total days, total calculated, total NIS employee, total NIS employer, total NIS, total recorded.
+Combined effect: previous runs left ~57 empty periods + 10 failures + duplicates. Today's run says "skipped 57" because those broken periods are now blocking re-import.
 
-**Monthly summary view**
-One row per month: Month | Weeks paid | Total days | Total calculated | Total recorded | NIS employee | NIS employer | Total NIS | Variance.
-Click a row → expands to that month's weekly detail (same as weekly view).
+## Fix plan
 
-Both views support:
-- Date range filter (defaults to "all time")
-- Year quick filter (2020, 2021, …, 2026)
-- Search/jump to a specific month
-- A "Pencil" icon on any row to edit historical entries (fixes typos in old data)
+### 1. Database migration — replace the unique constraint
+```text
+DROP UNIQUE (payroll_period_id, employee_id)
+ADD  UNIQUE (payroll_period_id, employee_id, week_number)
+```
+This matches the existing `useMonthlyPayrollPersistence` upsert (`onConflict: 'payroll_period_id,employee_id,week_number'`) and lets weekly rows coexist.
 
----
+### 2. Cleanup of broken import data (one-shot, scoped)
+Delete only the previously imported rows for Angela so we can re-run cleanly:
+- Delete from `payroll_periods` where `user_id = <you>` AND `import_source LIKE 'xlsx_import_%'`
+- Cascades to entries via FK
 
-## 2. Bulk Historical Import (Angela)
+This **only touches imported history**, never your weekly calculator data.
 
-I will parse all 44 sheets of `Angela_Salary_Study_1.xlsx` and load them into the database as `payroll_periods` + `payroll_entries` rows linked to Angela's employee record.
+### 3. Fix the importer (`PayrollLogImporter.tsx`)
+- **Dedup key** — use `import_source + monthKey` stored explicitly (add `notes` or reuse `name`), not `start_date`. Track seen months by `(import_source, sheet.monthKey)`.
+- **Dates** — improve `toISO` to:
+  - Trust `cellDates: true` Date objects directly (no toISOString — use UTC y/m/d to avoid timezone shift).
+  - Handle 2-digit year strings.
+  - Fall back to deriving year/month from the sheet name when a row's date year disagrees by >1 year (catches Excel epoch glitches).
+- **Insert entries one row at a time with upsert** on the new conflict key, so a single bad row doesn't kill the whole month.
+- **Show per-sheet errors** in the UI (currently you only see a count) — list which months failed and why.
 
-**Sheet handling:**
+### 4. UI: re-import button + progress
+- Add a "Clear previous import & re-run" button in the importer card (calls a small RPC or a scoped delete + re-import).
+- Show parsed-vs-saved counts per sheet so you can spot any month that still misbehaves.
 
-- **44 monthly sheets (Oct 2022 → May 2026)** — same header layout as April 2026. Each row = one week with start/end/payday, days worked, calc pay, NIS employee, NIS employer, recorded pay. One `payroll_period` per sheet, 4–5 `payroll_entries` per period.
-- **"Jan 2020-April 2022" sheet** — different format (one row per week, no NIS breakdown, just weekly rate × weeks). Imported as weekly entries grouped into synthetic monthly periods. NIS fields left at 0 with a note `"Pre-Oct 2022 — NIS not tracked in source"`.
-- **Duplicate / oddly-named sheets** ("March 2026 (Old Figures)", "Nov 2023 Submitted Dec 166 (2)", "June 2023 Submitted one day lat") — I will ask you per-conflict which to keep, OR import the latest "New Figures" version by default and skip the older duplicate.
-- **`#N/A` cells in unfinished weeks (e.g. May 2026 weeks 2–4)** — stored as 0 days worked, 0 calc pay, marked `status: pending`.
+## Out of scope
+- No changes to the weekly Calculator or NIS edge function.
+- No schema changes to `payroll_periods` beyond what already exists.
 
-**Safety:**
-- Import runs in a single transaction per sheet — if anything fails, that sheet rolls back.
-- Before insert, I check for an existing period for the same month + employee. If found, you get a "Replace / Skip / Merge" prompt (matches the per-week persistence we just built).
-- A `payroll_imports` row is logged for the run with success/failure counts so you can audit later.
+## Files touched
+- `supabase/migrations/<new>.sql` — drop+add unique constraint, scoped cleanup of `xlsx_import_*` periods for the current user.
+- `src/components/payroll/PayrollLogImporter.tsx` — dedup, date parsing, per-row upsert, per-sheet error list, "clear & re-run" button.
+- (No changes to `useEmployeePayrollHistory` or `PayrollLog.tsx` — once entries actually exist, the log will populate.)
 
-**Trigger:** I run the import once during implementation against your Angela record. No reusable upload UI in this round (per your choice).
+## What you'll do after approval
+1. Approve the migration (drops the bad constraint + clears the 57 broken imported periods for Angela).
+2. Open Payroll → Log → re-upload the same .xlsx → click Import.
+3. You should see ~67 months with 4–5 weeks each populated.
 
----
-
-## 3. Reports — Employee + Date Range → PDF & CSV
-
-New "Reports" panel inside Payroll Log:
-
-1. Pick employee (default: currently selected).
-2. Pick date range (presets: This month, Last month, This year, Last year, All time, Custom).
-3. Pick format: **PDF** or **CSV**.
-4. Click "Generate".
-
-**Report contents:**
-- Header: Employer name, employee name, NIS#, period covered, date generated.
-- Body: Weekly rows grouped by month (same columns as the weekly log view).
-- Per-month subtotals.
-- Grand total at bottom: total weeks, total days, total calculated, total recorded, total NIS employee, total NIS employer, total NIS, total variance.
-- Footer: "Generated by Nuacha — [date]".
-
-PDF rendered server-side via existing edge-function PDF approach (matching the NIS PDF flow we already use). CSV is a flat weekly export with a header row.
-
----
-
-## Technical Section
-
-**DB changes (additive only — schema already supports this):**
-- `payroll_periods` already has `name`, `start_date`, `end_date`, `pay_date`, totals → reuse.
-- `payroll_entries` already has `week_number`, `week_start_date`, `week_end_date`, `gross_pay`, `nis_employee_contribution`, `nis_employer_contribution`, `recorded_pay`, `variance_amount`, `variance_notes`, `net_pay` → reuse.
-- Add index: `payroll_periods (user_id, employee_id_hint, start_date)` for fast log queries. (employee link is via entries → period.)
-- Add `payroll_periods.import_source TEXT NULL` to mark imported rows (`'xlsx_import_2026_05'`).
-
-**New files:**
-- `src/components/payroll/PayrollLog.tsx` — main log UI with view toggle.
-- `src/components/payroll/PayrollLogMonthRow.tsx` — collapsible month with weekly detail.
-- `src/components/payroll/PayrollLogReports.tsx` — report dialog.
-- `src/hooks/useEmployeePayrollHistory.ts` — fetch + group by month.
-- `supabase/functions/payroll-log-report/index.ts` — generates PDF/CSV.
-- `scripts/import-angela-history.ts` — one-time importer (run once via edge function or local script with service role).
-
-**Import script details:**
-- Uses `xlsx` npm package to parse `/tmp/angela.xlsx`.
-- Maps each sheet → month (parsed from sheet name).
-- Resolves Angela's `employee_id` from the `employees` table (matches first_name='Angela', last_name='Newton', user_id=current user).
-- Idempotent: re-running skips already-imported periods (keyed on `import_source` + month).
-
-**No changes to** the existing weekly calculator, NIS calc edge function, or Quick Pay flow.
-
----
-
-## Out of scope for this round
-
-- Reusable "Import from Excel" UI for other employees (your choice — can add later in 1 pass).
-- Charts/graphs in reports (tabular only, per your reports answer).
-- Editing historical NIS rates (entries store the calculated values, not the rate).
-
----
-
-## Open question I'll resolve during import
-
-For **March 2026** there are two sheets — "(New figures)" and "(Old Figures)". I'll default to importing **New figures** and skip Old. Same logic for **"Nov 2023 Submitted Dec 166 (2)"** — I'll keep the most-complete version. If you want to review duplicates first, say the word and I'll show you a diff before inserting.
+Approve and I'll implement.
