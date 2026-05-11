@@ -24,6 +24,8 @@ import { PayPalPaymentButton } from './PayPalPaymentButton';
 import { BulkTransactionEditor } from './BulkTransactionEditor';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useMonthlyPayrollPersistence, MonthlyPeriodInfo, WeekSnapshot } from '@/hooks/useMonthlyPayrollPersistence';
+import { toast } from 'sonner';
 
 interface WeeklyCalculation {
   weekNumber: number;
@@ -204,6 +206,13 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     } catch {}
   };
 
+  // ── Per-week DB persistence ──────────────────────────────────────────
+  const { getOrCreatePeriod, loadWeeks, saveWeek, clearWeek, busy: weekBusy } = useMonthlyPayrollPersistence();
+  const [activePeriodInfo, setActivePeriodInfo] = useState<MonthlyPeriodInfo | null>(null);
+  // Last persisted snapshot per week index — used to render Saved ✓ / Unsaved • indicator
+  const [savedWeekSnapshots, setSavedWeekSnapshots] = useState<Record<number, WeekSnapshot>>({});
+  const [savingWeekIndex, setSavingWeekIndex] = useState<number | null>(null);
+
   // Fetch NIS earnings classes from database
   useEffect(() => {
     const fetchNISClasses = async () => {
@@ -232,7 +241,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
-  const generatePayrollPeriod = () => {
+  const generatePayrollPeriod = async () => {
     if (!periodStart || !periodEnd || !selectedEmployee) {
       setErrors(['Please select dates and employee']);
       return;
@@ -286,7 +295,196 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     setPayrollPeriod(period);
     setActiveTab('calculator');
     setErrors([]);
+
+    // Get-or-create the persistent period and hydrate any previously saved weeks
+    if (user) {
+      const employeeName = `${selectedEmployee.first_name} ${selectedEmployee.last_name}`;
+      const periodInfo = await getOrCreatePeriod({
+        employeeId: selectedEmployee.id,
+        employeeName,
+        year: periodStart.getFullYear(),
+        month: periodStart.getMonth(),
+        startDate: periodStart,
+        endDate: periodEnd,
+        payDate: weeklyCalculations[weeklyCalculations.length - 1]?.payDay || periodEnd,
+      });
+      if (periodInfo) {
+        setActivePeriodInfo(periodInfo);
+        const saved = await loadWeeks(periodInfo.id, selectedEmployee.id);
+        if (Object.keys(saved).length > 0) {
+          // Hydrate weeklyInputs and the calculated week values
+          const newInputs: Record<number, any> = {};
+          const hydratedWeeks = weeklyCalculations.map((w, idx) => {
+            const snap = saved[w.weekNumber];
+            if (!snap) return w;
+            newInputs[idx] = {
+              daysWorked: snap.daysWorked,
+              recordedPay: snap.recordedPay,
+              otherAllowances: 0,
+              otherDeductions: 0,
+            };
+            return {
+              ...w,
+              recordedDaysWorked: snap.daysWorked,
+              calculatedPay: snap.calculatedPay,
+              calcPayLessNIS: snap.calculatedPay - snap.nisEmployee,
+              recordedPay: snap.recordedPay,
+              totalNISContribution: snap.nisEmployee + snap.nisEmployer,
+              nisEmployee: snap.nisEmployee,
+              nisEmployer: snap.nisEmployer,
+              netPay: snap.netPay,
+              status: 'complete' as const,
+            };
+          });
+          setWeeklyInputs(newInputs);
+          setPayrollPeriod({ ...period, weeks: hydratedWeeks });
+          // Index by array position for indicator
+          const byIndex: Record<number, WeekSnapshot> = {};
+          hydratedWeeks.forEach((w, idx) => {
+            const snap = saved[w.weekNumber];
+            if (snap) byIndex[idx] = snap;
+          });
+          setSavedWeekSnapshots(byIndex);
+          toast.success(`Restored ${Object.keys(saved).length} saved week${Object.keys(saved).length === 1 ? '' : 's'}.`);
+        } else {
+          setSavedWeekSnapshots({});
+        }
+      }
+    }
   };
+
+  // Save a single week's current values to the DB
+  const handleSaveWeek = async (weekIndex: number) => {
+    if (!selectedEmployee || !payrollPeriod) return;
+    if (!user) {
+      setLeadCaptureAction('save');
+      setLeadCaptureOpen(true);
+      return;
+    }
+    let periodInfo = activePeriodInfo;
+    if (!periodInfo) {
+      const employeeName = `${selectedEmployee.first_name} ${selectedEmployee.last_name}`;
+      periodInfo = await getOrCreatePeriod({
+        employeeId: selectedEmployee.id,
+        employeeName,
+        year: payrollPeriod.startDate.getFullYear(),
+        month: payrollPeriod.startDate.getMonth(),
+        startDate: payrollPeriod.startDate,
+        endDate: payrollPeriod.endDate,
+        payDate: payrollPeriod.weeks[payrollPeriod.weeks.length - 1]?.payDay || payrollPeriod.endDate,
+      });
+      if (!periodInfo) {
+        toast.error('Could not create a payroll period.');
+        return;
+      }
+      setActivePeriodInfo(periodInfo);
+    }
+
+    // Make sure this week is calculated first
+    const week = payrollPeriod.weeks[weekIndex];
+    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 };
+    if (week.status !== 'complete' && inputs.daysWorked > 0) {
+      calculateWeeklyPayroll(weekIndex);
+    }
+    const fresh = payrollPeriod.weeks[weekIndex];
+
+    setSavingWeekIndex(weekIndex);
+    const ok = await saveWeek({
+      periodId: periodInfo.id,
+      employeeId: selectedEmployee.id,
+      weekNumber: fresh.weekNumber,
+      weekStart: fresh.weekStart,
+      weekEnd: fresh.weekEnd,
+      snapshot: {
+        daysWorked: inputs.daysWorked || 0,
+        recordedPay: Number(inputs.recordedPay) || fresh.recordedPay || 0,
+        calculatedPay: fresh.calculatedPay,
+        nisEmployee: fresh.nisEmployee,
+        nisEmployer: fresh.nisEmployer,
+        netPay: fresh.netPay,
+      },
+    });
+    setSavingWeekIndex(null);
+    if (ok) {
+      setSavedWeekSnapshots(prev => ({
+        ...prev,
+        [weekIndex]: {
+          daysWorked: inputs.daysWorked || 0,
+          recordedPay: Number(inputs.recordedPay) || fresh.recordedPay || 0,
+          calculatedPay: fresh.calculatedPay,
+          nisEmployee: fresh.nisEmployee,
+          nisEmployer: fresh.nisEmployer,
+          netPay: fresh.netPay,
+          weekStart: format(fresh.weekStart, 'yyyy-MM-dd'),
+          weekEnd: format(fresh.weekEnd, 'yyyy-MM-dd'),
+        },
+      }));
+      toast.success(`Week ${fresh.weekNumber} saved.`);
+    } else {
+      toast.error(`Could not save Week ${fresh.weekNumber}.`);
+    }
+  };
+
+  // Reset only this week's inputs to 0; if a row exists in DB, zero it there too.
+  const handleClearWeek = async (weekIndex: number) => {
+    if (!payrollPeriod || !selectedEmployee) return;
+    const week = payrollPeriod.weeks[weekIndex];
+
+    setWeeklyInputs(prev => ({
+      ...prev,
+      [weekIndex]: { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 },
+    }));
+    const updatedWeeks = [...payrollPeriod.weeks];
+    updatedWeeks[weekIndex] = {
+      ...week,
+      recordedDaysWorked: 0,
+      calculatedPay: 0,
+      calcPayLessNIS: 0,
+      recordedPay: 0,
+      totalNISContribution: 0,
+      nisEmployee: 0,
+      nisEmployer: 0,
+      netPay: 0,
+      status: 'calculated',
+    };
+    setPayrollPeriod({ ...payrollPeriod, weeks: updatedWeeks });
+
+    if (activePeriodInfo && savedWeekSnapshots[weekIndex]) {
+      await clearWeek({
+        periodId: activePeriodInfo.id,
+        employeeId: selectedEmployee.id,
+        weekNumber: week.weekNumber,
+        weekStart: week.weekStart,
+        weekEnd: week.weekEnd,
+      });
+      setSavedWeekSnapshots(prev => ({
+        ...prev,
+        [weekIndex]: {
+          ...prev[weekIndex],
+          daysWorked: 0, recordedPay: 0, calculatedPay: 0, nisEmployee: 0, nisEmployer: 0, netPay: 0,
+        },
+      }));
+    }
+    toast.success(`Week ${week.weekNumber} cleared.`);
+  };
+
+  const isWeekDirty = (weekIndex: number): boolean => {
+    if (!payrollPeriod) return false;
+    const w = payrollPeriod.weeks[weekIndex];
+    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0 };
+    const saved = savedWeekSnapshots[weekIndex];
+    if (!saved) {
+      // Treat as dirty if user has entered anything
+      return (inputs.daysWorked || 0) > 0 || (Number(inputs.recordedPay) || 0) > 0;
+    }
+    return (
+      (inputs.daysWorked || 0) !== saved.daysWorked ||
+      Math.abs((Number(inputs.recordedPay) || w.recordedPay || 0) - saved.recordedPay) > 0.001 ||
+      Math.abs(w.calculatedPay - saved.calculatedPay) > 0.001
+    );
+  };
+
+  const isWeekSaved = (weekIndex: number): boolean => !!savedWeekSnapshots[weekIndex];
 
   const updateWeeklyInput = (weekIndex: number, field: string, value: number) => {
     setWeeklyInputs(prev => ({
@@ -697,13 +895,46 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                              <TableCell>{formatTTCurrency(week.nisEmployer)}</TableCell>
                              <TableCell>{formatTTCurrency(week.totalNISContribution)}</TableCell>
                              <TableCell>
-                               <Button
-                                 size="sm"
-                                 onClick={() => calculateWeeklyPayroll(index)}
-                                 disabled={!weeklyInputs[index]?.daysWorked}
-                               >
-                                 Calculate
-                               </Button>
+                               <div className="flex flex-col gap-1.5 min-w-[120px]">
+                                 <div className="flex items-center gap-1.5 text-xs">
+                                   {isWeekSaved(index) && !isWeekDirty(index) ? (
+                                     <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
+                                       <CheckCircle className="h-3 w-3" /> Saved
+                                     </span>
+                                   ) : isWeekDirty(index) ? (
+                                     <span className="inline-flex items-center gap-1 text-amber-600">
+                                       <AlertCircle className="h-3 w-3" /> Unsaved
+                                     </span>
+                                   ) : (
+                                     <span className="text-muted-foreground">—</span>
+                                   )}
+                                 </div>
+                                 <div className="flex gap-1">
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     onClick={() => calculateWeeklyPayroll(index)}
+                                     disabled={!weeklyInputs[index]?.daysWorked}
+                                   >
+                                     Calc
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     onClick={() => handleSaveWeek(index)}
+                                     disabled={savingWeekIndex === index || !weeklyInputs[index]?.daysWorked}
+                                   >
+                                     {savingWeekIndex === index ? '…' : 'Save'}
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+                                     onClick={() => handleClearWeek(index)}
+                                     title="Clear this week"
+                                   >
+                                     <Trash2 className="h-3.5 w-3.5" />
+                                   </Button>
+                                 </div>
+                               </div>
                              </TableCell>
                           </TableRow>
                         ))}
