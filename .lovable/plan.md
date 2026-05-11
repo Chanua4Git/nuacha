@@ -1,54 +1,51 @@
-## NI 184 Monthly CSV Export
+# Persistent Weekly Payroll Entry (Monthly Period)
 
-Auto-generate the NIBTT NI 184 contribution CSV for any selected month, with weekly NIS values calculated from each employee's actual days/hours worked that week.
+## Goal
+When you calculate Week 1 of May, click **Save Week**, and come back next week to enter Week 2 — Week 1's values are still there, untouched. Each week saves independently to the database (not just sessionStorage), so it survives sign-outs, devices, and browser clears. At month-end, **Save Payroll Period** finalizes the whole month.
 
-### CSV format (matches your samples)
+## How it will work (user flow)
 
-```text
-NationalInsuranceNumber,Surname,FirstName,DateOfBirth,DateEmployed,SalaryForPeriod,Week1,Week2,Week3,Week4,Week5
-```
+1. **Setup Period** → pick a calendar month (e.g. May 2026). The calculator builds 4 or 5 Monday-anchored week rows automatically.
+2. The system auto-loads any previously saved weeks for that month + employee, so Week 1's Days Worked / Recorded Pay reappear exactly as you left them.
+3. Each week row gets two new buttons:
+   - **Save Week** → writes that single week's values to the database (upsert).
+   - **Clear Week** → resets that one row's inputs to 0 (other weeks untouched). If a saved DB record exists, it's also zeroed there.
+4. A small **Saved ✓ / Unsaved •** indicator on each row shows whether your current values match what's in the database.
+5. **Save Payroll Period** at the bottom remains as today — it finalizes the whole month (status: calculated/paid) and rolls the saved weeks into the period totals.
 
-- `DateOfBirth`, `DateEmployed`: `YYYYMMDD`
-- `SalaryForPeriod`: total gross pay for the month
-- `WeekN`: **employee + employer NIS** for that week (e.g., $135 = $45 + $90 for Class VII)
-- Unused weeks (4-week months) → `0`
-- Filename: `NI184_{Month}_{Year}_NIS_Contribution_Calculations.csv`
+## Period model
+- One `payroll_periods` row per **employee + calendar month** (e.g. "May 2026 — A N-Collymore"), created lazily the first time you save a week in that month.
+- Status starts as `draft`. Becomes `calculated`/`paid` when you click Save Payroll Period.
+- Period dates = first Monday of month → last Sunday covered by the month's Mondays.
 
-### Determining 4 vs 5 weeks
+## Week storage
+Use the existing `payroll_entries` table (already has `week_number`, `week_start_date`, `week_end_date`, `recorded_pay`, etc.). One row per week, linked to the monthly period + employee.
 
-Count **Mondays in the calendar month**. 4 Mondays → 4 weeks (Week5 = 0). 5 Mondays → 5 weeks. Each "Week N" corresponds to the Mon–Sun window starting on the Nth Monday of that month.
+## Technical changes
 
-### Weekly NIS calculation (per employee, per week)
+**Database (migration)**
+- Add unique constraint on `payroll_entries (payroll_period_id, employee_id, week_number)` to support upsert.
+- No new tables required.
 
-For each week window in the month:
-1. Aggregate that employee's actual `days_worked` / `hours_worked` from `payroll_entries` whose `week_start_date` falls inside the window (across all payroll periods touching the month).
-2. Compute weekly earnings:
-   - Hourly: `hourly_rate × hours_worked` (fallback `hourly_rate × 8 × days_worked`)
-   - Daily: `daily_rate × days_worked`
-   - Salaried/weekly-rate: prorated weekly rate
-3. Look up NIS class via existing `payroll-api` (`calculate-nis`) → sum `employee_contribution + employer_contribution`.
-4. If no entries in that week → `0`.
+**New hook: `useMonthlyPayrollPeriod(employeeId, year, month)`**
+- `getOrCreatePeriod()` — finds/creates the draft period for that employee+month.
+- `loadWeekEntries()` — fetches saved `payroll_entries` for the period.
+- `saveWeek(weekNumber, data)` — upsert one week's row (days_worked, recorded_pay, gross_pay, NIS employee/employer, net_pay, week_start/end).
+- `clearWeek(weekNumber)` — upsert with zeros (keeps the row, resets values).
 
-`SalaryForPeriod` = sum of gross pay across all weeks in the month.
+**`EnhancedPayrollCalculator.tsx`**
+- Replace the "custom date range" Setup with a **Month + Year picker** (reuse the dialog pattern from `Ni184MonthlyExportDialog`).
+- On mount / when employee+month change: call `loadWeekEntries()` and hydrate `weeklyInputs` + `payrollPeriod.weeks` from DB instead of sessionStorage.
+- Keep sessionStorage as a transient cache for unsaved edits only.
+- Add **Save Week** + **Clear Week** buttons in the Actions column next to the existing **Calculate** button.
+- Add saved/unsaved badge per row by diffing current input vs last-loaded DB value.
+- "Save Payroll Period" button keeps working — it just updates the existing draft period to `calculated`/`paid` and writes totals.
 
-### UI
+**Files touched**
+- `supabase/migrations/...` — unique constraint
+- `src/hooks/useMonthlyPayrollPeriod.ts` (new)
+- `src/components/payroll/EnhancedPayrollCalculator.tsx` (Setup tab → month picker; Weekly Calculator → Save/Clear Week + indicator + DB hydrate)
 
-On `src/pages/Payroll.tsx`, add an **"Export NI 184 CSV"** button that opens a small dialog:
-- Month + Year picker (defaults to current month)
-- "Download CSV" action → triggers calculation + browser download
-
-### New files / changes
-
-- `src/utils/ni184CsvExport.ts` — pure functions:
-  - `getWeekWindowsForMonth(year, month)` → array of {start, end} starting on each Monday
-  - `buildNi184Rows(employees, payrollEntries, weekWindows)` → uses `payroll-api` for NIS lookups
-  - `rowsToCsv(rows)` + `downloadCsv(filename, csv)`
-- `src/components/payroll/Ni184MonthlyExportDialog.tsx` — month picker + download button
-- `src/pages/Payroll.tsx` — wire the button into the existing toolbar
-
-No database or edge function changes required — `payroll-api / calculate-nis` already returns the per-week class and contributions we need.
-
-### Validation
-
-After implementation, verify against your sample:
-- Angela, May 2026 (4 Mondays in some months / 5 in others) — confirm `135` per worked week and `0` for any unworked Week5.
+## Out of scope
+- Multi-employee monthly view (still one employee at a time).
+- Changing the Summary & Export or NI 184 CSV logic — they continue to read from the same period/entries.
