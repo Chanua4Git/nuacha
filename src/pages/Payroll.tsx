@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home, Building2 } from 'lucide-react';
+import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home, Building2, ScrollText } from 'lucide-react';
+import { PayrollLog } from '@/components/payroll/PayrollLog';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
@@ -93,7 +94,7 @@ const Payroll: React.FC = () => {
   );
   
   // Persist active tab across app switches
-  const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'reports' | 'subscription'>(() => {
+  const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'log' | 'reports' | 'subscription'>(() => {
     try {
       const savedTab = sessionStorage.getItem('payroll_page_activeTab');
       return (savedTab as any) || 'about';
@@ -306,7 +307,7 @@ const Payroll: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1 h-auto p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-1 h-auto p-1 rounded-xl">
           <TabsTrigger value="about" className="text-xs md:text-sm py-2 px-2 md:px-4">
             About
           </TabsTrigger>
@@ -318,6 +319,10 @@ const Payroll: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="calculator" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Calculator
+          </TabsTrigger>
+          <TabsTrigger value="log" className="text-xs md:text-sm py-2 px-2 md:px-4">
+            <ScrollText className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+            Log
           </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Reports
@@ -664,6 +669,10 @@ const Payroll: React.FC = () => {
               isDemo={isDemo}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="log" className="space-y-6">
+          <PayrollLog employees={employees} />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">

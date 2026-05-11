@@ -1298,6 +1298,7 @@ export type Database = {
           end_date: string
           entered_date: string | null
           id: string
+          import_source: string | null
           name: string
           nis_balance_bf: number | null
           nis_interest: number | null
@@ -1322,6 +1323,7 @@ export type Database = {
           end_date: string
           entered_date?: string | null
           id?: string
+          import_source?: string | null
           name: string
           nis_balance_bf?: number | null
           nis_interest?: number | null
@@ -1346,6 +1348,7 @@ export type Database = {
           end_date?: string
           entered_date?: string | null
           id?: string
+          import_source?: string | null
           name?: string
           nis_balance_bf?: number | null
           nis_interest?: number | null
