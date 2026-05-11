@@ -895,13 +895,46 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                              <TableCell>{formatTTCurrency(week.nisEmployer)}</TableCell>
                              <TableCell>{formatTTCurrency(week.totalNISContribution)}</TableCell>
                              <TableCell>
-                               <Button
-                                 size="sm"
-                                 onClick={() => calculateWeeklyPayroll(index)}
-                                 disabled={!weeklyInputs[index]?.daysWorked}
-                               >
-                                 Calculate
-                               </Button>
+                               <div className="flex flex-col gap-1.5 min-w-[120px]">
+                                 <div className="flex items-center gap-1.5 text-xs">
+                                   {isWeekSaved(index) && !isWeekDirty(index) ? (
+                                     <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
+                                       <CheckCircle className="h-3 w-3" /> Saved
+                                     </span>
+                                   ) : isWeekDirty(index) ? (
+                                     <span className="inline-flex items-center gap-1 text-amber-600">
+                                       <AlertCircle className="h-3 w-3" /> Unsaved
+                                     </span>
+                                   ) : (
+                                     <span className="text-muted-foreground">—</span>
+                                   )}
+                                 </div>
+                                 <div className="flex gap-1">
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     onClick={() => calculateWeeklyPayroll(index)}
+                                     disabled={!weeklyInputs[index]?.daysWorked}
+                                   >
+                                     Calc
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     onClick={() => handleSaveWeek(index)}
+                                     disabled={savingWeekIndex === index || !weeklyInputs[index]?.daysWorked}
+                                   >
+                                     {savingWeekIndex === index ? '…' : 'Save'}
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+                                     onClick={() => handleClearWeek(index)}
+                                     title="Clear this week"
+                                   >
+                                     <Trash2 className="h-3.5 w-3.5" />
+                                   </Button>
+                                 </div>
+                               </div>
                              </TableCell>
                           </TableRow>
                         ))}
