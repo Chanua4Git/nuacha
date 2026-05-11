@@ -206,6 +206,13 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     } catch {}
   };
 
+  // ── Per-week DB persistence ──────────────────────────────────────────
+  const { getOrCreatePeriod, loadWeeks, saveWeek, clearWeek, busy: weekBusy } = useMonthlyPayrollPersistence();
+  const [activePeriodInfo, setActivePeriodInfo] = useState<MonthlyPeriodInfo | null>(null);
+  // Last persisted snapshot per week index — used to render Saved ✓ / Unsaved • indicator
+  const [savedWeekSnapshots, setSavedWeekSnapshots] = useState<Record<number, WeekSnapshot>>({});
+  const [savingWeekIndex, setSavingWeekIndex] = useState<number | null>(null);
+
   // Fetch NIS earnings classes from database
   useEffect(() => {
     const fetchNISClasses = async () => {
