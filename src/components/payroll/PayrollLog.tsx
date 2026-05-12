@@ -324,6 +324,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                 <th className="text-right py-2 px-2">Days</th>
                 <th className="text-right py-2 px-2">Calc Pay</th>
                 <th className="text-right py-2 px-2">NIS Emp.</th>
+                <th className="text-right py-2 px-2">Pay less NIS Emp</th>
                 <th className="text-right py-2 px-2">Recorded</th>
                 <th className="text-right py-2 px-2">NIS Empr.</th>
                 <th className="text-right py-2 px-2">Total NIS</th>
@@ -338,6 +339,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                   <td className="py-2 px-2 text-right">{e.days_worked}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.gross_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>
+                  <td className="py-2 px-2 text-right font-medium">{formatTTCurrency(e.gross_pay - e.nis_employee_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
@@ -348,6 +350,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                 <td className="py-2 px-2 text-right">{g.totals.days}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
+                <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated - g.totals.nisEmployee)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
