@@ -374,6 +374,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
             <th className="text-right py-3 px-2">Weeks</th>
             <th className="text-right py-3 px-2">Days</th>
             <th className="text-right py-3 px-2">Calculated</th>
+            <th className="text-right py-3 px-2">Pay less NIS Emp</th>
             <th className="text-right py-3 px-2">Recorded</th>
             <th className="text-right py-3 px-2">NIS Emp.</th>
             <th className="text-right py-3 px-2">NIS Empr.</th>
@@ -393,13 +394,14 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                   <td className="py-3 px-2 text-right">{g.totals.weeks}</td>
                   <td className="py-3 px-2 text-right">{g.totals.days}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
+                  <td className="py-3 px-2 text-right font-medium">{formatTTCurrency(g.totals.calculated - g.totals.nisEmployee)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
                 </tr>
                 {isOpen && (
-                  <tr><td colSpan={9} className="bg-muted/10 p-3">
+                  <tr><td colSpan={11} className="bg-muted/10 p-3">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="text-muted-foreground">
@@ -408,6 +410,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                           <th className="text-right py-1">Days</th>
                           <th className="text-right py-1">Calc Pay</th>
                           <th className="text-right py-1">NIS Emp.</th>
+                          <th className="text-right py-1">Pay less NIS Emp</th>
                           <th className="text-right py-1">Recorded</th>
                           <th className="text-right py-1">NIS Empr.</th>
                         </tr>
@@ -420,6 +423,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                             <td className="py-1 text-right">{e.days_worked}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.gross_pay)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>
+                            <td className="py-1 text-right font-medium">{formatTTCurrency(e.gross_pay - e.nis_employee_contribution)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                           </tr>
