@@ -265,9 +265,10 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           </div>
 
           {/* Summary strip */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
             <SummaryChip label="Weeks" value={String(grandTotals.weeks)} />
             <SummaryChip label="Calculated" value={formatTTCurrency(grandTotals.calculated)} />
+            <SummaryChip label="Pay less NIS" value={formatTTCurrency(grandTotals.calculated - grandTotals.nisEmp)} />
             <SummaryChip label="Recorded" value={formatTTCurrency(grandTotals.recorded)} />
             <SummaryChip label="NIS Employee" value={formatTTCurrency(grandTotals.nisEmp)} />
             <SummaryChip label="Total NIS" value={formatTTCurrency(grandTotals.totalNIS)} />
