@@ -145,7 +145,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       html += `<h2>${g.monthLabel}</h2>`;
       html += `<table><thead><tr>
         <th>Week Start</th><th>Week End</th><th>Pay Day</th><th class="num">Days</th>
-        <th class="num">Calc Pay</th><th class="num">NIS Emp.</th><th class="num">Recorded</th>
+        <th class="num">Calc Pay</th><th class="num">NIS Emp.</th><th class="num">Pay less NIS Emp</th><th class="num">Recorded</th>
         <th class="num">NIS Empr.</th><th class="num">Total NIS</th>
       </tr></thead><tbody>`;
       for (const e of g.entries) {
@@ -156,6 +156,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           <td class="num">${e.days_worked}</td>
           <td class="num">${formatTTCurrency(e.gross_pay)}</td>
           <td class="num">${formatTTCurrency(e.nis_employee_contribution)}</td>
+          <td class="num">${formatTTCurrency(e.gross_pay - e.nis_employee_contribution)}</td>
           <td class="num">${formatTTCurrency(e.recorded_pay)}</td>
           <td class="num">${formatTTCurrency(e.nis_employer_contribution)}</td>
           <td class="num">${formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
@@ -165,6 +166,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${g.totals.days}</td>
         <td class="num">${formatTTCurrency(g.totals.calculated)}</td>
         <td class="num">${formatTTCurrency(g.totals.nisEmployee)}</td>
+        <td class="num">${formatTTCurrency(g.totals.calculated - g.totals.nisEmployee)}</td>
         <td class="num">${formatTTCurrency(g.totals.recorded)}</td>
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
@@ -265,9 +267,10 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           </div>
 
           {/* Summary strip */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
             <SummaryChip label="Weeks" value={String(grandTotals.weeks)} />
             <SummaryChip label="Calculated" value={formatTTCurrency(grandTotals.calculated)} />
+            <SummaryChip label="Pay less NIS" value={formatTTCurrency(grandTotals.calculated - grandTotals.nisEmp)} />
             <SummaryChip label="Recorded" value={formatTTCurrency(grandTotals.recorded)} />
             <SummaryChip label="NIS Employee" value={formatTTCurrency(grandTotals.nisEmp)} />
             <SummaryChip label="Total NIS" value={formatTTCurrency(grandTotals.totalNIS)} />
@@ -323,6 +326,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                 <th className="text-right py-2 px-2">Days</th>
                 <th className="text-right py-2 px-2">Calc Pay</th>
                 <th className="text-right py-2 px-2">NIS Emp.</th>
+                <th className="text-right py-2 px-2">Pay less NIS Emp</th>
                 <th className="text-right py-2 px-2">Recorded</th>
                 <th className="text-right py-2 px-2">NIS Empr.</th>
                 <th className="text-right py-2 px-2">Total NIS</th>
@@ -337,6 +341,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                   <td className="py-2 px-2 text-right">{e.days_worked}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.gross_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>
+                  <td className="py-2 px-2 text-right font-medium">{formatTTCurrency(e.gross_pay - e.nis_employee_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
@@ -347,6 +352,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
                 <td className="py-2 px-2 text-right">{g.totals.days}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
+                <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated - g.totals.nisEmployee)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
@@ -370,6 +376,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
             <th className="text-right py-3 px-2">Weeks</th>
             <th className="text-right py-3 px-2">Days</th>
             <th className="text-right py-3 px-2">Calculated</th>
+            <th className="text-right py-3 px-2">Pay less NIS Emp</th>
             <th className="text-right py-3 px-2">Recorded</th>
             <th className="text-right py-3 px-2">NIS Emp.</th>
             <th className="text-right py-3 px-2">NIS Empr.</th>
@@ -389,13 +396,14 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                   <td className="py-3 px-2 text-right">{g.totals.weeks}</td>
                   <td className="py-3 px-2 text-right">{g.totals.days}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
+                  <td className="py-3 px-2 text-right font-medium">{formatTTCurrency(g.totals.calculated - g.totals.nisEmployee)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                   <td className="py-3 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
                 </tr>
                 {isOpen && (
-                  <tr><td colSpan={9} className="bg-muted/10 p-3">
+                  <tr><td colSpan={11} className="bg-muted/10 p-3">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="text-muted-foreground">
@@ -404,6 +412,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                           <th className="text-right py-1">Days</th>
                           <th className="text-right py-1">Calc Pay</th>
                           <th className="text-right py-1">NIS Emp.</th>
+                          <th className="text-right py-1">Pay less NIS Emp</th>
                           <th className="text-right py-1">Recorded</th>
                           <th className="text-right py-1">NIS Empr.</th>
                         </tr>
@@ -416,6 +425,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                             <td className="py-1 text-right">{e.days_worked}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.gross_pay)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>
+                            <td className="py-1 text-right font-medium">{formatTTCurrency(e.gross_pay - e.nis_employee_contribution)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                           </tr>
