@@ -314,6 +314,7 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
         let weekFails = 0;
         for (let idx = 0; idx < validWeeks.length; idx++) {
           const w = validWeeks[idx];
+          const derivedRecorded = w.calculatedPay > 0 ? w.calculatedPay - w.nisEmployee : 0;
           const { error: eErr } = await supabase
             .from('payroll_entries')
             .upsert({
@@ -327,9 +328,9 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
               gross_pay: w.calculatedPay,
               nis_employee_contribution: w.nisEmployee,
               nis_employer_contribution: w.nisEmployer,
-              recorded_pay: w.recordedPay,
-              net_pay: w.calculatedPay - w.nisEmployee,
-              variance_amount: w.recordedPay - (w.calculatedPay - w.nisEmployee),
+              recorded_pay: derivedRecorded,
+              net_pay: derivedRecorded,
+              variance_amount: 0,
               other_deductions: 0,
               other_allowances: 0,
               calculated_at: new Date().toISOString(),
