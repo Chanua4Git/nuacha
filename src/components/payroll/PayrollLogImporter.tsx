@@ -147,10 +147,23 @@ function parseLegacySheet(ws: XLSX.WorkSheet): ParsedSheet[] {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
-    const payDay = toISO(r[0]);
-    const weekStart = toISO(r[1]) || payDay;
-    const weekEnd = toISO(r[2]) || weekStart;
-    const ref = weekStart || payDay;
+    let payDay = toISO(r[0]);
+    let weekStart = toISO(r[1]);
+    let weekEnd = toISO(r[2]);
+
+    // Corruption guard: if payDay and weekStart are >60 days apart, the Payment Date cell
+    // is mistyped (e.g. year mistype). Trust weekStart and synthesize payDay = weekEnd.
+    if (payDay && weekStart) {
+      const diff = Math.abs(new Date(payDay).getTime() - new Date(weekStart).getTime()) / 86400000;
+      if (diff > 60) {
+        payDay = weekEnd || weekStart;
+      }
+    }
+    weekStart = weekStart || payDay;
+    weekEnd = weekEnd || weekStart;
+
+    // Group by payDay's month (more reliable than weekStart for routing into the right period).
+    const ref = payDay || weekStart;
     if (!ref) continue;
     const [yStr, mStr] = ref.split('-');
     const year = parseInt(yStr, 10);

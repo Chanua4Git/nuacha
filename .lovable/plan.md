@@ -1,56 +1,30 @@
-## Fix Recorded Pay for imported May 2026 (and all xlsx imports)
+# Fix legacy payroll import (Jan 2020 – Apr 2022)
 
-### What's happening
+The current legacy CSV/sheet parser groups weeks by `weekStart`'s month. The source file has malformed rows (e.g. row 33 has Payment Date `21/4/2022` paired with Period Start `17/8/2020`), which causes weeks to land in the wrong month and inflates totals. NIS values are also being re-derived from the lookup table rather than trusted from the source, which is fine — but the per-week grouping must be correct first.
 
-In the database, May 2026 has 4 weeks. The importer pulled `recorded_pay` from the spreadsheet column 14 even when no work happened:
+## Changes
 
-| Week | Days | Calc Pay | NIS Emp | Recorded (now) | Should be |
-|------|------|----------|---------|----------------|-----------|
-| 1 (May 4–10) | 3 | 840.00 | 45.60 | **1066.80** | **794.40** |
-| 2 (May 11–17) | 0 | 0.00 | 0.00 | **1338.60** | **0** (not yet paid) |
-| 3 (May 18–24) | 0 | 0.00 | 0.00 | **1066.80** | **0** |
-| 4 (May 25–31) | 0 | 0.00 | 0.00 | **1338.60** | **0** |
+### 1. Fix `parseLegacySheet` in `src/components/payroll/PayrollLogImporter.tsx`
+- Group weeks by **`payDay`'s month** (the column most reliably tied to when the pay was issued), falling back to `weekStart` only when `payDay` is missing.
+- Detect "corruption rows": if `payDay` and `weekStart` are more than ~60 days apart, **trust `weekStart`** and treat `payDay = weekEnd` (these are the rows where someone mistyped the year in the Payment Date cell).
+- Skip rows where neither date is parseable.
+- Continue to derive `recorded_pay = calculatedPay - nisEmployee` (matches the rule we set for monthly imports).
 
-The 1066.80 / 1338.60 values are template/default cells from the spreadsheet, not actual amounts paid. The **calculator UI** correctly shows 794.40 for Week 1 because that's `Calc Pay − NIS Emp`.
+### 2. Re-import flow (user-driven, no auto-run)
+The user clicks **Clear previous import** for the affected employee, then re-imports the workbook. The fixed parser will:
+- Place Jan 2020 = 3 weeks ($2,800 gross)
+- Place Feb 2020 = 4 weeks ($3,800 gross)
+- Re-derive period totals from the corrected weekly rows
 
-### Fix (two parts)
+### 3. No schema changes
+This is parser logic only. No migration needed. The existing `recorded_pay` / `net_pay` / period-totals derivation already in the importer handles the rest.
 
-**1. Data migration — clean up existing imported rows**
+## Verification after re-import
+Query the two months and confirm:
+- January 2020: 3 weeks, gross $2,800, weeks dated 13–17 Jan, 21–24 Jan, 27–31 Jan
+- February 2020: 4 weeks, gross $3,800, weeks dated 3–7, 10–14, 17–21, 25–28 Feb
+- No weeks with `week_end_date` in a different month from `week_start_date`
 
-Scope: `payroll_entries` whose period has `import_source LIKE 'xlsx_import_%'` and `user_id = auth.uid()`.
-
-- Where `gross_pay = 0` (no work done): set `recorded_pay = 0`, `variance_amount = 0`, `net_pay = 0`.
-- Where `gross_pay > 0`: set `recorded_pay = gross_pay − nis_employee_contribution`, `variance_amount = 0`, `net_pay = gross_pay − nis_employee_contribution − COALESCE(other_deductions,0)`.
-- Recompute affected `payroll_periods.total_net_pay` from the entries (`total_gross_pay`, `total_nis_*` already correct from prior migration).
-
-**2. Importer fix — `src/components/payroll/PayrollLogImporter.tsx`**
-
-Stop sourcing `recorded_pay` from the spreadsheet's column 14. Instead derive it from work actually done:
-
-```ts
-const derivedRecorded = w.calculatedPay > 0 ? w.calculatedPay - w.nisEmployee : 0;
-recorded_pay: derivedRecorded,
-variance_amount: 0,
-net_pay: derivedRecorded,
-```
-
-Also drop `recordedPay` from `ParsedWeek` (or keep as informational only).
-
-### Why this is correct
-
-- "Recorded Pay" = what the employee actually received in hand = `Calc Pay − NIS Emp`. The variance column already exists for cases where that needs manual override later (you can still edit recorded from the calculator).
-- Weeks with zero days worked have nothing to record — leaving 1338.60 there inflates the monthly Recorded total and is misleading for May (a month not yet finished).
-
-### Verification
-
-After applying:
-- Refresh `/payroll` → Log → expand May 2026.
-- Week 1 Recorded shows **$794.40** (matches "Pay less NIS Emp" column and the Calculator screenshot).
-- Weeks 2–4 Recorded show **$0.00**.
-- Monthly subtotal Recorded = **$794.40** for May 2026.
-- Grand total "Recorded" chip drops by the inflated amounts across all imported months that had blank weeks.
-
-### Out of scope
-
-- No change to the manual Calculator's recorded-pay field (still user-editable per week).
-- No change to NIS values (already corrected by previous migration).
+## Out of scope
+- Fixing the source spreadsheet itself (rows with mistyped Payment Date years remain in the file; the parser just routes them correctly).
+- Touching the non-legacy monthly-sheet parser (already correct).
