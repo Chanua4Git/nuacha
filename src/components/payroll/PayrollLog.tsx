@@ -173,6 +173,18 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
       </tr></tbody></table>`;
+      const br = ni184Rows.get(g.monthKey);
+      if (br) {
+        html += `<table style="margin-top:6px"><thead><tr>
+          <th>NationalInsurance</th><th>Surname</th><th>FirstName</th><th>DateOfBirth</th><th>DateEmployed</th>
+          <th class="num">SalaryForPeriod</th>
+          <th class="num">Week1</th><th class="num">Week2</th><th class="num">Week3</th><th class="num">Week4</th><th class="num">Week5</th>
+        </tr></thead><tbody><tr>
+          <td>${br.nis}</td><td>${br.surname}</td><td>${br.firstName}</td><td>${br.dob}</td><td>${br.dateEmployed}</td>
+          <td class="num">${formatTTCurrency(br.salaryForPeriod)}</td>
+          ${br.weeks.map((w) => `<td class="num">${w.toFixed(2)}</td>`).join('')}
+        </tr></tbody></table>`;
+      }
     }
 
     html += `<h2>Grand total</h2>`;
