@@ -10,6 +10,7 @@ import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
+import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
 
 interface Props {
   employees: Employee[];
