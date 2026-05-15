@@ -320,9 +320,11 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
+const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow> }> = ({ groups, ni184Rows }) => (
   <div className="space-y-4">
-    {groups.map((g) => (
+    {groups.map((g) => {
+      const br = ni184Rows.get(g.monthKey);
+      return (
       <Card key={g.monthKey}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
@@ -373,9 +375,45 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
               </tr>
             </tbody>
           </table>
+          {br && (
+            <div className="mt-3 border-t pt-3">
+              <div className="text-xs text-muted-foreground mb-1">NI 184 monthly breakdown</div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="text-left py-1 px-2">NationalInsurance</th>
+                    <th className="text-left py-1 px-2">Surname</th>
+                    <th className="text-left py-1 px-2">FirstName</th>
+                    <th className="text-left py-1 px-2">DateOfBirth</th>
+                    <th className="text-left py-1 px-2">DateEmployed</th>
+                    <th className="text-right py-1 px-2">SalaryForPeriod</th>
+                    <th className="text-right py-1 px-2">Week1</th>
+                    <th className="text-right py-1 px-2">Week2</th>
+                    <th className="text-right py-1 px-2">Week3</th>
+                    <th className="text-right py-1 px-2">Week4</th>
+                    <th className="text-right py-1 px-2">Week5</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-accent/30">
+                    <td className="py-1 px-2">{br.nis || '—'}</td>
+                    <td className="py-1 px-2">{br.surname}</td>
+                    <td className="py-1 px-2">{br.firstName}</td>
+                    <td className="py-1 px-2">{br.dob || '—'}</td>
+                    <td className="py-1 px-2">{br.dateEmployed || '—'}</td>
+                    <td className="py-1 px-2 text-right">{formatTTCurrency(br.salaryForPeriod)}</td>
+                    {br.weeks.map((w, i) => (
+                      <td key={i} className="py-1 px-2 text-right">{w.toFixed(2)}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
-    ))}
+      );
+    })}
   </div>
 );
 
