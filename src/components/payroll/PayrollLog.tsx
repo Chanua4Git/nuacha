@@ -45,6 +45,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
 
   const { monthGroups, loading, refresh } = useEmployeePayrollHistory(employeeId);
   const employee = employees.find((e) => e.id === employeeId);
+  const { rows: ni184Rows } = useNi184MonthlyBreakdown(employee, monthGroups);
 
   const filteredGroups = useMemo(() => {
     const r = PRESET_RANGES[range]?.();
