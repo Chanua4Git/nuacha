@@ -10,6 +10,7 @@ import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
+import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
 
 interface Props {
   employees: Employee[];
@@ -44,6 +45,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
 
   const { monthGroups, loading, refresh } = useEmployeePayrollHistory(employeeId);
   const employee = employees.find((e) => e.id === employeeId);
+  const { rows: ni184Rows } = useNi184MonthlyBreakdown(employee, monthGroups);
 
   const filteredGroups = useMemo(() => {
     const r = PRESET_RANGES[range]?.();
@@ -171,6 +173,18 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
       </tr></tbody></table>`;
+      const br = ni184Rows.get(g.monthKey);
+      if (br) {
+        html += `<table style="margin-top:6px"><thead><tr>
+          <th>NationalInsurance</th><th>Surname</th><th>FirstName</th><th>DateOfBirth</th><th>DateEmployed</th>
+          <th class="num">SalaryForPeriod</th>
+          <th class="num">Week1</th><th class="num">Week2</th><th class="num">Week3</th><th class="num">Week4</th><th class="num">Week5</th>
+        </tr></thead><tbody><tr>
+          <td>${br.nis}</td><td>${br.surname}</td><td>${br.firstName}</td><td>${br.dob}</td><td>${br.dateEmployed}</td>
+          <td class="num">${formatTTCurrency(br.salaryForPeriod)}</td>
+          ${br.weeks.map((w) => `<td class="num">${w.toFixed(2)}</td>`).join('')}
+        </tr></tbody></table>`;
+      }
     }
 
     html += `<h2>Grand total</h2>`;
@@ -293,7 +307,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       ) : view === 'monthly' ? (
         <MonthlyTable groups={filteredGroups} expanded={expandedMonths} onToggle={toggleMonth} />
       ) : (
-        <WeeklyView groups={filteredGroups} />
+        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} />
       )}
     </div>
   );
@@ -306,9 +320,11 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
+const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow> }> = ({ groups, ni184Rows }) => (
   <div className="space-y-4">
-    {groups.map((g) => (
+    {groups.map((g) => {
+      const br = ni184Rows.get(g.monthKey);
+      return (
       <Card key={g.monthKey}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
@@ -359,9 +375,45 @@ const WeeklyView: React.FC<{ groups: MonthGroup[] }> = ({ groups }) => (
               </tr>
             </tbody>
           </table>
+          {br && (
+            <div className="mt-3 border-t pt-3">
+              <div className="text-xs text-muted-foreground mb-1">NI 184 monthly breakdown</div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="text-left py-1 px-2">NationalInsurance</th>
+                    <th className="text-left py-1 px-2">Surname</th>
+                    <th className="text-left py-1 px-2">FirstName</th>
+                    <th className="text-left py-1 px-2">DateOfBirth</th>
+                    <th className="text-left py-1 px-2">DateEmployed</th>
+                    <th className="text-right py-1 px-2">SalaryForPeriod</th>
+                    <th className="text-right py-1 px-2">Week1</th>
+                    <th className="text-right py-1 px-2">Week2</th>
+                    <th className="text-right py-1 px-2">Week3</th>
+                    <th className="text-right py-1 px-2">Week4</th>
+                    <th className="text-right py-1 px-2">Week5</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-accent/30">
+                    <td className="py-1 px-2">{br.nis || '—'}</td>
+                    <td className="py-1 px-2">{br.surname}</td>
+                    <td className="py-1 px-2">{br.firstName}</td>
+                    <td className="py-1 px-2">{br.dob || '—'}</td>
+                    <td className="py-1 px-2">{br.dateEmployed || '—'}</td>
+                    <td className="py-1 px-2 text-right">{formatTTCurrency(br.salaryForPeriod)}</td>
+                    {br.weeks.map((w, i) => (
+                      <td key={i} className="py-1 px-2 text-right">{w.toFixed(2)}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
-    ))}
+      );
+    })}
   </div>
 );
 
