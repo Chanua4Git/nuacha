@@ -1,46 +1,55 @@
+# Add Entry Date & Paid On Date to Payroll Log
+
 ## Goal
-Under each month's **Subtotal** row in the Payroll Log (Weekly view), show an NI184-style breakdown line for the employee:
+Track two new dates per weekly payroll entry:
+- **Entry Date** — auto-populated when the week row is first saved (read-only in UI).
+- **Paid On Date** — blank by default; the user fills it in directly inside the Payroll Log when the employee is actually paid, then saves.
 
-```
-NationalInsurance | Surname | FirstName | DateOfBirth | DateEmployed | SalaryForPeriod | Week1 | Week2 | Week3 | Week4 | Week5
-153848            | NEWTON  | ANGELA    | 1981-05-10  | 2020-04-30   | $5,040.00       | 195.9 | 195.9 | 195.9 | 195.9 | 0
-```
+## What the user will see
 
-## Rules
-- **Week windows** = Mondays falling inside the calendar month (Mon→Sun). Months with 4 Mondays → 4 weeks + a 5th column showing `0`. Months with 5 Mondays → 5 weeks.
-- **Each WeekN value** = total NIS for that week (employee + employer contribution), looked up from the active NIS earnings-class table using the week's earnings derived from days/hours actually logged. Weeks with no logged work show `0`.
-- **SalaryForPeriod** = sum of the gross weekly earnings used for the lookup across the 4–5 windows in that month (not the recorded pay).
-- **Rate table selection (effective date)**:
-  - Period start year ≥ 2026 → use the **2026 contributions** rates.
-  - Period start year < 2026 → use the **2016 contributions** rates.
-  - Implementation: pass `effective_date` as the first day of the month being summarized to the existing `payroll-api → calculate-nis` action; database returns the most recent class set with `effective_date <= target`. Confirm a 2016-effective row set exists in `nis_earnings_classes`; if not, seed it (separate confirmation if missing).
+In **Payroll → Log → Weekly view**, two new columns appear on each week row:
 
-## Where it appears
-- `src/components/payroll/PayrollLog.tsx` — `WeeklyView` component. Add a second sub-row directly below the existing `Subtotal` row inside each month card. Same look (muted background, slightly smaller text), labeled `NI 184 breakdown` on the left, then the 6 fields + 5 week columns.
-- Also append the same breakdown line to the **PDF export** (`handleExportPDF`) under each month's `Month total` row, matching the on-screen layout.
-- CSV export unchanged for now.
+| ... | Recorded | NIS Empr. | Total NIS | **Entry Date** | **Paid On** |
+|---|---|---|---|---|---|
+| ... | $1,324.70 | $150.60 | $225.90 | 2026-05-17 | _(date picker — empty)_ |
 
-## How the values are computed
-1. Reuse `getWeekWindowsForMonth(year, month)` from `src/utils/ni184CsvExport.ts` to produce the Mon→Sun windows.
-2. For each window, sum `days_worked` / `hours_worked` from the entries whose `week_start_date` falls inside the window.
-3. Compute weekly earnings via the existing `computeWeeklyEarnings` helper (already in `ni184CsvExport.ts`).
-4. Call `payroll-api` `calculate-nis` with `weekly_earnings` and `effective_date = first day of that month`.
-5. `WeekN = round(employee_contribution + employer_contribution, 2)`. Pad to 5 columns with `0`.
-6. `SalaryForPeriod = sum(gross_pay returned)` across the windows.
+- Entry Date shows the timestamp the row was first saved (date only, read-only).
+- Paid On is an inline date input. Picking a date + clicking a small Save icon (or blur) persists it. Empty = "Not paid yet" muted placeholder.
+- Subtotal row leaves both columns blank.
+- PDF export gets the two extra columns too. CSV export adds two columns at the end (non-breaking).
 
-Use a lightweight in-memory cache keyed by `weekly_earnings|effective_date` so re-renders don't refetch.
+## Data model
 
-## Technical details
-- New hook `useNi184MonthlyBreakdown(employee, monthGroups)` in `src/hooks/` that returns a `Map<monthKey, Ni184Row>` and loading state. It reuses `buildNi184Rows` against the single employee + that month's entries + that month's windows + the chosen effective date.
-- `WeeklyView` accepts the breakdown map and renders the extra row.
-- Effective date helper: `const eff = group.entries[0]?.week_start_date?.slice(0,4) >= '2026' ? \`${year}-${month}-01\` : \`${year}-${month}-01\`` — same first-of-month string is fine because the DB resolves to the latest class on/before that date; the 2016 table covers pre-2026 automatically.
+Add two columns to `payroll_entries`:
+- `entry_date date` — defaults to `CURRENT_DATE` on insert; never updated afterward.
+- `paid_on_date date` — nullable; user-editable.
+
+Existing rows: `entry_date` backfilled from `calculated_at::date` (or `created_at::date` fallback); `paid_on_date` stays null.
+
+RLS unchanged (same row-level rules already applied to `payroll_entries`).
+
+## Code changes
+
+1. **Migration** — add the two columns + backfill + default.
+2. **`useMonthlyPayrollPersistence.ts`**
+   - `WeekSnapshot` gains `entryDate?: string` and `paidOnDate?: string | null`.
+   - `loadWeeks` selects and returns both fields.
+   - `saveWeek` no longer writes `entry_date` (DB default handles it); accepts optional `paidOnDate` and writes it when provided.
+   - New `updatePaidOnDate(periodId, employeeId, weekNumber, date|null)` for the inline edit path so we don't rewrite the whole row.
+3. **`PayrollLog.tsx` – `WeeklyView`**
+   - Add two `<TableHead>` columns + two `<TableCell>`s per week row.
+   - Paid On cell: `<Input type="date">` + tiny save button; on save call `updatePaidOnDate` then refetch/optimistically update the row.
+   - Subtotal row spans the extra columns as empty.
+4. **PDF export (`handleExportPDF`)** — add the two columns to the generated `<table>` header + body. Format dates as `YYYY-MM-DD`.
+5. **CSV export** — append `Entry Date`, `Paid On Date` columns (kept at the end so existing importers keep working).
+6. **Monthly view** — leave as-is (aggregated; per-week dates don't apply).
 
 ## Out of scope
-- Editing the NI184 CSV export dialog (already correct).
-- Schema changes — only depends on existing `nis_earnings_classes` rows. If the 2016 rate set is missing in the DB, I will surface that and propose a seed migration in a follow-up.
+- No changes to the Calculator tab, NI 184 breakdown row, or NIS computation.
+- No reminders/notifications for unpaid weeks (could be a follow-up).
+- No change to `payroll_periods.pay_date` (that stays the planned pay date).
 
-## Acceptance check (April 2026, Angela)
-- 4 Mondays in April 2026 → 4 weeks + Week5 = 0.
-- 4 weeks at 5 days × $35/hr × 8 = $1,400 weekly earnings → looks up 2026 class → ~$195.90 total NIS each week.
-- SalaryForPeriod ≈ $5,600 (or $5,040 if one week has 4 days like the screenshot — driven by actual days logged).
-- Row appears directly below the April 2026 subtotal in the Weekly view and in the PDF.
+## Acceptance
+- Saving Angela's week of 2026-05-11 auto-stamps Entry Date = today.
+- Paid On column is empty with a date picker; entering 2026-05-24 + Save persists it and survives reload.
+- PDF and CSV exports include both new columns.
