@@ -18,6 +18,8 @@ export interface HistoryEntry {
   net_pay: number;
   variance_amount: number;
   variance_notes: string | null;
+  entry_date: string | null;
+  paid_on_date: string | null;
   period_name: string;
   pay_date: string;
   period_start: string;
