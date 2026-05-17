@@ -330,7 +330,7 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow> }> = ({ groups, ni184Rows }) => (
+const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow>; onRefresh: () => void }> = ({ groups, ni184Rows, onRefresh }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
@@ -356,6 +356,8 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <th className="text-right py-2 px-2">Recorded</th>
                 <th className="text-right py-2 px-2">NIS Empr.</th>
                 <th className="text-right py-2 px-2">Total NIS</th>
+                <th className="text-left py-2 px-2">Entry date</th>
+                <th className="text-left py-2 px-2">Paid on</th>
               </tr>
             </thead>
             <tbody>
@@ -371,6 +373,8 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
+                  <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
+                  <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
                 </tr>
               ))}
               <tr className="bg-muted/40 font-medium">
@@ -382,6 +386,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
+                <td colSpan={2}></td>
               </tr>
             </tbody>
           </table>
@@ -426,6 +431,65 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
     })}
   </div>
 );
+
+const PaidOnCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ entry, onSaved }) => {
+  const [value, setValue] = useState<string>(entry.paid_on_date || '');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const dirty = (value || '') !== (entry.paid_on_date || '');
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ paid_on_date: value || null })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not save paid date', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: value ? 'Marked as paid' : 'Cleared paid date' });
+    onSaved();
+  };
+
+  const clear = async () => {
+    setValue('');
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ paid_on_date: null })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not clear', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSaved();
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        type="date"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-8 w-[140px] text-xs"
+        disabled={saving}
+      />
+      {dirty && (
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={save} disabled={saving} aria-label="Save paid date">
+          <Check className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {!dirty && entry.paid_on_date && (
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={clear} disabled={saving} aria-label="Clear paid date">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+};
 
 const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onToggle: (k: string) => void }> = ({ groups, expanded, onToggle }) => (
   <Card>
