@@ -2,15 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText } from 'lucide-react';
-import { useEmployeePayrollHistory, type MonthGroup } from '@/hooks/useEmployeePayrollHistory';
+import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X } from 'lucide-react';
+import { useEmployeePayrollHistory, type MonthGroup, type HistoryEntry } from '@/hooks/useEmployeePayrollHistory';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   employees: Employee[];
