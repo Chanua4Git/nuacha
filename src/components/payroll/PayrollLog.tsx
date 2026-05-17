@@ -155,6 +155,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <th>Week Start</th><th>Week End</th><th>Pay Day</th><th class="num">Days</th>
         <th class="num">Calc Pay</th><th class="num">NIS Emp.</th><th class="num">Pay less NIS Emp</th><th class="num">Recorded</th>
         <th class="num">NIS Empr.</th><th class="num">Total NIS</th>
+        <th>Entry Date</th><th>Paid On</th>
       </tr></thead><tbody>`;
       for (const e of g.entries) {
         html += `<tr>
@@ -168,6 +169,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           <td class="num">${formatTTCurrency(e.recorded_pay)}</td>
           <td class="num">${formatTTCurrency(e.nis_employer_contribution)}</td>
           <td class="num">${formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
+          <td>${e.entry_date || ''}</td>
+          <td>${e.paid_on_date || ''}</td>
         </tr>`;
       }
       html += `<tr class="subtotal"><td colspan="3">Month total</td>
@@ -178,6 +181,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${formatTTCurrency(g.totals.recorded)}</td>
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
+        <td></td><td></td>
       </tr></tbody></table>`;
       const br = ni184Rows.get(g.monthKey);
       if (br) {
