@@ -18,6 +18,8 @@ export interface HistoryEntry {
   net_pay: number;
   variance_amount: number;
   variance_notes: string | null;
+  entry_date: string | null;
+  paid_on_date: string | null;
   period_name: string;
   pay_date: string;
   period_start: string;
@@ -63,6 +65,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           week_start_date, week_end_date, days_worked, hours_worked,
           gross_pay, nis_employee_contribution, nis_employer_contribution,
           recorded_pay, net_pay, variance_amount, variance_notes,
+          entry_date, paid_on_date,
           payroll_periods!inner(name, pay_date, start_date, end_date, user_id)
         `)
         .eq('employee_id', employeeId)
@@ -90,6 +93,8 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           net_pay: Number(row.net_pay || 0),
           variance_amount: Number(row.variance_amount || 0),
           variance_notes: row.variance_notes,
+          entry_date: row.entry_date ?? null,
+          paid_on_date: row.paid_on_date ?? null,
           period_name: row.payroll_periods?.name ?? '',
           pay_date: row.payroll_periods?.pay_date ?? '',
           period_start: row.payroll_periods?.start_date ?? '',

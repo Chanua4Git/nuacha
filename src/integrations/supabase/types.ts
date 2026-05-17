@@ -1175,6 +1175,7 @@ export type Database = {
           created_at: string
           days_worked: number | null
           employee_id: string
+          entry_date: string
           gross_pay: number
           hours_worked: number | null
           id: string
@@ -1183,6 +1184,7 @@ export type Database = {
           nis_employer_contribution: number
           other_allowances: number | null
           other_deductions: number | null
+          paid_on_date: string | null
           payroll_period_id: string
           recorded_pay: number | null
           updated_at: string
@@ -1197,6 +1199,7 @@ export type Database = {
           created_at?: string
           days_worked?: number | null
           employee_id: string
+          entry_date?: string
           gross_pay?: number
           hours_worked?: number | null
           id?: string
@@ -1205,6 +1208,7 @@ export type Database = {
           nis_employer_contribution?: number
           other_allowances?: number | null
           other_deductions?: number | null
+          paid_on_date?: string | null
           payroll_period_id: string
           recorded_pay?: number | null
           updated_at?: string
@@ -1219,6 +1223,7 @@ export type Database = {
           created_at?: string
           days_worked?: number | null
           employee_id?: string
+          entry_date?: string
           gross_pay?: number
           hours_worked?: number | null
           id?: string
@@ -1227,6 +1232,7 @@ export type Database = {
           nis_employer_contribution?: number
           other_allowances?: number | null
           other_deductions?: number | null
+          paid_on_date?: string | null
           payroll_period_id?: string
           recorded_pay?: number | null
           updated_at?: string

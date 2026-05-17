@@ -2,15 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText } from 'lucide-react';
-import { useEmployeePayrollHistory, type MonthGroup } from '@/hooks/useEmployeePayrollHistory';
+import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X } from 'lucide-react';
+import { useEmployeePayrollHistory, type MonthGroup, type HistoryEntry } from '@/hooks/useEmployeePayrollHistory';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   employees: Employee[];
@@ -86,6 +89,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       'Month', 'Week Start', 'Week End', 'Pay Day', 'Days Worked',
       'Calculated Pay', 'NIS Employee', 'Calc Pay less NIS',
       'Recorded Pay', 'NIS Employer', 'Total NIS', 'Variance', 'Notes',
+      'Entry Date', 'Paid On Date',
     ].join(',');
     const rows: string[] = [];
     for (const g of filteredGroups) {
@@ -104,6 +108,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           (e.nis_employee_contribution + e.nis_employer_contribution).toFixed(2),
           e.variance_amount.toFixed(2),
           `"${(e.variance_notes || '').replace(/"/g, '""')}"`,
+          e.entry_date || '',
+          e.paid_on_date || '',
         ].join(','));
       }
     }
@@ -149,6 +155,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <th>Week Start</th><th>Week End</th><th>Pay Day</th><th class="num">Days</th>
         <th class="num">Calc Pay</th><th class="num">NIS Emp.</th><th class="num">Pay less NIS Emp</th><th class="num">Recorded</th>
         <th class="num">NIS Empr.</th><th class="num">Total NIS</th>
+        <th>Entry Date</th><th>Paid On</th>
       </tr></thead><tbody>`;
       for (const e of g.entries) {
         html += `<tr>
@@ -162,6 +169,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           <td class="num">${formatTTCurrency(e.recorded_pay)}</td>
           <td class="num">${formatTTCurrency(e.nis_employer_contribution)}</td>
           <td class="num">${formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
+          <td>${e.entry_date || ''}</td>
+          <td>${e.paid_on_date || ''}</td>
         </tr>`;
       }
       html += `<tr class="subtotal"><td colspan="3">Month total</td>
@@ -172,6 +181,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${formatTTCurrency(g.totals.recorded)}</td>
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
+        <td></td><td></td>
       </tr></tbody></table>`;
       const br = ni184Rows.get(g.monthKey);
       if (br) {
@@ -307,7 +317,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       ) : view === 'monthly' ? (
         <MonthlyTable groups={filteredGroups} expanded={expandedMonths} onToggle={toggleMonth} />
       ) : (
-        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} />
+        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} onRefresh={refresh} />
       )}
     </div>
   );
@@ -320,7 +330,7 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow> }> = ({ groups, ni184Rows }) => (
+const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow>; onRefresh: () => void }> = ({ groups, ni184Rows, onRefresh }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
@@ -346,6 +356,8 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <th className="text-right py-2 px-2">Recorded</th>
                 <th className="text-right py-2 px-2">NIS Empr.</th>
                 <th className="text-right py-2 px-2">Total NIS</th>
+                <th className="text-left py-2 px-2">Entry date</th>
+                <th className="text-left py-2 px-2">Paid on</th>
               </tr>
             </thead>
             <tbody>
@@ -361,6 +373,8 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.recorded_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
+                  <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
+                  <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
                 </tr>
               ))}
               <tr className="bg-muted/40 font-medium">
@@ -372,6 +386,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
+                <td colSpan={2}></td>
               </tr>
             </tbody>
           </table>
@@ -416,6 +431,65 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
     })}
   </div>
 );
+
+const PaidOnCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ entry, onSaved }) => {
+  const [value, setValue] = useState<string>(entry.paid_on_date || '');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const dirty = (value || '') !== (entry.paid_on_date || '');
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ paid_on_date: value || null })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not save paid date', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: value ? 'Marked as paid' : 'Cleared paid date' });
+    onSaved();
+  };
+
+  const clear = async () => {
+    setValue('');
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ paid_on_date: null })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not clear', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSaved();
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        type="date"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-8 w-[140px] text-xs"
+        disabled={saving}
+      />
+      {dirty && (
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={save} disabled={saving} aria-label="Save paid date">
+          <Check className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {!dirty && entry.paid_on_date && (
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={clear} disabled={saving} aria-label="Clear paid date">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+};
 
 const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onToggle: (k: string) => void }> = ({ groups, expanded, onToggle }) => (
   <Card>
