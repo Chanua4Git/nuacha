@@ -317,7 +317,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       ) : view === 'monthly' ? (
         <MonthlyTable groups={filteredGroups} expanded={expandedMonths} onToggle={toggleMonth} />
       ) : (
-        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} />
+        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} onRefresh={refresh} />
       )}
     </div>
   );
