@@ -89,6 +89,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       'Month', 'Week Start', 'Week End', 'Pay Day', 'Days Worked',
       'Calculated Pay', 'NIS Employee', 'Calc Pay less NIS',
       'Recorded Pay', 'NIS Employer', 'Total NIS', 'Variance', 'Notes',
+      'Entry Date', 'Paid On Date',
     ].join(',');
     const rows: string[] = [];
     for (const g of filteredGroups) {
@@ -107,6 +108,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           (e.nis_employee_contribution + e.nis_employer_contribution).toFixed(2),
           e.variance_amount.toFixed(2),
           `"${(e.variance_notes || '').replace(/"/g, '""')}"`,
+          e.entry_date || '',
+          e.paid_on_date || '',
         ].join(','));
       }
     }
