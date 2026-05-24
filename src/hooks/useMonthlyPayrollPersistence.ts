@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/auth/contexts/AuthProvider';
-import { format } from 'date-fns';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 
 /**
  * Per-week payroll persistence keyed on a monthly payroll_periods row.
- * Each (period, employee, week_number) is a single payroll_entries row,
+ * Each (period, employee, week_start_date) is a single payroll_entries row,
  * upserted independently so weeks can be saved/cleared without affecting siblings.
  */
 
@@ -32,8 +32,11 @@ export interface MonthlyPeriodInfo {
 const monthName = (m: number) =>
   ['January','February','March','April','May','June','July','August','September','October','November','December'][m];
 
+const basePeriodNameFor = (year: number, month: number) =>
+  `${monthName(month)} ${year}`;
+
 const periodNameFor = (year: number, month: number, employeeName: string) =>
-  `${monthName(month)} ${year} — ${employeeName}`;
+  `${basePeriodNameFor(year, month)} — ${employeeName}`;
 
 export const useMonthlyPayrollPersistence = () => {
   const { user } = useAuth();
@@ -51,22 +54,52 @@ export const useMonthlyPayrollPersistence = () => {
   }): Promise<MonthlyPeriodInfo | null> => {
     if (!user) return null;
     const name = periodNameFor(params.year, params.month, params.employeeName);
+    const baseName = basePeriodNameFor(params.year, params.month);
     const startStr = format(params.startDate, 'yyyy-MM-dd');
     const endStr = format(params.endDate, 'yyyy-MM-dd');
     const payStr = format(params.payDate, 'yyyy-MM-dd');
+    const monthStartStr = format(startOfMonth(params.startDate), 'yyyy-MM-dd');
+    const monthEndStr = format(endOfMonth(params.startDate), 'yyyy-MM-dd');
 
-    // Look up by user + name (idempotent for same employee+month)
-    const { data: existing, error: lookupErr } = await supabase
+    const { data: monthPeriods, error: lookupErr } = await supabase
       .from('payroll_periods')
-      .select('id, start_date, end_date, pay_date, name, status')
+      .select('id, start_date, end_date, pay_date, name, status, created_at')
       .eq('user_id', user.id)
-      .eq('name', name)
-      .maybeSingle();
+      .gte('start_date', monthStartStr)
+      .lte('start_date', monthEndStr)
+      .order('created_at', { ascending: true });
 
     if (lookupErr) {
       console.error('Lookup period error', lookupErr);
     }
-    if (existing) return existing as MonthlyPeriodInfo;
+
+    const periods = (monthPeriods || []) as Array<MonthlyPeriodInfo & { created_at?: string }>;
+
+    const importerPeriod = periods.find((period) => period.name === baseName);
+    if (importerPeriod) return importerPeriod;
+
+    const exactNamedPeriod = periods.find((period) => period.name === name);
+    if (exactNamedPeriod) return exactNamedPeriod;
+
+    if (periods.length > 0) {
+      const { data: employeePeriods, error: employeePeriodErr } = await supabase
+        .from('payroll_entries')
+        .select('payroll_period_id')
+        .eq('employee_id', params.employeeId)
+        .in('payroll_period_id', periods.map((period) => period.id));
+
+      if (employeePeriodErr) {
+        console.error('Lookup employee month periods error', employeePeriodErr);
+      } else {
+        const matchingPeriodId = employeePeriods?.[0]?.payroll_period_id;
+        if (matchingPeriodId) {
+          const matchingPeriod = periods.find((period) => period.id === matchingPeriodId);
+          if (matchingPeriod) return matchingPeriod;
+        }
+      }
+
+      return periods[0];
+    }
 
     const { data: created, error: insertErr } = await supabase
       .from('payroll_periods')
@@ -88,22 +121,23 @@ export const useMonthlyPayrollPersistence = () => {
     return created as MonthlyPeriodInfo;
   }, [user]);
 
-  /** Load saved week snapshots for a period+employee, keyed by week_number. */
-  const loadWeeks = useCallback(async (periodId: string, employeeId: string): Promise<Record<number, WeekSnapshot>> => {
+  /** Load saved week snapshots for a period+employee, keyed by week_start_date. */
+  const loadWeeks = useCallback(async (periodId: string, employeeId: string): Promise<Record<string, WeekSnapshot>> => {
     const { data, error } = await supabase
       .from('payroll_entries')
       .select('week_number, week_start_date, week_end_date, days_worked, hours_worked, gross_pay, recorded_pay, nis_employee_contribution, nis_employer_contribution, net_pay')
       .eq('payroll_period_id', periodId)
-      .eq('employee_id', employeeId);
+      .eq('employee_id', employeeId)
+      .order('week_start_date', { ascending: true });
 
     if (error) {
       console.error('Load weeks error', error);
       return {};
     }
-    const result: Record<number, WeekSnapshot> = {};
+    const result: Record<string, WeekSnapshot> = {};
     (data || []).forEach((row: any) => {
-      if (row.week_number == null) return;
-      result[row.week_number] = {
+      if (!row.week_start_date) return;
+      result[row.week_start_date] = {
         daysWorked: Number(row.days_worked) || 0,
         recordedPay: Number(row.recorded_pay) || 0,
         calculatedPay: Number(row.gross_pay) || 0,
@@ -148,7 +182,7 @@ export const useMonthlyPayrollPersistence = () => {
 
       const { error } = await supabase
         .from('payroll_entries')
-        .upsert(payload, { onConflict: 'payroll_period_id,employee_id,week_number' });
+        .upsert(payload, { onConflict: 'payroll_period_id,employee_id,week_start_date' });
 
       if (error) {
         console.error('Save week error', error);
