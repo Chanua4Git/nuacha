@@ -1192,7 +1192,7 @@ export type Database = {
           variance_notes: string | null
           week_end_date: string | null
           week_number: number | null
-          week_start_date: string | null
+          week_start_date: string
         }
         Insert: {
           calculated_at?: string | null
@@ -1216,7 +1216,7 @@ export type Database = {
           variance_notes?: string | null
           week_end_date?: string | null
           week_number?: number | null
-          week_start_date?: string | null
+          week_start_date: string
         }
         Update: {
           calculated_at?: string | null
@@ -1240,7 +1240,7 @@ export type Database = {
           variance_notes?: string | null
           week_end_date?: string | null
           week_number?: number | null
-          week_start_date?: string | null
+          week_start_date?: string
         }
         Relationships: [
           {
