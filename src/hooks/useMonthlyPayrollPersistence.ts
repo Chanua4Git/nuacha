@@ -78,9 +78,6 @@ export const useMonthlyPayrollPersistence = () => {
     const importerPeriod = periods.find((period) => period.name === baseName);
     if (importerPeriod) return importerPeriod;
 
-    const exactNamedPeriod = periods.find((period) => period.name === name);
-    if (exactNamedPeriod) return exactNamedPeriod;
-
     if (periods.length > 0) {
       const { data: employeePeriods, error: employeePeriodErr } = await supabase
         .from('payroll_entries')
@@ -97,6 +94,9 @@ export const useMonthlyPayrollPersistence = () => {
           if (matchingPeriod) return matchingPeriod;
         }
       }
+
+      const exactNamedPeriod = periods.find((period) => period.name === name);
+      if (exactNamedPeriod) return exactNamedPeriod;
 
       return periods[0];
     }
