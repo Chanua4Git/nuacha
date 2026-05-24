@@ -1,55 +1,60 @@
-# Add Entry Date & Paid On Date to Payroll Log
+## What's happening
 
-## Goal
-Track two new dates per weekly payroll entry:
-- **Entry Date** — auto-populated when the week row is first saved (read-only in UI).
-- **Paid On Date** — blank by default; the user fills it in directly inside the Payroll Log when the employee is actually paid, then saves.
+Two different code paths create monthly `payroll_periods` rows with **different names** for the same month:
 
-## What the user will see
+- **Importer (Excel)** → `name = "May 2026"` (no employee suffix), one period shared across employees.
+- **Calculator** (`useMonthlyPayrollPersistence`) → `name = "May 2026 — A N-Collymore"`, one period per employee.
 
-In **Payroll → Log → Weekly view**, two new columns appear on each week row:
+`getOrCreatePeriod` looks up the period by **exact name**. So when you opened the Calculator for Angela in May, it didn't find the importer's "May 2026" period that already held her week-1 (2026‑05‑04) row — it created a brand‑new "May 2026 — A N‑Collymore" period and started numbering from week 1 again.
 
-| ... | Recorded | NIS Empr. | Total NIS | **Entry Date** | **Paid On** |
-|---|---|---|---|---|---|
-| ... | $1,324.70 | $150.60 | $225.90 | 2026-05-17 | _(date picker — empty)_ |
+DB confirms it. For Angela in May 2026:
 
-- Entry Date shows the timestamp the row was first saved (date only, read-only).
-- Paid On is an inline date input. Picking a date + clicking a small Save icon (or blur) persists it. Empty = "Not paid yet" muted placeholder.
-- Subtotal row leaves both columns blank.
-- PDF export gets the two extra columns too. CSV export adds two columns at the end (non-breaking).
+```
+Period "May 2026"                    week 1 = 2026-05-04  ($840 saved)
+                                     week 2 = 2026-05-11  (zeros)
+                                     week 3 = 2026-05-18  (zeros)   ← "disappearing" week
+                                     week 4 = 2026-05-25  (zeros)
+Period "May 2026 — A N-Collymore"    week 1 = 2026-05-18  ($1,400 saved) ← duplicate Monday
+```
 
-## Data model
+That's why the log shows **two rows for 2026‑05‑18** and why saving a later week in the calculator appears to "blank out" an earlier one: the calculator's `(period, employee, week_number)` upsert is operating on the *new* period while the importer's rows live in the *old* period — so each new save adds a row under the new period that visually replaces the same Monday's row from the old period in the sorted log.
 
-Add two columns to `payroll_entries`:
-- `entry_date date` — defaults to `CURRENT_DATE` on insert; never updated afterward.
-- `paid_on_date date` — nullable; user-editable.
+A secondary issue compounds this: `week_number = index + 1` from `eachWeekOfInterval(periodStart, periodEnd)` is **not stable** — picking a different periodStart in the Calculator shifts every Monday to a new week_number, and upserts then overwrite the wrong row.
 
-Existing rows: `entry_date` backfilled from `calculated_at::date` (or `created_at::date` fallback); `paid_on_date` stays null.
+## Fix
 
-RLS unchanged (same row-level rules already applied to `payroll_entries`).
+### 1. Robust period lookup in `useMonthlyPayrollPersistence.getOrCreatePeriod`
+Stop relying on exact-name match. Look up any `payroll_periods` row for this user whose **`start_date` falls in the same (year, month)** as the requested month, in this preference order:
+1. A period with the importer-style name `"<Month> <Year>"`.
+2. Any period in that month already having entries for this employee.
+3. Any period in that month.
+4. Otherwise create the per-employee period as today.
 
-## Code changes
+This makes the Calculator reuse whatever period the Importer (or a prior session) already created.
 
-1. **Migration** — add the two columns + backfill + default.
-2. **`useMonthlyPayrollPersistence.ts`**
-   - `WeekSnapshot` gains `entryDate?: string` and `paidOnDate?: string | null`.
-   - `loadWeeks` selects and returns both fields.
-   - `saveWeek` no longer writes `entry_date` (DB default handles it); accepts optional `paidOnDate` and writes it when provided.
-   - New `updatePaidOnDate(periodId, employeeId, weekNumber, date|null)` for the inline edit path so we don't rewrite the whole row.
-3. **`PayrollLog.tsx` – `WeeklyView`**
-   - Add two `<TableHead>` columns + two `<TableCell>`s per week row.
-   - Paid On cell: `<Input type="date">` + tiny save button; on save call `updatePaidOnDate` then refetch/optimistically update the row.
-   - Subtotal row spans the extra columns as empty.
-4. **PDF export (`handleExportPDF`)** — add the two columns to the generated `<table>` header + body. Format dates as `YYYY-MM-DD`.
-5. **CSV export** — append `Entry Date`, `Paid On Date` columns (kept at the end so existing importers keep working).
-6. **Monthly view** — leave as-is (aggregated; per-week dates don't apply).
+### 2. Stable week identity — upsert by `week_start_date` not `week_number`
+- New migration: add unique index `payroll_entries_period_employee_week_start_key` on `(payroll_period_id, employee_id, week_start_date)`.
+- `saveWeek` upsert uses `onConflict: 'payroll_period_id,employee_id,week_start_date'`. `week_number` is still written (recomputed as Monday-of-month index 1–5 so it's reproducible) but is no longer the conflict key.
+- `clearWeek` unchanged (still calls saveWeek).
 
-## Out of scope
-- No changes to the Calculator tab, NI 184 breakdown row, or NIS computation.
-- No reminders/notifications for unpaid weeks (could be a follow-up).
-- No change to `payroll_periods.pay_date` (that stays the planned pay date).
+### 3. One-time cleanup migration for Angela's duplicates (and any equivalent)
+For each `(employee_id, week_start_date)` that has >1 entry across periods for the same calendar month:
+- Keep the row with the highest `gross_pay + recorded_pay` (preserves the saved $1,400 row).
+- Move/keep it under the earliest period for that month (so all weeks live in one period).
+- Delete the zero-valued duplicate.
+
+After cleanup, May for Angela will have exactly 4 rows: 05‑04, 05‑11, 05‑18 ($1,400), 05‑25 — all under a single period.
+
+### 4. Calculator week generation — keep current `eachWeekOfInterval` but compute `week_number` from Monday-of-month (1st Monday = 1, 2nd = 2, …) so the same Monday always gets the same number, regardless of `periodStart`.
+
+## Technical notes
+
+- Files changed: `src/hooks/useMonthlyPayrollPersistence.ts`, `src/components/payroll/EnhancedPayrollCalculator.tsx` (week_number calc only), one new SQL migration.
+- No UI changes — Log/Calculator render the same; just the underlying data stops fragmenting.
+- Importer logic untouched; it keeps creating "May 2026" periods, which the Calculator will now reuse.
 
 ## Acceptance
-- Saving Angela's week of 2026-05-11 auto-stamps Entry Date = today.
-- Paid On column is empty with a date picker; entering 2026-05-24 + Save persists it and survives reload.
-- PDF and CSV exports include both new columns.
+
+- Reload Logs → Angela May 2026 shows 4 rows (no 05‑18 duplicate); 05‑18 keeps the $1,400 entry.
+- Open Calculator for Angela May, save week 2 → week 3's saved values remain in the Log.
+- Save week 3 → week 2 remains. Both new and existing rows live in the same period.
