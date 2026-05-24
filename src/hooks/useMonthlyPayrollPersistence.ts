@@ -88,11 +88,9 @@ export const useMonthlyPayrollPersistence = () => {
       if (employeePeriodErr) {
         console.error('Lookup employee month periods error', employeePeriodErr);
       } else {
-        const matchingPeriodId = employeePeriods?.[0]?.payroll_period_id;
-        if (matchingPeriodId) {
-          const matchingPeriod = periods.find((period) => period.id === matchingPeriodId);
-          if (matchingPeriod) return matchingPeriod;
-        }
+        const matchingPeriodIds = new Set((employeePeriods || []).map((row: any) => row.payroll_period_id));
+        const matchingPeriod = periods.find((period) => matchingPeriodIds.has(period.id));
+        if (matchingPeriod) return matchingPeriod;
       }
 
       const exactNamedPeriod = periods.find((period) => period.name === name);
