@@ -27,6 +27,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMonthlyPayrollPersistence, MonthlyPeriodInfo, WeekSnapshot } from '@/hooks/useMonthlyPayrollPersistence';
 import { toast } from 'sonner';
 
+const getWeekKey = (date: Date) => format(date, 'yyyy-MM-dd');
+
+const getStableWeekNumber = (date: Date) => {
+  const dayOfMonth = date.getDate();
+  return Math.floor((dayOfMonth - 1) / 7) + 1;
+};
+
 interface WeeklyCalculation {
   weekNumber: number;
   weekStart: Date;
@@ -252,7 +259,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       { weekStartsOn: 1 } // Monday start
     );
 
-    const weeklyCalculations: WeeklyCalculation[] = weeks.map((weekStart, index) => {
+    const weeklyCalculations: WeeklyCalculation[] = weeks.map((weekStart) => {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
       const payDay = addDays(weekEnd, 7); // Pay day is a week after week end
       
@@ -267,7 +274,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       }
 
       return {
-        weekNumber: index + 1,
+        weekNumber: getStableWeekNumber(weekStart),
         weekStart,
         weekEnd,
         payDay,
@@ -315,7 +322,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
           // Hydrate weeklyInputs and the calculated week values
           const newInputs: Record<number, any> = {};
           const hydratedWeeks = weeklyCalculations.map((w, idx) => {
-            const snap = saved[w.weekNumber];
+            const snap = saved[getWeekKey(w.weekStart)];
             if (!snap) return w;
             newInputs[idx] = {
               daysWorked: snap.daysWorked,
@@ -341,7 +348,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
           // Index by array position for indicator
           const byIndex: Record<number, WeekSnapshot> = {};
           hydratedWeeks.forEach((w, idx) => {
-            const snap = saved[w.weekNumber];
+            const snap = saved[getWeekKey(w.weekStart)];
             if (snap) byIndex[idx] = snap;
           });
           setSavedWeekSnapshots(byIndex);
