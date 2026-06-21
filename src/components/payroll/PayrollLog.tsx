@@ -46,6 +46,9 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
   const [range, setRange] = useState<string>('all');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [showImporter, setShowImporter] = useState(false);
+  const [payslipEntries, setPayslipEntries] = useState<HistoryEntry[] | null>(null);
+  const [rangeMode, setRangeMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { settings: employerSettings } = useEmployerSettings();
 
   const { monthGroups, loading, refresh } = useEmployeePayrollHistory(employeeId);
