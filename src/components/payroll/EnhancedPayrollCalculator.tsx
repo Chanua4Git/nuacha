@@ -1042,18 +1042,20 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                                         >
                                           {savingWeekIndex === index ? '…' : 'Save'}
                                         </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handleClearWeek(index)}
+                                          title="Clear this week"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </TableCell>
 
-                                   <Button
-                                     size="sm"
-                                     variant="ghost"
-                                     onClick={() => handleClearWeek(index)}
-                                     title="Clear this week"
-                                   >
-                                     <Trash2 className="h-3.5 w-3.5" />
-                                   </Button>
-                                 </div>
-                               </div>
-                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
