@@ -921,13 +921,74 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                             <TableCell>{format(week.payDay, 'dd/MM/yyyy')}</TableCell>
                             <TableCell>{formatTTCurrency(week.dailyRate8Hr)}</TableCell>
                             <TableCell>
-                              <Input
-                                type="number"
-                                value={weeklyInputs[index]?.daysWorked || 0}
-                                onChange={(e) => updateWeeklyInput(index, 'daysWorked', Number(e.target.value))}
-                                className="w-20"
-                              />
+                              {(() => {
+                                const w = weeklyInputs[index] || {} as any;
+                                const reg = Number(w.regularDays ?? w.daysWorked ?? 0) || 0;
+                                const hol = Number(w.holidayDays ?? 0) || 0;
+                                const mult = w.holidayMultiplier as number | null | undefined;
+                                const total = reg + hol;
+                                const needsMult = hol > 0 && !mult;
+                                return (
+                                  <div className="flex flex-col gap-1 min-w-[150px]">
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        min={0}
+                                        value={reg}
+                                        onChange={(e) => updateWeeklyInput(index, 'regularDays', Number(e.target.value))}
+                                        className="w-16 h-8"
+                                        title="Regular days"
+                                        placeholder="Reg"
+                                      />
+                                      <span className="text-muted-foreground text-xs">reg</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        min={0}
+                                        value={hol}
+                                        onChange={(e) => updateWeeklyInput(index, 'holidayDays', Number(e.target.value))}
+                                        className="w-16 h-8"
+                                        title="Holiday days"
+                                        placeholder="Hol"
+                                      />
+                                      <span className="text-muted-foreground text-xs">hol</span>
+                                    </div>
+                                    {hol > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={mult === 1.5 ? 'default' : 'outline'}
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => updateWeeklyInput(index, 'holidayMultiplier', 1.5)}
+                                        >
+                                          1.5×
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={mult === 2 ? 'default' : 'outline'}
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => updateWeeklyInput(index, 'holidayMultiplier', 2)}
+                                        >
+                                          2×
+                                        </Button>
+                                      </div>
+                                    )}
+                                    <div className="text-[11px] text-muted-foreground">
+                                      Total: {total}{hol > 0 && mult ? ` (${reg} + ${hol}@${mult}×)` : ''}
+                                    </div>
+                                    {needsMult && (
+                                      <div className="text-[11px] text-amber-600">Pick 1.5× or 2× for holiday</div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
+
                              <TableCell className="font-medium">{formatTTCurrency(week.calculatedPay)}</TableCell>
                              <TableCell>{formatTTCurrency(week.nisEmployee)}</TableCell>
                              <TableCell>{formatTTCurrency(week.calcPayLessNIS)}</TableCell>
