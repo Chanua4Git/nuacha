@@ -1018,22 +1018,31 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                                      <span className="text-muted-foreground">—</span>
                                    )}
                                  </div>
-                                 <div className="flex gap-1">
-                                   <Button
-                                     size="sm"
-                                     variant="outline"
-                                     onClick={() => calculateWeeklyPayroll(index)}
-                                     disabled={!weeklyInputs[index]?.daysWorked}
-                                   >
-                                     Calc
-                                   </Button>
-                                   <Button
-                                     size="sm"
-                                     onClick={() => handleSaveWeek(index)}
-                                     disabled={savingWeekIndex === index || !weeklyInputs[index]?.daysWorked}
-                                   >
-                                     {savingWeekIndex === index ? '…' : 'Save'}
-                                   </Button>
+                                  {(() => {
+                                    const wi = weeklyInputs[index] || {} as any;
+                                    const reg = Number(wi.regularDays ?? wi.daysWorked ?? 0) || 0;
+                                    const hol = Number(wi.holidayDays ?? 0) || 0;
+                                    const total = reg + hol;
+                                    const needsMult = hol > 0 && !wi.holidayMultiplier;
+                                    const noEntry = total <= 0;
+                                    return (
+                                      <div className="flex gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => calculateWeeklyPayroll(index)}
+                                          disabled={noEntry || needsMult}
+                                        >
+                                          Calc
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveWeek(index)}
+                                          disabled={savingWeekIndex === index || noEntry || needsMult}
+                                        >
+                                          {savingWeekIndex === index ? '…' : 'Save'}
+                                        </Button>
+
                                    <Button
                                      size="sm"
                                      variant="ghost"
