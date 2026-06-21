@@ -127,12 +127,16 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     recordedPay: number;
     otherAllowances: number;
     otherDeductions: number;
+    regularDays?: number;
+    holidayDays?: number;
+    holidayMultiplier?: number | null;
   }>>(() => {
     try {
       const saved = sessionStorage.getItem('payroll_weeklyInputs');
       return saved ? JSON.parse(saved) : {};
     } catch { return {}; }
   });
+
   
   const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -329,7 +333,11 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
               recordedPay: snap.recordedPay,
               otherAllowances: 0,
               otherDeductions: 0,
+              regularDays: snap.regularDays ?? snap.daysWorked,
+              holidayDays: snap.holidayDays ?? 0,
+              holidayMultiplier: snap.holidayMultiplier ?? null,
             };
+
             return {
               ...w,
               recordedDaysWorked: snap.daysWorked,
@@ -409,8 +417,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         nisEmployee: fresh.nisEmployee,
         nisEmployer: fresh.nisEmployer,
         netPay: fresh.netPay,
+        regularDays: inputs.regularDays ?? null,
+        holidayDays: inputs.holidayDays ?? null,
+        holidayMultiplier: inputs.holidayMultiplier ?? null,
       },
     });
+
     setSavingWeekIndex(null);
     if (ok) {
       setSavedWeekSnapshots(prev => ({
@@ -507,34 +519,62 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     if (!selectedEmployee || !payrollPeriod) return;
 
     const week = payrollPeriod.weeks[weekIndex];
-    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 };
+    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 } as any;
+
+    const dailyRate = selectedEmployee.daily_rate || week.dailyRate8Hr;
+
+    // Split entry: regular + holiday × multiplier (1.5 or 2)
+    const regularDays = Number(inputs.regularDays ?? inputs.daysWorked) || 0;
+    const holidayDays = Number(inputs.holidayDays) || 0;
+    const multiplier = Number(inputs.holidayMultiplier) || 1;
+    const totalDays = regularDays + holidayDays;
+
+    const regularPay = regularDays * dailyRate;
+    const holidayPay = holidayDays * dailyRate * multiplier;
+    const effectiveGross = regularPay + holidayPay;
+
+    // Compute NIS based on effective weekly earnings by routing through a
+    // synthetic daily_rate so calculatePayroll's class lookup uses the
+    // actual gross earnings (including holiday premium).
+    const syntheticDaily = totalDays > 0 ? effectiveGross / totalDays : dailyRate;
 
     const employeeData: EmployeeData = {
       employment_type: selectedEmployee.employment_type,
       hourly_rate: selectedEmployee.hourly_rate,
       monthly_salary: selectedEmployee.monthly_salary,
-      daily_rate: selectedEmployee.daily_rate || week.dailyRate8Hr,
+      daily_rate: syntheticDaily,
     };
 
     const payrollInput: PayrollInput = {
-      hours_worked: inputs.daysWorked * 8, // Convert days to hours
-      days_worked: inputs.daysWorked,
+      hours_worked: totalDays * 8,
+      days_worked: totalDays,
       other_deductions: inputs.otherDeductions,
       other_allowances: inputs.otherAllowances,
     };
     const calculation = calculatePayroll(employeeData, payrollInput, nisClasses.length > 0 ? nisClasses : undefined);
 
-    // Update the weekly calculation
+    // Override gross/net with the holiday-aware values
+    const gross = Math.round(effectiveGross * 100) / 100;
+    const netPay = Math.round((gross - calculation.nis_employee_contribution - (inputs.otherDeductions || 0)) * 100) / 100;
+
+    // Keep daysWorked in sync with totalDays so saved/loaded state is consistent
+    if (inputs.daysWorked !== totalDays) {
+      setWeeklyInputs(prev => ({
+        ...prev,
+        [weekIndex]: { ...prev[weekIndex], daysWorked: totalDays },
+      }));
+    }
+
     const updatedWeek: WeeklyCalculation = {
       ...week,
-      recordedDaysWorked: inputs.daysWorked,
-      calculatedPay: calculation.gross_pay,
-      calcPayLessNIS: calculation.gross_pay - calculation.nis_employee_contribution,
-      recordedPay: inputs.recordedPay || calculation.gross_pay,
+      recordedDaysWorked: totalDays,
+      calculatedPay: gross,
+      calcPayLessNIS: gross - calculation.nis_employee_contribution,
+      recordedPay: inputs.recordedPay || gross,
       totalNISContribution: calculation.nis_employee_contribution + calculation.nis_employer_contribution,
       nisEmployee: calculation.nis_employee_contribution,
       nisEmployer: calculation.nis_employer_contribution,
-      netPay: calculation.net_pay,
+      netPay,
       status: 'complete',
     };
 
@@ -546,6 +586,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       weeks: updatedWeeks,
     });
   };
+
 
   const exportPayrollPeriod = () => {
     if (!user) {
@@ -861,7 +902,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                            <TableHead>Week End</TableHead>
                            <TableHead>Pay Day</TableHead>
                            <TableHead>Pay/(8hr)dy</TableHead>
-                           <TableHead>Days Worked</TableHead>
+                           <TableHead>Days Worked<div className="text-[10px] font-normal text-muted-foreground">Regular + Holiday</div></TableHead>
                            <TableHead>Calculated Pay</TableHead>
                            <TableHead>NIS Employee Contribution</TableHead>
                            <TableHead>Calc Pay less NIS</TableHead>
@@ -880,13 +921,74 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                             <TableCell>{format(week.payDay, 'dd/MM/yyyy')}</TableCell>
                             <TableCell>{formatTTCurrency(week.dailyRate8Hr)}</TableCell>
                             <TableCell>
-                              <Input
-                                type="number"
-                                value={weeklyInputs[index]?.daysWorked || 0}
-                                onChange={(e) => updateWeeklyInput(index, 'daysWorked', Number(e.target.value))}
-                                className="w-20"
-                              />
+                              {(() => {
+                                const w = weeklyInputs[index] || {} as any;
+                                const reg = Number(w.regularDays ?? w.daysWorked ?? 0) || 0;
+                                const hol = Number(w.holidayDays ?? 0) || 0;
+                                const mult = w.holidayMultiplier as number | null | undefined;
+                                const total = reg + hol;
+                                const needsMult = hol > 0 && !mult;
+                                return (
+                                  <div className="flex flex-col gap-1 min-w-[150px]">
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        min={0}
+                                        value={reg}
+                                        onChange={(e) => updateWeeklyInput(index, 'regularDays', Number(e.target.value))}
+                                        className="w-16 h-8"
+                                        title="Regular days"
+                                        placeholder="Reg"
+                                      />
+                                      <span className="text-muted-foreground text-xs">reg</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        min={0}
+                                        value={hol}
+                                        onChange={(e) => updateWeeklyInput(index, 'holidayDays', Number(e.target.value))}
+                                        className="w-16 h-8"
+                                        title="Holiday days"
+                                        placeholder="Hol"
+                                      />
+                                      <span className="text-muted-foreground text-xs">hol</span>
+                                    </div>
+                                    {hol > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={mult === 1.5 ? 'default' : 'outline'}
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => updateWeeklyInput(index, 'holidayMultiplier', 1.5)}
+                                        >
+                                          1.5×
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={mult === 2 ? 'default' : 'outline'}
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => updateWeeklyInput(index, 'holidayMultiplier', 2)}
+                                        >
+                                          2×
+                                        </Button>
+                                      </div>
+                                    )}
+                                    <div className="text-[11px] text-muted-foreground">
+                                      Total: {total}{hol > 0 && mult ? ` (${reg} + ${hol}@${mult}×)` : ''}
+                                    </div>
+                                    {needsMult && (
+                                      <div className="text-[11px] text-amber-600">Pick 1.5× or 2× for holiday</div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
+
                              <TableCell className="font-medium">{formatTTCurrency(week.calculatedPay)}</TableCell>
                              <TableCell>{formatTTCurrency(week.nisEmployee)}</TableCell>
                              <TableCell>{formatTTCurrency(week.calcPayLessNIS)}</TableCell>
@@ -916,33 +1018,44 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                                      <span className="text-muted-foreground">—</span>
                                    )}
                                  </div>
-                                 <div className="flex gap-1">
-                                   <Button
-                                     size="sm"
-                                     variant="outline"
-                                     onClick={() => calculateWeeklyPayroll(index)}
-                                     disabled={!weeklyInputs[index]?.daysWorked}
-                                   >
-                                     Calc
-                                   </Button>
-                                   <Button
-                                     size="sm"
-                                     onClick={() => handleSaveWeek(index)}
-                                     disabled={savingWeekIndex === index || !weeklyInputs[index]?.daysWorked}
-                                   >
-                                     {savingWeekIndex === index ? '…' : 'Save'}
-                                   </Button>
-                                   <Button
-                                     size="sm"
-                                     variant="ghost"
-                                     onClick={() => handleClearWeek(index)}
-                                     title="Clear this week"
-                                   >
-                                     <Trash2 className="h-3.5 w-3.5" />
-                                   </Button>
-                                 </div>
-                               </div>
-                             </TableCell>
+                                  {(() => {
+                                    const wi = weeklyInputs[index] || {} as any;
+                                    const reg = Number(wi.regularDays ?? wi.daysWorked ?? 0) || 0;
+                                    const hol = Number(wi.holidayDays ?? 0) || 0;
+                                    const total = reg + hol;
+                                    const needsMult = hol > 0 && !wi.holidayMultiplier;
+                                    const noEntry = total <= 0;
+                                    return (
+                                      <div className="flex gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => calculateWeeklyPayroll(index)}
+                                          disabled={noEntry || needsMult}
+                                        >
+                                          Calc
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveWeek(index)}
+                                          disabled={savingWeekIndex === index || noEntry || needsMult}
+                                        >
+                                          {savingWeekIndex === index ? '…' : 'Save'}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handleClearWeek(index)}
+                                          title="Clear this week"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </TableCell>
+
                           </TableRow>
                         ))}
                       </TableBody>

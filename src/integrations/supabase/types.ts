@@ -1177,6 +1177,8 @@ export type Database = {
           employee_id: string
           entry_date: string
           gross_pay: number
+          holiday_days: number | null
+          holiday_multiplier: number | null
           hours_worked: number | null
           id: string
           net_pay: number
@@ -1187,6 +1189,7 @@ export type Database = {
           paid_on_date: string | null
           payroll_period_id: string
           recorded_pay: number | null
+          regular_days: number | null
           updated_at: string
           variance_amount: number | null
           variance_notes: string | null
@@ -1201,6 +1204,8 @@ export type Database = {
           employee_id: string
           entry_date?: string
           gross_pay?: number
+          holiday_days?: number | null
+          holiday_multiplier?: number | null
           hours_worked?: number | null
           id?: string
           net_pay?: number
@@ -1211,6 +1216,7 @@ export type Database = {
           paid_on_date?: string | null
           payroll_period_id: string
           recorded_pay?: number | null
+          regular_days?: number | null
           updated_at?: string
           variance_amount?: number | null
           variance_notes?: string | null
@@ -1225,6 +1231,8 @@ export type Database = {
           employee_id?: string
           entry_date?: string
           gross_pay?: number
+          holiday_days?: number | null
+          holiday_multiplier?: number | null
           hours_worked?: number | null
           id?: string
           net_pay?: number
@@ -1235,6 +1243,7 @@ export type Database = {
           paid_on_date?: string | null
           payroll_period_id?: string
           recorded_pay?: number | null
+          regular_days?: number | null
           updated_at?: string
           variance_amount?: number | null
           variance_notes?: string | null

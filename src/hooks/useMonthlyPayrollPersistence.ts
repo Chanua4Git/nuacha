@@ -18,7 +18,11 @@ export interface WeekSnapshot {
   netPay: number;
   weekStart: string; // YYYY-MM-DD
   weekEnd: string;   // YYYY-MM-DD
+  regularDays?: number;
+  holidayDays?: number;
+  holidayMultiplier?: number | null;
 }
+
 
 export interface MonthlyPeriodInfo {
   id: string;
@@ -123,7 +127,7 @@ export const useMonthlyPayrollPersistence = () => {
   const loadWeeks = useCallback(async (periodId: string, employeeId: string): Promise<Record<string, WeekSnapshot>> => {
     const { data, error } = await supabase
       .from('payroll_entries')
-      .select('week_number, week_start_date, week_end_date, days_worked, hours_worked, gross_pay, recorded_pay, nis_employee_contribution, nis_employer_contribution, net_pay')
+      .select('week_number, week_start_date, week_end_date, days_worked, hours_worked, gross_pay, recorded_pay, nis_employee_contribution, nis_employer_contribution, net_pay, regular_days, holiday_days, holiday_multiplier')
       .eq('payroll_period_id', periodId)
       .eq('employee_id', employeeId)
       .order('week_start_date', { ascending: true });
@@ -144,10 +148,14 @@ export const useMonthlyPayrollPersistence = () => {
         netPay: Number(row.net_pay) || 0,
         weekStart: row.week_start_date,
         weekEnd: row.week_end_date,
+        regularDays: row.regular_days != null ? Number(row.regular_days) : undefined,
+        holidayDays: row.holiday_days != null ? Number(row.holiday_days) : undefined,
+        holidayMultiplier: row.holiday_multiplier != null ? Number(row.holiday_multiplier) : null,
       };
     });
     return result;
   }, []);
+
 
   /** Upsert a single week's values. */
   const saveWeek = useCallback(async (params: {
@@ -160,7 +168,7 @@ export const useMonthlyPayrollPersistence = () => {
   }): Promise<boolean> => {
     setBusy(true);
     try {
-      const payload = {
+      const payload: any = {
         payroll_period_id: params.periodId,
         employee_id: params.employeeId,
         week_number: params.weekNumber,
@@ -175,8 +183,12 @@ export const useMonthlyPayrollPersistence = () => {
         net_pay: params.snapshot.netPay,
         other_allowances: 0,
         other_deductions: 0,
+        regular_days: params.snapshot.regularDays ?? null,
+        holiday_days: params.snapshot.holidayDays ?? null,
+        holiday_multiplier: params.snapshot.holidayMultiplier ?? null,
         calculated_at: new Date().toISOString(),
       };
+
 
       const { error } = await supabase
         .from('payroll_entries')
