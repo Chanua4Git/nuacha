@@ -18,7 +18,11 @@ export interface WeekSnapshot {
   netPay: number;
   weekStart: string; // YYYY-MM-DD
   weekEnd: string;   // YYYY-MM-DD
+  regularDays?: number;
+  holidayDays?: number;
+  holidayMultiplier?: number | null;
 }
+
 
 export interface MonthlyPeriodInfo {
   id: string;
