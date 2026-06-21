@@ -185,9 +185,9 @@ export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, e
             {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
             {copied ? 'Copied' : 'Copy text'}
           </Button>
-          <Button onClick={handleSend} disabled={savingPhone}>
+          <Button onClick={handleSend} disabled={savingPhone || sending}>
             <MessageCircle className="h-4 w-4 mr-2" />
-            Send via WhatsApp
+            {readOnly ? 'Re-send via WhatsApp' : 'Send via WhatsApp'}
           </Button>
         </DialogFooter>
       </DialogContent>
