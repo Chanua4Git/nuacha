@@ -30,7 +30,6 @@ export function formatPayslipText(
 ): string {
   if (!entries.length) return '';
 
-  const name = `${employee.first_name} ${employee.last_name}`.trim();
   const single = entries.length === 1;
   const employer = opts.employerName?.trim();
 
