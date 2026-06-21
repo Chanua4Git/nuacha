@@ -384,7 +384,17 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow>; onRefresh: () => void }> = ({ groups, ni184Rows, onRefresh }) => (
+interface WeeklyViewProps {
+  groups: MonthGroup[];
+  ni184Rows: Map<string, Ni184BreakdownRow>;
+  onRefresh: () => void;
+  onPayslip: (entry: HistoryEntry) => void;
+  rangeMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+}
+
+const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, onToggleSelect }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
