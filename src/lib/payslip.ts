@@ -83,8 +83,6 @@ export function formatPayslipText(
   } else {
     const first = entries[0];
     const last = entries[entries.length - 1];
-    lines.push(`Hi ${employee.first_name}, here's your payslip:`);
-    lines.push('');
     lines.push(`Period: ${fmtDate(first.week_start_date)} – ${fmtDate(last.week_end_date)}`);
     lines.push('');
     for (const e of entries) {
