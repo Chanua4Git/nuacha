@@ -417,8 +417,12 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         nisEmployee: fresh.nisEmployee,
         nisEmployer: fresh.nisEmployer,
         netPay: fresh.netPay,
+        regularDays: inputs.regularDays ?? null,
+        holidayDays: inputs.holidayDays ?? null,
+        holidayMultiplier: inputs.holidayMultiplier ?? null,
       },
     });
+
     setSavingWeekIndex(null);
     if (ok) {
       setSavedWeekSnapshots(prev => ({
