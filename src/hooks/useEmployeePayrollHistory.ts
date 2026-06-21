@@ -11,6 +11,9 @@ export interface HistoryEntry {
   week_end_date: string | null;
   days_worked: number;
   hours_worked: number;
+  regular_days: number | null;
+  holiday_days: number | null;
+  holiday_multiplier: number | null;
   gross_pay: number;
   nis_employee_contribution: number;
   nis_employer_contribution: number;
