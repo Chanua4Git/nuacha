@@ -19,6 +19,9 @@ interface Props {
   employee: Employee;
   entries: HistoryEntry[];
   onPhoneSaved?: (phone: string) => void;
+  onSaved?: () => void;
+  readOnly?: boolean;
+  initialText?: string;
 }
 
 export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, entries, onPhoneSaved }) => {
