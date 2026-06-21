@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home, Building2, ScrollText } from 'lucide-react';
 import { PayrollLog } from '@/components/payroll/PayrollLog';
+import { PayslipHistory } from '@/components/payroll/PayslipHistory';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
