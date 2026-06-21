@@ -679,6 +679,11 @@ const Payroll: React.FC = () => {
           <PayrollLog employees={employees} />
         </TabsContent>
 
+        <TabsContent value="payslips" className="space-y-6">
+          <PayslipHistory employees={employees} />
+        </TabsContent>
+
+
         <TabsContent value="reports" className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold mb-2">Payroll Reports</h2>
