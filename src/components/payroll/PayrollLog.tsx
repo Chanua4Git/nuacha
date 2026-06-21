@@ -5,13 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X, MessageCircle } from 'lucide-react';
 import { useEmployeePayrollHistory, type MonthGroup, type HistoryEntry } from '@/hooks/useEmployeePayrollHistory';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
+import { PayslipDialog } from './PayslipDialog';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,6 +46,9 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
   const [range, setRange] = useState<string>('all');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [showImporter, setShowImporter] = useState(false);
+  const [payslipEntries, setPayslipEntries] = useState<HistoryEntry[] | null>(null);
+  const [rangeMode, setRangeMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { settings: employerSettings } = useEmployerSettings();
 
   const { monthGroups, loading, refresh } = useEmployeePayrollHistory(employeeId);
@@ -239,6 +244,34 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant={rangeMode ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (rangeMode && selectedIds.size > 0) {
+                    const all = filteredGroups.flatMap((g) => g.entries);
+                    const picked = all.filter((e) => selectedIds.has(e.id))
+                      .sort((a, b) => (a.week_start_date || '').localeCompare(b.week_start_date || ''));
+                    if (picked.length) setPayslipEntries(picked);
+                  } else {
+                    setRangeMode((s) => !s);
+                    setSelectedIds(new Set());
+                  }
+                }}
+                disabled={!employee}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                {rangeMode
+                  ? selectedIds.size > 0
+                    ? `Payslip (${selectedIds.size})`
+                    : 'Pick weeks…'
+                  : 'Multi-week payslip'}
+              </Button>
+              {rangeMode && (
+                <Button variant="ghost" size="sm" onClick={() => { setRangeMode(false); setSelectedIds(new Set()); }}>
+                  Cancel
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => setShowImporter((s) => !s)}>
                 <Upload className="h-4 w-4 mr-2" />
                 {showImporter ? 'Hide importer' : 'Import from Excel'}
@@ -317,7 +350,28 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       ) : view === 'monthly' ? (
         <MonthlyTable groups={filteredGroups} expanded={expandedMonths} onToggle={toggleMonth} />
       ) : (
-        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} onRefresh={refresh} />
+        <WeeklyView
+          groups={filteredGroups}
+          ni184Rows={ni184Rows}
+          onRefresh={refresh}
+          onPayslip={(entry) => setPayslipEntries([entry])}
+          rangeMode={rangeMode}
+          selectedIds={selectedIds}
+          onToggleSelect={(id) => setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+          })}
+        />
+      )}
+
+      {employee && payslipEntries && (
+        <PayslipDialog
+          open={!!payslipEntries}
+          onOpenChange={(o) => { if (!o) setPayslipEntries(null); }}
+          employee={employee}
+          entries={payslipEntries}
+        />
       )}
     </div>
   );
@@ -330,7 +384,17 @@ const SummaryChip: React.FC<{ label: string; value: string }> = ({ label, value 
   </div>
 );
 
-const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184BreakdownRow>; onRefresh: () => void }> = ({ groups, ni184Rows, onRefresh }) => (
+interface WeeklyViewProps {
+  groups: MonthGroup[];
+  ni184Rows: Map<string, Ni184BreakdownRow>;
+  onRefresh: () => void;
+  onPayslip: (entry: HistoryEntry) => void;
+  rangeMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+}
+
+const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, onToggleSelect }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
@@ -346,6 +410,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-muted-foreground text-xs">
+                {rangeMode && <th className="w-8 py-2 px-2"></th>}
                 <th className="text-left py-2 px-2">Week start</th>
                 <th className="text-left py-2 px-2">Week end</th>
                 <th className="text-left py-2 px-2">Pay day</th>
@@ -358,11 +423,21 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <th className="text-right py-2 px-2">Total NIS</th>
                 <th className="text-left py-2 px-2">Entry date</th>
                 <th className="text-left py-2 px-2">Paid on</th>
+                <th className="py-2 px-2"></th>
               </tr>
             </thead>
             <tbody>
               {g.entries.map((e) => (
                 <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
+                  {rangeMode && (
+                    <td className="py-2 px-2">
+                      <Checkbox
+                        checked={selectedIds.has(e.id)}
+                        onCheckedChange={() => onToggleSelect(e.id)}
+                        aria-label="Select week for payslip"
+                      />
+                    </td>
+                  )}
                   <td className="py-2 px-2">{e.week_start_date || '—'}</td>
                   <td className="py-2 px-2">{e.week_end_date || '—'}</td>
                   <td className="py-2 px-2">{e.pay_date || '—'}</td>
@@ -375,10 +450,22 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
+                  <td className="py-2 px-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => onPayslip(e)}
+                      aria-label="Send payslip"
+                      title="Send payslip via WhatsApp"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
               <tr className="bg-muted/40 font-medium">
-                <td colSpan={3} className="py-2 px-2">Subtotal</td>
+                <td colSpan={rangeMode ? 4 : 3} className="py-2 px-2">Subtotal</td>
                 <td className="py-2 px-2 text-right">{g.totals.days}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
@@ -386,7 +473,7 @@ const WeeklyView: React.FC<{ groups: MonthGroup[]; ni184Rows: Map<string, Ni184B
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tbody>
           </table>
