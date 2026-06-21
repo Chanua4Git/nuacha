@@ -19,15 +19,19 @@ interface Props {
   employee: Employee;
   entries: HistoryEntry[];
   onPhoneSaved?: (phone: string) => void;
+  onSaved?: () => void;
+  readOnly?: boolean;
+  initialText?: string;
 }
 
-export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, entries, onPhoneSaved }) => {
+export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, entries, onPhoneSaved, onSaved, readOnly, initialText }) => {
   const { toast } = useToast();
   const { settings } = useEmployerSettings();
   const [phone, setPhone] = useState(employee.phone || '');
   const [savePhone, setSavePhone] = useState(false);
   const [copied, setCopied] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -38,8 +42,10 @@ export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, e
   }, [open, employee.phone]);
 
   const text = useMemo(
-    () => formatPayslipText(entries, employee, { employerName: settings?.trade_name || undefined }),
-    [entries, employee, settings?.trade_name]
+    () =>
+      initialText ||
+      formatPayslipText(entries, employee, { employerName: settings?.trade_name || undefined }),
+    [entries, employee, settings?.trade_name, initialText]
   );
 
   const handleCopy = async () => {
@@ -52,12 +58,55 @@ export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, e
     }
   };
 
+  const persistPayslip = async (phoneToStore: string) => {
+    if (readOnly || !entries.length) return;
+    const totals = entries.reduce(
+      (acc, e) => {
+        acc.days += e.days_worked;
+        acc.gross += e.gross_pay;
+        acc.nisEmp += e.nis_employee_contribution;
+        return acc;
+      },
+      { days: 0, gross: 0, nisEmp: 0 }
+    );
+    const sorted = [...entries].sort((a, b) =>
+      (a.week_start_date || '').localeCompare(b.week_start_date || '')
+    );
+    const periodStart = sorted[0]?.week_start_date || null;
+    const periodEnd = sorted[sorted.length - 1]?.week_end_date || null;
+
+    const { data: userResult } = await supabase.auth.getUser();
+    const userId = userResult.user?.id;
+    if (!userId) return;
+
+    const { error } = await supabase.from('payslips').insert({
+      user_id: userId,
+      employee_id: employee.id,
+      phone_sent_to: phoneToStore || null,
+      period_start: periodStart,
+      period_end: periodEnd,
+      entry_ids: entries.map((e) => e.id),
+      days_total: totals.days,
+      gross_total: totals.gross,
+      nis_employee_total: totals.nisEmp,
+      net_total: totals.gross - totals.nisEmp,
+      payslip_text: text,
+    });
+    if (error) {
+      console.error('payslip save error', error);
+      toast({ title: 'Could not save payslip to history', description: error.message, variant: 'destructive' });
+    } else {
+      onSaved?.();
+    }
+  };
+
   const handleSend = async () => {
     const normalised = normaliseWhatsAppPhone(phone);
     if (!normalised) {
       toast({ title: 'Phone number required', description: 'Add a number to send via WhatsApp.', variant: 'destructive' });
       return;
     }
+    setSending(true);
     if (savePhone && phone.trim() !== (employee.phone || '')) {
       setSavingPhone(true);
       const { error } = await supabase
@@ -69,11 +118,15 @@ export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, e
         toast({ title: 'Could not save phone', description: error.message, variant: 'destructive' });
       } else {
         onPhoneSaved?.(phone.trim());
-        toast({ title: 'Phone saved to employee' });
       }
     }
+    await persistPayslip(phone.trim());
     const url = buildWhatsAppUrl(phone, text);
     window.open(url, '_blank', 'noopener,noreferrer');
+    setSending(false);
+    if (!readOnly) {
+      toast({ title: 'Payslip saved & opened in WhatsApp' });
+    }
   };
 
   return (
@@ -132,9 +185,9 @@ export const PayslipDialog: React.FC<Props> = ({ open, onOpenChange, employee, e
             {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
             {copied ? 'Copied' : 'Copy text'}
           </Button>
-          <Button onClick={handleSend} disabled={savingPhone}>
+          <Button onClick={handleSend} disabled={savingPhone || sending}>
             <MessageCircle className="h-4 w-4 mr-2" />
-            Send via WhatsApp
+            {readOnly ? 'Re-send via WhatsApp' : 'Send via WhatsApp'}
           </Button>
         </DialogFooter>
       </DialogContent>

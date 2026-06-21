@@ -1385,6 +1385,68 @@ export type Database = {
         }
         Relationships: []
       }
+      payslips: {
+        Row: {
+          created_at: string
+          days_total: number
+          employee_id: string
+          entry_ids: string[]
+          gross_total: number
+          id: string
+          net_total: number
+          nis_employee_total: number
+          payslip_text: string
+          period_end: string | null
+          period_start: string | null
+          phone_sent_to: string | null
+          sent_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_total?: number
+          employee_id: string
+          entry_ids?: string[]
+          gross_total?: number
+          id?: string
+          net_total?: number
+          nis_employee_total?: number
+          payslip_text: string
+          period_end?: string | null
+          period_start?: string | null
+          phone_sent_to?: string | null
+          sent_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_total?: number
+          employee_id?: string
+          entry_ids?: string[]
+          gross_total?: number
+          id?: string
+          net_total?: number
+          nis_employee_total?: number
+          payslip_text?: string
+          period_end?: string | null
+          period_start?: string | null
+          phone_sent_to?: string | null
+          sent_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string

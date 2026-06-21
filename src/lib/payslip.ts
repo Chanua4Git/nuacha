@@ -30,7 +30,6 @@ export function formatPayslipText(
 ): string {
   if (!entries.length) return '';
 
-  const name = `${employee.first_name} ${employee.last_name}`.trim();
   const single = entries.length === 1;
   const employer = opts.employerName?.trim();
 
@@ -50,8 +49,6 @@ export function formatPayslipText(
   const divider = '─────────────';
   const lines: string[] = [];
 
-  lines.push(`🧾 Payslip — ${name}`);
-
   if (single) {
     const e = entries[0];
     lines.push(`Period: ${fmtRange(e.week_start_date, e.week_end_date)}`);
@@ -63,8 +60,6 @@ export function formatPayslipText(
       e.holiday_days != null && e.holiday_days > 0 && e.holiday_multiplier;
 
     if (hasHolidayBreakdown && e.regular_days != null) {
-      // Re-derive base daily rate (regularPay + holidayPay = gross)
-      // gross = reg*r + hol*r*m → r = gross / (reg + hol*m)
       const reg = Number(e.regular_days);
       const hol = Number(e.holiday_days);
       const mult = Number(e.holiday_multiplier);
@@ -111,7 +106,9 @@ export function formatPayslipText(
   }
 
   lines.push('');
-  lines.push(employer ? `From ${employer}` : 'Sent via Nuacha Payroll');
+  lines.push(employer ? `From ${employer}` : 'Sent via Nuacha');
+
+
 
   return lines.join('\n');
 }

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Users, Calculator, FileText, Download, Loader2, Edit, Trash2, Crown, Home, Building2, ScrollText } from 'lucide-react';
 import { PayrollLog } from '@/components/payroll/PayrollLog';
+import { PayslipHistory } from '@/components/payroll/PayslipHistory';
 import { EmployeeForm } from '@/components/payroll/EmployeeForm';
 import { UnifiedPayrollCalculator } from '@/components/payroll/UnifiedPayrollCalculator';
 import { EnhancedPayrollCalculator } from '@/components/payroll/EnhancedPayrollCalculator';
@@ -307,7 +308,7 @@ const Payroll: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-1 h-auto p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 gap-1 h-auto p-1 rounded-xl">
           <TabsTrigger value="about" className="text-xs md:text-sm py-2 px-2 md:px-4">
             About
           </TabsTrigger>
@@ -323,6 +324,9 @@ const Payroll: React.FC = () => {
           <TabsTrigger value="log" className="text-xs md:text-sm py-2 px-2 md:px-4">
             <ScrollText className="h-3 w-3 md:h-4 md:w-4 mr-1" />
             Log
+          </TabsTrigger>
+          <TabsTrigger value="payslips" className="text-xs md:text-sm py-2 px-2 md:px-4">
+            Payslips
           </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs md:text-sm py-2 px-2 md:px-4">
             Reports
@@ -674,6 +678,11 @@ const Payroll: React.FC = () => {
         <TabsContent value="log" className="space-y-6">
           <PayrollLog employees={employees} />
         </TabsContent>
+
+        <TabsContent value="payslips" className="space-y-6">
+          <PayslipHistory employees={employees} />
+        </TabsContent>
+
 
         <TabsContent value="reports" className="space-y-6">
           <div>
