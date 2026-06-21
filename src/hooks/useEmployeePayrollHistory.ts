@@ -66,6 +66,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
         .select(`
           id, payroll_period_id, employee_id, week_number,
           week_start_date, week_end_date, days_worked, hours_worked,
+          regular_days, holiday_days, holiday_multiplier,
           gross_pay, nis_employee_contribution, nis_employer_contribution,
           recorded_pay, net_pay, variance_amount, variance_notes,
           entry_date, paid_on_date,
@@ -89,6 +90,9 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           week_end_date: row.week_end_date,
           days_worked: Number(row.days_worked || 0),
           hours_worked: Number(row.hours_worked || 0),
+          regular_days: row.regular_days != null ? Number(row.regular_days) : null,
+          holiday_days: row.holiday_days != null ? Number(row.holiday_days) : null,
+          holiday_multiplier: row.holiday_multiplier != null ? Number(row.holiday_multiplier) : null,
           gross_pay: Number(row.gross_pay || 0),
           nis_employee_contribution: Number(row.nis_employee_contribution || 0),
           nis_employer_contribution: Number(row.nis_employer_contribution || 0),
