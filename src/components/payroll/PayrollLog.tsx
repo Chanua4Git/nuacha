@@ -244,6 +244,34 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant={rangeMode ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (rangeMode && selectedIds.size > 0) {
+                    const all = filteredGroups.flatMap((g) => g.entries);
+                    const picked = all.filter((e) => selectedIds.has(e.id))
+                      .sort((a, b) => (a.week_start_date || '').localeCompare(b.week_start_date || ''));
+                    if (picked.length) setPayslipEntries(picked);
+                  } else {
+                    setRangeMode((s) => !s);
+                    setSelectedIds(new Set());
+                  }
+                }}
+                disabled={!employee}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                {rangeMode
+                  ? selectedIds.size > 0
+                    ? `Payslip (${selectedIds.size})`
+                    : 'Pick weeks…'
+                  : 'Multi-week payslip'}
+              </Button>
+              {rangeMode && (
+                <Button variant="ghost" size="sm" onClick={() => { setRangeMode(false); setSelectedIds(new Set()); }}>
+                  Cancel
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => setShowImporter((s) => !s)}>
                 <Upload className="h-4 w-4 mr-2" />
                 {showImporter ? 'Hide importer' : 'Import from Excel'}
