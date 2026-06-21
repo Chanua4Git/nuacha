@@ -902,7 +902,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                            <TableHead>Week End</TableHead>
                            <TableHead>Pay Day</TableHead>
                            <TableHead>Pay/(8hr)dy</TableHead>
-                           <TableHead>Days Worked</TableHead>
+                           <TableHead>Days Worked<div className="text-[10px] font-normal text-muted-foreground">Regular + Holiday</div></TableHead>
                            <TableHead>Calculated Pay</TableHead>
                            <TableHead>NIS Employee Contribution</TableHead>
                            <TableHead>Calc Pay less NIS</TableHead>
