@@ -127,12 +127,16 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     recordedPay: number;
     otherAllowances: number;
     otherDeductions: number;
+    regularDays?: number;
+    holidayDays?: number;
+    holidayMultiplier?: number | null;
   }>>(() => {
     try {
       const saved = sessionStorage.getItem('payroll_weeklyInputs');
       return saved ? JSON.parse(saved) : {};
     } catch { return {}; }
   });
+
   
   const [nisClasses, setNisClasses] = useState<NISEarningsClass[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
