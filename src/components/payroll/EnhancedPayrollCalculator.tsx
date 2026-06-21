@@ -333,7 +333,11 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
               recordedPay: snap.recordedPay,
               otherAllowances: 0,
               otherDeductions: 0,
+              regularDays: snap.regularDays ?? snap.daysWorked,
+              holidayDays: snap.holidayDays ?? 0,
+              holidayMultiplier: snap.holidayMultiplier ?? null,
             };
+
             return {
               ...w,
               recordedDaysWorked: snap.daysWorked,
