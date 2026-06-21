@@ -410,6 +410,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-muted-foreground text-xs">
+                {rangeMode && <th className="w-8 py-2 px-2"></th>}
                 <th className="text-left py-2 px-2">Week start</th>
                 <th className="text-left py-2 px-2">Week end</th>
                 <th className="text-left py-2 px-2">Pay day</th>
@@ -422,11 +423,21 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <th className="text-right py-2 px-2">Total NIS</th>
                 <th className="text-left py-2 px-2">Entry date</th>
                 <th className="text-left py-2 px-2">Paid on</th>
+                <th className="py-2 px-2"></th>
               </tr>
             </thead>
             <tbody>
               {g.entries.map((e) => (
                 <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
+                  {rangeMode && (
+                    <td className="py-2 px-2">
+                      <Checkbox
+                        checked={selectedIds.has(e.id)}
+                        onCheckedChange={() => onToggleSelect(e.id)}
+                        aria-label="Select week for payslip"
+                      />
+                    </td>
+                  )}
                   <td className="py-2 px-2">{e.week_start_date || '—'}</td>
                   <td className="py-2 px-2">{e.week_end_date || '—'}</td>
                   <td className="py-2 px-2">{e.pay_date || '—'}</td>
@@ -439,10 +450,22 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
+                  <td className="py-2 px-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => onPayslip(e)}
+                      aria-label="Send payslip"
+                      title="Send payslip via WhatsApp"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
               <tr className="bg-muted/40 font-medium">
-                <td colSpan={3} className="py-2 px-2">Subtotal</td>
+                <td colSpan={rangeMode ? 4 : 3} className="py-2 px-2">Subtotal</td>
                 <td className="py-2 px-2 text-right">{g.totals.days}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.calculated)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployee)}</td>
@@ -450,7 +473,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tbody>
           </table>
