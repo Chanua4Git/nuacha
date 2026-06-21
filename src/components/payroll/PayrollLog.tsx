@@ -350,7 +350,28 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       ) : view === 'monthly' ? (
         <MonthlyTable groups={filteredGroups} expanded={expandedMonths} onToggle={toggleMonth} />
       ) : (
-        <WeeklyView groups={filteredGroups} ni184Rows={ni184Rows} onRefresh={refresh} />
+        <WeeklyView
+          groups={filteredGroups}
+          ni184Rows={ni184Rows}
+          onRefresh={refresh}
+          onPayslip={(entry) => setPayslipEntries([entry])}
+          rangeMode={rangeMode}
+          selectedIds={selectedIds}
+          onToggleSelect={(id) => setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+          })}
+        />
+      )}
+
+      {employee && payslipEntries && (
+        <PayslipDialog
+          open={!!payslipEntries}
+          onOpenChange={(o) => { if (!o) setPayslipEntries(null); }}
+          employee={employee}
+          entries={payslipEntries}
+        />
       )}
     </div>
   );
