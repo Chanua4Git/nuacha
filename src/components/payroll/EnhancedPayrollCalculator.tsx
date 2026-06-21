@@ -519,34 +519,62 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     if (!selectedEmployee || !payrollPeriod) return;
 
     const week = payrollPeriod.weeks[weekIndex];
-    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 };
+    const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 } as any;
+
+    const dailyRate = selectedEmployee.daily_rate || week.dailyRate8Hr;
+
+    // Split entry: regular + holiday × multiplier (1.5 or 2)
+    const regularDays = Number(inputs.regularDays ?? inputs.daysWorked) || 0;
+    const holidayDays = Number(inputs.holidayDays) || 0;
+    const multiplier = Number(inputs.holidayMultiplier) || 1;
+    const totalDays = regularDays + holidayDays;
+
+    const regularPay = regularDays * dailyRate;
+    const holidayPay = holidayDays * dailyRate * multiplier;
+    const effectiveGross = regularPay + holidayPay;
+
+    // Compute NIS based on effective weekly earnings by routing through a
+    // synthetic daily_rate so calculatePayroll's class lookup uses the
+    // actual gross earnings (including holiday premium).
+    const syntheticDaily = totalDays > 0 ? effectiveGross / totalDays : dailyRate;
 
     const employeeData: EmployeeData = {
       employment_type: selectedEmployee.employment_type,
       hourly_rate: selectedEmployee.hourly_rate,
       monthly_salary: selectedEmployee.monthly_salary,
-      daily_rate: selectedEmployee.daily_rate || week.dailyRate8Hr,
+      daily_rate: syntheticDaily,
     };
 
     const payrollInput: PayrollInput = {
-      hours_worked: inputs.daysWorked * 8, // Convert days to hours
-      days_worked: inputs.daysWorked,
+      hours_worked: totalDays * 8,
+      days_worked: totalDays,
       other_deductions: inputs.otherDeductions,
       other_allowances: inputs.otherAllowances,
     };
     const calculation = calculatePayroll(employeeData, payrollInput, nisClasses.length > 0 ? nisClasses : undefined);
 
-    // Update the weekly calculation
+    // Override gross/net with the holiday-aware values
+    const gross = Math.round(effectiveGross * 100) / 100;
+    const netPay = Math.round((gross - calculation.nis_employee_contribution - (inputs.otherDeductions || 0)) * 100) / 100;
+
+    // Keep daysWorked in sync with totalDays so saved/loaded state is consistent
+    if (inputs.daysWorked !== totalDays) {
+      setWeeklyInputs(prev => ({
+        ...prev,
+        [weekIndex]: { ...prev[weekIndex], daysWorked: totalDays },
+      }));
+    }
+
     const updatedWeek: WeeklyCalculation = {
       ...week,
-      recordedDaysWorked: inputs.daysWorked,
-      calculatedPay: calculation.gross_pay,
-      calcPayLessNIS: calculation.gross_pay - calculation.nis_employee_contribution,
-      recordedPay: inputs.recordedPay || calculation.gross_pay,
+      recordedDaysWorked: totalDays,
+      calculatedPay: gross,
+      calcPayLessNIS: gross - calculation.nis_employee_contribution,
+      recordedPay: inputs.recordedPay || gross,
       totalNISContribution: calculation.nis_employee_contribution + calculation.nis_employer_contribution,
       nisEmployee: calculation.nis_employee_contribution,
       nisEmployer: calculation.nis_employer_contribution,
-      netPay: calculation.net_pay,
+      netPay,
       status: 'complete',
     };
 
@@ -558,6 +586,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       weeks: updatedWeeks,
     });
   };
+
 
   const exportPayrollPeriod = () => {
     if (!user) {
