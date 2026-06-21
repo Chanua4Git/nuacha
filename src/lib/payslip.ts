@@ -50,10 +50,10 @@ export function formatPayslipText(
   const divider = '─────────────';
   const lines: string[] = [];
 
-  lines.push(`🧾 Payslip — ${name}`);
-
   if (single) {
     const e = entries[0];
+    lines.push(`Hi ${employee.first_name}, here's your payslip:`);
+    lines.push('');
     lines.push(`Period: ${fmtRange(e.week_start_date, e.week_end_date)}`);
     if (e.week_number) lines.push(`Week ${e.week_number}`);
     lines.push('');
@@ -63,8 +63,6 @@ export function formatPayslipText(
       e.holiday_days != null && e.holiday_days > 0 && e.holiday_multiplier;
 
     if (hasHolidayBreakdown && e.regular_days != null) {
-      // Re-derive base daily rate (regularPay + holidayPay = gross)
-      // gross = reg*r + hol*r*m → r = gross / (reg + hol*m)
       const reg = Number(e.regular_days);
       const hol = Number(e.holiday_days);
       const mult = Number(e.holiday_multiplier);
@@ -87,6 +85,8 @@ export function formatPayslipText(
   } else {
     const first = entries[0];
     const last = entries[entries.length - 1];
+    lines.push(`Hi ${employee.first_name}, here's your payslip:`);
+    lines.push('');
     lines.push(`Period: ${fmtDate(first.week_start_date)} – ${fmtDate(last.week_end_date)}`);
     lines.push('');
     for (const e of entries) {
@@ -111,7 +111,9 @@ export function formatPayslipText(
   }
 
   lines.push('');
-  lines.push(employer ? `From ${employer}` : 'Sent via Nuacha Payroll');
+  lines.push(employer ? `From ${employer}` : 'Sent via Nuacha');
+
+
 
   return lines.join('\n');
 }
