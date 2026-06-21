@@ -168,7 +168,7 @@ export const useMonthlyPayrollPersistence = () => {
   }): Promise<boolean> => {
     setBusy(true);
     try {
-      const payload = {
+      const payload: any = {
         payroll_period_id: params.periodId,
         employee_id: params.employeeId,
         week_number: params.weekNumber,
@@ -183,8 +183,12 @@ export const useMonthlyPayrollPersistence = () => {
         net_pay: params.snapshot.netPay,
         other_allowances: 0,
         other_deductions: 0,
+        regular_days: params.snapshot.regularDays ?? null,
+        holiday_days: params.snapshot.holidayDays ?? null,
+        holiday_multiplier: params.snapshot.holidayMultiplier ?? null,
         calculated_at: new Date().toISOString(),
       };
+
 
       const { error } = await supabase
         .from('payroll_entries')
