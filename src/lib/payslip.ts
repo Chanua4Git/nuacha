@@ -52,8 +52,6 @@ export function formatPayslipText(
 
   if (single) {
     const e = entries[0];
-    lines.push(`Hi ${employee.first_name}, here's your payslip:`);
-    lines.push('');
     lines.push(`Period: ${fmtRange(e.week_start_date, e.week_end_date)}`);
     if (e.week_number) lines.push(`Week ${e.week_number}`);
     lines.push('');
