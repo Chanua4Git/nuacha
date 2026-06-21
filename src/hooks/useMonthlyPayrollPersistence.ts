@@ -127,7 +127,7 @@ export const useMonthlyPayrollPersistence = () => {
   const loadWeeks = useCallback(async (periodId: string, employeeId: string): Promise<Record<string, WeekSnapshot>> => {
     const { data, error } = await supabase
       .from('payroll_entries')
-      .select('week_number, week_start_date, week_end_date, days_worked, hours_worked, gross_pay, recorded_pay, nis_employee_contribution, nis_employer_contribution, net_pay')
+      .select('week_number, week_start_date, week_end_date, days_worked, hours_worked, gross_pay, recorded_pay, nis_employee_contribution, nis_employer_contribution, net_pay, regular_days, holiday_days, holiday_multiplier')
       .eq('payroll_period_id', periodId)
       .eq('employee_id', employeeId)
       .order('week_start_date', { ascending: true });
@@ -148,10 +148,14 @@ export const useMonthlyPayrollPersistence = () => {
         netPay: Number(row.net_pay) || 0,
         weekStart: row.week_start_date,
         weekEnd: row.week_end_date,
+        regularDays: row.regular_days != null ? Number(row.regular_days) : undefined,
+        holidayDays: row.holiday_days != null ? Number(row.holiday_days) : undefined,
+        holidayMultiplier: row.holiday_multiplier != null ? Number(row.holiday_multiplier) : null,
       };
     });
     return result;
   }, []);
+
 
   /** Upsert a single week's values. */
   const saveWeek = useCallback(async (params: {
