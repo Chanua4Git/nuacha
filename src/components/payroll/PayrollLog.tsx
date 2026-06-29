@@ -596,6 +596,85 @@ const PaidOnCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ en
   );
 };
 
+const DeleteEntryButton: React.FC<{ entry: HistoryEntry; onDeleted: () => void }> = ({ entry, onDeleted }) => {
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const { error } = await supabase.from('payroll_entries').delete().eq('id', entry.id);
+
+    if (!error) {
+      // Recompute period totals from remaining entries
+      const { data: remaining } = await supabase
+        .from('payroll_entries')
+        .select('gross_pay, nis_employee_contribution, nis_employer_contribution, net_pay')
+        .eq('payroll_period_id', entry.payroll_period_id);
+      const totals = (remaining || []).reduce(
+        (acc, r: any) => ({
+          gross: acc.gross + Number(r.gross_pay || 0),
+          nisEmp: acc.nisEmp + Number(r.nis_employee_contribution || 0),
+          nisEmpr: acc.nisEmpr + Number(r.nis_employer_contribution || 0),
+          net: acc.net + Number(r.net_pay || 0),
+        }),
+        { gross: 0, nisEmp: 0, nisEmpr: 0, net: 0 }
+      );
+      await supabase.from('payroll_periods').update({
+        total_gross_pay: totals.gross,
+        total_nis_employee: totals.nisEmp,
+        total_nis_employer: totals.nisEmpr,
+        total_net_pay: totals.net,
+      }).eq('id', entry.payroll_period_id);
+    }
+
+    setDeleting(false);
+    setOpen(false);
+    if (error) {
+      toast({ title: 'Could not delete entry', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Entry deleted' });
+    onDeleted();
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-destructive hover:text-destructive"
+          aria-label="Delete entry"
+          title="Delete this week's entry"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this week's entry?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Week of {entry.week_start_date || '—'} to {entry.week_end_date || '—'} ·{' '}
+            {formatTTCurrency(entry.gross_pay)} ({entry.days_worked} day{entry.days_worked === 1 ? '' : 's'}).
+            This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => { e.preventDefault(); handleDelete(); }}
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onToggle: (k: string) => void }> = ({ groups, expanded, onToggle }) => (
   <Card>
     <CardContent className="p-0 overflow-x-auto">
