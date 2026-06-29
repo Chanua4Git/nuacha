@@ -458,16 +458,19 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
                   <td className="py-2 px-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2"
-                      onClick={() => onPayslip(e)}
-                      aria-label="Send payslip"
-                      title="Send payslip via WhatsApp"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        onClick={() => onPayslip(e)}
+                        aria-label="Send payslip"
+                        title="Send payslip via WhatsApp"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                      </Button>
+                      <DeleteEntryButton entry={e} onDeleted={onRefresh} />
+                    </div>
                   </td>
                 </tr>
               ))}
