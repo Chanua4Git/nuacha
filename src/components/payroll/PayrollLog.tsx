@@ -11,6 +11,7 @@ import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
 import { PayrollLogImporter } from './PayrollLogImporter';
 import { PayslipDialog } from './PayslipDialog';
+import { NisRemittanceCell } from './NisRemittanceCell';
 import { useEmployerSettings } from '@/hooks/useEmployerSettings';
 import { useNi184MonthlyBreakdown, type Ni184BreakdownRow } from '@/hooks/useNi184MonthlyBreakdown';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -357,6 +358,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           onPayslip={(entry) => setPayslipEntries([entry])}
           rangeMode={rangeMode}
           selectedIds={selectedIds}
+          employeeId={employeeId}
           onToggleSelect={(id) => setSelectedIds((prev) => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id); else next.add(id);
@@ -391,10 +393,11 @@ interface WeeklyViewProps {
   onPayslip: (entry: HistoryEntry) => void;
   rangeMode: boolean;
   selectedIds: Set<string>;
+  employeeId: string;
   onToggleSelect: (id: string) => void;
 }
 
-const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, onToggleSelect }) => (
+const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, employeeId, onToggleSelect }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
@@ -473,7 +476,15 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
-                <td colSpan={3}></td>
+                <td colSpan={3} className="py-2 px-2">
+                  {employeeId && (
+                    <NisRemittanceCell
+                      employeeId={employeeId}
+                      periodMonth={`${g.monthKey}-01`}
+                      totalNis={g.totals.totalNIS}
+                    />
+                  )}
+                </td>
               </tr>
             </tbody>
           </table>

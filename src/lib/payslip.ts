@@ -28,10 +28,18 @@ export function formatPayslipText(
   employee: Employee,
   opts: PayslipOptions = {}
 ): string {
-  if (!entries.length) return '';
+  if (entries.length === 0) return '';
 
   const single = entries.length === 1;
   const employer = opts.employerName?.trim();
+
+  // Build "Payment Receipt — A N-Collymore" style header
+  const initial = employee.first_name?.trim()?.[0]?.toUpperCase();
+  const last = employee.last_name?.trim();
+  const headerName = initial && last
+    ? `${initial} ${last}`
+    : [employee.first_name, employee.last_name].filter(Boolean).join(' ').trim();
+  const heading = `Payment Receipt${headerName ? ` — ${headerName}` : ''}`;
 
   const totals = entries.reduce(
     (acc, e) => {
@@ -51,8 +59,14 @@ export function formatPayslipText(
 
   if (single) {
     const e = entries[0];
+    const monthName = e.week_start_date
+      ? new Date(e.week_start_date + 'T00:00:00').toLocaleDateString('en-GB', { month: 'long' })
+      : '';
+    lines.push(heading);
+    const wkLabel = e.week_number ? `Week ${e.week_number}` : '';
+    const monthWk = [monthName, wkLabel].filter(Boolean).join(' · ');
+    if (monthWk) lines.push(monthWk);
     lines.push(`Period: ${fmtRange(e.week_start_date, e.week_end_date)}`);
-    if (e.week_number) lines.push(`Week ${e.week_number}`);
     lines.push('');
 
     const dailyRate = e.days_worked > 0 ? e.gross_pay / e.days_worked : 0;
@@ -82,6 +96,7 @@ export function formatPayslipText(
   } else {
     const first = entries[0];
     const last = entries[entries.length - 1];
+    lines.push(heading);
     lines.push(`Period: ${fmtDate(first.week_start_date)} – ${fmtDate(last.week_end_date)}`);
     lines.push('');
     for (const e of entries) {

@@ -1069,6 +1069,59 @@ export type Database = {
         }
         Relationships: []
       }
+      nis_remittances: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          ni184_submitted: boolean
+          ni184_submitted_at: string | null
+          nib_transaction_code: string | null
+          notes: string | null
+          paid_on_date: string | null
+          period_month: string
+          total_nis: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          ni184_submitted?: boolean
+          ni184_submitted_at?: string | null
+          nib_transaction_code?: string | null
+          notes?: string | null
+          paid_on_date?: string | null
+          period_month: string
+          total_nis?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          ni184_submitted?: boolean
+          ni184_submitted_at?: string | null
+          nib_transaction_code?: string | null
+          notes?: string | null
+          paid_on_date?: string | null
+          period_month?: string
+          total_nis?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nis_remittances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paypal_payments: {
         Row: {
           amount: number
