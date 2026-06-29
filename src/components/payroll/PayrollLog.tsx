@@ -357,6 +357,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           onPayslip={(entry) => setPayslipEntries([entry])}
           rangeMode={rangeMode}
           selectedIds={selectedIds}
+          employeeId={employeeId}
           onToggleSelect={(id) => setSelectedIds((prev) => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id); else next.add(id);
