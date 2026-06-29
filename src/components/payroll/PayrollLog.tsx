@@ -643,8 +643,8 @@ const DeleteEntryButton: React.FC<{ entry: HistoryEntry; onDeleted: () => void }
       <AlertDialogTrigger asChild>
         <Button
           size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-destructive hover:text-destructive"
+          variant="outline"
+          className="h-7 px-2 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
           aria-label="Delete entry"
           title="Delete this week's entry"
         >
