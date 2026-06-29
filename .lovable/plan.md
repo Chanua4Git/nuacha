@@ -1,74 +1,59 @@
-# Payslip copy tweaks + history
+## 1. Payslip wording fixes (`src/lib/payslip.ts`)
 
-## 1. Copy tweaks (PayslipDialog text)
+Restore the opening identity line and switch the label from "Payslip" to "Payment Receipt".
 
-In `src/lib/payslip.ts`:
-- Remove the opening `🧾 Payslip — {name}` line for both single-week and multi-week.
-- Change footer `Sent via Nuacha Payroll` → `Sent via Nuacha`.
-- Keep employer line (`From {trade_name}`) unchanged when set.
-
-New single-week message:
+**Single-week message** — new top lines:
 ```
-Period: 15 Jun 2026 – 21 Jun 2026
-Week 3
-
-Regular days: 4 × $250.00 = $1,000.00
-Holiday days: 1 × $250.00 × 1.5x = $375.00
-─────────────
-Gross pay: $1,375.00
-NIS (employee): -$57.40
-─────────────
-Net pay: $1,317.60
-
-From Garden Ohm
-Sent via Nuacha
+Payment Receipt — A N-Collymore
+June · Week 4
+Period: 22 Jun – 28 Jun 2026
 ```
+- Line 1: `Payment Receipt — {first initial}. {last name}` (falls back to full first + last name if no initial available).
+- Line 2: `{Month name of week_start_date} · Week {week_number}` (omit "Week N" gracefully if missing).
+- Line 3: existing period range.
 
-## 2. Payslip history (saves on Send)
+**Multi-week message** — new top lines:
+```
+Payment Receipt — A N-Collymore
+Period: 1 Jun – 28 Jun 2026
+```
+Per-week rows stay as-is.
 
-### Database
-New table `public.payslips`:
-- `user_id` (auth.uid), `employee_id`, `phone_sent_to`
-- `period_start`, `period_end` (dates)
-- `entry_ids` (uuid[]) — the `payroll_entries` rows it covered
-- `gross_total`, `nis_employee_total`, `net_total` (numeric, denormalised so history stays correct even if an entry is later edited)
-- `payslip_text` (text — the exact body that was sent)
-- `sent_at` (timestamptz)
-- standard `created_at` / `updated_at`
+Footer stays `Sent via Nuacha` (or `From {trade name}` when set).
 
-RLS: user can CRUD only their own rows. GRANTs to `authenticated` + `service_role`.
+## 2. NIS remittance tracking on the monthly subtotal row
 
-### Save trigger
-When user clicks **Send via WhatsApp** in `PayslipDialog`:
-1. Insert the row (with computed totals + the text we already display).
-2. Open the `wa.me` URL (existing behaviour).
-3. Toast: "Payslip saved & opened in WhatsApp."
+Goal: each month's Total NIS line gets its own "paid to NIB" log — paid-on date, NIB transaction/reference code, and a "NI 184 submitted" checkbox. Mirrors the weekly Paid-on flow.
 
-Copy-text and dialog-close do **not** save (per your choice).
+### New table `public.nis_remittances`
+Per user + employee + month:
+- `user_id`, `employee_id`, `period_month` (date, first of month)
+- `total_nis` (numeric — snapshot at time of save)
+- `paid_on_date` (date, nullable)
+- `nib_transaction_code` (text, nullable)
+- `ni184_submitted` (bool, default false)
+- `ni184_submitted_at` (timestamptz, nullable)
+- `notes` (text, nullable)
+- standard `id`, `created_at`, `updated_at`
+- Unique on (`user_id`, `employee_id`, `period_month`)
+- RLS scoped to `auth.uid() = user_id`, with required GRANTs.
 
-### New "Payslips" sub-tab on Payroll page
-New component `PayslipHistory.tsx` listing saved payslips:
-- Filters: employee dropdown, date range (same presets as the Log).
-- Table columns: Employee · Period · Days · Gross · NIS · Net · Sent on · Phone · Actions
-- Per-row actions:
-  - **View** → opens read-only dialog showing the saved text
-  - **Re-send** → opens WhatsApp with the saved text + saved phone
-  - **Copy**
-  - **Delete** (with confirm)
-- Empty state in Nuacha tone: "No payslips sent yet — when you send one, it'll be kept here."
+### UI changes (`PayrollLog.tsx`)
+Replace the empty `colSpan={3}` cell at the end of the Subtotal row with a compact inline editor:
+- Date input → Paid on (to NIB)
+- Text input → Transaction code
+- Checkbox → NI 184 submitted
+- Auto-saves on blur/toggle (same pattern as `PaidOnCell`), shows a small green check when saved.
 
-Added as a new tab on the existing Payroll page tabs (alongside Calculator / Log / etc.).
+A new `NisRemittanceCell` component handles fetch/upsert against `nis_remittances` keyed by employee + month.
 
-### Files
-- New migration: `payslips` table + RLS + GRANTs.
-- `src/lib/payslip.ts` — copy tweaks.
-- `src/components/payroll/PayslipDialog.tsx` — insert into `payslips` on Send, with totals + text.
-- New `src/hooks/usePayslipHistory.ts` — list/refresh saved payslips.
-- New `src/components/payroll/PayslipHistory.tsx` — UI for the tab.
-- Payroll page (`src/pages/Payroll.tsx` or wherever tabs live) — add "Payslips" tab.
+### New hook `useNisRemittance(employeeId, periodMonth)`
+Loads/saves a single remittance row, exposes `{ data, save(patch) }`.
 
 ## Out of scope
-- PDF payslips (text only for now).
-- Editing a saved payslip (delete + regenerate instead).
-- Auto-saving on copy or on open (only on Send, per your choice).
-- Fixing missing June Week 1 (still pending — say the word and I'll investigate).
+- PDF receipts, editing already-saved payslip records, changing the weekly Paid-on column, bulk NIS export.
+
+## Technical notes
+- `formatPayslipText` will receive `employee.first_name` + `employee.last_name`; initial is built as `first_name?.[0]?.toUpperCase()`.
+- Month name uses `toLocaleDateString('en-GB', { month: 'long' })` from `week_start_date`.
+- Subtotal cell currently spans 3 columns (Entry date, Paid on, action). The new editor will occupy those 3 cells as a single flex row so column alignment below isn't disturbed.
