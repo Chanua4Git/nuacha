@@ -457,12 +457,12 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
-                  <td className="py-2 px-2">
-                    <div className="flex items-center gap-1">
+                  <td className="py-2 px-2 whitespace-nowrap">
+                    <div className="flex items-center gap-1 justify-end">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 px-2"
+                        className="h-7 px-2 shrink-0"
                         onClick={() => onPayslip(e)}
                         aria-label="Send payslip"
                         title="Send payslip via WhatsApp"
