@@ -5,7 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, FileText, Upload, ScrollText, Check, X, MessageCircle, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useEmployeePayrollHistory, type MonthGroup, type HistoryEntry } from '@/hooks/useEmployeePayrollHistory';
 import { formatTTCurrency } from '@/utils/payrollCalculations';
 import type { Employee } from '@/types/payroll';
