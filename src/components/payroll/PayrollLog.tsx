@@ -392,10 +392,11 @@ interface WeeklyViewProps {
   onPayslip: (entry: HistoryEntry) => void;
   rangeMode: boolean;
   selectedIds: Set<string>;
+  employeeId: string;
   onToggleSelect: (id: string) => void;
 }
 
-const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, onToggleSelect }) => (
+const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, onPayslip, rangeMode, selectedIds, employeeId, onToggleSelect }) => (
   <div className="space-y-4">
     {groups.map((g) => {
       const br = ni184Rows.get(g.monthKey);
