@@ -28,10 +28,18 @@ export function formatPayslipText(
   employee: Employee,
   opts: PayslipOptions = {}
 ): string {
-  if (!entries.length) return '';
+  if (entries.length === 0) return '';
 
   const single = entries.length === 1;
   const employer = opts.employerName?.trim();
+
+  // Build "Payment Receipt — A N-Collymore" style header
+  const initial = employee.first_name?.trim()?.[0]?.toUpperCase();
+  const last = employee.last_name?.trim();
+  const headerName = initial && last
+    ? `${initial} ${last}`
+    : [employee.first_name, employee.last_name].filter(Boolean).join(' ').trim();
+  const heading = `Payment Receipt${headerName ? ` — ${headerName}` : ''}`;
 
   const totals = entries.reduce(
     (acc, e) => {
