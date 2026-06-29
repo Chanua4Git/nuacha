@@ -59,8 +59,14 @@ export function formatPayslipText(
 
   if (single) {
     const e = entries[0];
+    const monthName = e.week_start_date
+      ? new Date(e.week_start_date + 'T00:00:00').toLocaleDateString('en-GB', { month: 'long' })
+      : '';
+    lines.push(heading);
+    const wkLabel = e.week_number ? `Week ${e.week_number}` : '';
+    const monthWk = [monthName, wkLabel].filter(Boolean).join(' · ');
+    if (monthWk) lines.push(monthWk);
     lines.push(`Period: ${fmtRange(e.week_start_date, e.week_end_date)}`);
-    if (e.week_number) lines.push(`Week ${e.week_number}`);
     lines.push('');
 
     const dailyRate = e.days_worked > 0 ? e.gross_pay / e.days_worked : 0;
