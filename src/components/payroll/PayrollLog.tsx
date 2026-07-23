@@ -473,6 +473,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
+                  <td className="py-2 px-2 text-muted-foreground">{(() => { const d = e.pay_date || e.week_end_date || ''; return d ? (d <= '2026-04-24' ? 'Cash' : 'Bank Transfer') : '—'; })()}</td>
+
                   <td className="py-2 px-2 whitespace-nowrap">
                     <div className="flex items-center gap-1 justify-end">
                       <Button
