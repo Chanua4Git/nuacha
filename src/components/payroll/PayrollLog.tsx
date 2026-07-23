@@ -99,11 +99,14 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       'Month', 'Week Start', 'Week End', 'Pay Day', 'Days Worked',
       'Calculated Pay', 'NIS Employee', 'Calc Pay less NIS',
       'Recorded Pay', 'NIS Employer', 'Total NIS', 'Variance', 'Notes',
-      'Entry Date', 'Paid On Date',
+      'Entry Date', 'Paid On Date', 'Payment Method',
     ].join(',');
+    const CASH_CUTOFF_CSV = '2026-04-24';
     const rows: string[] = [];
     for (const g of filteredGroups) {
       for (const e of g.entries) {
+        const refDate = e.pay_date || e.week_end_date || '';
+        const method = refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '';
         rows.push([
           `"${g.monthLabel}"`,
           e.week_start_date || '',
@@ -120,6 +123,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           `"${(e.variance_notes || '').replace(/"/g, '""')}"`,
           e.entry_date || '',
           e.paid_on_date || '',
+          method,
+
         ].join(','));
       }
     }
