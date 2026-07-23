@@ -618,6 +618,60 @@ const PaidOnCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ en
   );
 };
 
+const CASH_CUTOFF_DATE = '2026-04-24';
+const MethodCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ entry, onSaved }) => {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const defaultMethod: 'cash' | 'bank_transfer' = (() => {
+    const d = entry.pay_date || entry.week_end_date || '';
+    return d && d <= CASH_CUTOFF_DATE ? 'cash' : 'bank_transfer';
+  })();
+  const effective: 'cash' | 'bank_transfer' = entry.payment_method ?? defaultMethod;
+  const isOverride = entry.payment_method != null;
+
+  const update = async (next: 'cash' | 'bank_transfer' | null) => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ payment_method: next })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not update method', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Payment method updated' });
+    onSaved();
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select value={effective} onValueChange={(v) => update(v as 'cash' | 'bank_transfer')} disabled={saving}>
+        <SelectTrigger className="h-8 w-[130px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="cash">Cash</SelectItem>
+          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+        </SelectContent>
+      </Select>
+      {isOverride && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={() => update(null)}
+          disabled={saving}
+          aria-label="Reset to default"
+          title="Reset to date-based default"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+};
+
 const DeleteEntryButton: React.FC<{ entry: HistoryEntry; onDeleted: () => void }> = ({ entry, onDeleted }) => {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
