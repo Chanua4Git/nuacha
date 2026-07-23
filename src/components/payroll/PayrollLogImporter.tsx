@@ -147,20 +147,34 @@ function parseLegacySheet(ws: XLSX.WorkSheet): ParsedSheet[] {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
-    let payDay = toISO(r[0]);
+    // Parse weekStart first (it's the most reliable). Then anchor the rest to it,
+    // so US MM/DD auto-parsing on cells like "7/2/2020" can't push weekEnd/payDay
+    // into the wrong month.
     let weekStart = toISO(r[1]);
-    let weekEnd = toISO(r[2]);
+    if (!weekStart) weekStart = toISO(r[0]);
+    if (!weekStart) continue;
+    const [wsY, wsM] = weekStart.split('-').map((n) => parseInt(n, 10));
 
-    // Corruption guard: if payDay and weekStart are >60 days apart, the Payment Date cell
-    // is mistyped (e.g. year mistype). Trust weekStart and synthesize payDay = weekEnd.
-    if (payDay && weekStart) {
-      const diff = Math.abs(new Date(payDay).getTime() - new Date(weekStart).getTime()) / 86400000;
-      if (diff > 60) {
-        payDay = weekEnd || weekStart;
-      }
+    let weekEnd = toISO(r[2], wsY, wsM);
+    let payDay = toISO(r[0], wsY, wsM);
+
+    const wsMs = new Date(weekStart).getTime();
+    // Clamp weekEnd to within the same work week (0..13 days after weekStart).
+    if (weekEnd) {
+      const diff = (new Date(weekEnd).getTime() - wsMs) / 86400000;
+      if (diff < 0 || diff > 13) weekEnd = null;
     }
-    weekStart = weekStart || payDay;
-    weekEnd = weekEnd || weekStart;
+    if (!weekEnd) {
+      const d = new Date(wsMs + 4 * 86400000);
+      weekEnd = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    }
+    // Clamp payDay: must be within [weekStart-3d, weekEnd+14d].
+    if (payDay) {
+      const pDiff = (new Date(payDay).getTime() - wsMs) / 86400000;
+      if (pDiff < -3 || pDiff > 21) payDay = weekEnd;
+    } else {
+      payDay = weekEnd;
+    }
 
     // Group by payDay's month (more reliable than weekStart for routing into the right period).
     const ref = payDay || weekStart;
