@@ -99,11 +99,14 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
       'Month', 'Week Start', 'Week End', 'Pay Day', 'Days Worked',
       'Calculated Pay', 'NIS Employee', 'Calc Pay less NIS',
       'Recorded Pay', 'NIS Employer', 'Total NIS', 'Variance', 'Notes',
-      'Entry Date', 'Paid On Date',
+      'Entry Date', 'Paid On Date', 'Payment Method',
     ].join(',');
+    const CASH_CUTOFF_CSV = '2026-04-24';
     const rows: string[] = [];
     for (const g of filteredGroups) {
       for (const e of g.entries) {
+        const refDate = e.pay_date || e.week_end_date || '';
+        const method = refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '';
         rows.push([
           `"${g.monthLabel}"`,
           e.week_start_date || '',
@@ -120,6 +123,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           `"${(e.variance_notes || '').replace(/"/g, '""')}"`,
           e.entry_date || '',
           e.paid_on_date || '',
+          method,
+
         ].join(','));
       }
     }
@@ -159,13 +164,20 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
     if (employee.nis_number) html += ` · NIS#: ${employee.nis_number}`;
     html += `<br>Range: ${range.replace('_', ' ')} · Generated: ${new Date().toLocaleDateString()}</div>`;
 
+    const CASH_CUTOFF = '2026-04-24';
+    const methodFor = (e: any) => {
+      const d = e.pay_date || e.week_end_date || '';
+      if (!d) return '';
+      return d <= CASH_CUTOFF ? 'Cash' : 'Bank Transfer';
+    };
+
     for (const g of filteredGroups.slice().reverse()) {
       html += `<h2>${g.monthLabel}</h2>`;
       html += `<table><thead><tr>
         <th>Week Start</th><th>Week End</th><th>Pay Day</th><th class="num">Days</th>
         <th class="num">Calc Pay</th><th class="num">NIS Emp.</th><th class="num">Pay less NIS Emp</th><th class="num">Recorded</th>
         <th class="num">NIS Empr.</th><th class="num">Total NIS</th>
-        <th>Entry Date</th><th>Paid On</th>
+        <th>Entry Date</th><th>Paid On</th><th>Method</th>
       </tr></thead><tbody>`;
       for (const e of g.entries) {
         html += `<tr>
@@ -181,6 +193,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           <td class="num">${formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
           <td>${e.entry_date || ''}</td>
           <td>${e.paid_on_date || ''}</td>
+          <td>${methodFor(e)}</td>
         </tr>`;
       }
       html += `<tr class="subtotal"><td colspan="3">Month total</td>
@@ -191,8 +204,9 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         <td class="num">${formatTTCurrency(g.totals.recorded)}</td>
         <td class="num">${formatTTCurrency(g.totals.nisEmployer)}</td>
         <td class="num">${formatTTCurrency(g.totals.totalNIS)}</td>
-        <td></td><td></td>
+        <td></td><td></td><td></td>
       </tr></tbody></table>`;
+
       const br = ni184Rows.get(g.monthKey);
       if (br) {
         html += `<table style="margin-top:6px"><thead><tr>
@@ -430,6 +444,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <th className="text-right py-2 px-2">Total NIS</th>
                 <th className="text-left py-2 px-2">Entry date</th>
                 <th className="text-left py-2 px-2">Paid on</th>
+                <th className="text-left py-2 px-2">Method</th>
+
                 <th className="py-2 px-2"></th>
               </tr>
             </thead>
@@ -457,6 +473,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
+                  <td className="py-2 px-2 text-muted-foreground">{(() => { const d = e.pay_date || e.week_end_date || ''; return d ? (d <= '2026-04-24' ? 'Cash' : 'Bank Transfer') : '—'; })()}</td>
+
                   <td className="py-2 px-2 whitespace-nowrap">
                     <div className="flex items-center gap-1 justify-end">
                       <Button
@@ -483,7 +501,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
-                <td colSpan={3} className="py-2 px-2">
+                <td colSpan={4} className="py-2 px-2">
                   {employeeId && (
                     <NisRemittanceCell
                       employeeId={employeeId}

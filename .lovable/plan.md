@@ -1,13 +1,20 @@
-## Add delete row to Payroll Log
+## Add "Method" column (Cash / Bank Transfer) to the Payroll Log PDF export
 
-Add a trash icon to each weekly entry row in the Payroll Log. Clicking it opens a confirmation dialog ("Delete this week's entry? This cannot be undone.") showing the week start/end and amount. On confirm, delete the `payroll_entries` row in Supabase, refresh the log, and recompute the period totals so the subtotal stays accurate.
+The PDF export already exists in `src/components/payroll/PayrollLog.tsx` (the print/PDF flow shown in your screenshot). This adds one more column — **Method** — filled in automatically based on pay date.
+
+### Rule
+- **Cash** — pay date on or before **Fri 24 Apr 2026**
+- **Bank Transfer** — pay date on or after **Fri 1 May 2026**
+
+Applied to every employee's export (same T&T-wide switchover date). Purely a display/PDF concern — no schema change, no per-row editing.
 
 ### Where
-- `src/components/payroll/PayrollLog.tsx` — add a Delete button (Trash icon) in the actions column of each row, plus an AlertDialog for confirmation.
-- `src/hooks/useEmployeePayrollHistory.ts` — add a `deleteEntry(entryId)` mutation that deletes from `payroll_entries`, then recomputes the parent period's totals (gross/NIS emp/NIS empr/net) from remaining entries, and invalidates the history query.
+- `src/components/payroll/PayrollLog.tsx` — the HTML string builder used by the "Export PDF" button:
+  - Add `<th>Method</th>` after "Paid On" in every monthly table header.
+  - Add a `<td>` per row computed from `pay_date` (fallback to `week_end_date` if missing): `payDate <= '2026-04-24' ? 'Cash' : 'Bank Transfer'`.
+  - Extend the month subtotal row's `colspan` by 1 so alignment stays correct.
+  - Same column added to the on-screen Weekly view table so what you see matches what prints.
 
-### Behavior
-- Only deletes the single row clicked (e.g. the duplicate zero rows or the empty 05-11 row).
-- Uses shadcn AlertDialog so it's a clear confirm/cancel.
-- Toast on success/error.
-- Subtotal and NI 184 monthly breakdown refresh automatically since they derive from the same data.
+### Not in scope
+- No changes to Monthly view, CSV export, database, or the calculator.
+- No manual override toggle (can be added later if a specific week needs correcting).
