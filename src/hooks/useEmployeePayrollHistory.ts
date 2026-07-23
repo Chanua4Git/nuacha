@@ -103,6 +103,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           variance_notes: row.variance_notes,
           entry_date: row.entry_date ?? null,
           paid_on_date: row.paid_on_date ?? null,
+          payment_method: row.payment_method ?? null,
           period_name: row.payroll_periods?.name ?? '',
           pay_date: row.payroll_periods?.pay_date ?? '',
           period_start: row.payroll_periods?.start_date ?? '',
