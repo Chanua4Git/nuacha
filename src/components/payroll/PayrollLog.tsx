@@ -166,6 +166,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
 
     const CASH_CUTOFF = '2026-04-24';
     const methodFor = (e: any) => {
+      if (e.payment_method === 'cash') return 'Cash';
+      if (e.payment_method === 'bank_transfer') return 'Bank Transfer';
       const d = e.pay_date || e.week_end_date || '';
       if (!d) return '';
       return d <= CASH_CUTOFF ? 'Cash' : 'Bank Transfer';
