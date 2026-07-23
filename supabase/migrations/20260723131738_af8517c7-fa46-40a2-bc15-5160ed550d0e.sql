@@ -1,0 +1,1 @@
+ALTER TABLE public.payroll_entries ADD COLUMN IF NOT EXISTS payment_method text CHECK (payment_method IN ('cash','bank_transfer'));

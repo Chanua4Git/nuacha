@@ -23,6 +23,7 @@ export interface HistoryEntry {
   variance_notes: string | null;
   entry_date: string | null;
   paid_on_date: string | null;
+  payment_method: 'cash' | 'bank_transfer' | null;
   period_name: string;
   pay_date: string;
   period_start: string;
@@ -69,7 +70,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           regular_days, holiday_days, holiday_multiplier,
           gross_pay, nis_employee_contribution, nis_employer_contribution,
           recorded_pay, net_pay, variance_amount, variance_notes,
-          entry_date, paid_on_date,
+          entry_date, paid_on_date, payment_method,
           payroll_periods!inner(name, pay_date, start_date, end_date, user_id)
         `)
         .eq('employee_id', employeeId)
@@ -102,6 +103,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           variance_notes: row.variance_notes,
           entry_date: row.entry_date ?? null,
           paid_on_date: row.paid_on_date ?? null,
+          payment_method: row.payment_method ?? null,
           period_name: row.payroll_periods?.name ?? '',
           pay_date: row.payroll_periods?.pay_date ?? '',
           period_start: row.payroll_periods?.start_date ?? '',

@@ -106,7 +106,9 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
     for (const g of filteredGroups) {
       for (const e of g.entries) {
         const refDate = e.pay_date || e.week_end_date || '';
-        const method = refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '';
+        const method = e.payment_method === 'cash' ? 'Cash'
+          : e.payment_method === 'bank_transfer' ? 'Bank Transfer'
+          : (refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '');
         rows.push([
           `"${g.monthLabel}"`,
           e.week_start_date || '',
@@ -166,6 +168,8 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
 
     const CASH_CUTOFF = '2026-04-24';
     const methodFor = (e: any) => {
+      if (e.payment_method === 'cash') return 'Cash';
+      if (e.payment_method === 'bank_transfer') return 'Bank Transfer';
       const d = e.pay_date || e.week_end_date || '';
       if (!d) return '';
       return d <= CASH_CUTOFF ? 'Cash' : 'Bank Transfer';
@@ -473,7 +477,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution + e.nis_employer_contribution)}</td>
                   <td className="py-2 px-2 text-muted-foreground">{e.entry_date || '—'}</td>
                   <td className="py-2 px-2"><PaidOnCell entry={e} onSaved={onRefresh} /></td>
-                  <td className="py-2 px-2 text-muted-foreground">{(() => { const d = e.pay_date || e.week_end_date || ''; return d ? (d <= '2026-04-24' ? 'Cash' : 'Bank Transfer') : '—'; })()}</td>
+                  <td className="py-2 px-2"><MethodCell entry={e} onSaved={onRefresh} /></td>
 
                   <td className="py-2 px-2 whitespace-nowrap">
                     <div className="flex items-center gap-1 justify-end">
@@ -607,6 +611,60 @@ const PaidOnCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ en
       )}
       {!dirty && entry.paid_on_date && (
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={clear} disabled={saving} aria-label="Clear paid date">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+};
+
+const CASH_CUTOFF_DATE = '2026-04-24';
+const MethodCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ entry, onSaved }) => {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const defaultMethod: 'cash' | 'bank_transfer' = (() => {
+    const d = entry.pay_date || entry.week_end_date || '';
+    return d && d <= CASH_CUTOFF_DATE ? 'cash' : 'bank_transfer';
+  })();
+  const effective: 'cash' | 'bank_transfer' = entry.payment_method ?? defaultMethod;
+  const isOverride = entry.payment_method != null;
+
+  const update = async (next: 'cash' | 'bank_transfer' | null) => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('payroll_entries')
+      .update({ payment_method: next })
+      .eq('id', entry.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not update method', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Payment method updated' });
+    onSaved();
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select value={effective} onValueChange={(v) => update(v as 'cash' | 'bank_transfer')} disabled={saving}>
+        <SelectTrigger className="h-8 w-[130px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="cash">Cash</SelectItem>
+          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+        </SelectContent>
+      </Select>
+      {isOverride && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={() => update(null)}
+          disabled={saving}
+          aria-label="Reset to default"
+          title="Reset to date-based default"
+        >
           <X className="h-3.5 w-3.5" />
         </Button>
       )}

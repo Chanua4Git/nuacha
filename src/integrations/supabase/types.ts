@@ -1240,6 +1240,7 @@ export type Database = {
           other_allowances: number | null
           other_deductions: number | null
           paid_on_date: string | null
+          payment_method: string | null
           payroll_period_id: string
           recorded_pay: number | null
           regular_days: number | null
@@ -1267,6 +1268,7 @@ export type Database = {
           other_allowances?: number | null
           other_deductions?: number | null
           paid_on_date?: string | null
+          payment_method?: string | null
           payroll_period_id: string
           recorded_pay?: number | null
           regular_days?: number | null
@@ -1294,6 +1296,7 @@ export type Database = {
           other_allowances?: number | null
           other_deductions?: number | null
           paid_on_date?: string | null
+          payment_method?: string | null
           payroll_period_id?: string
           recorded_pay?: number | null
           regular_days?: number | null
