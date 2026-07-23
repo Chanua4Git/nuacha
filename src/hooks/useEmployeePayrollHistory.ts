@@ -70,7 +70,7 @@ export function useEmployeePayrollHistory(employeeId: string | null) {
           regular_days, holiday_days, holiday_multiplier,
           gross_pay, nis_employee_contribution, nis_employer_contribution,
           recorded_pay, net_pay, variance_amount, variance_notes,
-          entry_date, paid_on_date,
+          entry_date, paid_on_date, payment_method,
           payroll_periods!inner(name, pay_date, start_date, end_date, user_id)
         `)
         .eq('employee_id', employeeId)
