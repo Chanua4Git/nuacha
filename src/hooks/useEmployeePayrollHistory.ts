@@ -23,6 +23,7 @@ export interface HistoryEntry {
   variance_notes: string | null;
   entry_date: string | null;
   paid_on_date: string | null;
+  payment_method: 'cash' | 'bank_transfer' | null;
   period_name: string;
   pay_date: string;
   period_start: string;
