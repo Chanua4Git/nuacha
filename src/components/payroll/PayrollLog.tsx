@@ -444,6 +444,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <th className="text-right py-2 px-2">Total NIS</th>
                 <th className="text-left py-2 px-2">Entry date</th>
                 <th className="text-left py-2 px-2">Paid on</th>
+                <th className="text-left py-2 px-2">Method</th>
+
                 <th className="py-2 px-2"></th>
               </tr>
             </thead>
