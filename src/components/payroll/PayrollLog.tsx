@@ -501,7 +501,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.recorded)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.nisEmployer)}</td>
                 <td className="py-2 px-2 text-right">{formatTTCurrency(g.totals.totalNIS)}</td>
-                <td colSpan={3} className="py-2 px-2">
+                <td colSpan={4} className="py-2 px-2">
                   {employeeId && (
                     <NisRemittanceCell
                       employeeId={employeeId}
