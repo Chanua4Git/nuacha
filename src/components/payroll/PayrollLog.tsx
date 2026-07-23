@@ -106,7 +106,9 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
     for (const g of filteredGroups) {
       for (const e of g.entries) {
         const refDate = e.pay_date || e.week_end_date || '';
-        const method = refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '';
+        const method = e.payment_method === 'cash' ? 'Cash'
+          : e.payment_method === 'bank_transfer' ? 'Bank Transfer'
+          : (refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '');
         rows.push([
           `"${g.monthLabel}"`,
           e.week_start_date || '',
