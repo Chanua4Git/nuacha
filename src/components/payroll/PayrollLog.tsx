@@ -28,6 +28,8 @@ interface Props {
 
 type ViewMode = 'weekly' | 'monthly';
 
+const paymentDateFor = (entry: HistoryEntry) => entry.pay_day_date || entry.pay_date || '';
+
 const PRESET_RANGES: Record<string, () => { from: string; to: string } | null> = {
   all: () => null,
   this_year: () => {
@@ -105,7 +107,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
     const rows: string[] = [];
     for (const g of filteredGroups) {
       for (const e of g.entries) {
-        const refDate = e.pay_date || e.week_end_date || '';
+        const refDate = paymentDateFor(e) || e.week_end_date || '';
         const method = e.payment_method === 'cash' ? 'Cash'
           : e.payment_method === 'bank_transfer' ? 'Bank Transfer'
           : (refDate ? (refDate <= CASH_CUTOFF_CSV ? 'Cash' : 'Bank Transfer') : '');
@@ -113,7 +115,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
           `"${g.monthLabel}"`,
           e.week_start_date || '',
           e.week_end_date || '',
-          e.pay_date || '',
+          paymentDateFor(e),
           e.days_worked,
           e.gross_pay.toFixed(2),
           e.nis_employee_contribution.toFixed(2),
@@ -170,7 +172,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
     const methodFor = (e: any) => {
       if (e.payment_method === 'cash') return 'Cash';
       if (e.payment_method === 'bank_transfer') return 'Bank Transfer';
-      const d = e.pay_date || e.week_end_date || '';
+      const d = paymentDateFor(e) || e.week_end_date || '';
       if (!d) return '';
       return d <= CASH_CUTOFF ? 'Cash' : 'Bank Transfer';
     };
@@ -187,7 +189,7 @@ export const PayrollLog: React.FC<Props> = ({ employees }) => {
         html += `<tr>
           <td>${e.week_start_date || ''}</td>
           <td>${e.week_end_date || ''}</td>
-          <td>${e.pay_date || ''}</td>
+          <td>${paymentDateFor(e)}</td>
           <td class="num">${e.days_worked}</td>
           <td class="num">${formatTTCurrency(e.gross_pay)}</td>
           <td class="num">${formatTTCurrency(e.nis_employee_contribution)}</td>
@@ -467,7 +469,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                   )}
                   <td className="py-2 px-2">{e.week_start_date || '—'}</td>
                   <td className="py-2 px-2">{e.week_end_date || '—'}</td>
-                  <td className="py-2 px-2">{e.pay_date || '—'}</td>
+                  <td className="py-2 px-2">{paymentDateFor(e) || '—'}</td>
                   <td className="py-2 px-2 text-right">{e.days_worked}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.gross_pay)}</td>
                   <td className="py-2 px-2 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>
@@ -623,7 +625,7 @@ const MethodCell: React.FC<{ entry: HistoryEntry; onSaved: () => void }> = ({ en
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const defaultMethod: 'cash' | 'bank_transfer' = (() => {
-    const d = entry.pay_date || entry.week_end_date || '';
+    const d = paymentDateFor(entry) || entry.week_end_date || '';
     return d && d <= CASH_CUTOFF_DATE ? 'cash' : 'bank_transfer';
   })();
   const effective: 'cash' | 'bank_transfer' = entry.payment_method ?? defaultMethod;
@@ -795,6 +797,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                         <tr className="text-muted-foreground">
                           <th className="text-left py-1">Week start</th>
                           <th className="text-left py-1">Week end</th>
+                          <th className="text-left py-1">Pay day</th>
                           <th className="text-right py-1">Days</th>
                           <th className="text-right py-1">Calc Pay</th>
                           <th className="text-right py-1">NIS Emp.</th>
@@ -808,6 +811,7 @@ const MonthlyTable: React.FC<{ groups: MonthGroup[]; expanded: Set<string>; onTo
                           <tr key={e.id}>
                             <td className="py-1">{e.week_start_date || '—'}</td>
                             <td className="py-1">{e.week_end_date || '—'}</td>
+                            <td className="py-1">{paymentDateFor(e) || '—'}</td>
                             <td className="py-1 text-right">{e.days_worked}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.gross_pay)}</td>
                             <td className="py-1 text-right">{formatTTCurrency(e.nis_employee_contribution)}</td>

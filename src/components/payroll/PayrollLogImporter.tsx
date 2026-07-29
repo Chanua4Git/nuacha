@@ -147,34 +147,18 @@ function parseLegacySheet(ws: XLSX.WorkSheet): ParsedSheet[] {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
-    // Parse weekStart first (it's the most reliable). Then anchor the rest to it,
-    // so US MM/DD auto-parsing on cells like "7/2/2020" can't push weekEnd/payDay
-    // into the wrong month.
-    let weekStart = toISO(r[1]);
-    if (!weekStart) weekStart = toISO(r[0]);
+    // Legacy tab columns are authoritative: A = Payment Date, B = Payment Start,
+    // C = Payment End. Preserve them exactly so the log/PDF matches the workbook.
+    let weekStart = toISO(r[1]) || toISO(r[0]);
     if (!weekStart) continue;
-    const [wsY, wsM] = weekStart.split('-').map((n) => parseInt(n, 10));
-
-    let weekEnd = toISO(r[2], wsY, wsM);
-    let payDay = toISO(r[0], wsY, wsM);
 
     const wsMs = new Date(weekStart).getTime();
-    // Clamp weekEnd to within the same work week (0..13 days after weekStart).
-    if (weekEnd) {
-      const diff = (new Date(weekEnd).getTime() - wsMs) / 86400000;
-      if (diff < 0 || diff > 13) weekEnd = null;
-    }
+    let weekEnd = toISO(r[2]);
     if (!weekEnd) {
       const d = new Date(wsMs + 4 * 86400000);
       weekEnd = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
     }
-    // Clamp payDay: must be within [weekStart-3d, weekEnd+14d].
-    if (payDay) {
-      const pDiff = (new Date(payDay).getTime() - wsMs) / 86400000;
-      if (pDiff < -3 || pDiff > 21) payDay = weekEnd;
-    } else {
-      payDay = weekEnd;
-    }
+    const payDay = toISO(r[0]) || weekEnd;
 
     // Group by payDay's month (more reliable than weekStart for routing into the right period).
     const ref = payDay || weekStart;
@@ -298,13 +282,9 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
       .select('id, name')
       .eq('user_id', user.id)
       .eq('import_source', importTag);
-    const existingNames = new Set((existing || []).map((p: any) => p.name));
+    const existingByName = new Map((existing || []).map((p: any) => [p.name, p.id]));
 
     for (const sheet of parsed) {
-      if (existingNames.has(sheet.monthLabel)) {
-        skipped++;
-        continue;
-      }
       try {
         const validWeeks = sheet.weeks.filter((w) => w.weekStart);
         if (!validWeeks.length) { skipped++; continue; }
@@ -318,9 +298,8 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
         const totalNisR = validWeeks.reduce((s, w) => s + w.nisEmployer, 0);
         const totalNet = totalCalc - totalNisE;
 
-        const { data: period, error: pErr } = await supabase
-          .from('payroll_periods')
-          .insert({
+        const existingPeriodId = existingByName.get(sheet.monthLabel) as string | undefined;
+        const periodPayload = {
             user_id: user.id,
             name: sheet.monthLabel,
             start_date: monthStart,
@@ -332,10 +311,28 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
             total_nis_employee: totalNisE,
             total_nis_employer: totalNisR,
             total_net_pay: totalNet,
-          })
-          .select('id')
-          .single();
+        };
+
+        const { data: period, error: pErr } = existingPeriodId
+          ? await supabase
+              .from('payroll_periods')
+              .update(periodPayload)
+              .eq('id', existingPeriodId)
+              .select('id')
+              .single()
+          : await supabase
+              .from('payroll_periods')
+              .insert(periodPayload)
+              .select('id')
+              .single();
         if (pErr) throw pErr;
+
+        const { error: deleteErr } = await supabase
+          .from('payroll_entries')
+          .delete()
+          .eq('payroll_period_id', period!.id)
+          .eq('employee_id', employee.id);
+        if (deleteErr) throw deleteErr;
 
         // Upsert each week individually so one bad row doesn't kill the whole month
         let weekFails = 0;
@@ -350,6 +347,7 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
               week_number: idx + 1,
               week_start_date: w.weekStart,
               week_end_date: w.weekEnd,
+              pay_day_date: w.payDay,
               days_worked: Math.round(w.daysWorked),
               hours_worked: w.daysWorked * 8,
               gross_pay: w.calculatedPay,
@@ -361,7 +359,7 @@ export const PayrollLogImporter: React.FC<Props> = ({ employee, onComplete }) =>
               other_deductions: 0,
               other_allowances: 0,
               calculated_at: new Date().toISOString(),
-            }, { onConflict: 'payroll_period_id,employee_id,week_number' });
+            }, { onConflict: 'payroll_period_id,employee_id,week_start_date' });
           if (eErr) {
             weekFails++;
             console.error(`Week ${idx + 1} of ${sheet.sheetName} failed:`, eErr);
