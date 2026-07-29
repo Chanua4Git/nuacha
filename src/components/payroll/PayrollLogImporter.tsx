@@ -102,6 +102,27 @@ function num(v: any): number {
   return isFinite(n) ? n : 0;
 }
 
+/** Snap an ISO date to the Monday of its week. */
+function toMonday(iso: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  const dow = d.getDay(); // 0 = Sun
+  const delta = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round(
+    (new Date(a + 'T00:00:00').getTime() - new Date(b + 'T00:00:00').getTime()) / 86400000
+  );
+}
+
 function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedSheet | null {
   const meta = parseSheetName(sheetName);
   if (!meta) return null;
@@ -115,18 +136,34 @@ function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedSheet | null {
       break;
     }
   }
-  if (headerRowIdx === -1) return null;
+  // Older tabs have no "Week start" header — start from the first row instead of skipping the sheet.
+  const startIdx = headerRowIdx === -1 ? 0 : headerRowIdx + 1;
+  const anchor = `${meta.year}-${String(meta.month).padStart(2, '0')}-01`;
 
   const weeks: ParsedWeek[] = [];
-  for (let i = headerRowIdx + 1; i < rows.length; i++) {
+  const seen = new Set<string>();
+  for (let i = startIdx; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
-    const weekStart = toISO(r[0], meta.year, meta.month);
-    if (!weekStart) continue;
+    const rawStart = toISO(r[0], meta.year, meta.month);
+    if (!rawStart) continue;
+    // Anchor the week to the Monday of its week, then discard rows that clearly
+    // belong to another month (stale rows copied between tabs).
+    const weekStart = toMonday(rawStart);
+    const offset = daysBetween(weekStart, anchor);
+    if (offset < -10 || offset > 37) continue;
+    if (seen.has(weekStart)) continue;
+    seen.add(weekStart);
+
+    const rawEnd = toISO(r[1], meta.year, meta.month);
+    const rawPay = toISO(r[2], meta.year, meta.month);
+    const endOffset = rawEnd ? daysBetween(rawEnd, weekStart) : NaN;
+    const payOffset = rawPay ? daysBetween(rawPay, weekStart) : NaN;
+
     weeks.push({
       weekStart,
-      weekEnd: toISO(r[1], meta.year, meta.month),
-      payDay: toISO(r[2], meta.year, meta.month),
+      weekEnd: endOffset > 0 && endOffset <= 6 ? rawEnd : addDays(weekStart, 6),
+      payDay: payOffset >= 2 && payOffset <= 13 ? rawPay : addDays(weekStart, 4),
       daysWorked: num(r[10]),
       hourlyRate: num(r[8]),
       dailyRate: num(r[9]),
@@ -138,8 +175,10 @@ function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedSheet | null {
     if (weeks.length >= 6) break;
   }
   if (!weeks.length) return null;
+  weeks.sort((a, b) => (a.weekStart! < b.weekStart! ? -1 : 1));
   return { sheetName, monthKey: meta.monthKey, monthLabel: meta.monthLabel, year: meta.year, month: meta.month, weeks };
 }
+
 
 function parseLegacySheet(ws: XLSX.WorkSheet): ParsedSheet[] {
   const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
