@@ -1,20 +1,35 @@
-## Add "Method" column (Cash / Bank Transfer) to the Payroll Log PDF export
+# Fix legacy payroll dates (13/1/2020 – 22/4/2022)
 
-The PDF export already exists in `src/components/payroll/PayrollLog.tsx` (the print/PDF flow shown in your screenshot). This adds one more column — **Method** — filled in automatically based on pay date.
+## What's actually wrong
 
-### Rule
-- **Cash** — pay date on or before **Fri 24 Apr 2026**
-- **Bank Transfer** — pay date on or after **Fri 1 May 2026**
+Checked the stored rows for Angela in Jan–Apr 2020 against your spreadsheet:
 
-Applied to every employee's export (same T&T-wide switchover date). Purely a display/PDF concern — no schema change, no per-row editing.
+1. **Pay Day is wrong on every legacy row.** The spreadsheet has a payment date per week (17/1, 24/1, 31/1, 7/2 …). The importer throws that value away and stores a single pay date on the *month* record — so the PDF prints the same month-end date (2020-01-31, 2020-02-29 …) on every row of that month.
+2. **A few week start/end pairs are shifted by a day.** Examples: stored 2020-02-11 → 02-15 where the sheet says 10/2 → 14/2; stored 2020-03-08 → 03-12 where the sheet says 9/3 → 13/3; stored 2020-04-05 → 04-09 where the sheet says 6/4 → 10/4. These came from the earlier repair pass that rebuilt week ends from a corrupted week start.
 
-### Where
-- `src/components/payroll/PayrollLog.tsx` — the HTML string builder used by the "Export PDF" button:
-  - Add `<th>Method</th>` after "Paid On" in every monthly table header.
-  - Add a `<td>` per row computed from `pay_date` (fallback to `week_end_date` if missing): `payDate <= '2026-04-24' ? 'Cash' : 'Bank Transfer'`.
-  - Extend the month subtotal row's `colspan` by 1 so alignment stays correct.
-  - Same column added to the on-screen Weekly view table so what you see matches what prints.
+The amounts, days and NIS values match the sheet — this is purely a date problem.
 
-### Not in scope
-- No changes to Monthly view, CSV export, database, or the calculator.
-- No manual override toggle (can be added later if a specific week needs correcting).
+## The fix
+
+**1. Store the real payment date per week**
+- Add a `pay_day_date` column to payroll entries.
+- Importer writes column A (Payment Date) from the sheet into it, column B into week start, column C into week end — no clamping or re-derivation for legacy sheets, the sheet is the authority.
+- Payroll Log (weekly view), PDF export and CSV export read `pay_day_date` first and only fall back to the period pay date for older rows that don't have it.
+
+**2. Re-import the legacy tab to correct the shifted weeks**
+Rather than guessing corrections row by row, the "Jan 2020-April 2022" tab gets re-imported with the corrected parser. The import replaces the existing entries for each week it covers (matched on employee + week start), so no duplicates. Manually entered values on 2026 rows are untouched.
+
+Because a few stored week starts are off by a day, matching also clears any legacy row inside the re-imported month range that the sheet doesn't account for, so no orphaned duplicates remain.
+
+**3. Recompute month totals** for every affected month after the re-import.
+
+## What you'll need to do
+
+Re-upload `Angela Salary Study.xlsx` through the existing importer once the changes are in — that's what rewrites the dates. I'll tell you exactly where to click.
+
+## Technical notes
+
+- Migration: `ALTER TABLE payroll_entries ADD COLUMN pay_day_date date`.
+- `parseLegacySheet` in `PayrollLogImporter.tsx`: drop the weekEnd/payDay clamping for the legacy layout; parse all three columns as DD/MM/YYYY (with Excel serial support), and only fall back to derived values when a cell is genuinely empty.
+- `PayrollLog.tsx`: `e.pay_day_date || e.pay_date` in the weekly table, `generatePDF` and `handleExportCSV`; grouping keeps using week start.
+- `useEmployeePayrollHistory.ts`: select and map the new field.
