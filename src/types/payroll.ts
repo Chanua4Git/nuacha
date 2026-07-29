@@ -70,6 +70,7 @@ export interface PayrollEntry {
   week_number?: number;
   week_start_date?: string;
   week_end_date?: string;
+  pay_day_date?: string;
   recorded_pay?: number;
   variance_amount?: number;
   variance_notes?: string;
