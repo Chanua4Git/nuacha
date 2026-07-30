@@ -149,9 +149,21 @@ function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedSheet | null {
     if (!rawStart) continue;
     // Anchor the week to the Monday of its week, then discard rows that clearly
     // belong to another month (stale rows copied between tabs).
-    const weekStart = toMonday(rawStart);
+    let weekStart = toMonday(rawStart);
+    // Some tabs were duplicated without updating the year (e.g. a "Jan 2025" tab
+    // still carrying 2024 dates). If swapping in the tab's year lands on the same
+    // Monday inside the tab's month, trust the tab.
+    if (Number(weekStart.slice(0, 4)) !== meta.year) {
+      const retargeted = `${meta.year}${weekStart.slice(4)}`;
+      const retargetedMonday = toMonday(retargeted);
+      const retargetedOffset = daysBetween(retargetedMonday, anchor);
+      if (retargetedMonday === retargeted && retargetedOffset >= -10 && retargetedOffset <= 37) {
+        weekStart = retargetedMonday;
+      }
+    }
     const offset = daysBetween(weekStart, anchor);
     if (offset < -10 || offset > 37) continue;
+
     if (seen.has(weekStart)) continue;
     seen.add(weekStart);
 
