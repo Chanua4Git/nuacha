@@ -106,6 +106,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
   // New: Paid on date (optional)
   const [paidOnDate, setPaidOnDate] = useState<Date | undefined>();
+  const [paidFrom, setPaidFromValue] = useState<PaidFromValue>(null);
 
   // New: Expense type state
   const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
@@ -528,6 +529,14 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
         } as any);
 
         createdExpenses.push(newExpense);
+
+        if (paidFrom && newExpense?.id) {
+          try {
+            await setPaidFrom({ expenseId: newExpense.id }, parseFloat(amount), paidFrom);
+          } catch (error) {
+            console.error('Could not save paid-from link:', error);
+          }
+        }
 
         // If we have OCR data and the expense was created successfully, save receipt details
         if (ocrResult && newExpense && newExpense.id) {
@@ -1012,6 +1021,11 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 onRecurrenceEndDateChange={setRecurrenceEndDate}
                 onGeneratedDatesChange={setGeneratedDates}
               />
+
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Paid from (optional)</label>
+                <PaidFromSelect value={paidFrom} onChange={setPaidFromValue} />
+              </div>
 
               {/* Paid on date (optional) */}
               <div className="grid gap-1">

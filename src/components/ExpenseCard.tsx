@@ -8,6 +8,7 @@ import { Expense } from '@/types/expense';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
 import { Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText, Download } from 'lucide-react';
+import { PaidFromBadge } from '@/components/money/PaidFromSelect';
 import { cn } from '@/lib/utils';
 import ExpenseTypeBadge from './ExpenseTypeBadge';
 import { DriveLinkButton } from './DriveLinkButton';
@@ -143,6 +144,7 @@ const ExpenseCard = ({
         </div>
         
         <div className="flex items-center mt-3 gap-2 flex-wrap">
+          <PaidFromBadge expenseId={expense.id} amount={Number(expense.amount)} />
           {onCategoryChange ? (
             <Select
               value={expense.category || 'none'}

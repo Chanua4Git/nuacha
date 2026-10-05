@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { removeWageExpense } from '@/utils/wageExpenseSync';
+import { PaidFromBadge } from '@/components/money/PaidFromSelect';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -494,6 +495,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ groups, ni184Rows, onRefresh, o
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
+                      <PaidFromBadge payrollEntryId={e.id} amount={Number(e.recorded_pay || e.gross_pay || 0)} />
                       <DeleteEntryButton entry={e} onDeleted={onRefresh} />
                     </div>
                   </td>
