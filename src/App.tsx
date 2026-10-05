@@ -28,6 +28,7 @@ import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import Updates from "./pages/Updates";
+import MoneyPots from "./pages/MoneyPots";
 import GetStarted from "./pages/GetStarted";
 import GetStartedStayingOrganized from "./pages/GetStartedStayingOrganized";
 import GetStartedFullyStreamlined from "./pages/GetStartedFullyStreamlined";
@@ -138,6 +139,11 @@ const App = () => {
                         <SubscriptionGate feature="payroll" requiredPlan="fully_streamlined">
                           <Payroll />
                         </SubscriptionGate>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/money" element={
+                      <ProtectedRoute>
+                        <MoneyPots />
                       </ProtectedRoute>
                     } />
                     <Route path="/updates" element={<Updates />} />
