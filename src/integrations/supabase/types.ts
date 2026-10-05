@@ -250,6 +250,56 @@ export type Database = {
           },
         ]
       }
+      cash_withdrawals: {
+        Row: {
+          account_id: string
+          amount: number
+          balance_after: number | null
+          created_at: string
+          has_slip: boolean
+          id: string
+          notes: string | null
+          purpose: string | null
+          updated_at: string
+          user_id: string
+          withdrawn_on: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          has_slip?: boolean
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          updated_at?: string
+          user_id: string
+          withdrawn_on: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          has_slip?: boolean
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          updated_at?: string
+          user_id?: string
+          withdrawn_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_withdrawals_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           budget: number | null
@@ -920,6 +970,134 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      money_accounts: {
+        Row: {
+          account_last4: string | null
+          created_at: string
+          family_id: string | null
+          id: string
+          income_source_id: string | null
+          is_active: boolean
+          known_balance: number | null
+          known_balance_date: string | null
+          monthly_income: number
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_last4?: string | null
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          income_source_id?: string | null
+          is_active?: boolean
+          known_balance?: number | null
+          known_balance_date?: string | null
+          monthly_income?: number
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_last4?: string | null
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          income_source_id?: string | null
+          is_active?: boolean
+          known_balance?: number | null
+          known_balance_date?: string | null
+          monthly_income?: number
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "money_accounts_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_accounts_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      money_allocations: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          expense_id: string | null
+          id: string
+          notes: string | null
+          payroll_entry_id: string | null
+          user_id: string
+          withdrawal_id: string | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          payroll_entry_id?: string | null
+          user_id: string
+          withdrawal_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          payroll_entry_id?: string | null
+          user_id?: string
+          withdrawal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "money_allocations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_allocations_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_allocations_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_allocations_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "cash_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monthly_recurring_payments: {
         Row: {
