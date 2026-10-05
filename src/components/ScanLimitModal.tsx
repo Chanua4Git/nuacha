@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Clock, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER } from '@/constants/nuachaPayment';
+import { NUACHA_WIPAY_URL, NUACHA_WIPAY_ME_URL, NUACHA_INTRO_OFFER } from '@/constants/nuachaPayment';
 
 interface ScanLimitModalProps {
   open: boolean;
