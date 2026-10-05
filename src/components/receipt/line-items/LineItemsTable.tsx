@@ -24,8 +24,8 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   allLineItems
 }) => {
   return (
-    <Table>
-      <TableHeader>
+    <Table className="block w-full md:table">
+      <TableHeader className="hidden md:table-header-group">
         <TableRow>
           <TableHead>Item</TableHead>
           <TableHead className="text-right">Qty</TableHead>

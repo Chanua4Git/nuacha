@@ -100,14 +100,18 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
   };
 
   return (
-    <TableBody>
+    <TableBody className="block space-y-3 md:table-row-group md:space-y-0">
       {lineItems.map((item: ReceiptLineItem, index: number) => {
         const isEditing = !!editingItems[index];
         const editingItem = editingItems[index] || item;
         
         return (
-          <TableRow key={index} className={item.suggestedCategoryId && !item.categoryId ? "bg-muted/20" : ""}>
-            <TableCell>
+          <TableRow
+            key={index}
+            className={`block rounded-md border p-3 md:table-row md:rounded-none md:border-x-0 md:p-0 ${item.suggestedCategoryId && !item.categoryId ? "bg-muted/20" : ""}`}
+          >
+            <TableCell className="block whitespace-normal p-0 pb-3 md:table-cell md:p-4">
+              <span className="mb-1 block text-xs font-medium text-muted-foreground md:hidden">Item</span>
               {isEditing ? (
                 <Input 
                   value={editingItem.description} 
@@ -125,7 +129,8 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                 </div>
               )}
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 p-0 py-2 text-left md:table-cell md:p-4 md:text-right">
+              <span className="text-xs font-medium text-muted-foreground md:hidden">Quantity</span>
               {isEditing ? (
                 <Input 
                   type="number"
@@ -139,7 +144,8 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                 item.quantity || 1
               )}
             </TableCell>
-            <TableCell className="text-right font-medium">
+            <TableCell className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 p-0 py-2 text-left font-medium md:table-cell md:p-4 md:text-right">
+              <span className="text-xs font-medium text-muted-foreground md:hidden">Total</span>
               {isEditing ? (
                 <Input 
                   type="number"
@@ -153,7 +159,8 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                 formatCurrency(item.totalPrice?.toString())
               )}
             </TableCell>
-            <TableCell>
+            <TableCell className="block p-0 py-2 md:table-cell md:p-4">
+              <span className="mb-1 block text-xs font-medium text-muted-foreground md:hidden">Category</span>
               {familyId && (
                 <CategorySelector 
                   value={isEditing ? editingItem.categoryId : item.categoryId} 
@@ -178,7 +185,8 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                 />
               )}
             </TableCell>
-            <TableCell>
+            <TableCell className="block p-0 py-2 md:table-cell md:p-4">
+              <span className="mb-1 block text-xs font-medium text-muted-foreground md:hidden">Family member</span>
               {familyId && (
                 <FamilyMemberSelector
                   value={isEditing ? editingItem.memberId : item.memberId}
@@ -187,7 +195,7 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                 />
               )}
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="block p-0 pt-2 text-right md:table-cell md:p-4">
               {onSaveLineItem && (
                 isEditing ? (
                   <div className="flex justify-end space-x-1">
