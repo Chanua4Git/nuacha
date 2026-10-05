@@ -157,7 +157,8 @@ export function formatStorageSize(mb: number): string {
   return `${mb}MB`;
 }
 
-export const NUACHA_WIPAY_URL = "https://tt.wipayfinancial.com/to_me/Chan";
+// WiPay invoice for the TT$60/month intro trial (3 months). Pre-fills the amount for payers.
+export const NUACHA_WIPAY_URL = "https://tt.wipayfinancial.com/Invoice/view?id=183695&signature=f959d9bc8342aa2159e4a22ca30b63e8e2410af454367c42266cb5dd6321dfc3";
 
 // Intro trial offer: Staying Organized monthly at a reduced price for the first months
 export const NUACHA_INTRO_OFFER = {
