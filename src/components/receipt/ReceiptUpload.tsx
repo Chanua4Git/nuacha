@@ -77,17 +77,11 @@ const ReceiptUpload: React.FC<ReceiptUploadProps> = ({
   };
 
   const handleCameraClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.setAttribute('capture', 'environment');
-      fileInputRef.current.click();
-    }
+    openReceiptPicker('camera', (f) => { void processReceipt(f); });
   };
 
   const handleUploadClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.removeAttribute('capture');
-      fileInputRef.current.click();
-    }
+    openReceiptPicker('upload', (f) => { void processReceipt(f); });
   };
 
   const handleRetry = async () => {
