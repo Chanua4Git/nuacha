@@ -200,7 +200,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           <PeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
         
-        <div className="flex justify-end items-center gap-2 mb-4">
+        <div className="flex flex-wrap items-center justify-end gap-2 mb-4">
           {canCreateStories && (
             <Button variant="outline" size="sm" onClick={() => setShowRecapStory(true)}>
               <Download className="mr-2 h-4 w-4" />
@@ -211,7 +211,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
             placeholder="Search expenses..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-[200px]"
+            className="min-w-[150px] flex-1 sm:max-w-[200px]"
           />
           <Button 
             variant="outline" 

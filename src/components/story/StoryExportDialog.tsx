@@ -172,19 +172,20 @@ export function StoryExportDialog({
       };
     }
 
-    const businesses = uniqueBusinesses(expenses);
+    const scannedExpenses = expenses.filter((item) => item.receiptImageUrl || item.receiptUrl);
+    const businesses = uniqueBusinesses(scannedExpenses);
     return {
       kind: 'monthly',
       eyebrow: periodLabel || format(new Date(), 'MMMM yyyy'),
       title: 'This month, the receipts found their place',
       subtitle: 'A little less paper. A little more clarity.',
       metrics: [
-        { value: String(expenses.filter((item) => item.receiptImageUrl || item.receiptUrl).length), label: 'receipts scanned' },
+        { value: String(scannedExpenses.length), label: 'receipts scanned' },
         { value: String(businesses.length), label: 'businesses recorded' },
-        { value: String(new Set(expenses.map((item) => item.category)).size), label: 'categories organized' },
-        { value: String(selectedFamily ? 1 : new Set(expenses.map((item) => item.familyId)).size), label: 'households in view' },
+        { value: String(new Set(scannedExpenses.map((item) => item.category)).size), label: 'categories organized' },
+        { value: String(selectedFamily ? 1 : new Set(scannedExpenses.map((item) => item.familyId)).size), label: 'households in view' },
       ],
-      highlights: [...topCategoryNames(expenses, knownNames).slice(0, 2), ...businesses.slice(0, 2).map((name) => `Seen at ${name}`)],
+      highlights: [...topCategoryNames(scannedExpenses, knownNames).slice(0, 2), ...businesses.slice(0, 2).map((name) => `Seen at ${name}`)],
     };
   }, [annualYear, categories, expense, expenses, families, kind, periodLabel, selectedFamily, summary]);
 

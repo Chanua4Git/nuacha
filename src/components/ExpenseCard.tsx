@@ -58,8 +58,8 @@ const ExpenseCard = ({
         style={{ backgroundColor: category?.color || '#CBD5E1' }}
       />
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             {showBulkSelect && (
               <Checkbox
                 checked={isSelected}
@@ -67,9 +67,9 @@ const ExpenseCard = ({
                 className="mt-1"
               />
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg">{expense.description}</h3>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="break-words text-lg font-semibold">{expense.description}</h3>
                 {isDuplicate && (
                   <Badge variant="destructive" className="text-xs">
                     <AlertTriangle className="h-3 w-3 mr-1" />
@@ -83,14 +83,14 @@ const ExpenseCard = ({
               </div>
             </div>
           </div>
-          <div className="text-right flex items-start gap-2">
+          <div className="flex items-start justify-between gap-2 sm:justify-end sm:text-right">
             <div>
               <div className="text-lg font-bold">${expense.amount.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">
                 {format(parseISO(expense.date), 'MMM d, yyyy')}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {onViewDetails && (
                 <Button
                   variant="ghost"
