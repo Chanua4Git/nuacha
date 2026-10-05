@@ -681,6 +681,7 @@ const DeleteEntryButton: React.FC<{ entry: HistoryEntry; onDeleted: () => void }
 
   const handleDelete = async () => {
     setDeleting(true);
+    await removeWageExpense(entry.id);
     const { error } = await supabase.from('payroll_entries').delete().eq('id', entry.id);
 
     if (!error) {
