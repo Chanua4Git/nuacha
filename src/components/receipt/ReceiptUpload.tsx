@@ -1,3 +1,4 @@
+import { openReceiptPicker } from '@/hooks/useReceiptPicker';
 
 import React, { useState, useRef } from 'react';
 import { processReceiptImage } from '@/utils/receipt';
