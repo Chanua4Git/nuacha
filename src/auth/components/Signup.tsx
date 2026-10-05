@@ -18,7 +18,7 @@ const PASSWORD_POLICY: PasswordPolicy = {
 };
 
 const Signup = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => (location.state as { email?: string } | null)?.email ?? '');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
