@@ -35,6 +35,7 @@ type ConfirmState = { title: string; body: string; action: () => Promise<void> }
 
 const MoneyPots = () => {
   const pots = useMoneyPots();
+  const gardenOhm = useBusinessIncome();
   const { families } = useExpense();
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [accountDialog, setAccountDialog] = useState<{ open: boolean; account?: MoneyAccount }>({ open: false });
@@ -110,6 +111,14 @@ const MoneyPots = () => {
         <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Cash matched to spending" value={tt(summary.matchedCash)} hint={summary.direct > 0 ? `+ ${tt(summary.direct)} paid straight from accounts` : 'Expenses and wages linked'} />
         <SummaryCard icon={<Wallet className="h-4 w-4" />} label="Cash still to explain" value={tt(summary.unexplained)} hint={summary.unexplained > 0 ? 'Link a receipt or wage when ready' : 'All accounted for'} highlight={summary.unexplained > 0} />
       </div>
+
+      <GardenOhmIncomeSection
+        rows={gardenOhm.rows}
+        monthStart={monthStart}
+        monthEnd={monthEnd}
+        accounts={pots.accounts}
+        onSetChannel={gardenOhm.setChannel}
+      />
 
       {pots.isLoading ? (
         <p className="text-muted-foreground">Gathering your accounts…</p>
