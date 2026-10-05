@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Clock, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { NUACHA_WIPAY_URL } from '@/constants/nuachaPayment';
+import { NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER } from '@/constants/nuachaPayment';
 
 interface ScanLimitModalProps {
   open: boolean;
@@ -46,6 +46,10 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
             <p className="text-sm text-muted-foreground mb-4">
               Get unlimited receipt scanning, family expense tracking, budgeting tools, and more.
             </p>
+            <div className="text-sm mb-4 rounded-lg bg-background/60 p-3">
+              <span className="font-semibold text-primary">Trial offer:</span> TT${NUACHA_INTRO_OFFER.priceTTD}/month for your first {NUACHA_INTRO_OFFER.months} months{' '}
+              <span className="text-muted-foreground">(usually <span className="line-through">TT$149</span>)</span>
+            </div>
             <Button 
               onClick={handleUpgrade} 
               className="w-full"
@@ -55,7 +59,7 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button asChild variant="outline" className="w-full mt-2">
-              <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay with WiPay</a>
+              <a href={NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER} target="_blank" rel="noopener noreferrer">Pay TT${NUACHA_INTRO_OFFER.priceTTD} with WiPay</a>
             </Button>
           </div>
 

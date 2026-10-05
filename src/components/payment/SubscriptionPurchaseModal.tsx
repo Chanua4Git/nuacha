@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Copy, MessageCircle, Building2, HardDrive, ArrowRight } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { 
-  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, 
+  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER, 
   PlanType, 
   BillingCycle, 
   getPlanPriceTTD,
@@ -42,8 +42,10 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
   const { toast } = useToast();
   
   const plan = getPlan(planType);
-  const priceTTD = getPlanPriceTTD(planType, billingCycle);
-  const priceUSD = getPlanPriceUSD(planType, billingCycle);
+  const regularPriceTTD = getPlanPriceTTD(planType, billingCycle);
+  const hasIntroOffer = planType === NUACHA_INTRO_OFFER.planId && billingCycle === 'monthly';
+  const priceTTD = hasIntroOffer ? NUACHA_INTRO_OFFER.priceTTD : regularPriceTTD;
+  const priceUSD = hasIntroOffer ? NUACHA_INTRO_OFFER.priceUSD : getPlanPriceUSD(planType, billingCycle);
 
   // Calculate yearly savings
   const yearlySavings = billingCycle === 'yearly' 
@@ -147,6 +149,14 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
               
               {/* Price Display - TTD Primary */}
               <div className="text-center py-4 bg-muted/30 rounded-lg">
+                {hasIntroOffer && (
+                  <div className="mb-2">
+                    <Badge variant="secondary" className="bg-soft-green text-primary">Trial offer · first {NUACHA_INTRO_OFFER.months} months</Badge>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      Usually <span className="line-through">{formatTTD(regularPriceTTD)}/month</span>
+                    </div>
+                  </div>
+                )}
                 <span className="text-4xl font-bold text-primary">{formatTTD(priceTTD)}</span>
                 <span className="text-muted-foreground">
                   {billingCycle === 'monthly' ? '/month' : '/year'}
@@ -154,6 +164,11 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
                 <div className="text-sm text-muted-foreground mt-1">
                   {formatUSD(priceUSD)}
                 </div>
+                {hasIntroOffer && (
+                  <div className="text-sm text-primary mt-2">
+                    You save {formatTTD((regularPriceTTD - priceTTD) * NUACHA_INTRO_OFFER.months)} over {NUACHA_INTRO_OFFER.months} months. Try it, love it, then decide.
+                  </div>
+                )}
                 {yearlySavings > 0 && (
                   <div className="text-sm text-primary mt-2">
                     You save {formatTTD(yearlySavings)} per year!
