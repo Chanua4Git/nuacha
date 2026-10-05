@@ -1,43 +1,43 @@
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Leaf } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { openReceiptPicker } from "@/hooks/useReceiptPicker";
 
 interface HeroUploadSectionProps {
   onCameraClick?: () => void;
   onUploadClick?: () => void;
   onFileSelect?: (file: File) => void;
   isDemo?: boolean;
+  isBusy?: boolean;
 }
 
 const HeroUploadSection = ({ 
   onCameraClick, 
   onUploadClick, 
   onFileSelect, 
-  isDemo = false 
+  isDemo = false,
+  isBusy = false,
 }: HeroUploadSectionProps) => {
   const navigate = useNavigate();
 
-  const handleCameraAction = () => {
-    if (onCameraClick) {
-      onCameraClick();
+  const fallback = (mode: 'camera' | 'upload') => {
+    if (onFileSelect) {
+      openReceiptPicker(mode, onFileSelect);
     } else {
-      navigate('/app?tab=add-expense');
+      navigate(`/app?tab=add-expense`);
     }
+  };
+
+  const handleCameraAction = () => {
+    if (isBusy) return;
+    if (onCameraClick) onCameraClick();
+    else fallback('camera');
   };
 
   const handleUploadAction = () => {
-    if (onUploadClick) {
-      onUploadClick();
-    } else {
-      navigate('/app?tab=add-expense');
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
-    }
+    if (isBusy) return;
+    if (onUploadClick) onUploadClick();
+    else fallback('upload');
   };
 
   return (
