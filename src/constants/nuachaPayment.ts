@@ -156,3 +156,5 @@ export function formatStorageSize(mb: number): string {
   }
   return `${mb}MB`;
 }
+
+export const NUACHA_WIPAY_URL = "https://tt.wipayfinancial.com/to_me/Chan";

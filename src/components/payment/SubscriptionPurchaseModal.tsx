@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Copy, MessageCircle, Building2, HardDrive, ArrowRight } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { 
-  NUACHA_BANK_DETAILS, 
+  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, 
   PlanType, 
   BillingCycle, 
   getPlanPriceTTD,
@@ -254,6 +254,18 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
               </CardContent>
             </Card>
 
+            {/* WiPay */}
+            <Card>
+              <CardContent className="pt-4 space-y-3">
+                <span className="font-medium">Pay online with WiPay 🇹🇹</span>
+                <p className="text-sm text-muted-foreground">Pay by card in TTD. Add your order reference in the note.</p>
+                <Button asChild className="w-full">
+                  <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay with WiPay</a>
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">Or pay by bank transfer below</p>
+              </CardContent>
+            </Card>
+
             {/* Bank Details */}
             <Card>
               <CardContent className="pt-4 space-y-3">
@@ -293,7 +305,7 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
 
             {/* Instructions */}
             <div className="text-sm text-muted-foreground text-center space-y-2">
-              <p>After completing your transfer, send us a screenshot via WhatsApp.</p>
+              <p>After paying (WiPay or bank transfer), send us a screenshot via WhatsApp.</p>
               <p className="text-xs">Include your order reference: <strong>{order?.order_reference}</strong></p>
             </div>
 
