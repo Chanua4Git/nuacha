@@ -39,6 +39,17 @@ export function detectDuplicates(expenses: Expense[]): DuplicateGroup[] {
 }
 
 function isDuplicateCandidate(expense1: Expense, expense2: Expense): boolean {
+  // Wage lines: different people, shifts or days are separate pay, never duplicates
+  const isWage = (e: Expense) => e.place?.toLowerCase() === 'payroll' || /^wages\s*-/i.test(e.description || '');
+  if (isWage(expense1) || isWage(expense2)) {
+    return (
+      isWage(expense1) && isWage(expense2) &&
+      expense1.description.trim().toLowerCase() === expense2.description.trim().toLowerCase() &&
+      expense1.date === expense2.date &&
+      expense1.amount === expense2.amount
+    );
+  }
+
   // Business logic safeguards - reduce duplicate probability for different categories/types
   const categoryPenalty = expense1.category !== expense2.category ? 0.7 : 1.0;
   const expenseTypePenalty = expense1.expenseType !== expense2.expenseType ? 0.8 : 1.0;
