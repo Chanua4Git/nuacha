@@ -411,14 +411,14 @@ const CategorySelector = ({
               <SelectItem 
                 key={`${child.id}-needs-${childIndex}`} 
                 value={child.id}
-                className="flex items-center pl-6"
+                className="h-auto whitespace-normal pl-6"
               >
-                <div className="flex items-center">
+                <div className="flex min-w-0 items-start">
                   <span 
-                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    className="mt-1 w-3 h-3 rounded-full mr-2 flex-shrink-0" 
                     style={{ backgroundColor: child.color }}
                   />
-                  {child.name}
+                  <span className="whitespace-normal break-words leading-5">{child.name}</span>
                 </div>
               </SelectItem>
             ))}
@@ -441,14 +441,14 @@ const CategorySelector = ({
               <SelectItem 
                 key={`${child.id}-wants-${childIndex}`} 
                 value={child.id}
-                className="flex items-center pl-6"
+                className="h-auto whitespace-normal pl-6"
               >
-                <div className="flex items-center">
+                <div className="flex min-w-0 items-start">
                   <span 
-                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    className="mt-1 w-3 h-3 rounded-full mr-2 flex-shrink-0" 
                     style={{ backgroundColor: child.color }}
                   />
-                  {child.name}
+                  <span className="whitespace-normal break-words leading-5">{child.name}</span>
                 </div>
               </SelectItem>
             ))}
@@ -471,14 +471,14 @@ const CategorySelector = ({
               <SelectItem 
                 key={`${child.id}-savings-${childIndex}`} 
                 value={child.id}
-                className="flex items-center pl-6"
+                className="h-auto whitespace-normal pl-6"
               >
-                <div className="flex items-center">
+                <div className="flex min-w-0 items-start">
                   <span 
-                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                    className="mt-1 w-3 h-3 rounded-full mr-2 flex-shrink-0" 
                     style={{ backgroundColor: child.color }}
                   />
-                  {child.name}
+                  <span className="whitespace-normal break-words leading-5">{child.name}</span>
                 </div>
               </SelectItem>
             ))}
