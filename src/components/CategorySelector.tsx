@@ -67,6 +67,23 @@ const CategorySelector = ({
     // Logged-in user - use unified categories
     return unifiedCategories;
   }, [user, unifiedCategories]);
+
+  // New households get their starter categories a moment after they're created.
+  // If the list loads empty, quietly try again a few times so the dropdown fills in.
+  const emptyRetries = useRef(0);
+  useEffect(() => {
+    if (!user || !selectedFamily?.id || categoriesLoading || unifiedCategories.length > 0) {
+      if (unifiedCategories.length > 0) emptyRetries.current = 0;
+      return;
+    }
+    if (emptyRetries.current >= 6) return;
+    const t = setTimeout(() => {
+      emptyRetries.current += 1;
+      refetch();
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [user, selectedFamily?.id, categoriesLoading, unifiedCategories.length, refetch]);
+  
   
   // Memoize lineItems transformation to prevent infinite render loops
   const memoizedLineItemsForSuggestions = useMemo(() => {
@@ -538,6 +555,11 @@ const CategorySelector = ({
           
           {renderSmartSuggestions()}
           {renderCategories()}
+          {user && allCategories.length === 0 && (
+            <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+              {categoriesLoading ? 'Loading your categories…' : 'Your categories are still being set up. Tap the refresh button above in a moment.'}
+            </div>
+          )}
         </SelectContent>
       </Select>
       

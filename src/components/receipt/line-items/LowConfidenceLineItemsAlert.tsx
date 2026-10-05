@@ -9,7 +9,8 @@ interface LowConfidenceLineItemsAlertProps {
 }
 
 const LowConfidenceLineItemsAlert: React.FC<LowConfidenceLineItemsAlertProps> = ({ lineItems }) => {
-  if (!lineItems || !lineItems.some(item => item.confidence < 0.6)) return null;
+  // A confidence of 0/missing means "not measured" (our AI reader doesn't score items), not "low"
+  if (!lineItems || !lineItems.some(item => typeof item.confidence === 'number' && item.confidence > 0 && item.confidence < 0.6)) return null;
 
   return (
     <Alert className="mt-4 bg-yellow-50">
