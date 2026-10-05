@@ -115,6 +115,11 @@ export default function Updates() {
           </TabsContent>
 
           <TabsContent value="features" className="space-y-6">
+            <div className="text-center">
+              <a href="/dashboard#nuacha-map" className="text-sm text-primary underline underline-offset-4">
+                Explore Nuacha — see your personal map of everything you can do
+              </a>
+            </div>
             <FeatureShowcase />
           </TabsContent>
 
