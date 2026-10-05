@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.smart-categorize]
 verify_jwt = true
+
+[functions.garden-ohm-income]
+verify_jwt = false
