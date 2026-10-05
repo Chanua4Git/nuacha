@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { PaidFromSelect } from '@/components/money/PaidFromSelect';
+import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
@@ -566,6 +568,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       setReplacementFrequency('');
       setOcrResult(null);
       setPaidOnDate(undefined);
+      setPaidFromValue(null);
       setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
       setIsLongReceiptMode(false);
