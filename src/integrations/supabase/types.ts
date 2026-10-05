@@ -2241,6 +2241,7 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: undefined
       }
+      email_registered: { Args: { _email: string }; Returns: boolean }
       ensure_user_budget_categories: {
         Args: { user_uuid: string }
         Returns: undefined

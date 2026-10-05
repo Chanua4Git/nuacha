@@ -18,7 +18,8 @@ const PASSWORD_POLICY: PasswordPolicy = {
 };
 
 const Signup = () => {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const [email, setEmail] = useState(() => (location.state as { email?: string } | null)?.email ?? '');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +27,6 @@ const Signup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
-  const location = useLocation();
   const isAuthDemo = location.search.includes('from=auth-demo');
   const { setVerificationEmail } = useAuthDemo();
 
