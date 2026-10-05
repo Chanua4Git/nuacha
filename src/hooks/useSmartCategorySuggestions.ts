@@ -111,6 +111,18 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
   'texaco': { category: 'Fuel', confidence: 0.95 },
   'bp': { category: 'Fuel', confidence: 0.95 },
   'petrotrin': { category: 'Fuel', confidence: 0.95 },
+
+  // Vehicle dealers, service centres and garages
+  'reputable auto dealer': { category: 'Vehicle maintenance', confidence: 0.98 },
+  'auto dealer': { category: 'Vehicle maintenance', confidence: 0.92 },
+  'automotive': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'auto repair': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'service centre': { category: 'Vehicle maintenance', confidence: 0.85 },
+  'service center': { category: 'Vehicle maintenance', confidence: 0.85 },
+  'mechanic': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'garage': { category: 'Vehicle maintenance', confidence: 0.82 },
+  'tyre shop': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'tire shop': { category: 'Vehicle maintenance', confidence: 0.95 },
   
   // T&T Banks and Financial
   'rbc': { category: 'Bank fees', confidence: 0.9 },
@@ -219,6 +231,25 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'toilet paper': { category: 'Paper goods', confidence: 0.9 },
   'tissue': { category: 'Paper goods', confidence: 0.8 },
   'paper towel': { category: 'Paper goods', confidence: 0.8 },
+
+  // Vehicle parts and servicing
+  'engine oil': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'motor oil': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'oil filter': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'air filter': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'brake pad': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'brake fluid': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'transmission fluid': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'coolant': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'spark plug': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'car battery': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'vehicle battery': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'wheel alignment': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'tyre': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'tire': { category: 'Vehicle maintenance', confidence: 0.9 },
+  'wiper': { category: 'Vehicle maintenance', confidence: 0.85 },
+  'vehicle service': { category: 'Vehicle maintenance', confidence: 0.95 },
+  'car service': { category: 'Vehicle maintenance', confidence: 0.95 },
 
   // School, art & stationery items
   'glue': { category: 'Books & stationery', confidence: 0.85 },
@@ -469,7 +500,12 @@ export const useSmartCategorySuggestions = (
               categoryId,
               category,
               score,
-              confidence: Math.min(score * 100, 95), // Cap confidence at 95%
+              // A strong direct merchant or item match should remain strong enough
+              // to auto-select; the weighted score is still used for ranking.
+              confidence: Math.min(
+                Math.max(score, factors.merchantScore, factors.lineItemScore) * 100,
+                98
+              ),
               reasons: reasons.length > 0 ? reasons : ['Based on spending patterns']
             });
           }
