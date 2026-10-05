@@ -39,10 +39,14 @@ const EMPTY_SUMMARY: SummaryData = {
   categoryNames: new Map(),
 };
 
+const EMPTY_EXPENSES: Expense[] = [];
+const EMPTY_CATEGORIES: CategoryWithCamelCase[] = [];
+const EMPTY_FAMILIES: Family[] = [];
+
 const toExpense = (item: any): Expense => ({
   id: item.id,
   familyId: item.family_id,
-  amount: Number(item.amount || 0),
+  amount: 0,
   description: item.description,
   category: item.category,
   date: item.date,
@@ -69,9 +73,9 @@ export function StoryExportDialog({
   open,
   onOpenChange,
   expense,
-  expenses = [],
-  categories = [],
-  families = [],
+  expenses = EMPTY_EXPENSES,
+  categories = EMPTY_CATEGORIES,
+  families = EMPTY_FAMILIES,
   selectedFamily,
   periodLabel,
   initialKind,
@@ -94,7 +98,7 @@ export function StoryExportDialog({
     const loadSummary = async () => {
       const [familiesResult, expensesResult, membersResult, allocationsResult, categoriesResult] = await Promise.all([
         supabase.from('families').select('id,name,color').order('name'),
-        supabase.from('expenses').select('id,family_id,amount,description,category,date,place,receipt_url,receipt_image_url'),
+        supabase.from('expenses').select('id,family_id,description,category,date,place,receipt_url,receipt_image_url'),
         supabase.from('family_members').select('id'),
         supabase.from('expense_members').select('expense_id'),
         supabase.from('categories').select('id,name'),

@@ -52,6 +52,14 @@ const Reports = () => {
   };
   
   const filteredExpenses = filterExpenses();
+  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+  const storyStartDate = startDate || currentMonthStart;
+  const storyEndDate = endDate || currentMonthEnd;
+  const storyExpenses = filteredExpenses.filter((expense) => {
+    const expenseDate = new Date(expense.date);
+    return expenseDate >= storyStartDate && expenseDate <= storyEndDate;
+  });
   
   const calculateTotalAmount = () => {
     return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -424,11 +432,11 @@ const Reports = () => {
             <StoryExportDialog
               open={showStoryExport}
               onOpenChange={setShowStoryExport}
-              expenses={filteredExpenses}
+              expenses={storyExpenses}
               categories={categories}
               families={families}
               selectedFamily={selectedFamily}
-              periodLabel={startDate && endDate ? `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}` : undefined}
+              periodLabel={`${format(storyStartDate, 'MMM d, yyyy')} – ${format(storyEndDate, 'MMM d, yyyy')}`}
               initialKind="monthly"
             />
           </>

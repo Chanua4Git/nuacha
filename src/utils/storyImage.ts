@@ -78,6 +78,7 @@ const drawWrappedText = (
 
 const loadPrivateReceipt = async (path: string) => {
   const signedUrl = await getSignedReceiptUrl(path);
+  if (!signedUrl) throw new Error('The receipt image could not be opened.');
   const response = await fetch(signedUrl);
   if (!response.ok) throw new Error('The receipt image could not be opened.');
   const objectUrl = URL.createObjectURL(await response.blob());
