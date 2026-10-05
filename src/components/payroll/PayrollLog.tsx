@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { removeWageExpense } from '@/utils/wageExpenseSync';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -681,6 +682,7 @@ const DeleteEntryButton: React.FC<{ entry: HistoryEntry; onDeleted: () => void }
 
   const handleDelete = async () => {
     setDeleting(true);
+    await removeWageExpense(entry.id);
     const { error } = await supabase.from('payroll_entries').delete().eq('id', entry.id);
 
     if (!error) {

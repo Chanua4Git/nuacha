@@ -26,6 +26,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMonthlyPayrollPersistence, MonthlyPeriodInfo, WeekSnapshot } from '@/hooks/useMonthlyPayrollPersistence';
 import { toast } from 'sonner';
+import { syncWageExpense } from '@/utils/wageExpenseSync';
 
 const getWeekKey = (date: Date) => format(date, 'yyyy-MM-dd');
 
@@ -252,6 +253,25 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
+  // Shift-based workers are paid per shift (Day / Night etc.)
+  const [employeeShifts, setEmployeeShifts] = useState<{ id: string; shift_name: string; base_rate: number; is_default: boolean | null }[]>([]);
+  const [selectedShiftId, setSelectedShiftId] = useState<string>('');
+  useEffect(() => {
+    setEmployeeShifts([]);
+    setSelectedShiftId('');
+    if (!selectedEmployeeId) return;
+    supabase
+      .from('employee_shifts')
+      .select('id, shift_name, base_rate, is_default')
+      .eq('employee_id', selectedEmployeeId)
+      .order('is_default', { ascending: false })
+      .then(({ data }) => {
+        setEmployeeShifts((data ?? []) as any);
+        if (data?.[0]) setSelectedShiftId(data[0].id);
+      });
+  }, [selectedEmployeeId]);
+  const selectedShift = employeeShifts.find((s) => s.id === selectedShiftId) ?? null;
+
   const generatePayrollPeriod = async () => {
     if (!periodStart || !periodEnd || !selectedEmployee) {
       setErrors(['Please select dates and employee']);
@@ -275,6 +295,8 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         dailyRate8Hr = selectedEmployee.daily_rate;
       } else if (selectedEmployee.employment_type === 'monthly' && selectedEmployee.monthly_salary) {
         dailyRate8Hr = (selectedEmployee.monthly_salary / 30) * (8 / 8); // Standardized to 8-hour days
+      } else if (selectedEmployee.employment_type === 'shift_based') {
+        dailyRate8Hr = selectedShift ? Number(selectedShift.base_rate) : Number(selectedEmployee.daily_rate || 0);
       }
 
       return {
@@ -425,6 +447,11 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
 
     setSavingWeekIndex(null);
     if (ok) {
+      void syncWageExpense({
+        employeeId: selectedEmployee.id,
+        weekStart: format(fresh.weekStart, 'yyyy-MM-dd'),
+        shiftName: selectedEmployee.employment_type === 'shift_based' ? selectedShift?.shift_name : null,
+      });
       setSavedWeekSnapshots(prev => ({
         ...prev,
         [weekIndex]: {
@@ -521,7 +548,9 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
     const week = payrollPeriod.weeks[weekIndex];
     const inputs = weeklyInputs[weekIndex] || { daysWorked: 0, recordedPay: 0, otherAllowances: 0, otherDeductions: 0 } as any;
 
-    const dailyRate = selectedEmployee.daily_rate || week.dailyRate8Hr;
+    const dailyRate = selectedEmployee.employment_type === 'shift_based' && selectedShift
+      ? Number(selectedShift.base_rate)
+      : selectedEmployee.daily_rate || week.dailyRate8Hr;
 
     // Split entry: regular + holiday × multiplier (1.5 or 2)
     const regularDays = Number(inputs.regularDays ?? inputs.daysWorked) || 0;
@@ -784,18 +813,41 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
                       <h4 className="font-medium mb-2">Employee Details</h4>
                       <div className="space-y-1 text-sm">
                         <div>Type: {selectedEmployee.employment_type}</div>
-                        <div>
-                          Rate: {
-                            selectedEmployee.employment_type === 'hourly' ? formatTTCurrency(selectedEmployee.hourly_rate || 0) + '/hr' :
-                            selectedEmployee.employment_type === 'daily' ? formatTTCurrency(selectedEmployee.daily_rate || 0) + '/day' :
-                            formatTTCurrency(selectedEmployee.monthly_salary || 0) + '/month'
-                          }
-                        </div>
-                        <div>8-Hour Daily Rate: {formatTTCurrency(
-                          selectedEmployee.employment_type === 'hourly' ? (selectedEmployee.hourly_rate || 0) * 8 :
-                          selectedEmployee.employment_type === 'daily' ? selectedEmployee.daily_rate || 0 :
-                          ((selectedEmployee.monthly_salary || 0) / 30)
-                        )}</div>
+                        {selectedEmployee.employment_type === 'shift_based' ? (
+                          <div className="space-y-2 pt-1">
+                            {employeeShifts.length === 0 ? (
+                              <div>No shifts set up yet — add them in Employees.</div>
+                            ) : (
+                              <>
+                                <Label className="text-xs">Shift for this pay</Label>
+                                <Select value={selectedShift?.id ?? ''} onValueChange={setSelectedShiftId}>
+                                  <SelectTrigger className="h-9"><SelectValue placeholder="Choose shift" /></SelectTrigger>
+                                  <SelectContent>
+                                    {employeeShifts.map((s) => (
+                                      <SelectItem key={s.id} value={s.id}>{s.shift_name} — {formatTTCurrency(Number(s.base_rate))}/shift</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <div className="text-xs text-muted-foreground">Enter the number of shifts in "days worked".</div>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              Rate: {
+                                selectedEmployee.employment_type === 'hourly' ? formatTTCurrency(selectedEmployee.hourly_rate || 0) + '/hr' :
+                                selectedEmployee.employment_type === 'daily' ? formatTTCurrency(selectedEmployee.daily_rate || 0) + '/day' :
+                                formatTTCurrency(selectedEmployee.monthly_salary || 0) + '/month'
+                              }
+                            </div>
+                            <div>8-Hour Daily Rate: {formatTTCurrency(
+                              selectedEmployee.employment_type === 'hourly' ? (selectedEmployee.hourly_rate || 0) * 8 :
+                              selectedEmployee.employment_type === 'daily' ? selectedEmployee.daily_rate || 0 :
+                              ((selectedEmployee.monthly_salary || 0) / 30)
+                            )}</div>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
