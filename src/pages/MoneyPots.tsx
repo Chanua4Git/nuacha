@@ -101,9 +101,10 @@ const MoneyPots = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <SummaryCard icon={<PiggyBank className="h-4 w-4" />} label="Expected in each month" value={tt(summary.expected)} hint="From your account set-up and Budget Builder" />
-        <SummaryCard icon={<ArrowDownCircle className="h-4 w-4" />} label="Cash taken out" value={tt(summary.takenOut)} hint={format(parseISO(monthStart), 'MMMM yyyy')} />
+        <SummaryCard icon={<ArrowDownCircle className="h-4 w-4" />} label="Cash for daily living" value={tt(summary.takenOutLiving)} hint={`Day-to-day cash, ${format(parseISO(monthStart), 'MMMM yyyy')}`} />
+        <SummaryCard icon={<ArrowDownCircle className="h-4 w-4" />} label="Big-ticket & repairs" value={tt(summary.takenOutBigTicket)} hint="One-off cash like home repairs" />
         <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Cash matched to spending" value={tt(summary.matchedCash)} hint={summary.direct > 0 ? `+ ${tt(summary.direct)} paid straight from accounts` : 'Expenses and wages linked'} />
         <SummaryCard icon={<Wallet className="h-4 w-4" />} label="Cash still to explain" value={tt(summary.unexplained)} hint={summary.unexplained > 0 ? 'Link a receipt or wage when ready' : 'All accounted for'} highlight={summary.unexplained > 0} />
       </div>
