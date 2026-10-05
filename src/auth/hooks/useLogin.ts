@@ -55,7 +55,7 @@ export function useLogin() {
         let errorMessage = "We couldn't sign you in. Please try again.";
 
         if (error.message.includes("Invalid login credentials")) {
-          errorMessage = "We couldn't match that email and password. Double-check the spelling of your email, or if you first joined with Google or Facebook, tap that button instead. New here? Tap "Sign up".";
+          errorMessage = "We couldn't match that email and password. Double-check the spelling of your email, or if you first joined with Google or Facebook, tap that button instead. New here? Tap Sign up below.";
         } else if (error.message.includes("Email not confirmed")) {
           errorMessage = "Please check your email and verify your account first.";
         }
