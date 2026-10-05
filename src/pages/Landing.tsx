@@ -16,6 +16,9 @@ import { OCRResult } from "@/types/expense";
 import { toast } from "sonner";
 import { handleReceiptUpload } from "@/utils/receipt/uploadHandling";
 import { processReceiptWithEdgeFunction } from "@/utils/receipt/ocrProcessing";
+import { convertHeicToJpeg } from "@/utils/receipt/imageProcessing";
+import { checkImageQuality, preprocessReceiptImage } from "@/utils/receipt/imagePreprocessing";
+import { openReceiptPicker } from "@/hooks/useReceiptPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthPreview } from "@/contexts/AuthPreviewContext";
 import { useScanUsageTracker } from "@/hooks/useScanUsageTracker";
@@ -58,42 +61,22 @@ const Landing = () => {
     enabled: shouldEnableTimeBased
   });
 
-  // Camera click handler
+  // Each button opens its own fresh picker (camera vs gallery never leak)
   const handleCameraClick = () => {
-    if (fileInputRef.current) {
-      if (isMobile) {
-        // On mobile, set capture attribute and provide feedback
-        fileInputRef.current.setAttribute('capture', 'environment');
-        toast("Opening camera...", {
-          description: "Take a photo of your receipt to get started!"
-        });
-      } else {
-        // On desktop, explain what's happening
-        fileInputRef.current.removeAttribute('capture');
-        toast("Select a photo from your device", {
-          description: "Choose a photo of your receipt from your computer or gallery."
-        });
-      }
-      fileInputRef.current.click();
-    }
+    if (isProcessing) return;
+    openReceiptPicker('camera', handleFileSelect);
   };
 
-  // Upload click handler
   const handleUploadClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.removeAttribute('capture');
-      fileInputRef.current.click();
-    }
+    if (isProcessing) return;
+    openReceiptPicker('upload', handleFileSelect);
   };
 
   // File processing handler
   const handleFileSelect = async (file: File) => {
     console.log('🚀 Landing: File selected for processing', file);
     
-    if (!file) {
-      console.log('❌ Landing: No file provided');
-      return;
-    }
+    if (!file || isProcessing) return;
     
     // Check scan limit for all non-subscribers (authenticated or not)
     if (!hasUnlimitedScans && !canScan()) {
@@ -118,7 +101,18 @@ const Landing = () => {
 
       // Upload the receipt
       console.log('📤 Landing: Uploading receipt to storage...');
-      const receiptUrl = await handleReceiptUpload(file);
+      // Same photo prep as the app: iPhone HEIC -> JPEG, shrink large photos
+      let prepared = file;
+      try {
+        prepared = await convertHeicToJpeg(file);
+        const quality = await checkImageQuality(prepared);
+        if (quality.recommendPreprocessing || quality.isLongReceipt || prepared.size > 1.5 * 1024 * 1024) {
+          prepared = await preprocessReceiptImage(prepared, { maxWidth: 1920, maxHeight: 1920, quality: 0.85, enableEnhancement: true });
+        }
+      } catch (prepError) {
+        console.warn('Landing: photo prep failed, using original', prepError);
+      }
+      const receiptUrl = await handleReceiptUpload(prepared);
       
       if (!receiptUrl) {
         console.log('❌ Landing: Failed to upload receipt');
@@ -168,8 +162,8 @@ const Landing = () => {
       toast.error("Couldn't process your receipt", {
         description: "Let's try that again, or you can enter details manually.",
         action: {
-          label: "Try Demo",
-          onClick: () => navigate('/demo')
+          label: "Type it in instead",
+          onClick: () => navigate('/app?tab=add-expense')
         }
       });
     } finally {
@@ -186,17 +180,7 @@ const Landing = () => {
             onUploadClick={handleUploadClick}
             onFileSelect={handleFileSelect}
             isDemo={!user}
-          />
-          {/* Hidden file input for camera/upload */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileSelect(file);
-            }}
-            className="hidden"
+            isBusy={isProcessing}
           />
           
           {/* Scan usage indicator for all non-subscribers */}
