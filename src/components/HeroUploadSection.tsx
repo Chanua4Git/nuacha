@@ -65,7 +65,9 @@ const HeroUploadSection = ({
           {/* Prominent action buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Button
+              type="button"
               size="lg"
+              disabled={isBusy}
               onClick={handleCameraAction}
               className="group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 max-w-xs sm:max-w-none"
             >
@@ -75,7 +77,7 @@ const HeroUploadSection = ({
                   <Camera className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
                 <div className="text-left min-w-0">
-                  <div className="text-base sm:text-lg font-medium truncate">Snap Receipt</div>
+                  <div className="text-base sm:text-lg font-medium truncate">{isBusy ? 'Reading your receipt…' : 'Snap Receipt'}</div>
                   <div className="text-xs sm:text-sm opacity-90 truncate">Take a photo</div>
                 </div>
               </div>
@@ -84,15 +86,10 @@ const HeroUploadSection = ({
             <div className="text-[#5C5C5C] font-light">or</div>
 
             <div className="relative max-w-xs sm:max-w-none">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                id="hero-file-upload"
-              />
               <Button
+                type="button"
                 size="lg"
+                disabled={isBusy}
                 onClick={handleUploadAction}
                 variant="outline"
                 className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
