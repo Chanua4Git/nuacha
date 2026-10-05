@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { usePendingSubscription } from '@/hooks/usePendingSubscription';
 import { PendingPaymentBanner } from '@/components/dashboard/PendingPaymentBanner';
+import { AppOverviewMap } from '@/components/dashboard/AppOverviewMap';
+import { WelcomeBackBanner } from '@/components/dashboard/WelcomeBackBanner';
 
 const Dashboard = () => {
   const { user, isLoading, authDemoActive } = useAuth();
@@ -71,6 +73,8 @@ const Dashboard = () => {
             billingCycle={pendingOrder.billing_cycle}
           />
         )}
+
+        <WelcomeBackBanner />
 
         {authDemoActive && (
           <div className="mb-6 p-4 bg-soft-green/20 border border-soft-green rounded-lg">
@@ -285,6 +289,8 @@ const Dashboard = () => {
                   ))}
                 </div>
               </div>
+
+              <AppOverviewMap />
             </div>
           </CardContent>
           {authDemoActive && (
