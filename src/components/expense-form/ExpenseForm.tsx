@@ -27,6 +27,7 @@ import ExpenseTypeSelector, { ExpenseType } from './ExpenseTypeSelector';
 import DetailedReceiptView from '../DetailedReceiptView';
 import ReceiptImageDisplay from './ReceiptImageDisplay';
 import HeroUploadSection from '../HeroUploadSection';
+import { openReceiptPicker } from '@/hooks/useReceiptPicker';
 import { Camera, Image, Images, Layers, Check, AlertCircle, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import { useReceiptDuplicateDetection } from '@/hooks/useReceiptDuplicateDetection';
@@ -130,7 +131,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const handleImageUpload = (file: File) => {
     setReceiptImage(file);
     const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
+    setImagePreview(prev => { if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev); return previewUrl; });
     setManualEntryMode(false); // Exit manual entry mode when uploading receipt
   };
 
@@ -154,7 +155,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     // Set preview immediately for user feedback
     setReceiptImage(file);
     const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
+    setImagePreview(prev => { if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev); return previewUrl; });
     setManualEntryMode(false);
     
     // Show processing indicator
@@ -782,29 +783,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
             // Show prominent hero upload section when no receipt scanned yet
             <div className="space-y-6">
         <HeroUploadSection
-          onCameraClick={() => {
-            // Trigger file input for camera capture
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.capture = 'environment';
-            input.onchange = (e: any) => {
-              const file = e.target.files?.[0];
-              if (file) handleHeroFileSelect(file);
-            };
-            input.click();
-          }}
-          onUploadClick={() => {
-            // Trigger file input for upload
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = (e: any) => {
-              const file = e.target.files?.[0];
-              if (file) handleHeroFileSelect(file);
-            };
-            input.click();
-          }}
+          onCameraClick={() => openReceiptPicker('camera', handleHeroFileSelect)}
+          onUploadClick={() => openReceiptPicker('upload', handleHeroFileSelect)}
           onFileSelect={handleHeroFileSelect}
         />
               
