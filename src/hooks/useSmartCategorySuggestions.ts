@@ -72,6 +72,10 @@ const VENDOR_PATTERNS: { [key: string]: { category: string; confidence: number }
   'tru valu': { category: 'Groceries', confidence: 0.95 },
   'super pharm': { category: 'Groceries', confidence: 0.9 },
   'superpharm': { category: 'Groceries', confidence: 0.9 },
+
+  // T&T variety / stationery stores
+  'fair & square': { category: 'Books & stationery', confidence: 0.8 },
+  'fair and square': { category: 'Books & stationery', confidence: 0.8 },
   
   // T&T Restaurants, Cafes & Dining
   'trademark bistro': { category: 'Dining out', confidence: 0.95 },
@@ -215,6 +219,22 @@ const LINE_ITEM_PATTERNS: { [key: string]: { category: string; confidence: numbe
   'toilet paper': { category: 'Paper goods', confidence: 0.9 },
   'tissue': { category: 'Paper goods', confidence: 0.8 },
   'paper towel': { category: 'Paper goods', confidence: 0.8 },
+
+  // School, art & stationery items
+  'glue': { category: 'Books & stationery', confidence: 0.85 },
+  'marker': { category: 'Books & stationery', confidence: 0.85 },
+  'crayon': { category: 'Books & stationery', confidence: 0.85 },
+  'pencil': { category: 'Books & stationery', confidence: 0.85 },
+  'eraser': { category: 'Books & stationery', confidence: 0.85 },
+  'notebook': { category: 'Books & stationery', confidence: 0.85 },
+  'exercise book': { category: 'Books & stationery', confidence: 0.9 },
+  'art pad': { category: 'Books & stationery', confidence: 0.85 },
+  'art set': { category: 'Books & stationery', confidence: 0.85 },
+  'drawing': { category: 'Books & stationery', confidence: 0.8 },
+  'sketch': { category: 'Books & stationery', confidence: 0.8 },
+  'scissors': { category: 'Books & stationery', confidence: 0.8 },
+  'ruler': { category: 'Books & stationery', confidence: 0.8 },
+  'highlighter': { category: 'Books & stationery', confidence: 0.85 },
 };
 
 // Helper to check if a string is a valid UUID

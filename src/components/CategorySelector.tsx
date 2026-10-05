@@ -68,6 +68,12 @@ const CategorySelector = ({
     return unifiedCategories;
   }, [user, unifiedCategories]);
 
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener('nuacha:categories-updated', handler);
+    return () => window.removeEventListener('nuacha:categories-updated', handler);
+  }, [refetch]);
+
   // New households get their starter categories a moment after they're created.
   // If the list loads empty, quietly try again a few times so the dropdown fills in.
   const emptyRetries = useRef(0);

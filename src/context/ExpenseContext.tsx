@@ -143,6 +143,38 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     autoCreateDefaultFamily();
   }, [user, familiesLoading, families.length, createFamily]);
 
+  // Make sure every signed-in user has the full, detailed category list
+  // (previously only set up when visiting the Budget page, so new users scanning first got only 8 basics)
+  useEffect(() => {
+    if (!user) return;
+    const key = `comprehensiveCategoriesSeeded:${user.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, 'true');
+    (async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { count, error } = await supabase
+          .from('categories')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('family_id', null);
+        if (error) throw error;
+        if ((count ?? 0) === 0) {
+          const { error: seedError } = await supabase.rpc('seed_comprehensive_categories_for_user', {
+            user_uuid: user.id,
+            family_uuid: null,
+          } as any);
+          if (seedError) throw seedError;
+          console.log('✅ Full category list set up for user');
+          window.dispatchEvent(new Event('nuacha:categories-updated'));
+        }
+      } catch (err) {
+        console.error('Could not set up full category list:', err);
+        sessionStorage.removeItem(key);
+      }
+    })();
+  }, [user]);
+
   // Persist selected family ID to localStorage
   useEffect(() => {
     if (selectedFamily) {
