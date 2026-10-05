@@ -137,6 +137,16 @@ export function StoryExportDialog({
       const allExpenses = summary.expenses.length ? summary.expenses : expenses;
       const allFamilies = summary.families.length ? summary.families : families;
       const assignedShare = allExpenses.length ? Math.round((summary.assignedExpenseCount / allExpenses.length) * 100) : 0;
+      const householdHighlights = allFamilies
+        .map((family, index) => {
+          const familyExpenseCount = allExpenses.filter((item) => item.familyId === family.id).length;
+          const share = allExpenses.length ? Math.round((familyExpenseCount / allExpenses.length) * 100) : 0;
+          return { label: `Household ${index + 1} • ${share}% of organized records`, count: familyExpenseCount };
+        })
+        .filter((item) => item.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4)
+        .map((item) => item.label);
       return {
         kind,
         eyebrow: 'Households organized with care',
@@ -148,7 +158,7 @@ export function StoryExportDialog({
           { value: String(allExpenses.length), label: 'expenses recorded' },
           { value: `${assignedShare}%`, label: 'records assigned to people' },
         ],
-        highlights: topCategoryNames(allExpenses, knownNames),
+        highlights: householdHighlights.length ? householdHighlights : topCategoryNames(allExpenses, knownNames),
       };
     }
 
@@ -198,6 +208,11 @@ export function StoryExportDialog({
   useEffect(() => {
     if (!open) return;
     let active = true;
+    setPreviewBlob(null);
+    setPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return null;
+    });
     setIsRendering(true);
     createStoryImage(storyData)
       .then((blob) => {
@@ -215,6 +230,10 @@ export function StoryExportDialog({
       .finally(() => active && setIsRendering(false));
     return () => { active = false; };
   }, [open, storyData]);
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   const handleDownload = () => {
     if (!previewBlob) return;
