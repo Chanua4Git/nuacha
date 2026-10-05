@@ -52,11 +52,36 @@ export function useLogin() {
       });
 
       if (error) {
-        let errorMessage = "We couldn't sign you in. Please try again.";
-
         if (error.message.includes("Invalid login credentials")) {
-          errorMessage = "We couldn't match that email and password. Double-check the spelling of your email, or if you first joined with Google or Facebook, tap that button instead. New here? Tap Sign up below.";
-        } else if (error.message.includes("Email not confirmed")) {
+          // Check whether this email has an account at all — if not, guide to Sign up
+          let registered = true;
+          try {
+            const { data: exists } = await supabaseClient.rpc("email_registered", { _email: email });
+            registered = !!exists;
+          } catch {
+            // If the check fails, fall back to the generic message
+          }
+
+          if (!registered) {
+            toast("We don't know this email yet", {
+              description: "There's no account with this email. Let's get you set up — it only takes a moment.",
+              action: {
+                label: "Sign up",
+                onClick: () => navigate("/signup", { state: { email } }),
+              },
+              duration: 10000,
+            });
+          } else {
+            toast("That password doesn't match", {
+              description: "This email has an account, but the password isn't right. Try again, use Google or Facebook if that's how you joined, or tap Forgot password.",
+              duration: 8000,
+            });
+          }
+          return;
+        }
+
+        let errorMessage = "We couldn't sign you in. Please try again.";
+        if (error.message.includes("Email not confirmed")) {
           errorMessage = "Please check your email and verify your account first.";
         }
 
