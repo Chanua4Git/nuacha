@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, Sparkles, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,12 @@ export function AppOverviewMap() {
   const counts = useAppMapCounts();
   const { hasActiveSubscription } = useActiveSubscription();
   const [trialItem, setTrialItem] = useState<AppMapItem | null>(null);
+
+  useEffect(() => {
+    if (window.location.hash === '#nuacha-map') {
+      setTimeout(() => document.getElementById('nuacha-map')?.scrollIntoView({ behavior: 'smooth' }), 400);
+    }
+  }, []);
 
   const items = allMapItems();
   const doneCount = counts ? items.filter(i => i.isDone?.(counts)).length : 0;
