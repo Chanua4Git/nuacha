@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useExpense } from '@/context/ExpenseContext';
+import { useBusinessIncome } from '@/hooks/useBusinessIncome';
+import GardenOhmIncomeSection from '@/components/money/GardenOhmIncomeSection';
 import {
   useMoneyPots,
   computeAvailable,
@@ -33,6 +35,7 @@ type ConfirmState = { title: string; body: string; action: () => Promise<void> }
 
 const MoneyPots = () => {
   const pots = useMoneyPots();
+  const gardenOhm = useBusinessIncome();
   const { families } = useExpense();
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [accountDialog, setAccountDialog] = useState<{ open: boolean; account?: MoneyAccount }>({ open: false });
@@ -109,6 +112,14 @@ const MoneyPots = () => {
         <SummaryCard icon={<Wallet className="h-4 w-4" />} label="Cash still to explain" value={tt(summary.unexplained)} hint={summary.unexplained > 0 ? 'Link a receipt or wage when ready' : 'All accounted for'} highlight={summary.unexplained > 0} />
       </div>
 
+      <GardenOhmIncomeSection
+        rows={gardenOhm.rows}
+        monthStart={monthStart}
+        monthEnd={monthEnd}
+        accounts={pots.accounts}
+        onSetChannel={gardenOhm.setChannel}
+      />
+
       {pots.isLoading ? (
         <p className="text-muted-foreground">Gathering your accounts…</p>
       ) : pots.accounts.length === 0 ? (
@@ -121,7 +132,7 @@ const MoneyPots = () => {
       ) : (
         <div className="space-y-4">
           {pots.accounts.map((account) => {
-            const available = computeAvailable(account, pots.withdrawals);
+            const available = computeAvailable(account, pots.withdrawals, gardenOhm.rows);
             const income = pots.incomeSources.find((i) => i.id === account.income_source_id);
             const familyName = families.find((f) => f.id === account.family_id)?.name;
             const accWithdrawals = pots.withdrawals.filter((w) => w.account_id === account.id && inMonth(w.withdrawn_on));

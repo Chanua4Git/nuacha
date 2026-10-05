@@ -68,10 +68,18 @@ export interface LinkableItem {
 const num = (v: unknown) => Number(v ?? 0);
 
 /** Walks forward from the last known balance; slips with a printed balance reset it exactly. */
-export const computeAvailable = (account: MoneyAccount, withdrawals: CashWithdrawal[]) => {
+export const computeAvailable = (
+  account: MoneyAccount,
+  withdrawals: CashWithdrawal[],
+  incomeIn: { account_id: string | null; delivered_on: string | null; amount: number }[] = [],
+) => {
   if (account.known_balance === null || account.known_balance === undefined) return null;
   const start = account.known_balance_date ?? '0000-01-01';
   let balance = num(account.known_balance);
+  // Money received (e.g. Garden Ohm orders) after the balance date adds to the pot.
+  incomeIn
+    .filter((i) => i.account_id === account.id && i.delivered_on && i.delivered_on > start)
+    .forEach((i) => { balance += num(i.amount); });
   withdrawals
     .filter((w) => w.account_id === account.id && w.withdrawn_on >= start)
     .sort((a, b) => a.withdrawn_on.localeCompare(b.withdrawn_on) || a.created_at.localeCompare(b.created_at))
