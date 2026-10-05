@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Copy, MessageCircle, Building2, HardDrive, ArrowRight } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { 
-  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER, 
+  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, NUACHA_WIPAY_ME_URL, NUACHA_INTRO_OFFER, 
   PlanType, 
   BillingCycle, 
   getPlanPriceTTD,

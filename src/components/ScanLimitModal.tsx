@@ -61,6 +61,9 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
             <Button asChild variant="outline" className="w-full mt-2">
               <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay TT${NUACHA_INTRO_OFFER.priceTTD} with WiPay</a>
             </Button>
+            <Button asChild variant="ghost" className="w-full mt-2 text-muted-foreground">
+              <a href={NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Or pay what you think it's worth 🤍</a>
+            </Button>
           </div>
 
           {/* Wait Option */}
