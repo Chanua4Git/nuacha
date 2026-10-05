@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useExpense } from '@/context/ExpenseContext';
+import { useBusinessIncome } from '@/hooks/useBusinessIncome';
+import GardenOhmIncomeSection from '@/components/money/GardenOhmIncomeSection';
 import {
   useMoneyPots,
   computeAvailable,
@@ -121,7 +123,7 @@ const MoneyPots = () => {
       ) : (
         <div className="space-y-4">
           {pots.accounts.map((account) => {
-            const available = computeAvailable(account, pots.withdrawals);
+            const available = computeAvailable(account, pots.withdrawals, gardenOhm.rows);
             const income = pots.incomeSources.find((i) => i.id === account.income_source_id);
             const familyName = families.find((f) => f.id === account.family_id)?.name;
             const accWithdrawals = pots.withdrawals.filter((w) => w.account_id === account.id && inMonth(w.withdrawn_on));
