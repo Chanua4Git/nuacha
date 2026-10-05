@@ -47,13 +47,22 @@ const MoneyPots = () => {
   const summary = useMemo(() => {
     const expected = pots.accounts.reduce((s, a) => s + Number(a.monthly_income || 0), 0);
     const monthWithdrawals = pots.withdrawals.filter((w) => inMonth(w.withdrawn_on));
+    const accountName = (id: string) => pots.accounts.find((a) => a.id === id)?.name?.toLowerCase() ?? '';
+    const isBigTicket = (w: (typeof monthWithdrawals)[number]) => {
+      const text = `${w.purpose ?? ''} ${w.notes ?? ''} ${accountName(w.account_id)}`.toLowerCase();
+      return /repair|backup|big|renovation|plumb/.test(text);
+    };
+    const bigTicketWithdrawals = monthWithdrawals.filter(isBigTicket);
+    const livingWithdrawals = monthWithdrawals.filter((w) => !isBigTicket(w));
     const takenOut = monthWithdrawals.reduce((s, w) => s + Number(w.amount), 0);
+    const takenOutLiving = livingWithdrawals.reduce((s, w) => s + Number(w.amount), 0);
+    const takenOutBigTicket = bigTicketWithdrawals.reduce((s, w) => s + Number(w.amount), 0);
     const matchedCash = monthWithdrawals.reduce((s, w) => s + Math.min(Number(w.amount), pots.matchedByWithdrawal[w.id] ?? 0), 0);
     const direct = pots.allocations
       .filter((a) => !a.withdrawal_id)
       .filter((a) => inMonth(pots.linkedItems[a.expense_id ?? a.payroll_entry_id ?? '']?.date))
       .reduce((s, a) => s + Number(a.amount), 0);
-    return { expected, takenOut, matchedCash, unexplained: takenOut - matchedCash, direct };
+    return { expected, takenOut, takenOutLiving, takenOutBigTicket, matchedCash, unexplained: takenOut - matchedCash, direct };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pots.accounts, pots.withdrawals, pots.allocations, pots.linkedItems, pots.matchedByWithdrawal, month]);
 
