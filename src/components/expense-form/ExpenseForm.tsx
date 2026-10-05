@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { PaidFromSelect } from '@/components/money/PaidFromSelect';
+import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
@@ -106,6 +108,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
   // New: Paid on date (optional)
   const [paidOnDate, setPaidOnDate] = useState<Date | undefined>();
+  const [paidFrom, setPaidFromValue] = useState<PaidFromValue>(null);
 
   // New: Expense type state
   const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
@@ -529,6 +532,14 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
         createdExpenses.push(newExpense);
 
+        if (paidFrom && newExpense?.id) {
+          try {
+            await setPaidFrom({ expenseId: newExpense.id }, parseFloat(amount), paidFrom);
+          } catch (error) {
+            console.error('Could not save paid-from link:', error);
+          }
+        }
+
         // If we have OCR data and the expense was created successfully, save receipt details
         if (ocrResult && newExpense && newExpense.id) {
           try {
@@ -557,6 +568,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       setReplacementFrequency('');
       setOcrResult(null);
       setPaidOnDate(undefined);
+      setPaidFromValue(null);
       setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
       setIsLongReceiptMode(false);
@@ -1012,6 +1024,11 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 onRecurrenceEndDateChange={setRecurrenceEndDate}
                 onGeneratedDatesChange={setGeneratedDates}
               />
+
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Paid from (optional)</label>
+                <PaidFromSelect value={paidFrom} onChange={setPaidFromValue} />
+              </div>
 
               {/* Paid on date (optional) */}
               <div className="grid gap-1">

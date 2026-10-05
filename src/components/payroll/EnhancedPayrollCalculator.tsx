@@ -1,3 +1,5 @@
+import { PaidFromSelect } from '@/components/money/PaidFromSelect';
+import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -256,6 +258,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   // Shift-based workers are paid per shift (Day / Night etc.)
   const [employeeShifts, setEmployeeShifts] = useState<{ id: string; shift_name: string; base_rate: number; is_default: boolean | null }[]>([]);
   const [selectedShiftId, setSelectedShiftId] = useState<string>('');
+  const [wagePaidFrom, setWagePaidFrom] = useState<PaidFromValue>(null);
   useEffect(() => {
     setEmployeeShifts([]);
     setSelectedShiftId('');
@@ -452,6 +455,15 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
         weekStart: format(fresh.weekStart, 'yyyy-MM-dd'),
         shiftName: selectedEmployee.employment_type === 'shift_based' ? selectedShift?.shift_name : null,
       });
+      if (wagePaidFrom) {
+        const weekStartStr = format(fresh.weekStart, 'yyyy-MM-dd');
+        void supabase.from('payroll_entries').select('id,recorded_pay,gross_pay')
+          .eq('employee_id', selectedEmployee.id).eq('week_start_date', weekStartStr).limit(1)
+          .then(({ data }) => {
+            const row = data?.[0];
+            if (row) void setPaidFrom({ payrollEntryId: row.id }, Number(row.recorded_pay || row.gross_pay || 0), wagePaidFrom);
+          });
+      }
       setSavedWeekSnapshots(prev => ({
         ...prev,
         [weekIndex]: {
@@ -791,6 +803,10 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Employee Selection */}
                 <div className="space-y-4">
+                  <div className="space-y-1">
+                    <Label>Paid from (optional)</Label>
+                    <PaidFromSelect value={wagePaidFrom} onChange={setWagePaidFrom} />
+                  </div>
                   <Label htmlFor="employee">Select Employee</Label>
                   <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
                     <SelectTrigger>
