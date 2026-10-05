@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Clock, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { NUACHA_WIPAY_URL } from '@/constants/nuachaPayment';
 
 interface ScanLimitModalProps {
   open: boolean;
@@ -50,8 +51,11 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
               className="w-full"
               size="lg"
             >
-              View Plans
+              View plans
               <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button asChild variant="outline" className="w-full mt-2">
+              <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay with WiPay</a>
             </Button>
           </div>
 

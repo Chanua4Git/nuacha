@@ -186,9 +186,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               return;
             }
             
-            // Default fallback - send to app dashboard
-            console.log('🔐 Auth: fallback navigation to /app');
-            safeNavigate("/app", { replace: true });
+            // Public pages (home page, etc.): stay put so signed-in users can still view them
+            console.log('🔐 Auth: staying on public page:', currentPath);
           }
         }
       }
@@ -217,7 +216,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabaseClient.auth.signOut();
+      await supabaseClient.auth.signOut({ scope: 'local' });
     } catch (error) {
       // Handle sign out error silently
     } finally {
@@ -227,7 +226,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (isAuthDemoActive()) {
           safeNavigate('/authentication-demo', { replace: true });
         } else {
-          safeNavigate('/app', { replace: true });
+          navigate('/', { replace: true });
         }
       }, 50);
     }
