@@ -250,6 +250,71 @@ export type Database = {
           },
         ]
       }
+      business_income: {
+        Row: {
+          account_id: string | null
+          amount: number
+          channel: string
+          channel_locked: boolean
+          created_at: string
+          currency: string
+          customer_name: string | null
+          delivered_on: string | null
+          external_order_id: string
+          id: string
+          order_number: string | null
+          payment_method_raw: string | null
+          raw: Json | null
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount?: number
+          channel?: string
+          channel_locked?: boolean
+          created_at?: string
+          currency?: string
+          customer_name?: string | null
+          delivered_on?: string | null
+          external_order_id: string
+          id?: string
+          order_number?: string | null
+          payment_method_raw?: string | null
+          raw?: Json | null
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          channel?: string
+          channel_locked?: boolean
+          created_at?: string
+          currency?: string
+          customer_name?: string | null
+          delivered_on?: string | null
+          external_order_id?: string
+          id?: string
+          order_number?: string | null
+          payment_method_raw?: string | null
+          raw?: Json | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_income_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_withdrawals: {
         Row: {
           account_id: string
