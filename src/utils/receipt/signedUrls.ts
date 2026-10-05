@@ -10,16 +10,19 @@ const PUBLIC_URL_PREFIX = `https://fjrxqeyexlusjwzzecal.supabase.co/storage/v1/o
  */
 export function extractPathFromUrl(url: string): string | null {
   if (!url) return null;
-  
-  if (url.includes('/storage/v1/object/public/receipts/')) {
-    return url.split('/storage/v1/object/public/receipts/')[1];
+  if (url.startsWith('blob:')) return null;
+
+  // Public, signed (possibly expired) and authenticated URLs all map back to the storage path
+  const match = url.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/receipts\/([^?#]+)/);
+  if (match) {
+    return decodeURIComponent(match[1]);
   }
-  
+
   // If it's already just a path, return as-is
   if (!url.startsWith('http')) {
     return url;
   }
-  
+
   return null;
 }
 
