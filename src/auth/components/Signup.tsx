@@ -27,7 +27,6 @@ const Signup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [validations, setValidations] = useState(validatePassword('', PASSWORD_POLICY));
-  const location = useLocation();
   const isAuthDemo = location.search.includes('from=auth-demo');
   const { setVerificationEmail } = useAuthDemo();
 
