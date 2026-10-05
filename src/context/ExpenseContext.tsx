@@ -166,6 +166,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
           } as any);
           if (seedError) throw seedError;
           console.log('✅ Full category list set up for user');
+          window.dispatchEvent(new Event('nuacha:categories-updated'));
         }
       } catch (err) {
         console.error('Could not set up full category list:', err);
