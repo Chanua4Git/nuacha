@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Copy, MessageCircle, Building2, HardDrive, ArrowRight } from 'lucide-react';
 import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { 
-  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER, 
+  NUACHA_BANK_DETAILS, NUACHA_WIPAY_URL, NUACHA_WIPAY_ME_URL, NUACHA_INTRO_OFFER, 
   PlanType, 
   BillingCycle, 
   getPlanPriceTTD,
@@ -279,6 +279,9 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
                 )}
                 <Button asChild className="w-full">
                   <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay {formatTTD(priceTTD)} with WiPay</a>
+                </Button>
+                <Button asChild variant="ghost" className="w-full text-muted-foreground">
+                  <a href={NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Or pay what you think it's worth 🤍</a>
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">Or pay by bank transfer below</p>
               </CardContent>
