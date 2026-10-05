@@ -59,7 +59,7 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button asChild variant="outline" className="w-full mt-2">
-              <a href={NUACHA_WIPAY_URL, NUACHA_INTRO_OFFER} target="_blank" rel="noopener noreferrer">Pay TT${NUACHA_INTRO_OFFER.priceTTD} with WiPay</a>
+              <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay TT${NUACHA_INTRO_OFFER.priceTTD} with WiPay</a>
             </Button>
           </div>
 
