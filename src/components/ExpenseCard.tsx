@@ -7,16 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Expense } from '@/types/expense';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
-import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText } from 'lucide-react';
+import { Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExpenseTypeBadge from './ExpenseTypeBadge';
 import { DriveLinkButton } from './DriveLinkButton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ExpenseCardProps {
   expense: Expense;
   onEdit?: (expense: Expense) => void;
   onDelete?: (expenseId: string) => void;
   onViewDetails?: (expense: Expense) => void;
+  onDownloadStory?: (expense: Expense) => void;
   onCategoryChange?: (expenseId: string, categoryId: string) => void;
   isSelected?: boolean;
   onSelectionChange?: (expenseId: string, selected: boolean) => void;
@@ -30,6 +32,7 @@ const ExpenseCard = ({
   onEdit, 
   onDelete, 
   onViewDetails,
+  onDownloadStory,
   onCategoryChange,
   isSelected = false, 
   onSelectionChange, 
@@ -55,8 +58,8 @@ const ExpenseCard = ({
         style={{ backgroundColor: category?.color || '#CBD5E1' }}
       />
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             {showBulkSelect && (
               <Checkbox
                 checked={isSelected}
@@ -64,9 +67,9 @@ const ExpenseCard = ({
                 className="mt-1"
               />
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg">{expense.description}</h3>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="break-words text-lg font-semibold">{expense.description}</h3>
                 {isDuplicate && (
                   <Badge variant="destructive" className="text-xs">
                     <AlertTriangle className="h-3 w-3 mr-1" />
@@ -80,14 +83,14 @@ const ExpenseCard = ({
               </div>
             </div>
           </div>
-          <div className="text-right flex items-start gap-2">
+          <div className="flex items-start justify-between gap-2 sm:justify-end sm:text-right">
             <div>
               <div className="text-lg font-bold">${expense.amount.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">
                 {format(parseISO(expense.date), 'MMM d, yyyy')}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {onViewDetails && (
                 <Button
                   variant="ghost"
@@ -98,6 +101,22 @@ const ExpenseCard = ({
                 >
                   <FileText className="h-4 w-4" />
                 </Button>
+              )}
+              {hasReceipt && onDownloadStory && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDownloadStory(expense)}
+                      className="h-8 w-8 p-0 text-primary"
+                      aria-label="Download a private story image"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download story image</TooltipContent>
+                </Tooltip>
               )}
               {onEdit && (
                 <Button
