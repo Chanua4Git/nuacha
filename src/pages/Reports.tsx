@@ -14,15 +14,22 @@ import { cn } from '@/lib/utils';
 import CategorySelector from '@/components/CategorySelector';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import { StoryExportDialog } from '@/components/story/StoryExportDialog';
+
+const STORY_CREATOR_EMAIL = 'chanuajohnson4@gmail.com';
 
 const Reports = () => {
-  const { selectedFamily, expenses, categories } = useExpense();
+  const { selectedFamily, expenses, categories, families } = useExpense();
+  const { user } = useAuth();
   const { templates, isLoading: templatesLoading } = useReportTemplates();
   const [reportType, setReportType] = useState<string>('expenses');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [templateId, setTemplateId] = useState<string | undefined>();
+  const [showStoryExport, setShowStoryExport] = useState(false);
+  const canCreateStories = user?.email?.toLowerCase() === STORY_CREATOR_EMAIL;
   
   const filterExpenses = () => {
     if (!selectedFamily) return [];
@@ -305,11 +312,11 @@ const Reports = () => {
                         </table>
                       </div>
                       
-                      {filteredExpenses.length > 0 && (
+                      {filteredExpenses.length > 0 && canCreateStories && (
                         <div className="flex justify-end mt-4">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => setShowStoryExport(true)}>
                             <Download className="h-4 w-4 mr-2" />
-                            Export Data
+                            Create story recap
                           </Button>
                         </div>
                       )}
@@ -413,6 +420,17 @@ const Reports = () => {
                 </CardContent>
               </Card>
             )}
+
+            <StoryExportDialog
+              open={showStoryExport}
+              onOpenChange={setShowStoryExport}
+              expenses={filteredExpenses}
+              categories={categories}
+              families={families}
+              selectedFamily={selectedFamily}
+              periodLabel={startDate && endDate ? `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}` : undefined}
+              initialKind="monthly"
+            />
           </>
         )}
       </main>

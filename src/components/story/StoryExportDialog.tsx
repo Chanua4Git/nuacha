@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, Family, CategoryWithCamelCase } from '@/types/expense';
 import { createStoryImage, receiptStorySubtitle, StoryImageData, StoryKind, storyFilename } from '@/utils/storyImage';
 import { supabase } from '@/lib/supabase';
@@ -80,6 +81,7 @@ export function StoryExportDialog({
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [isRendering, setIsRendering] = useState(false);
   const [summary, setSummary] = useState<SummaryData>(EMPTY_SUMMARY);
+  const [annualYear, setAnnualYear] = useState(String(new Date().getFullYear()));
 
   useEffect(() => {
     if (!open) return;
@@ -151,7 +153,7 @@ export function StoryExportDialog({
     }
 
     if (kind === 'annual') {
-      const selectedYear = Number(periodLabel?.match(/\b(20\d{2})\b/)?.[1]) || new Date().getFullYear();
+      const selectedYear = Number(annualYear);
       const source = (summary.expenses.length ? summary.expenses : expenses).filter((item) => new Date(item.date).getFullYear() === selectedYear);
       const months = new Set(source.map((item) => new Date(item.date).getMonth())).size;
       const householdIds = new Set(source.map((item) => item.familyId)).size;
@@ -184,7 +186,13 @@ export function StoryExportDialog({
       ],
       highlights: [...topCategoryNames(expenses, knownNames).slice(0, 2), ...businesses.slice(0, 2).map((name) => `Seen at ${name}`)],
     };
-  }, [categories, expense, expenses, families, kind, periodLabel, selectedFamily, summary]);
+  }, [annualYear, categories, expense, expenses, families, kind, periodLabel, selectedFamily, summary]);
+
+  const availableYears = useMemo(() => {
+    const source = summary.expenses.length ? summary.expenses : expenses;
+    const years = Array.from(new Set(source.map((item) => new Date(item.date).getFullYear()).filter(Number.isFinite))).sort((a, b) => b - a);
+    return years.length ? years : [new Date().getFullYear()];
+  }, [expenses, summary.expenses]);
 
   useEffect(() => {
     if (!open) return;
@@ -246,6 +254,19 @@ export function StoryExportDialog({
             ))}
           </TabsList>
         </Tabs>
+
+        {!expense && kind === 'annual' && (
+          <div className="mx-auto w-full max-w-[300px]">
+            <Select value={annualYear} onValueChange={setAnnualYear}>
+              <SelectTrigger aria-label="Choose recap year">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="mx-auto flex aspect-[9/16] w-full max-w-[300px] items-center justify-center overflow-hidden rounded-md border bg-muted">
           {isRendering ? (

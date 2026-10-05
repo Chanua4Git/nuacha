@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { format } from 'date-fns';
-import { Filter, Trash2, Search } from 'lucide-react';
+import { Download, Filter, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
@@ -19,6 +19,10 @@ import ExpenseFilterChips from './ExpenseFilterChips';
 import { useCategories } from '@/hooks/useCategories';
 import { Expense } from '@/types/expense';
 import DetailedReceiptView from './receipt/DetailedReceiptView';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+import { StoryExportDialog } from '@/components/story/StoryExportDialog';
+
+const STORY_CREATOR_EMAIL = 'chanuajohnson4@gmail.com';
 
 interface ExpenseListProps {
   onEditExpense?: (expense: Expense) => void;
@@ -26,7 +30,8 @@ interface ExpenseListProps {
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const expenseContext = useContextAwareExpense();
-  const { filteredExpenses, expenses: allExpenses, deleteExpense, updateExpense } = useExpense();
+  const { filteredExpenses, expenses: allExpenses, deleteExpense, updateExpense, selectedFamily, families } = useExpense();
+  const { user } = useAuth();
   const { categories } = useCategories();
   
   // Initialize to current month for consistency with /budget
@@ -51,6 +56,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   
   // Receipt detail view state
   const [selectedExpenseForDetails, setSelectedExpenseForDetails] = useState<Expense | null>(null);
+  const [selectedExpenseForStory, setSelectedExpenseForStory] = useState<Expense | null>(null);
+  const [showRecapStory, setShowRecapStory] = useState(false);
+  const canCreateStories = user?.email?.toLowerCase() === STORY_CREATOR_EMAIL;
   
   const updateFilter = useCallback((key: keyof ExpenseFilterValues, value: any) => {
     setFilters(prev => ({
@@ -193,6 +201,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         </div>
         
         <div className="flex justify-end items-center gap-2 mb-4">
+          {canCreateStories && (
+            <Button variant="outline" size="sm" onClick={() => setShowRecapStory(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Story recap
+            </Button>
+          )}
           <Input
             placeholder="Search expenses..."
             value={searchTerm}
@@ -284,6 +298,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
                             onDelete={handleDeleteSingle}
                             onEdit={onEditExpense ? handleEditExpense : undefined}
                             onViewDetails={handleViewDetails}
+                            onDownloadStory={canCreateStories ? setSelectedExpenseForStory : undefined}
                             onCategoryChange={handleCategoryChange}
                             isDuplicate={true}
                             duplicateConfidence={group.confidence}
@@ -342,6 +357,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
               onDelete={handleDeleteSingle}
               onEdit={onEditExpense ? handleEditExpense : undefined}
               onViewDetails={handleViewDetails}
+              onDownloadStory={canCreateStories ? setSelectedExpenseForStory : undefined}
               onCategoryChange={handleCategoryChange}
               isDuplicate={duplicateExpenseIds.has(expense.id)}
               isSelected={selectedExpenses.has(expense.id)}
@@ -374,6 +390,24 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <StoryExportDialog
+        open={!!selectedExpenseForStory}
+        onOpenChange={(open) => !open && setSelectedExpenseForStory(null)}
+        expense={selectedExpenseForStory}
+        categories={categories || []}
+      />
+
+      <StoryExportDialog
+        open={showRecapStory}
+        onOpenChange={setShowRecapStory}
+        expenses={displayExpenses}
+        categories={categories || []}
+        families={families}
+        selectedFamily={selectedFamily}
+        periodLabel={selectedPeriod.displayName}
+        initialKind="monthly"
+      />
     </div>
   );
 };

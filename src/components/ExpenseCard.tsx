@@ -7,16 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Expense } from '@/types/expense';
 import { format, parseISO } from 'date-fns';
 import { useExpense } from '@/context/ExpenseContext';
-import { DollarSign, Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText } from 'lucide-react';
+import { Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExpenseTypeBadge from './ExpenseTypeBadge';
 import { DriveLinkButton } from './DriveLinkButton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ExpenseCardProps {
   expense: Expense;
   onEdit?: (expense: Expense) => void;
   onDelete?: (expenseId: string) => void;
   onViewDetails?: (expense: Expense) => void;
+  onDownloadStory?: (expense: Expense) => void;
   onCategoryChange?: (expenseId: string, categoryId: string) => void;
   isSelected?: boolean;
   onSelectionChange?: (expenseId: string, selected: boolean) => void;
@@ -30,6 +32,7 @@ const ExpenseCard = ({
   onEdit, 
   onDelete, 
   onViewDetails,
+  onDownloadStory,
   onCategoryChange,
   isSelected = false, 
   onSelectionChange, 
@@ -98,6 +101,22 @@ const ExpenseCard = ({
                 >
                   <FileText className="h-4 w-4" />
                 </Button>
+              )}
+              {hasReceipt && onDownloadStory && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDownloadStory(expense)}
+                      className="h-8 w-8 p-0 text-primary"
+                      aria-label="Download a private story image"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download story image</TooltipContent>
+                </Tooltip>
               )}
               {onEdit && (
                 <Button
