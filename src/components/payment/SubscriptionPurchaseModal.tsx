@@ -273,9 +273,12 @@ export function SubscriptionPurchaseModal({ open, onOpenChange, planType }: Subs
             <Card>
               <CardContent className="pt-4 space-y-3">
                 <span className="font-medium">Pay online with WiPay 🇹🇹</span>
-                <p className="text-sm text-muted-foreground">Pay by card in TTD. Add your order reference in the note.</p>
+                <p className="text-sm text-muted-foreground">Pay {formatTTD(priceTTD)} by card in TTD. Add your order reference in the note.</p>
+                {hasIntroOffer && (
+                  <p className="text-xs text-muted-foreground">Trial price for your first {NUACHA_INTRO_OFFER.months} months (usually {formatTTD(regularPriceTTD)}/month).</p>
+                )}
                 <Button asChild className="w-full">
-                  <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay with WiPay</a>
+                  <a href={NUACHA_WIPAY_URL} target="_blank" rel="noopener noreferrer">Pay {formatTTD(priceTTD)} with WiPay</a>
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">Or pay by bank transfer below</p>
               </CardContent>
