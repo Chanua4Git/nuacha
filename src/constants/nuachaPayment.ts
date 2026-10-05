@@ -158,3 +158,11 @@ export function formatStorageSize(mb: number): string {
 }
 
 export const NUACHA_WIPAY_URL = "https://tt.wipayfinancial.com/to_me/Chan";
+
+// Intro trial offer: Staying Organized monthly at a reduced price for the first months
+export const NUACHA_INTRO_OFFER = {
+  planId: 'staying_organized',
+  priceTTD: 60,
+  priceUSD: 8.82,
+  months: 3,
+} as const;
