@@ -169,9 +169,39 @@ function suggestCategoryForItem(
     vendorName.toLowerCase().includes(vendor)
   );
 
-  console.log(`Vendor analysis - isDining: ${isDiningVendor}, isGrocery: ${isGroceryVendor}, vendor: "${vendorName}"`);
+  // Vehicle dealers and service businesses should not fall through to broad
+  // transportation or unrelated item matches.
+  const vehicleVendors = [
+    'reputable auto dealer', 'auto dealer', 'automotive', 'auto repair',
+    'mechanic', 'garage', 'service centre', 'service center', 'tyre shop',
+    'tire shop', 'massy motors', 'toyota trinidad', 'southern sales',
+    'lifestyle motors', 'diamond motors'
+  ];
 
-  // PRIORITY 1: If it's a dining vendor, prioritize dining category
+  const isVehicleVendor = vehicleVendors.some(vendor =>
+    vendorName.toLowerCase().includes(vendor)
+  );
+
+  console.log(`Vendor analysis - isDining: ${isDiningVendor}, isGrocery: ${isGroceryVendor}, isVehicle: ${isVehicleVendor}, vendor: "${vendorName}"`);
+
+  // PRIORITY 1: A recognized vehicle dealer/service business is maintenance.
+  if (isVehicleVendor) {
+    const vehicleCategory = categories.find(cat => {
+      const catName = cat.name.toLowerCase();
+      return catName.includes('vehicle maintenance') ||
+             catName.includes('car maintenance') ||
+             catName.includes('auto maintenance');
+    });
+
+    if (vehicleCategory) {
+      return {
+        categoryId: vehicleCategory.id,
+        confidence: 0.95
+      };
+    }
+  }
+
+  // PRIORITY 2: If it's a dining vendor, prioritize dining category
   if (isDiningVendor) {
     const diningCategory = categories.find(cat => 
       cat.name.toLowerCase().includes('dining') || 
@@ -196,7 +226,7 @@ function suggestCategoryForItem(
     };
   }
 
-  // PRIORITY 2: If it's a grocery vendor, prioritize grocery category
+  // PRIORITY 3: If it's a grocery vendor, prioritize grocery category
   if (isGroceryVendor) {
     // Try multiple variations of grocery category names
     const groceryCategory = categories.find(cat => {
@@ -474,6 +504,24 @@ function suggestCategoryForItem(
     'toll': ['transportation', 'vehicle'],
     'maintenance': ['vehicle-maintenance', 'transportation'],
     'repair': ['vehicle-maintenance', 'transportation'],
+    'auto': ['vehicle-maintenance', 'transportation'],
+    'dealer': ['vehicle-maintenance', 'transportation'],
+    'motors': ['vehicle-maintenance', 'transportation'],
+    'engine oil': ['vehicle-maintenance', 'transportation'],
+    'motor oil': ['vehicle-maintenance', 'transportation'],
+    'oil filter': ['vehicle-maintenance', 'transportation'],
+    'air filter': ['vehicle-maintenance', 'transportation'],
+    'brake pad': ['vehicle-maintenance', 'transportation'],
+    'brake fluid': ['vehicle-maintenance', 'transportation'],
+    'transmission fluid': ['vehicle-maintenance', 'transportation'],
+    'coolant': ['vehicle-maintenance', 'transportation'],
+    'spark plug': ['vehicle-maintenance', 'transportation'],
+    'car battery': ['vehicle-maintenance', 'transportation'],
+    'vehicle battery': ['vehicle-maintenance', 'transportation'],
+    'wheel alignment': ['vehicle-maintenance', 'transportation'],
+    'tyre': ['vehicle-maintenance', 'transportation'],
+    'tire': ['vehicle-maintenance', 'transportation'],
+    'wiper': ['vehicle-maintenance', 'transportation'],
 
     // Healthcare & Medical
     'medicine': ['medication', 'healthcare'],
