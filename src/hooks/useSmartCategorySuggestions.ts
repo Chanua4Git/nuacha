@@ -258,6 +258,7 @@ export const useSmartCategorySuggestions = (
     if (!place || categories.length === 0) {
       console.log('❌ Early return - missing place or categories:', { place, categoriesCount: categories.length });
       setSuggestions([]);
+      setIsLoading(false);
       return;
     }
 
