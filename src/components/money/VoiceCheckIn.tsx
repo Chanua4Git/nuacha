@@ -93,7 +93,12 @@ interface Props {
   resume?: CheckinDraft | null;
 }
 
-const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, guest, resume }: Props) => {
+const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, onSaved, daily, guest, resume }: Props) => {
+  const [created, setCreated] = useState<{ id: string; name: string }[]>([]);
+  const families = [...familiesProp, ...created.filter((c) => !familiesProp.some((f) => f.id === c.id))];
+  const [newFamName, setNewFamName] = useState('');
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
+  const [lineMember, setLineMember] = useState<Record<number, string>>({});
   const [period, setPeriod] = useState<string>('today');
   const [receipts, setReceipts] = useState<ReceiptPhoto[]>([]);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -129,7 +134,23 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, 
         setAnswers(list.map(() => ''));
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, families, daily, resume, guest]);
+  }, [open, familiesProp, daily, resume, guest]);
+
+  useEffect(() => {
+    setMembers([]); setLineMember({});
+    if (!familyId) return;
+    supabase.from('family_members').select('id,name').eq('family_id', familyId).order('name').then(({ data }) => setMembers(data ?? []));
+  }, [familyId]);
+
+  const createFamily = async (name: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !name.trim()) return;
+    const { data, error } = await supabase.from('families').insert({ user_id: user.id, name: name.trim(), color: '#5A7684' }).select('id,name').single();
+    if (error || !data) { toast.error("We couldn't create that just now. Please try again."); return; }
+    setCreated((c) => [...c, data]); setFamilyId(data.id); setNewFamName('');
+    trackEvent('checkin_family_created', { name: data.name });
+    toast.success(`${data.name} is ready.`);
+  };
 
   const pickedFamily = () => familyId || families.find((f) => /peltier/i.test(f.name))?.id || families[0]?.id;
 
@@ -221,6 +242,8 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, 
             receipt_url: it.receipt_index != null ? receipts[it.receipt_index]?.url ?? null : null, place: it.place || it.person || it.description, expense_type: 'actual',
           }).select('id').single();
           if (error) throw error;
+          const mem = lineMember[items.indexOf(it)];
+          if (exp && mem) await supabase.from('expense_members').insert({ expense_id: exp.id, member_id: mem, allocation_percentage: 100 });
           if (exp && it.from_account_id) await setPaidFrom({ expenseId: exp.id }, it.amount, `acct:${it.from_account_id}`);
         } else continue;
         saved++;
@@ -353,8 +376,32 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, 
                   {it.kind !== 'income' && <AccountPick value={it.from_account_id} onChange={(v) => update(i, { from_account_id: v })} placeholder="From which account?" />}
                   {(it.kind === 'transfer' || it.kind === 'income') && <AccountPick value={it.to_account_id} onChange={(v) => update(i, { to_account_id: v })} placeholder="Into which account?" />}
                 </div>
+                {it.kind === 'expense' && members.length > 0 && (
+                  <div className="flex flex-wrap gap-1 items-center">
+                    <span className="text-xs text-muted-foreground mr-1">For:</span>
+                    {members.map((m) => (
+                      <button key={m.id} type="button" onClick={() => setLineMember((s) => ({ ...s, [i]: s[i] === m.id ? '' : m.id }))}
+                        className={`text-xs rounded-full border px-2 py-0.5 ${lineMember[i] === m.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background'}`}>{m.name}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
+            {items.some((x) => x.kind === 'expense') && families.length === 0 && (
+              <div className="rounded-lg border bg-accent/30 p-3 grid gap-2">
+                <p className="text-sm font-medium">Who is this spending for?</p>
+                <p className="text-xs text-muted-foreground">Pick one to start — you can add more households, a business, or people later.</p>
+                <div className="flex flex-wrap gap-2">
+                  {['My home', 'My small business', 'Just me'].map((n) => (
+                    <Button key={n} size="sm" variant="outline" onClick={() => createFamily(n)}>{n}</Button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input placeholder="Or name it (e.g. Mum's house)" value={newFamName} onChange={(e) => setNewFamName(e.target.value)} />
+                  <Button size="sm" onClick={() => createFamily(newFamName)} disabled={!newFamName.trim()}>Add</Button>
+                </div>
+              </div>
+            )}
             {items.some((x) => x.kind === 'expense') && families.length > 1 && (
               <div className="grid gap-1">
                 <span className="text-sm">Expenses go to</span>
@@ -366,7 +413,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, 
             )}
             <DialogFooter className="gap-2">
               <Button variant="ghost" onClick={() => setItems(null)}>Back</Button>
-              <Button onClick={save} disabled={busy || !items.length}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} Save</Button>
+              <Button onClick={save} disabled={busy || !items.length || (items.some((x) => x.kind === 'expense') && !familyId)}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} Save</Button>
             </DialogFooter>
           </div>
         )}
