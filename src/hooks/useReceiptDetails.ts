@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Json } from '@/types/supabase';
 import { CategoryWithCamelCase } from '@/types/expense';
 
-export const useReceiptDetails = (expenseId: string | undefined) => {
+export const useReceiptDetails = (expenseId: string | undefined, reloadKey = 0) => {
   const [receiptDetail, setReceiptDetail] = useState<ReceiptDetail | null>(null);
   const [lineItems, setLineItems] = useState<ReceiptLineItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -160,7 +160,7 @@ export const useReceiptDetails = (expenseId: string | undefined) => {
     };
     
     fetchReceiptData();
-  }, [expenseId]);
+  }, [expenseId, reloadKey]);
   
   const saveReceiptDetail = async (receiptDetail: ReceiptDetail) => {
     if (!expenseId) return null;

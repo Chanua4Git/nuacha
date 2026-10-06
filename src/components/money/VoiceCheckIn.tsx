@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Mic, Square, Trash2, Loader2, ChevronRight, Camera, ImagePlus, X } from 'lucide-react';
 import { handleReceiptUpload } from '@/utils/receipt/uploadHandling';
-import { processReceiptWithEdgeFunction } from '@/utils/receipt/ocrProcessing';
+import { processReceiptWithEdgeFunction, saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
+import type { OCRResult } from '@/types/expense';
 import { toast } from 'sonner';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +30,7 @@ interface Item {
 interface ReceiptPhoto {
   preview: string; url: string | null; status: 'queued' | 'reading' | 'ready' | 'failed';
   vendor: string | null; date: string | null; total: number | null;
+  ocr?: OCRResult;
 }
 
 const PERIODS = [
@@ -170,7 +172,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
         const ocr = await processReceiptWithEdgeFunction(url, pickedFamily());
         if (ocr.error) { set({ url, status: 'failed' }); return; }
         const total = Number(String(ocr.amount ?? '').replace(/[^0-9.]/g, '')) || null;
-        set({ url, status: 'ready', vendor: ocr.place ?? null, total, date: ocr.date ? format(new Date(ocr.date), 'yyyy-MM-dd') : null });
+        set({ url, status: 'ready', ocr, vendor: ocr.place ?? null, total, date: ocr.date ? format(new Date(ocr.date), 'yyyy-MM-dd') : null });
       } catch { set({ status: 'failed' }); }
     });
   };
@@ -242,6 +244,8 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
             receipt_url: it.receipt_index != null ? receipts[it.receipt_index]?.url ?? null : null, place: it.place || it.person || it.description, expense_type: 'actual',
           }).select('id').single();
           if (error) throw error;
+          const rOcr = it.receipt_index != null ? receipts[it.receipt_index]?.ocr : undefined;
+          if (exp && rOcr) { try { await saveReceiptDetailsAndLineItems(exp.id, rOcr); } catch (e) { console.error('receipt details', e); } }
           const mem = lineMember[items.indexOf(it)];
           if (exp && mem) await supabase.from('expense_members').insert({ expense_id: exp.id, member_id: mem, allocation_percentage: 100 });
           if (exp && it.from_account_id) await setPaidFrom({ expenseId: exp.id }, it.amount, `acct:${it.from_account_id}`);
