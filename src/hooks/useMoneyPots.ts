@@ -72,6 +72,7 @@ export const computeAvailable = (
   account: MoneyAccount,
   withdrawals: CashWithdrawal[],
   incomeIn: { account_id: string | null; delivered_on: string | null; amount: number }[] = [],
+  transfers: { from_account_id: string; to_account_id: string; transferred_on: string; amount: number }[] = [],
 ) => {
   if (account.known_balance === null || account.known_balance === undefined) return null;
   const start = account.known_balance_date ?? '0000-01-01';
@@ -80,6 +81,13 @@ export const computeAvailable = (
   incomeIn
     .filter((i) => i.account_id === account.id && i.delivered_on && i.delivered_on > start)
     .forEach((i) => { balance += num(i.amount); });
+  // Transfers between own accounts move money, they are never spending.
+  transfers
+    .filter((t) => t.transferred_on > start)
+    .forEach((t) => {
+      if (t.to_account_id === account.id) balance += num(t.amount);
+      if (t.from_account_id === account.id) balance -= num(t.amount);
+    });
   withdrawals
     .filter((w) => w.account_id === account.id && w.withdrawn_on >= start)
     .sort((a, b) => a.withdrawn_on.localeCompare(b.withdrawn_on) || a.created_at.localeCompare(b.created_at))
