@@ -6,6 +6,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { openTalkItThrough } from '@/components/money/TalkItThroughLauncher';
+import { Mic } from 'lucide-react';
 import { useAuthPreview } from '@/contexts/AuthPreviewContext';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -179,6 +181,15 @@ const Navbar = () => {
                     >
                       Authentication Demo
                     </Button>
+                    {user && (
+                      <Button
+                        variant="ghost"
+                        className="justify-start h-12 text-base w-full"
+                        onClick={() => { setIsMenuOpen(false); openTalkItThrough(); }}
+                      >
+                        <Mic className="h-4 w-4 mr-2" /> Talk it through
+                      </Button>
+                    )}
                     <Button
                       variant={isActive('/updates') ? "secondary" : "ghost"}
                       className="justify-start h-12 text-base w-full"
@@ -248,6 +259,10 @@ const Navbar = () => {
                   </Link>
                 </Button>
                 <NavigationDropdown title="Payroll" items={payrollItems} />
+                <Button variant="ghost" className="flex items-center gap-2" onClick={openTalkItThrough}>
+                  <Mic className="h-4 w-4" />
+                  <span className="hidden lg:inline">Talk it through</span>
+                </Button>
               </>
             )}
             <Button 

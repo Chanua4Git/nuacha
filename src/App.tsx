@@ -22,6 +22,7 @@ import { trackPageView } from "@/lib/analytics";
 import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
+import TalkItThroughLauncher from "@/components/money/TalkItThroughLauncher";
 import { ExpenseProvider } from "./context/ExpenseContext";
 
 import Reports from "./pages/Reports";
@@ -109,6 +110,7 @@ const App = () => {
                 <div className="min-h-screen flex flex-col">
                   <ScrollToTop />
                   <Navbar />
+                  <TalkItThroughLauncher />
                   <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Landing />} />
