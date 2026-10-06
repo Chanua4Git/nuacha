@@ -4,6 +4,7 @@ export interface Employee {
   id: string;
   user_id: string;
   employee_number: string;
+  nis_exempt?: boolean;
   first_name: string;
   last_name: string;
   email?: string;
@@ -116,6 +117,7 @@ export interface PayrollExportData {
 // For form inputs
 export interface EmployeeFormData {
   employee_number: string;
+  nis_exempt?: boolean;
   first_name: string;
   last_name: string;
   email?: string;
