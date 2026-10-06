@@ -89,8 +89,10 @@ const MonthlyCheckIn = (p: Props) => {
   const emergencyIds = new Set(p.accounts.filter((a: any) => a.purpose === 'emergency').map((a) => a.id));
   const cashTotal = cashPlan.reduce((s, x) => s + x.amount, 0);
 
+  useEffect(() => { if (window.location.hash === '#check-in') setVoiceOpen(true); }, []);
+
   return (
-    <Card>
+    <Card id="check-in">
       <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <CardTitle className="font-serif text-xl flex items-center gap-2">

@@ -811,6 +811,9 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 >
                   Prefer to enter details yourself? Enter manually
                 </Button>
+                <Button asChild type="button" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                  <a href="/money#check-in">Or talk it through by voice</a>
+                </Button>
               </div>
             </div>
           ) : (
