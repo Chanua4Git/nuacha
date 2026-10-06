@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
           'Amounts are TT$. "Took out / withdrew" = withdrawal from an account. "Moved / transferred X to Y" between the user\'s own accounts = transfer (never an expense). ' +
           'Bills, gas, groceries, paying a person in cash = expense; set from_account_id to the account named, or the routine\'s usual account, else null. ' +
           'Money received (e.g. brother sent money) = income with to_account_id. Use account ids from context only. Dates: resolve relative words against today; default today. ' +
-          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short.',
+          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short. For each expense pick category_id from context.categories, copying how past_examples filed similar places/people (e.g. nurse wages, grass cutting, gas, groceries).',
         input: `Context:\n${JSON.stringify(context)}\n\nCheck-in:\n${transcript}`,
         text: { format: { type: 'json_schema', name: 'money_checkin', strict: true, schema } },
       }),
@@ -118,7 +118,9 @@ Deno.serve(async (req) => {
     const text = data.output_text
       ?? data.output?.flatMap((o: any) => o.content ?? []).find((c: any) => c.type === 'output_text')?.text;
     if (!text) return json({ error: "I couldn't understand that one — try saying it another way, or type it." }, 422);
-    return json(JSON.parse(text));
+    const out = JSON.parse(text);
+    for (const it of out.items ?? []) if (it.category_id && !catIds.has(it.category_id)) it.category_id = null;
+    return json(out);
   } catch (e) {
     console.error(e);
     return json({ error: "Something went wrong reading that." }, 500);
