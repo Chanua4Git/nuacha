@@ -9,6 +9,13 @@ const Body = z.object({
   transcript: z.string().min(1).max(8000),
   today: z.string().max(10),
   family_id: z.string().uuid().optional(),
+  period: z.enum(['today', 'few_days', 'week']).optional(),
+  receipts: z.array(z.object({
+    index: z.number().int().min(0).max(50),
+    vendor: z.string().max(200).nullable(),
+    date: z.string().max(10).nullable(),
+    total: z.number().nullable(),
+  })).max(30).optional(),
 });
 
 const schema = {
@@ -22,7 +29,7 @@ const schema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['kind', 'amount', 'date', 'from_account_id', 'to_account_id', 'description', 'place', 'person', 'category_id'],
+        required: ['kind', 'amount', 'date', 'from_account_id', 'to_account_id', 'description', 'place', 'person', 'category_id', 'receipt_index'],
         properties: {
           kind: { type: 'string', enum: ['withdrawal', 'transfer', 'expense', 'income'] },
           amount: { type: 'number' },
@@ -32,6 +39,7 @@ const schema = {
           description: { type: 'string' },
           place: { type: ['string', 'null'] },
           person: { type: ['string', 'null'], description: 'Person paid, if a wage paid in cash.' },
+          receipt_index: { type: ['integer', 'null'], description: 'Index of the receipt (from context.receipts) this expense comes from, else null.' },
           category_id: { type: ['string', 'null'], description: 'For expenses only: best matching id from context.categories, following past_examples. Null if none fits or not an expense.' },
         },
       },
@@ -56,7 +64,7 @@ Deno.serve(async (req) => {
     let parsed;
     try { parsed = Body.safeParse(await req.json()); } catch { return json({ error: 'Invalid request' }, 400); }
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
-    const { transcript, today, family_id } = parsed.data;
+    const { transcript, today, family_id, period, receipts = [] } = parsed.data;
 
     const [acc, emp, rt, cats, hist] = await Promise.all([
       supabase.from('money_accounts').select('id,name,purpose,account_last4').eq('is_active', true),
@@ -84,6 +92,8 @@ Deno.serve(async (req) => {
       routines: rt.data ?? [],
       categories: catList,
       past_examples: examples,
+      period: period ?? null,
+      receipts,
     };
 
 
@@ -101,7 +111,7 @@ Deno.serve(async (req) => {
           'Amounts are TT$. "Took out / withdrew" = withdrawal from an account. "Moved / transferred X to Y" between the user\'s own accounts = transfer (never an expense). ' +
           'Bills, gas, groceries, paying a person in cash = expense; set from_account_id to the account named, or the routine\'s usual account, else null. ' +
           'Money received (e.g. brother sent money) = income with to_account_id. Use account ids from context only. Dates: resolve relative words against today; default today. ' +
-          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short. For each expense pick category_id from context.categories, copying how past_examples filed similar places/people (e.g. nurse wages, grass cutting, gas, groceries).',
+          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short. period hints the time span (today / last few days / this week) for undated items. Receipts: every receipt in context.receipts must appear exactly once as an expense with receipt_index set. If the user spoke about the same purchase (same shop or clearly the same thing), merge into ONE item using the receipt total, receipt date and receipt vendor as place. Cash wages or purchases after an ATM withdrawal: set from_account_id to the account the cash came from if said. For each expense pick category_id from context.categories, copying how past_examples filed similar places/people (e.g. nurse wages, grass cutting, gas, groceries).',
         input: `Context:\n${JSON.stringify(context)}\n\nCheck-in:\n${transcript}`,
         text: { format: { type: 'json_schema', name: 'money_checkin', strict: true, schema } },
       }),
