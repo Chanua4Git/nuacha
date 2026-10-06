@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Mic } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthPreview } from '@/contexts/AuthPreviewContext';
+import { loadDraft, type CheckinDraft } from '@/lib/checkinDraft';
+import { trackEvent } from '@/lib/analytics';
 import VoiceCheckIn from './VoiceCheckIn';
 
 /** Opens the daily "Talk it through" check-in from anywhere in the app. */
@@ -15,15 +17,28 @@ const HIDDEN = ['/login', '/signup', '/reset-password'];
 const TalkItThroughLauncher = () => {
   const { user } = useAuthPreview();
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [resume, setResume] = useState<CheckinDraft | null>(null);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [families, setFamilies] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    const h = () => setOpen(true);
+    const h = () => { setOpen(true); if (!user) trackEvent('checkin_open_guest'); };
     window.addEventListener(TALK_EVENT, h);
     return () => window.removeEventListener(TALK_EVENT, h);
-  }, []);
+  }, [user]);
+
+  // After signing in, pick up a guest's saved note.
+  useEffect(() => {
+    if (!user) return;
+    const draft = loadDraft();
+    if (!draft) return;
+    setResume(draft);
+    setOpen(true);
+    if (new URLSearchParams(location.search).get('resume')) navigate(location.pathname, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -31,13 +46,13 @@ const TalkItThroughLauncher = () => {
     supabase.from('families').select('id,name').order('created_at').then(({ data }) => setFamilies(data ?? []));
   }, [open, user]);
 
-  if (!user || HIDDEN.includes(location.pathname)) return null;
+  if (HIDDEN.includes(location.pathname) || location.pathname.startsWith('/admin')) return null;
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { setOpen(true); if (!user) trackEvent('checkin_open_guest'); }}
         aria-label="Talk it through"
         className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-3 hover:opacity-90 transition"
       >
@@ -46,8 +61,10 @@ const TalkItThroughLauncher = () => {
       </button>
       <VoiceCheckIn
         daily
+        guest={!user}
+        resume={user && resume && families.length ? resume : null}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(o) => { setOpen(o); if (!o) setResume(null); }}
         accounts={accounts}
         families={families}
         onSaved={() => window.dispatchEvent(new Event(CHECKIN_SAVED_EVENT))}
