@@ -1368,6 +1368,53 @@ export type Database = {
           },
         ]
       }
+      paid_from_defaults: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          match_key: string
+          monthly_estimate: number | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          match_key: string
+          monthly_estimate?: number | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          match_key?: string
+          monthly_estimate?: number | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paid_from_defaults_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paypal_payments: {
         Row: {
           amount: number
