@@ -5,3 +5,4 @@
 - Pre-fill "Paid from" on new wages/expenses from paid_from_defaults (employee, then place, then category); defaults never rewrite existing entries, so past records stay as logged.
 - Record money moved between the user's own accounts in account_transfers and fold it into derived balances; transfers are never expenses.
 - Voice/typed money check-ins are parsed server-side into suggestions only; the app writes entries solely after the user reviews and taps Save.
+- Keep guest Talk-it-through drafts (note + receipt photos) only in the browser until sign-in; nothing is uploaded or parsed before then, because parsing and storage require an authenticated user.

@@ -13,6 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setPaidFrom } from '@/lib/paidFrom';
+import GuestAuthStep from './GuestAuthStep';
+import { saveDraft, clearDraft, draftFiles, type CheckinDraft } from '@/lib/checkinDraft';
+import { trackEvent } from '@/lib/analytics';
 
 type Kind = 'withdrawal' | 'transfer' | 'expense' | 'income';
 interface Item {
@@ -24,7 +27,7 @@ interface Item {
 }
 
 interface ReceiptPhoto {
-  preview: string; url: string | null; status: 'reading' | 'ready' | 'failed';
+  preview: string; url: string | null; status: 'queued' | 'reading' | 'ready' | 'failed';
   vendor: string | null; date: string | null; total: number | null;
 }
 
@@ -84,9 +87,13 @@ interface Props {
   onSaved: () => void;
   /** Daily check-in: opens on the free note, with a time period and receipts. */
   daily?: boolean;
+  /** Not signed in: keep the note on this device and ask to sign in first. */
+  guest?: boolean;
+  /** A guest draft to continue after signing in. */
+  resume?: CheckinDraft | null;
 }
 
-const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }: Props) => {
+const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily, guest, resume }: Props) => {
   const [period, setPeriod] = useState<string>('today');
   const [receipts, setReceipts] = useState<ReceiptPhoto[]>([]);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -100,12 +107,20 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
   const [items, setItems] = useState<Item[] | null>(null);
   const [note, setNote] = useState('');
   const [familyId, setFamilyId] = useState('');
+  const filesRef = useRef<File[]>([]);
+  const [needAuth, setNeedAuth] = useState(false);
+  const [autoRun, setAutoRun] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setItems(null); setStep(0); setFree(''); setNote('');
-    setPeriod('today'); setReceipts([]);
+    setPeriod('today'); setReceipts([]); filesRef.current = []; setNeedAuth(false);
     if (daily) setMode('free');
+    if (resume && !guest) {
+      setFree(resume.free); setPeriod(resume.period || 'today'); setMode('free');
+      draftFiles(resume).then((fs) => { addReceipts(fs); setAutoRun(true); });
+      clearDraft();
+    }
     setFamilyId(families.find((f) => /peltier/i.test(f.name))?.id ?? families[0]?.id ?? '');
     (supabase as any).from('money_routines').select('prompt').eq('is_active', true).not('prompt', 'is', null).order('sort_order')
       .then(({ data }: any) => {
@@ -113,15 +128,18 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
         setPrompts(list);
         setAnswers(list.map(() => ''));
       });
-  }, [open, families, daily]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, families, daily, resume, guest]);
 
   const pickedFamily = () => familyId || families.find((f) => /peltier/i.test(f.name))?.id || families[0]?.id;
 
-  const addReceipts = (files: FileList | null) => {
+  const addReceipts = (files: FileList | File[] | null) => {
     if (!files?.length) return;
     const list = Array.from(files);
-    const start = receipts.length;
-    setReceipts((r) => [...r, ...list.map((f) => ({ preview: URL.createObjectURL(f), url: null, status: 'reading' as const, vendor: null, date: null, total: null }))]);
+    const start = filesRef.current.length;
+    filesRef.current = [...filesRef.current, ...list];
+    setReceipts((r) => [...r, ...list.map((f) => ({ preview: URL.createObjectURL(f), url: null, status: (guest ? 'queued' : 'reading') as ReceiptPhoto['status'], vendor: null, date: null, total: null }))]);
+    if (guest) return;
     list.forEach(async (f, k) => {
       const idx = start + k;
       const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x, j) => (j === idx ? { ...x, ...patch } : x)));
@@ -135,13 +153,25 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
       } catch { set({ status: 'failed' }); }
     });
   };
-  const removeReceipt = (i: number) => setReceipts((r) => r.filter((_, j) => j !== i));
+  const removeReceipt = (i: number) => { filesRef.current = filesRef.current.filter((_, j) => j !== i); setReceipts((r) => r.filter((_, j) => j !== i)); };
   const reading = receipts.some((r) => r.status === 'reading');
 
   const setAnswer = (i: number, v: string) => setAnswers((a) => a.map((x, j) => (j === i ? v : x)));
   const appendAnswer = (i: number, t: string) => setAnswers((a) => a.map((x, j) => (j === i ? `${x} ${t}`.trim() : x)));
 
+  useEffect(() => {
+    if (autoRun && !reading && !guest) { setAutoRun(false); understand(); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRun, reading, guest]);
+
   const understand = async () => {
+    if (guest) {
+      if (!free.trim() && !receipts.length) { toast("Nothing to read yet — say or type a little first, or add a receipt."); return; }
+      await saveDraft(free, period, filesRef.current);
+      trackEvent('checkin_auth_prompt');
+      setNeedAuth(true);
+      return;
+    }
     const transcript = mode === 'free'
       ? free
       : prompts.map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i]}` : '')).filter(Boolean).join('\n\n');
@@ -195,6 +225,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
         } else continue;
         saved++;
       }
+      trackEvent('checkin_saved', { lines: saved });
       await (supabase as any).from('profiles').update({ last_checkin_at: new Date().toISOString() }).eq('id', user.id);
       toast.success(saved ? "That's saved. Keep going at your own pace." : 'Nothing needed saving.');
       onSaved();
@@ -225,7 +256,9 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
           <DialogDescription>Speak or type. I'll show you what I understood — nothing saves until you say so.</DialogDescription>
         </DialogHeader>
 
-        {!items ? (
+        {needAuth ? (
+          <GuestAuthStep onBack={() => setNeedAuth(false)} />
+        ) : !items ? (
           <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
             <TabsList className="grid grid-cols-2 w-full">
               {daily ? <>
@@ -278,7 +311,8 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }
                     <div key={i} className="relative rounded-lg border overflow-hidden text-xs">
                       <img src={r.preview} alt={`Receipt ${i + 1}`} className="h-20 w-full object-cover" />
                       <div className="p-1 break-words">
-                        {r.status === 'reading' ? <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Reading…</span>
+                        {r.status === 'queued' ? <span className="text-muted-foreground">Ready to read</span>
+                          : r.status === 'reading' ? <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Reading…</span>
                           : r.status === 'failed' ? <span className="text-muted-foreground">Couldn't read this one</span>
                           : <span>{r.vendor ?? 'Receipt'}{r.total ? ` · ${r.total.toFixed(2)}` : ''}</span>}
                       </div>
