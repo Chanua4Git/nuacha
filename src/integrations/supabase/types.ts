@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          from_account_id: string
+          id: string
+          notes: string | null
+          to_account_id: string
+          transferred_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_account_id: string
+          id?: string
+          notes?: string | null
+          to_account_id: string
+          transferred_on?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_account_id?: string
+          id?: string
+          notes?: string | null
+          to_account_id?: string
+          transferred_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_tasks: {
         Row: {
           category: string | null
@@ -657,6 +708,8 @@ export type Database = {
           national_id: string | null
           nis_exempt: boolean
           nis_number: string | null
+          nurse_role: string | null
+          pays_in_cash: boolean
           phone: string | null
           updated_at: string
           user_id: string
@@ -681,6 +734,8 @@ export type Database = {
           national_id?: string | null
           nis_exempt?: boolean
           nis_number?: string | null
+          nurse_role?: string | null
+          pays_in_cash?: boolean
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -705,6 +760,8 @@ export type Database = {
           national_id?: string | null
           nis_exempt?: boolean
           nis_number?: string | null
+          nurse_role?: string | null
+          pays_in_cash?: boolean
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -1052,6 +1109,7 @@ export type Database = {
           monthly_income: number
           name: string
           notes: string | null
+          purpose: string | null
           updated_at: string
           user_id: string
         }
@@ -1067,6 +1125,7 @@ export type Database = {
           monthly_income?: number
           name: string
           notes?: string | null
+          purpose?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1082,6 +1141,7 @@ export type Database = {
           monthly_income?: number
           name?: string
           notes?: string | null
+          purpose?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1163,6 +1223,69 @@ export type Database = {
             columns: ["withdrawal_id"]
             isOneToOne: false
             referencedRelation: "cash_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      money_routines: {
+        Row: {
+          amount_estimate: number | null
+          created_at: string
+          frequency: string
+          from_account_id: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          prompt: string | null
+          sort_order: number
+          to_account_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_estimate?: number | null
+          created_at?: string
+          frequency?: string
+          from_account_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          label: string
+          prompt?: string | null
+          sort_order?: number
+          to_account_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_estimate?: number | null
+          created_at?: string
+          frequency?: string
+          from_account_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          prompt?: string | null
+          sort_order?: number
+          to_account_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "money_routines_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_routines_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "money_accounts"
             referencedColumns: ["id"]
           },
         ]
