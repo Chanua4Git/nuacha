@@ -28,7 +28,7 @@ export const useBusinessIncome = () => {
     for (let from = 0; ; from += 1000) {
       const { data, error } = await (supabase as any)
         .from('business_income')
-        .select('id, external_order_id, order_number, customer_name, amount, payment_method_raw, channel, account_id, delivered_on')
+        .select('id, source, external_order_id, order_number, customer_name, amount, payment_method_raw, channel, account_id, delivered_on')
         .eq('user_id', user.id)
         .order('delivered_on', { ascending: false })
         .range(from, from + 999);
