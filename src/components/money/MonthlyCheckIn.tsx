@@ -35,24 +35,24 @@ const MonthlyCheckIn = (p: Props) => {
   const inMonth = (d?: string | null) => !!d && d >= p.monthStart && d <= p.monthEnd;
   const name = (id: string | null) => p.accounts.find((a) => a.id === id)?.name ?? 'Unassigned';
 
-  // Suggested start-of-month cash: average monthly pay of people paid in cash (last 3 months) + spending money.
+  // Suggested start-of-month cash from the household's known routines (see roadmap / user rules).
+  const weeks = differenceInCalendarWeeks(endOfMonth(parseISO(p.monthStart)), parseISO(p.monthStart)) + 1;
+  const otherWeeks = Math.ceil(weeks / 2);
   useEffect(() => {
-    (async () => {
-      const { data: emps } = await (supabase as any).from('employees').select('id,first_name,last_name').eq('is_active', true).eq('pays_in_cash', true);
-      const ids = (emps ?? []).map((e: any) => e.id);
-      if (!ids.length) { setCashPlan([]); return; }
-      const since = format(new Date(parseISO(p.monthStart).getTime() - 90 * 864e5), 'yyyy-MM-dd');
-      const { data: pay } = await supabase.from('payroll_entries').select('employee_id,gross_pay').in('employee_id', ids)
-        .gte('week_start_date', since).lt('week_start_date', p.monthStart);
-      const plan = (emps ?? []).map((e: any) => ({
-        name: `${e.first_name} ${e.last_name}`,
-        amount: Math.round(((pay ?? []).filter((x: any) => x.employee_id === e.id).reduce((s: number, x: any) => s + Number(x.gross_pay), 0)) / 3),
-      })).filter((x: any) => x.amount > 0);
-      const weeks = differenceInCalendarWeeks(endOfMonth(parseISO(p.monthStart)), parseISO(p.monthStart)) + 1;
-      plan.push({ name: `Spending money (${weeks} weeks × TT$${WEEKLY_SPENDING})`, amount: weeks * WEEKLY_SPENDING });
-      setCashPlan(plan);
-    })();
-  }, [p.monthStart]);
+    setCashPlan([
+      { name: `Leslie-Ann — night nurse (5 nights × TT$250 × ${weeks} weeks)`, amount: 5 * 250 * weeks },
+      { name: `Tricia — fill-in (1 night a week + 1 day every other week)`, amount: 250 * weeks + 250 * otherWeeks },
+      { name: 'Nikki — weekend nurse (2 weekends × TT$600)', amount: 2 * 600 },
+      { name: 'Basdeo — out & in (TT$1,200) + in only (TT$300)', amount: 1500 },
+      { name: 'Schawn — groundsman (4 days × TT$300)', amount: 4 * 300 },
+      { name: `Spending money (${weeks} weeks × TT$${WEEKLY_SPENDING})`, amount: weeks * WEEKLY_SPENDING },
+    ]);
+  }, [weeks, otherWeeks]);
+  const notCash = [
+    { name: 'Angela — paid straight from Grandpa’s pension', amount: null as number | null },
+    { name: 'Colleen — 2 weekends × TT$600, paid from Chan’s account (Grandpa transfer)', amount: 1200 },
+    { name: `Groceries — TT$800–1,000 a week on debit (${weeks} weeks)`, amount: null },
+  ];
 
   // Expenses this month with no "Paid from" yet.
   useEffect(() => {
@@ -117,7 +117,14 @@ const MonthlyCheckIn = (p: Props) => {
             <div key={c.name} className="flex justify-between gap-2 text-sm"><span className="break-words">{c.name}</span><span>{tt(c.amount)}</span></div>
           ))}
           <div className="flex justify-between text-sm font-medium border-t pt-1"><span>About</span><span>{tt(cashTotal)}</span></div>
-          <p className="text-xs text-muted-foreground">Based on the last three months of cash wages. Adjust as you need.</p>
+          <p className="text-xs text-muted-foreground">Based on your usual routine for a {weeks}-week month. Adjust as you need.</p>
+          <h4 className="text-xs font-medium text-muted-foreground pt-2">Not taken out as cash</h4>
+          {notCash.map((c) => (
+            <div key={c.name} className="flex justify-between gap-2 text-xs text-muted-foreground">
+              <span className="break-words">{c.name}</span>
+              <span>{c.amount ? tt(c.amount) : c.name.startsWith('Groceries') ? `${tt(800 * weeks)}–${tt(1000 * weeks)}` : ''}</span>
+            </div>
+          ))}
         </section>
 
         <section className="space-y-2 md:col-span-2">
