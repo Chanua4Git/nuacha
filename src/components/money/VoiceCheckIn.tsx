@@ -17,6 +17,7 @@ interface Item {
   kind: Kind; amount: number; date: string;
   from_account_id: string | null; to_account_id: string | null;
   description: string; place: string | null; person: string | null;
+  category_id?: string | null;
 }
 
 const KIND_LABEL: Record<Kind, string> = { withdrawal: 'Cash taken out', transfer: 'Moved between accounts', expense: 'Spent', income: 'Money received' };
@@ -101,7 +102,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
       : prompts.map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i]}` : '')).filter(Boolean).join('\n\n');
     if (!transcript.trim()) { toast("Nothing to read yet — say or type a little first."); return; }
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke('money-voice-parse', { body: { transcript, today: format(new Date(), 'yyyy-MM-dd') } });
+    const { data, error } = await supabase.functions.invoke('money-voice-parse', { body: { transcript, today: format(new Date(), 'yyyy-MM-dd'), family_id: familyId || undefined } });
     setBusy(false);
     if (error) {
       let msg = "I couldn't read that just now.";
@@ -140,7 +141,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
         } else if (it.kind === 'expense' && familyId) {
           const { data: exp, error } = await supabase.from('expenses').insert({
             family_id: familyId, amount: it.amount, description: it.person ? `Wages - ${it.person}` : it.description,
-            category: '', date: it.date, place: it.place || it.person || it.description, expense_type: 'actual',
+            category: it.category_id || '', date: it.date, place: it.place || it.person || it.description, expense_type: 'actual',
           }).select('id').single();
           if (error) throw error;
           if (exp && it.from_account_id) await setPaidFrom({ expenseId: exp.id }, it.amount, `acct:${it.from_account_id}`);

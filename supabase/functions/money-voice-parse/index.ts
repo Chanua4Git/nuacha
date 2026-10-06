@@ -8,6 +8,7 @@ import { z } from 'npm:zod@3';
 const Body = z.object({
   transcript: z.string().min(1).max(8000),
   today: z.string().max(10),
+  family_id: z.string().uuid().optional(),
 });
 
 const schema = {
@@ -21,7 +22,7 @@ const schema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['kind', 'amount', 'date', 'from_account_id', 'to_account_id', 'description', 'place', 'person'],
+        required: ['kind', 'amount', 'date', 'from_account_id', 'to_account_id', 'description', 'place', 'person', 'category_id'],
         properties: {
           kind: { type: 'string', enum: ['withdrawal', 'transfer', 'expense', 'income'] },
           amount: { type: 'number' },
@@ -31,6 +32,7 @@ const schema = {
           description: { type: 'string' },
           place: { type: ['string', 'null'] },
           person: { type: ['string', 'null'], description: 'Person paid, if a wage paid in cash.' },
+          category_id: { type: ['string', 'null'], description: 'For expenses only: best matching id from context.categories, following past_examples. Null if none fits or not an expense.' },
         },
       },
     },
@@ -54,20 +56,36 @@ Deno.serve(async (req) => {
     let parsed;
     try { parsed = Body.safeParse(await req.json()); } catch { return json({ error: 'Invalid request' }, 400); }
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
-    const { transcript, today } = parsed.data;
+    const { transcript, today, family_id } = parsed.data;
 
-    const [acc, emp, rt] = await Promise.all([
+    const [acc, emp, rt, cats, hist] = await Promise.all([
       supabase.from('money_accounts').select('id,name,purpose,account_last4').eq('is_active', true),
-      supabase.from('employees').select('first_name,last_name,nurse_role,pays_in_cash').eq('is_active', true),
+      supabase.from('employees').select('first_name,last_name,nurse_role,pays_in_cash,employment_type,daily_rate').eq('is_active', true),
       supabase.from('money_routines').select('label,kind,frequency,from_account_id,to_account_id,amount_estimate').eq('is_active', true),
+      family_id ? supabase.from('categories').select('id,name').eq('family_id', family_id) : Promise.resolve({ data: [] as any[] }),
+      family_id ? supabase.from('expenses').select('description,place,category').eq('family_id', family_id).neq('category', '').order('date', { ascending: false }).limit(150) : Promise.resolve({ data: [] as any[] }),
     ]);
+
+    const catList = (cats.data ?? []) as { id: string; name: string }[];
+    const catIds = new Set(catList.map((c) => c.id));
+    const catName = new Map(catList.map((c) => [c.id, c.name]));
+    // Past examples: "place / description -> category name", so the guess follows how this household already files things.
+    const seen = new Set<string>();
+    const examples = ((hist.data ?? []) as any[])
+      .filter((e) => catIds.has(e.category))
+      .map((e) => `${e.place || ''} / ${e.description || ''} -> ${catName.get(e.category)}`)
+      .filter((s) => (seen.has(s) ? false : (seen.add(s), true)))
+      .slice(0, 80);
 
     const context = {
       today,
       accounts: acc.data ?? [],
-      people: (emp.data ?? []).map((e: any) => ({ name: `${e.first_name} ${e.last_name}`, role: e.nurse_role, cash: e.pays_in_cash })),
+      people: (emp.data ?? []).map((e: any) => ({ name: `${e.first_name} ${e.last_name}`, role: e.nurse_role, cash: e.pays_in_cash, type: e.employment_type, daily_rate: e.daily_rate })),
       routines: rt.data ?? [],
+      categories: catList,
+      past_examples: examples,
     };
+
 
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) return json({ error: 'Voice check-in is not set up yet.' }, 500);
@@ -83,7 +101,7 @@ Deno.serve(async (req) => {
           'Amounts are TT$. "Took out / withdrew" = withdrawal from an account. "Moved / transferred X to Y" between the user\'s own accounts = transfer (never an expense). ' +
           'Bills, gas, groceries, paying a person in cash = expense; set from_account_id to the account named, or the routine\'s usual account, else null. ' +
           'Money received (e.g. brother sent money) = income with to_account_id. Use account ids from context only. Dates: resolve relative words against today; default today. ' +
-          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short.',
+          'Skip answers like "no" or "nothing". Never invent amounts; skip an item if no amount was given. Keep descriptions short. For each expense pick category_id from context.categories, copying how past_examples filed similar places/people (e.g. nurse wages, grass cutting, gas, groceries).',
         input: `Context:\n${JSON.stringify(context)}\n\nCheck-in:\n${transcript}`,
         text: { format: { type: 'json_schema', name: 'money_checkin', strict: true, schema } },
       }),
@@ -100,7 +118,9 @@ Deno.serve(async (req) => {
     const text = data.output_text
       ?? data.output?.flatMap((o: any) => o.content ?? []).find((c: any) => c.type === 'output_text')?.text;
     if (!text) return json({ error: "I couldn't understand that one — try saying it another way, or type it." }, 422);
-    return json(JSON.parse(text));
+    const out = JSON.parse(text);
+    for (const it of out.items ?? []) if (it.category_id && !catIds.has(it.category_id)) it.category_id = null;
+    return json(out);
   } catch (e) {
     console.error(e);
     return json({ error: "Something went wrong reading that." }, 500);
