@@ -385,7 +385,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           </SheetHeader>
           <div className="mt-6">
             {selectedExpenseForDetails && (
-              <DetailedReceiptView expenseId={selectedExpenseForDetails.id} />
+              <DetailedReceiptView expenseId={selectedExpenseForDetails.id} receiptUrl={selectedExpenseForDetails.receiptUrl || selectedExpenseForDetails.receiptImageUrl} />
             )}
           </div>
         </SheetContent>

@@ -1,5 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { getSignedReceiptUrl } from '@/utils/receipt/signedUrls';
+import { processReceiptWithEdgeFunction, saveReceiptDetailsAndLineItems } from '@/utils/receipt/ocrProcessing';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -16,15 +19,41 @@ import { CategoryWithCamelCase } from '@/types/expense';
 
 interface DetailedReceiptViewProps {
   expenseId: string;
+  receiptUrl?: string | null;
 }
 
-const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) => {
-  const { receiptDetail, lineItems, isLoading, saveLineItem, deleteLineItem } = useReceiptDetails(expenseId);
+const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId, receiptUrl }) => {
+  const [reloadKey, setReloadKey] = useState(0);
+  const { receiptDetail, lineItems, isLoading, saveLineItem, deleteLineItem } = useReceiptDetails(expenseId, reloadKey);
   const { categories } = useUnifiedCategories({ mode: 'unified' });
   const { selectedFamily } = useExpense();
   const { members, isLoading: membersLoading } = useFamilyMembers(selectedFamily?.id);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<ReceiptLineItem | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+
+  useEffect(() => {
+    if (!receiptUrl) { setSignedUrl(null); return; }
+    getSignedReceiptUrl(receiptUrl).then((u) => setSignedUrl(u || receiptUrl)).catch(() => setSignedUrl(receiptUrl));
+  }, [receiptUrl]);
+
+  const readReceipt = async () => {
+    if (!receiptUrl) return;
+    setReading(true);
+    try {
+      const ocr = await processReceiptWithEdgeFunction(receiptUrl, selectedFamily?.id);
+      if (ocr.error) throw new Error(String(ocr.error));
+      await saveReceiptDetailsAndLineItems(expenseId, ocr);
+      toast.success("All set. Your receipt details are in.");
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error(e);
+      toast.error("We couldn't read this receipt just now. Please try again in a moment.");
+    } finally {
+      setReading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -37,12 +66,25 @@ const DetailedReceiptView: React.FC<DetailedReceiptViewProps> = ({ expenseId }) 
 
   if (!receiptDetail && lineItems.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <Info className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-        <h3 className="text-lg font-medium">No receipt details available</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          This expense doesn't have any receipt details or line items.
-        </p>
+      <div className="space-y-4">
+        {signedUrl && (
+          <a href={signedUrl} target="_blank" rel="noreferrer">
+            <img src={signedUrl} alt="Receipt" className="w-full max-h-[60vh] object-contain rounded-lg border bg-muted" />
+          </a>
+        )}
+        <div className="p-4 text-center">
+          <Info className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+          <h3 className="text-lg font-medium">{receiptUrl ? "The items haven't been read yet" : 'No receipt details available'}</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {receiptUrl ? "Let's read this receipt so you can see the shop and each item." : "This expense doesn't have a receipt photo."}
+          </p>
+          {receiptUrl && (
+            <Button className="mt-4" onClick={readReceipt} disabled={reading}>
+              {reading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Receipt className="h-4 w-4 mr-2" />}
+              {reading ? 'Reading…' : 'Read this receipt'}
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
