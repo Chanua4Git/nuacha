@@ -22,6 +22,7 @@ const TalkItThroughLauncher = () => {
   const [resume, setResume] = useState<CheckinDraft | null>(null);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [families, setFamilies] = useState<{ id: string; name: string }[]>([]);
+  const [famLoaded, setFamLoaded] = useState(false);
 
   useEffect(() => {
     const h = () => { setOpen(true); if (!user) trackEvent('checkin_open_guest'); };
@@ -43,7 +44,7 @@ const TalkItThroughLauncher = () => {
   useEffect(() => {
     if (!open || !user) return;
     supabase.from('money_accounts').select('id,name').eq('is_active', true).order('name').then(({ data }) => setAccounts(data ?? []));
-    supabase.from('families').select('id,name').order('created_at').then(({ data }) => setFamilies(data ?? []));
+    supabase.from('families').select('id,name').order('created_at').then(({ data }) => { setFamilies(data ?? []); setFamLoaded(true); });
   }, [open, user]);
 
   if (HIDDEN.includes(location.pathname) || location.pathname.startsWith('/admin')) return null;
@@ -62,7 +63,7 @@ const TalkItThroughLauncher = () => {
       <VoiceCheckIn
         daily
         guest={!user}
-        resume={user && resume && families.length ? resume : null}
+        resume={user && resume && famLoaded ? resume : null}
         open={open}
         onOpenChange={(o) => { setOpen(o); if (!o) setResume(null); }}
         accounts={accounts}
