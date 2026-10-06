@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { PaidFromSelect } from '@/components/money/PaidFromSelect';
 import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
+import { lookupPaidFromDefault } from '@/lib/paidFromDefaults';
+import { useEffect as useEffectDefaults, useRef as useRefDefaults } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
@@ -110,6 +112,16 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   // New: Paid on date (optional)
   const [paidOnDate, setPaidOnDate] = useState<Date | undefined>();
   const [paidFrom, setPaidFromValue] = useState<PaidFromValue>(null);
+  const paidFromTouched = useRefDefaults(false);
+  // Pre-fill "Paid from" from the usual account for this place or category, unless chosen by hand.
+  useEffectDefaults(() => {
+    if (paidFromTouched.current || (!place && !category)) return;
+    let alive = true;
+    lookupPaidFromDefault({ place, categoryId: category }).then((v) => {
+      if (alive && v && !paidFromTouched.current) setPaidFromValue(v);
+    });
+    return () => { alive = false; };
+  }, [place, category]);
 
   // New: Expense type state
   const [expenseType, setExpenseType] = useState<ExpenseType>('actual');
@@ -570,6 +582,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       setOcrResult(null);
       setPaidOnDate(undefined);
       setPaidFromValue(null);
+      paidFromTouched.current = false;
       setExpenseType('actual');
       setPayrollLink({ enabled: false, periodMode: 'existing' });
       setIsLongReceiptMode(false);
@@ -1007,7 +1020,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
               <div className="grid gap-1">
                 <label className="text-sm font-medium">Paid from (optional)</label>
-                <PaidFromSelect value={paidFrom} onChange={setPaidFromValue} />
+                <PaidFromSelect value={paidFrom} onChange={(v) => { paidFromTouched.current = true; setPaidFromValue(v); }} />
               </div>
 
               {/* Paid on date (optional) */}
