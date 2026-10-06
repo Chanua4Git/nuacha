@@ -40,17 +40,17 @@ const MonthlyCheckIn = (p: Props) => {
   const otherWeeks = Math.ceil(weeks / 2);
   useEffect(() => {
     setCashPlan([
-      { name: `Leslie-Ann — night nurse (5 nights × TT$250 × ${weeks} weeks)`, amount: 5 * 250 * weeks },
-      { name: `Tricia — fill-in (1 night a week + 1 day every other week)`, amount: 250 * weeks + 250 * otherWeeks },
-      { name: 'Nikki — weekend nurse (2 weekends × TT$600)', amount: 2 * 600 },
-      { name: 'Basdeo — out & in (TT$1,200) + in only (TT$300)', amount: 1500 },
-      { name: 'Schawn — groundsman (4 days × TT$300)', amount: 4 * 300 },
+      { name: `Leslie-Ann Dolly Jackman — night nurse (5 nights × TT$250 × ${weeks} weeks)`, amount: 5 * 250 * weeks },
+      { name: `Tricia Crawford — fill-in (1 night a week + 1 day every other week)`, amount: 250 * weeks + 250 * otherWeeks },
+      { name: 'Nikki Doe — weekend nurse (2 weekends × TT$600)', amount: 2 * 600 },
+      { name: 'Basdeo Wackerman — out & in (TT$1,200) + in only (TT$300)', amount: 1500 },
+      { name: 'Schawn Millington — groundsman (4 days × TT$300)', amount: 4 * 300 },
       { name: `Spending money (${weeks} weeks × TT$${WEEKLY_SPENDING})`, amount: weeks * WEEKLY_SPENDING },
     ]);
   }, [weeks, otherWeeks]);
   const notCash = [
-    { name: 'Angela — paid straight from Grandpa’s pension', amount: null as number | null },
-    { name: 'Colleen — 2 weekends × TT$600, paid from Chan’s account (Grandpa transfer)', amount: 1200 },
+    { name: 'A N-Collymore (Angela) — paid straight from Grandpa’s pension', amount: null as number | null },
+    { name: 'Carlene Williams Kimloaz — 2 weekends × TT$600, paid from Chan’s account (Grandpa transfer)', amount: 1200 },
     { name: `Groceries — TT$800–1,000 a week on debit (${weeks} weeks)`, amount: null },
   ];
 
