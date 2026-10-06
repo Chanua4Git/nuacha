@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { Mic, Square, Trash2, Loader2, ChevronRight } from 'lucide-react';
+import { Mic, Square, Trash2, Loader2, ChevronRight, Camera, ImagePlus, X } from 'lucide-react';
+import { handleReceiptUpload } from '@/utils/receipt/uploadHandling';
+import { processReceiptWithEdgeFunction } from '@/utils/receipt/ocrProcessing';
 import { toast } from 'sonner';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +20,19 @@ interface Item {
   from_account_id: string | null; to_account_id: string | null;
   description: string; place: string | null; person: string | null;
   category_id?: string | null;
+  receipt_index?: number | null;
 }
+
+interface ReceiptPhoto {
+  preview: string; url: string | null; status: 'reading' | 'ready' | 'failed';
+  vendor: string | null; date: string | null; total: number | null;
+}
+
+const PERIODS = [
+  { key: 'today', label: 'Today' },
+  { key: 'few_days', label: 'Last 2–3 days' },
+  { key: 'week', label: 'This week' },
+] as const;
 
 const KIND_LABEL: Record<Kind, string> = { withdrawal: 'Cash taken out', transfer: 'Moved between accounts', expense: 'Spent', income: 'Money received' };
 
@@ -68,9 +82,15 @@ interface Props {
   accounts: { id: string; name: string }[];
   families: { id: string; name: string }[];
   onSaved: () => void;
+  /** Daily check-in: opens on the free note, with a time period and receipts. */
+  daily?: boolean;
 }
 
-const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props) => {
+const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved, daily }: Props) => {
+  const [period, setPeriod] = useState<string>('today');
+  const [receipts, setReceipts] = useState<ReceiptPhoto[]>([]);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef<HTMLInputElement>(null);
   const [prompts, setPrompts] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const [step, setStep] = useState(0);
@@ -84,6 +104,8 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
   useEffect(() => {
     if (!open) return;
     setItems(null); setStep(0); setFree(''); setNote('');
+    setPeriod('today'); setReceipts([]);
+    if (daily) setMode('free');
     setFamilyId(families.find((f) => /peltier/i.test(f.name))?.id ?? families[0]?.id ?? '');
     (supabase as any).from('money_routines').select('prompt').eq('is_active', true).not('prompt', 'is', null).order('sort_order')
       .then(({ data }: any) => {
@@ -91,7 +113,30 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
         setPrompts(list);
         setAnswers(list.map(() => ''));
       });
-  }, [open, families]);
+  }, [open, families, daily]);
+
+  const pickedFamily = () => familyId || families.find((f) => /peltier/i.test(f.name))?.id || families[0]?.id;
+
+  const addReceipts = (files: FileList | null) => {
+    if (!files?.length) return;
+    const list = Array.from(files);
+    const start = receipts.length;
+    setReceipts((r) => [...r, ...list.map((f) => ({ preview: URL.createObjectURL(f), url: null, status: 'reading' as const, vendor: null, date: null, total: null }))]);
+    list.forEach(async (f, k) => {
+      const idx = start + k;
+      const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x, j) => (j === idx ? { ...x, ...patch } : x)));
+      try {
+        const url = await handleReceiptUpload(f);
+        if (!url) { set({ status: 'failed' }); return; }
+        const ocr = await processReceiptWithEdgeFunction(url, pickedFamily());
+        if (ocr.error) { set({ url, status: 'failed' }); return; }
+        const total = Number(String(ocr.amount ?? '').replace(/[^0-9.]/g, '')) || null;
+        set({ url, status: 'ready', vendor: ocr.place ?? null, total, date: ocr.date ? format(new Date(ocr.date), 'yyyy-MM-dd') : null });
+      } catch { set({ status: 'failed' }); }
+    });
+  };
+  const removeReceipt = (i: number) => setReceipts((r) => r.filter((_, j) => j !== i));
+  const reading = receipts.some((r) => r.status === 'reading');
 
   const setAnswer = (i: number, v: string) => setAnswers((a) => a.map((x, j) => (j === i ? v : x)));
   const appendAnswer = (i: number, t: string) => setAnswers((a) => a.map((x, j) => (j === i ? `${x} ${t}`.trim() : x)));
@@ -100,9 +145,10 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
     const transcript = mode === 'free'
       ? free
       : prompts.map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i]}` : '')).filter(Boolean).join('\n\n');
-    if (!transcript.trim()) { toast("Nothing to read yet — say or type a little first."); return; }
+    const ready = receipts.map((r, i) => ({ index: i, vendor: r.vendor, date: r.date, total: r.total, ok: r.status === 'ready' })).filter((r) => r.ok);
+    if (!transcript.trim() && !ready.length) { toast("Nothing to read yet — say or type a little first, or add a receipt."); return; }
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke('money-voice-parse', { body: { transcript, today: format(new Date(), 'yyyy-MM-dd'), family_id: familyId || undefined } });
+    const { data, error } = await supabase.functions.invoke('money-voice-parse', { body: { transcript: transcript.trim() || '(No note — just the receipts.)', today: format(new Date(), 'yyyy-MM-dd'), family_id: familyId || undefined, period: daily ? period : undefined, receipts: ready.map(({ ok, ...r }) => r) } });
     setBusy(false);
     if (error) {
       let msg = "I couldn't read that just now.";
@@ -141,13 +187,15 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
         } else if (it.kind === 'expense' && familyId) {
           const { data: exp, error } = await supabase.from('expenses').insert({
             family_id: familyId, amount: it.amount, description: it.person ? `Wages - ${it.person}` : it.description,
-            category: it.category_id || '', date: it.date, place: it.place || it.person || it.description, expense_type: 'actual',
+            category: it.category_id || '', date: it.date,
+            receipt_url: it.receipt_index != null ? receipts[it.receipt_index]?.url ?? null : null, place: it.place || it.person || it.description, expense_type: 'actual',
           }).select('id').single();
           if (error) throw error;
           if (exp && it.from_account_id) await setPaidFrom({ expenseId: exp.id }, it.amount, `acct:${it.from_account_id}`);
         } else continue;
         saved++;
       }
+      await (supabase as any).from('profiles').update({ last_checkin_at: new Date().toISOString() }).eq('id', user.id);
       toast.success(saved ? "That's saved. Keep going at your own pace." : 'Nothing needed saving.');
       onSaved();
       onOpenChange(false);
@@ -180,8 +228,13 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
         {!items ? (
           <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="guided">One question at a time</TabsTrigger>
-              <TabsTrigger value="free">Just tell me</TabsTrigger>
+              {daily ? <>
+                <TabsTrigger value="free">Just tell me</TabsTrigger>
+                <TabsTrigger value="guided">Monthly questions</TabsTrigger>
+              </> : <>
+                <TabsTrigger value="guided">One question at a time</TabsTrigger>
+                <TabsTrigger value="free">Just tell me</TabsTrigger>
+              </>}
             </TabsList>
             <TabsContent value="guided" className="space-y-3 pt-3">
               {prompts.length > 0 && (
@@ -200,11 +253,43 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
               )}
             </TabsContent>
             <TabsContent value="free" className="space-y-3 pt-3">
+              {daily && (
+                <div className="flex flex-wrap gap-2">
+                  {PERIODS.map((p) => (
+                    <Button key={p.key} type="button" size="sm" variant={period === p.key ? 'default' : 'outline'} onClick={() => setPeriod(p.key)}>{p.label}</Button>
+                  ))}
+                </div>
+              )}
               <Textarea rows={6} value={free} onChange={(e) => setFree(e.target.value)} placeholder="e.g. Took out 4,500 from Grandma's for cash wages, moved 3,000 from Grandpa to my account, paid Flow 395…" />
-              <MicButton onText={(t) => setFree((f) => `${f} ${t}`.trim())} />
+              <div className="flex flex-wrap gap-2">
+                <MicButton onText={(t) => setFree((f) => `${f} ${t}`.trim())} />
+                {daily && (
+                  <>
+                    <Button type="button" variant="outline" onClick={() => cameraRef.current?.click()}><Camera className="h-4 w-4 mr-1" /> Snap receipt</Button>
+                    <Button type="button" variant="outline" onClick={() => photosRef.current?.click()}><ImagePlus className="h-4 w-4 mr-1" /> Add receipts</Button>
+                    <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
+                    <input ref={photosRef} type="file" accept="image/*,.heic" multiple className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
+                  </>
+                )}
+              </div>
+              {receipts.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {receipts.map((r, i) => (
+                    <div key={i} className="relative rounded-lg border overflow-hidden text-xs">
+                      <img src={r.preview} alt={`Receipt ${i + 1}`} className="h-20 w-full object-cover" />
+                      <div className="p-1 break-words">
+                        {r.status === 'reading' ? <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Reading…</span>
+                          : r.status === 'failed' ? <span className="text-muted-foreground">Couldn't read this one</span>
+                          : <span>{r.vendor ?? 'Receipt'}{r.total ? ` · ${r.total.toFixed(2)}` : ''}</span>}
+                      </div>
+                      <button type="button" aria-label="Remove receipt" onClick={() => removeReceipt(i)} className="absolute top-1 right-1 rounded-full bg-background/90 p-0.5"><X className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
             <DialogFooter className="pt-3">
-              <Button onClick={understand} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} See what I understood</Button>
+              <Button onClick={understand} disabled={busy || reading}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null} See what I understood</Button>
             </DialogFooter>
           </Tabs>
         ) : (
@@ -220,7 +305,12 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families, onSaved }: Props
                   </Select>
                   <Button variant="ghost" size="icon" aria-label="Remove this line" onClick={() => setItems((l) => l!.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
                 </div>
-                <Input value={it.description} onChange={(e) => update(i, { description: e.target.value })} />
+                <div className="flex gap-2 items-center">
+                  {it.receipt_index != null && receipts[it.receipt_index] && (
+                    <img src={receipts[it.receipt_index].preview} alt="Receipt" className="h-10 w-10 rounded object-cover border shrink-0" />
+                  )}
+                  <Input value={it.description} onChange={(e) => update(i, { description: e.target.value })} />
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Input type="number" inputMode="decimal" value={it.amount} onChange={(e) => update(i, { amount: Number(e.target.value) })} />
                   <Input type="date" value={it.date} onChange={(e) => update(i, { date: e.target.value })} />
