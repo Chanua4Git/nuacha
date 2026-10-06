@@ -17,6 +17,8 @@ import ResetPasswordConfirm from "./auth/components/reset-password/ResetPassword
 import Dashboard from "./auth/components/Dashboard";
 import ProtectedRoute from "./auth/components/ProtectedRoute";
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { trackPageView } from "@/lib/analytics";
 import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
@@ -63,6 +65,11 @@ function clearAuthDemoMode() {
 }
 
 const App = () => {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
   useEffect(() => {
     let viewportMeta = document.querySelector('meta[name="viewport"]');
     if (!viewportMeta) {
