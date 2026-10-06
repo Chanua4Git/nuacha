@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export type IncomeChannel = 'cash' | 'bank' | 'unknown';
 
 export interface BusinessIncomeRow {
+  source?: string;
   id: string;
   external_order_id: string;
   order_number: string | null;

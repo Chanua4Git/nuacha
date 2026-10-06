@@ -18,6 +18,8 @@ import { useExpense } from '@/context/ExpenseContext';
 import { useBusinessIncome } from '@/hooks/useBusinessIncome';
 import GardenOhmIncomeSection from '@/components/money/GardenOhmIncomeSection';
 import WhoPaysForWhat from '@/components/money/WhoPaysForWhat';
+import MonthlyCheckIn from '@/components/money/MonthlyCheckIn';
+import { useTransfers } from '@/hooks/useTransfers';
 import {
   useMoneyPots,
   computeAvailable,
@@ -38,6 +40,7 @@ const MoneyPots = () => {
   const pots = useMoneyPots();
   const gardenOhm = useBusinessIncome();
   const { families } = useExpense();
+  const transfers = useTransfers();
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [accountDialog, setAccountDialog] = useState<{ open: boolean; account?: MoneyAccount }>({ open: false });
   const [withdrawalDialog, setWithdrawalDialog] = useState<{ open: boolean; account?: MoneyAccount; withdrawal?: CashWithdrawal }>({ open: false });
@@ -113,10 +116,24 @@ const MoneyPots = () => {
         <SummaryCard icon={<Wallet className="h-4 w-4" />} label="Cash still to explain" value={tt(summary.unexplained)} hint={summary.unexplained > 0 ? 'Link a receipt or wage when ready' : 'All accounted for'} highlight={summary.unexplained > 0} />
       </div>
 
+      <MonthlyCheckIn
+        month={month}
+        monthStart={monthStart}
+        monthEnd={monthEnd}
+        accounts={pots.accounts}
+        withdrawals={pots.withdrawals}
+        allocations={pots.allocations}
+        linkedItems={pots.linkedItems}
+        incomeRows={gardenOhm.rows}
+        transfers={transfers.rows}
+        families={families}
+        onSaved={() => { void pots.reload?.(); void gardenOhm.reload?.(); void transfers.reload(); }}
+      />
+
       <WhoPaysForWhat accounts={pots.accounts} />
 
       <GardenOhmIncomeSection
-        rows={gardenOhm.rows}
+        rows={gardenOhm.rows.filter((r) => !r.source || r.source === 'garden_ohm')}
         monthStart={monthStart}
         monthEnd={monthEnd}
         accounts={pots.accounts}
@@ -135,7 +152,7 @@ const MoneyPots = () => {
       ) : (
         <div className="space-y-4">
           {pots.accounts.map((account) => {
-            const available = computeAvailable(account, pots.withdrawals, gardenOhm.rows);
+            const available = computeAvailable(account, pots.withdrawals, gardenOhm.rows, transfers.rows);
             const income = pots.incomeSources.find((i) => i.id === account.income_source_id);
             const familyName = families.find((f) => f.id === account.family_id)?.name;
             const accWithdrawals = pots.withdrawals.filter((w) => w.account_id === account.id && inMonth(w.withdrawn_on));
