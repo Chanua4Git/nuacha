@@ -217,6 +217,7 @@ export const useSupabasePayroll = () => {
   ) => {
     const employeeData: EmployeeData = {
       employment_type: employee.employment_type,
+      nis_exempt: Boolean((employee as any).nis_exempt),
       hourly_rate: employee.hourly_rate,
       monthly_salary: employee.monthly_salary,
       daily_rate: employee.daily_rate,
