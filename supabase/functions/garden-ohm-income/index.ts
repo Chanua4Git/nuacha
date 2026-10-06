@@ -16,6 +16,7 @@ const Order = z.object({
   payment_method: z.string().max(100).optional().nullable(),
   delivered_on: z.string().max(40).optional().nullable(),
   status: z.string().max(50).optional().nullable(),
+  action: z.string().max(20).optional().nullable(), // 'delete' removes the order
 });
 const Body = z.union([z.object({ orders: z.array(Order).min(1).max(500) }), Order]);
 
@@ -58,8 +59,23 @@ Deno.serve(async (req) => {
     .in('external_order_id', ids);
   const locked = new Map((existing ?? []).filter((r) => r.channel_locked).map((r) => [r.external_order_id, r]));
 
+  // Deleted, cancelled or no-longer-delivered orders are removed so Nuacha mirrors Garden Ohm.
+  const isLive = (o: z.infer<typeof Order>) =>
+    (o.action ?? '').toLowerCase() !== 'delete' && (!o.status || o.status.toLowerCase().includes('deliver'));
+  const removeIds = orders.filter((o) => !isLive(o)).map((o) => o.order_id);
+  let removed = 0;
+  if (removeIds.length) {
+    const { error: delErr, count } = await supabase
+      .from('business_income')
+      .delete({ count: 'exact' })
+      .eq('source', 'garden_ohm')
+      .in('external_order_id', removeIds);
+    if (delErr) return json({ error: delErr.message }, 500);
+    removed = count ?? 0;
+  }
+
   const rows = orders
-    .filter((o) => !o.status || o.status.toLowerCase().includes('deliver'))
+    .filter(isLive)
     .map((o) => {
       const keep = locked.get(o.order_id);
       const channel = keep ? keep.channel : channelFor(o.payment_method);
@@ -81,8 +97,8 @@ Deno.serve(async (req) => {
       };
     });
 
-  if (rows.length === 0) return json({ saved: 0, skipped: orders.length });
+  if (rows.length === 0) return json({ saved: 0, removed });
   const { error } = await supabase.from('business_income').upsert(rows, { onConflict: 'source,external_order_id' });
   if (error) return json({ error: error.message }, 500);
-  return json({ saved: rows.length, skipped: orders.length - rows.length });
+  return json({ saved: rows.length, removed });
 });
