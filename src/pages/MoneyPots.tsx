@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useExpense } from '@/context/ExpenseContext';
 import { useBusinessIncome } from '@/hooks/useBusinessIncome';
 import GardenOhmIncomeSection from '@/components/money/GardenOhmIncomeSection';
+import WhoPaysForWhat from '@/components/money/WhoPaysForWhat';
 import {
   useMoneyPots,
   computeAvailable,
@@ -111,6 +112,8 @@ const MoneyPots = () => {
         <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Cash matched to spending" value={tt(summary.matchedCash)} hint={summary.direct > 0 ? `+ ${tt(summary.direct)} paid straight from accounts` : 'Expenses and wages linked'} />
         <SummaryCard icon={<Wallet className="h-4 w-4" />} label="Cash still to explain" value={tt(summary.unexplained)} hint={summary.unexplained > 0 ? 'Link a receipt or wage when ready' : 'All accounted for'} highlight={summary.unexplained > 0} />
       </div>
+
+      <WhoPaysForWhat accounts={pots.accounts} />
 
       <GardenOhmIncomeSection
         rows={gardenOhm.rows}

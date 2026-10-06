@@ -1,5 +1,6 @@
 import { PaidFromSelect } from '@/components/money/PaidFromSelect';
 import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
+import { lookupPaidFromDefault } from '@/lib/paidFromDefaults';
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -259,6 +260,13 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
   const [employeeShifts, setEmployeeShifts] = useState<{ id: string; shift_name: string; base_rate: number; is_default: boolean | null }[]>([]);
   const [selectedShiftId, setSelectedShiftId] = useState<string>('');
   const [wagePaidFrom, setWagePaidFrom] = useState<PaidFromValue>(null);
+  // Pre-fill "Paid from" with this person's usual account (from Who pays for what); always changeable.
+  useEffect(() => {
+    if (!selectedEmployeeId) return;
+    let alive = true;
+    lookupPaidFromDefault({ employeeId: selectedEmployeeId }).then((v) => { if (alive) setWagePaidFrom(v); });
+    return () => { alive = false; };
+  }, [selectedEmployeeId]);
   useEffect(() => {
     setEmployeeShifts([]);
     setSelectedShiftId('');
