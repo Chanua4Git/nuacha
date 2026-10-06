@@ -1,0 +1,1 @@
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS nis_exempt boolean NOT NULL DEFAULT false;

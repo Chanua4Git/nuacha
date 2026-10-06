@@ -25,6 +25,7 @@ const employeeFormSchema = z.object({
   daily_rate: z.string().optional(),
   weekly_rate: z.string().optional(),
   nis_number: z.string().optional(),
+  nis_exempt: z.boolean().optional(),
   date_hired: z.string().optional(),
   date_of_birth: z.string().optional(),
 }).refine((data) => {
@@ -106,6 +107,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       daily_rate: '',
       weekly_rate: '',
       nis_number: '',
+      nis_exempt: false,
       date_hired: '',
       date_of_birth: '',
     },
@@ -144,6 +146,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         daily_rate: data.daily_rate ? Number(data.daily_rate) : undefined,
         weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : undefined,
         nis_number: data.nis_number || undefined,
+        nis_exempt: Boolean(data.nis_exempt),
         date_hired: data.date_hired || undefined,
         date_of_birth: data.date_of_birth || undefined,
         shifts: (data.employment_type === 'shift_based' || data.employment_type === 'contract') ? shifts : undefined,
@@ -288,6 +291,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 {...register('nis_number')}
                 placeholder="NIS123456"
               />
+              <label className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
+                <input type="checkbox" className="h-4 w-4" {...register('nis_exempt')} />
+                No NIS deductions for this person
+              </label>
             </div>
           </div>
 

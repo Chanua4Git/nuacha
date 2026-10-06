@@ -60,6 +60,7 @@ export const UnifiedPayrollCalculator: React.FC<UnifiedPayrollCalculatorProps> =
 
     const employeeData: EmployeeData = {
       employment_type: selectedEmployee.employment_type,
+      nis_exempt: Boolean((selectedEmployee as any).nis_exempt),
       hourly_rate: selectedEmployee.hourly_rate,
       monthly_salary: selectedEmployee.monthly_salary,
       daily_rate: selectedEmployee.daily_rate,
@@ -112,6 +113,7 @@ export const UnifiedPayrollCalculator: React.FC<UnifiedPayrollCalculatorProps> =
       employee: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
       employee_number: selectedEmployee.employee_number,
       employment_type: selectedEmployee.employment_type,
+      nis_exempt: Boolean((selectedEmployee as any).nis_exempt),
       calculation_date: new Date().toLocaleDateString(),
       gross_pay: calculation.gross_pay,
       nis_employee_contribution: calculation.nis_employee_contribution,

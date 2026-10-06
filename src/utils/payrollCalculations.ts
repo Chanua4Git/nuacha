@@ -52,6 +52,7 @@ export interface EmployeeData {
   monthly_salary?: number;
   daily_rate?: number;
   weekly_rate?: number;
+  nis_exempt?: boolean;
 }
 
 export interface PayrollInput {
@@ -232,6 +233,11 @@ export const calculatePayroll = (
     employer_contribution = nisContributions.employer_contribution;
   }
   
+  if (employee.nis_exempt) {
+    employee_contribution = 0;
+    employer_contribution = 0;
+  }
+
   const other_deductions = input.other_deductions || 0;
   const other_allowances = input.other_allowances || 0;
   

@@ -584,6 +584,7 @@ export const EnhancedPayrollCalculator: React.FC<EnhancedPayrollCalculatorProps>
       hourly_rate: selectedEmployee.hourly_rate,
       monthly_salary: selectedEmployee.monthly_salary,
       daily_rate: syntheticDaily,
+      nis_exempt: Boolean((selectedEmployee as any).nis_exempt),
     };
 
     const payrollInput: PayrollInput = {

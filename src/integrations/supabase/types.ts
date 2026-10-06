@@ -655,6 +655,7 @@ export type Database = {
           last_name: string
           monthly_salary: number | null
           national_id: string | null
+          nis_exempt: boolean
           nis_number: string | null
           phone: string | null
           updated_at: string
@@ -678,6 +679,7 @@ export type Database = {
           last_name: string
           monthly_salary?: number | null
           national_id?: string | null
+          nis_exempt?: boolean
           nis_number?: string | null
           phone?: string | null
           updated_at?: string
@@ -701,6 +703,7 @@ export type Database = {
           last_name?: string
           monthly_salary?: number | null
           national_id?: string | null
+          nis_exempt?: boolean
           nis_number?: string | null
           phone?: string | null
           updated_at?: string
