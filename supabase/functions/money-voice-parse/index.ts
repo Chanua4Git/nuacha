@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       ?? data.output?.flatMap((o: any) => o.content ?? []).find((c: any) => c.type === 'output_text')?.text;
     if (!text) return json({ error: "I couldn't understand that one — try saying it another way, or type it." }, 422);
     const out = JSON.parse(text);
-    for (const it of out.items ?? []) if (it.category_id && !catIds.has(it.category_id)) it.category_id = null;
+    for (const it of out.items ?? []) { if (it.category_id && !catIds.has(it.category_id)) it.category_id = null; if (it.receipt_index != null && !receipts.some((r) => r.index === it.receipt_index)) it.receipt_index = null; }
     return json(out);
   } catch (e) {
     console.error(e);
