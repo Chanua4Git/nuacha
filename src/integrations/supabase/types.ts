@@ -1134,6 +1134,30 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_progress: {
+        Row: {
+          completed: boolean
+          module_id: string
+          steps_completed: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          module_id: string
+          steps_completed?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          module_id?: string
+          steps_completed?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       money_accounts: {
         Row: {
           account_last4: string | null
@@ -2714,6 +2738,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_learning_overview: {
+        Args: never
+        Returns: {
+          completed_modules: string[]
+          last_learning_at: string
+          last_module: string
+          open_questions: Json
+          user_id: string
+        }[]
+      }
       admin_user_journeys: {
         Args: never
         Returns: {
