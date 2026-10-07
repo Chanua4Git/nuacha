@@ -17,6 +17,7 @@ import { setPaidFrom } from '@/lib/paidFrom';
 import GuestAuthStep from './GuestAuthStep';
 import { saveDraft, clearDraft, draftFiles, type CheckinDraft } from '@/lib/checkinDraft';
 import { trackEvent } from '@/lib/analytics';
+import { usePersonalPrompts } from '@/hooks/usePersonalPrompts';
 
 type Kind = 'withdrawal' | 'transfer' | 'expense' | 'income';
 interface Item {
@@ -118,6 +119,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
   const [free, setFree] = useState('');
   const [mode, setMode] = useState<'guided' | 'free'>('guided');
   const [busy, setBusy] = useState(false);
+  const personal = usePersonalPrompts(open && !guest);
   const [items, setItems] = useState<Item[] | null>(null);
   const [note, setNote] = useState('');
   const [familyId, setFamilyId] = useState('');
