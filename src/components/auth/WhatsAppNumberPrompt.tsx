@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PhoneInput from "react-phone-number-input/input";
 import "react-phone-number-input/style.css";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +15,25 @@ export default function WhatsAppNumberPrompt() {
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Direct link: nuacha.com/?add=whatsapp opens this prompt (after sign-in if needed).
+  useEffect(() => {
+    const wants = new URLSearchParams(location.search).get("add") === "whatsapp";
+    if (wants) {
+      sessionStorage.setItem("wa_prompt_pending", "1");
+      trackEvent("whatsapp_link_open");
+      if (!user) {
+        toast("Sign in first, then we'll ask for your WhatsApp number 🌿");
+        navigate("/login");
+      }
+    }
+    if (user && sessionStorage.getItem("wa_prompt_pending")) {
+      sessionStorage.removeItem("wa_prompt_pending");
+      setOpen(true);
+    }
+  }, [location.search, user]);
 
   useEffect(() => {
     identifyUser(user?.id ?? null);
