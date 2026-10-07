@@ -17,13 +17,13 @@ type Pkg = "hand_holding" | "done_for_you";
 const PACKAGES: Record<Pkg, { title: string; price: number; icon: any; blurb: string; points: string[] }> = {
   hand_holding: {
     title: "Hand-holding", price: 100, icon: HeartHandshake,
-    blurb: "We sit together while you set it up yourself.",
-    points: ["Your first scans, together", "Your household and people set up", "Learn Talk it through", "Leave knowing your next steps"],
+    blurb: "One guided starting session. You do the steps, with me beside you.",
+    points: ["Start your household and people", "Review up to three receipts together", "Try Talk it through", "Leave with clear next steps — not a promise of a finished setup"],
   },
   done_for_you: {
     title: "Done-for-you", price: 300, icon: Sparkles,
-    blurb: "Bring your receipts and family details — we build it for you.",
-    points: ["Your receipts scanned for you", "Profile and household built", "A budget template made for your family", "A walkthrough of everything at the end"],
+    blurb: "Start with onboarding and a plan. I help build your setup over agreed visits.",
+    points: ["TT$300 for the initial onboarding session", "Discuss your budget, households, businesses and people", "Start your setup and review up to three receipts", "Agree a task list, tentative visits and a separate follow-up quote"],
   },
 };
 
@@ -131,7 +131,7 @@ export default function Setup() {
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
       <div className="text-center space-y-3">
         <h1 className="text-4xl font-playfair">Get set up, gently</h1>
-        <p className="text-muted-foreground max-w-xl mx-auto">Remote or in person. I can hold your hand while you do it, or you bring your receipts and family details and I build it all for you.</p>
+        <p className="text-muted-foreground max-w-xl mx-auto">Remote by video or in person. Start with a guided session, or let me help organise your setup in manageable stages.</p>
         <div className="flex flex-wrap justify-center gap-2 text-sm">
           <span className="text-muted-foreground">Not sure yet? Try it first:</span>
           <Link className="underline" to="/?start=scan">Try a free scan</Link>
@@ -169,6 +169,31 @@ export default function Setup() {
           );
         })}
       </div>
+
+      {pkg === "done_for_you" && (
+        <section className="space-y-5 border-y py-6" aria-labelledby="setup-plan-heading">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-primary">Done-for-you · a staged approach</p>
+            <h2 id="setup-plan-heading" className="text-2xl font-playfair">A useful first visit. A clear plan for the rest.</h2>
+            <p className="text-muted-foreground">TT$300 covers your initial onboarding and planning session, not a complete financial setup or a series of visits. We start the work together and agree the remaining tasks, timing and price before any follow-up work begins.</p>
+          </div>
+          <ol className="grid gap-5 sm:grid-cols-2">
+            {[
+              ["1. Understand & start", "Your initial visit: discuss your budget, what you want organised, and your families, homes or businesses. Identify the people belonging to each, start the essentials and review up to three receipts, time and your available scans permitting."],
+              ["2. Build the structure", "A separately quoted follow-up: complete the agreed households or business profiles, assign people, organise categories and payment sources, and begin a budget template."],
+              ["3. Organise & check", "A separately quoted follow-up: review the budget and recurring costs, check receipt dates, amounts and categories, and work through the prioritised task list. Larger backlogs need a separate plan."],
+              ["4. Walk through & hand over", "If needed, a final follow-up: check the agreed setup, practise adding receipts and Talk it through, review your summaries, and leave you with a manageable routine and any remaining tasks."],
+            ].map(([title, description]) => (
+              <li key={title} className="space-y-2"><h3 className="font-medium">{title}</h3><p className="text-sm text-muted-foreground leading-relaxed">{description}</p></li>
+            ))}
+          </ol>
+          <p className="text-sm text-muted-foreground"><strong className="text-foreground">A tentative starting point: 3–4 visits in total.</strong> This is a planning estimate, not a guaranteed completion time or an included package. A simple setup may need fewer visits; multiple homes, businesses or a receipt backlog may need more. We agree visit lengths, priorities and a tentative schedule after onboarding. Remote and in-person visits follow the same agreed task list.</p>
+          <div className="space-y-2 border-t pt-4 text-sm">
+            <p><strong>Bring what you have:</strong> receipts, household or business names, the people to include, income and regular-cost estimates, and your priorities. No banking passwords or sign-in codes are needed.</p>
+            <p className="text-muted-foreground">We review up to three receipts at each visit, within the free plan’s three scans per account per day. If you have already used some scans that day, fewer may be available. After setup, keep going with three free scans daily, or subscribe for unlimited scans. Subscription fees are separate from setup and follow-up visits; unlimited scans do not include unlimited personal support.</p>
+          </div>
+        </section>
+      )}
 
       {p && !done && (
         <Card id="setup-details" className="scroll-mt-24"><CardContent className="p-6 space-y-5">
@@ -210,9 +235,9 @@ export default function Setup() {
           <div className="space-y-1">
             <p className="text-sm font-medium text-primary">Choose your date</p>
             <h2 id="setup-calendar-heading" className="text-2xl font-playfair">Pick your date on the calendar</h2>
-            <p className="text-sm text-muted-foreground">Choose a time that works for you. Please also complete your details and payment above.</p>
+            <p className="text-sm text-muted-foreground">Choose a time for your {pkg === "done_for_you" ? "initial onboarding" : "starting"} session, complete your details, then continue to payment below.</p>
           </div>
-          {bookingUrl && (
+          {bookingUrl && !slotSaved && (
             <Button variant="outline" onClick={openCalendar} className="shrink-0">
               <ExternalLink className="mr-2 h-4 w-4" />Open calendar in a new window
             </Button>
@@ -221,10 +246,11 @@ export default function Setup() {
         {slotSaved && chosenSlot ? (
           <div className="rounded-lg border-2 border-primary bg-card p-6 text-center space-y-3">
             <Check className="mx-auto h-8 w-8 text-primary" />
-            <p className="text-sm font-medium text-primary">Your chosen time</p>
+            <p className="text-sm font-medium text-primary">Your booking reminder</p>
             <p className="text-2xl font-playfair">{chosenSlot}</p>
-            <p className="text-sm text-muted-foreground">Google has emailed your booking confirmation. No need to book again.</p>
-            <Button variant="outline" size="sm" onClick={() => setSlotSaved(false)}>Change my time</Button>
+            <p className="text-sm text-muted-foreground">The time you added from your confirmation. Your Google confirmation is the booking record — adding this reminder does not make another booking.</p>
+            <Button variant="outline" size="sm" onClick={() => setSlotSaved(false)}>Edit reminder</Button>
+            <p className="text-xs text-muted-foreground">Need to reschedule? Use the link in your Google confirmation email.</p>
           </div>
         ) : (<>
         {calendarEmbedUrl ? (
@@ -236,7 +262,7 @@ export default function Setup() {
                 className="block h-[720px] w-full border-0 sm:h-[760px]"
               />
               <div className="border-t p-3 text-center text-sm text-muted-foreground">
-                Calendar not showing? <button type="button" onClick={openCalendar} className="font-medium text-primary underline underline-offset-4">Open it in a new window</button>.
+                Calendar not showing? <Button type="button" variant="link" onClick={openCalendar} className="h-auto p-0">Open it in a new window</Button>.
               </div>
             </div>
           ) : (
@@ -246,15 +272,16 @@ export default function Setup() {
             </div>
           )}
           {calendarEmbedUrl && (
-            <div className="rounded-lg border bg-accent/40 p-4 space-y-3">
-              <p className="font-medium">Booked a time? Tell us what you chose so it shows here.</p>
-              <p className="text-sm text-muted-foreground">After you tap Book and see "Booking confirmed", enter the same date and time below.</p>
-              <div className="flex flex-wrap items-end gap-3">
+            <details className="border-t py-4">
+              <summary className="cursor-pointer font-medium text-primary">Already booked? Keep your time here</summary>
+              <p className="mt-3 text-sm text-muted-foreground">Your Google confirmation is your booking record. Nuacha cannot read the time selected in Google’s calendar. Optionally add the date and time from your confirmation below to keep a reminder with your request — no second booking needed.</p>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
                 <div className="space-y-1"><Label htmlFor="slot-date">Date</Label><Input id="slot-date" type="date" value={slotDate} onChange={(e) => setSlotDate(e.target.value)} /></div>
                 <div className="space-y-1"><Label htmlFor="slot-time">Time</Label><Input id="slot-time" type="time" value={slotTime} onChange={(e) => setSlotTime(e.target.value)} /></div>
-                <Button disabled={!slotDate || !slotTime} onClick={() => { setSlotSaved(true); trackEvent("setup_slot_chosen"); }}><Check className="mr-2 h-4 w-4" />I booked this time</Button>
+                <Button disabled={!slotDate || !slotTime} onClick={() => { setSlotSaved(true); trackEvent("setup_slot_chosen"); }}><Check className="mr-2 h-4 w-4" />Keep my booking reminder</Button>
               </div>
-            </div>
+              <p className="mt-2 text-xs text-muted-foreground">Use the same time zone shown in your Google confirmation.</p>
+            </details>
           )}
         </>)}
       </section>
@@ -264,6 +291,7 @@ export default function Setup() {
           <div>
             <p className="text-sm font-medium text-primary">Step 2</p>
             <h2 className="text-2xl font-playfair">How would you like to pay?</h2>
+            {pkg === "done_for_you" && <p className="mt-2 text-sm text-muted-foreground">This payment is for initial onboarding and planning only. Further visits and work are quoted separately and agreed with you first.</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant={pay === "wipay" ? "default" : "outline"} onClick={() => setPay("wipay")}>WiPay — TT${p.price}</Button>
@@ -271,7 +299,7 @@ export default function Setup() {
             <Button variant={pay === "bank" ? "default" : "outline"} onClick={() => setPay("bank")}>Bank transfer</Button>
           </div>
           <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
-            {pay === "wipay" && <p>We'll open the WiPay invoice for <strong>{p.title} · TT${p.price}</strong>. Keep reference <strong>{ref}</strong> with your payment confirmation.</p>}
+            {pay === "wipay" && <p>We'll open the WiPay invoice for <strong>{p.title}{pkg === "done_for_you" ? " onboarding" : ""} · TT${p.price}</strong>. Keep reference <strong>{ref}</strong> with your payment confirmation.</p>}
             {pay === "pwyw" && <p>We'll open WiPay — pay what feels right for you and add reference <strong>{ref}</strong>. Every bit helps.</p>}
             {pay === "bank" && <>
               <p><strong>{NUACHA_BANK_DETAILS.bankName}</strong> · {NUACHA_BANK_DETAILS.accountType}</p>
@@ -288,10 +316,11 @@ export default function Setup() {
         <Card><CardContent className="p-6 space-y-3 text-center">
           <h2 className="text-2xl font-playfair">Thank you — your request is saved 🌿</h2>
           <p className="text-muted-foreground">Reference <strong>{done}</strong>. Payment and your appointment are confirmed separately.</p>
+          {pkg === "done_for_you" && <p className="text-sm text-muted-foreground">Your first appointment is for onboarding and planning. We’ll agree the remaining work, follow-up quote and tentative visit schedule together.</p>}
           {mode === "in_person" && meetingLocation && <p className="text-sm">Meeting place: <strong>{meetingLocation}</strong></p>}
           {pay !== "bank" && pkg && <Button variant="outline" asChild><a href={pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Open payment</a></Button>}
           {slotSaved && chosenSlot ? (
-            <div className="mx-auto max-w-sm rounded-lg border bg-accent/40 p-3"><p className="text-sm text-muted-foreground">Booked date</p><p className="font-medium"><CalendarDays className="mr-2 inline h-4 w-4" />{chosenSlot}</p></div>
+            <div className="mx-auto max-w-sm rounded-lg border bg-accent/40 p-3"><p className="text-sm text-muted-foreground">Booking reminder · from your confirmation</p><p className="font-medium"><CalendarDays className="mr-2 inline h-4 w-4" />{chosenSlot}</p></div>
           ) : bookingUrl ? (
             <p className="text-sm"><a href="#setup-calendar" className="text-primary underline underline-offset-4">Haven't picked a time yet? Choose it on the calendar above.</a></p>
           ) : (
