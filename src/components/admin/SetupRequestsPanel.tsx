@@ -68,6 +68,7 @@ export function SetupRequestsPanel() {
         <div key={r.id} className="rounded-xl border p-3 flex flex-col md:flex-row md:items-center gap-3">
           <div className="flex-1 min-w-0 break-words text-sm space-y-0.5">
             <div className="font-medium">{r.name} · {PKG[r.package]} TT${r.amount_ttd} · {r.mode === "remote" ? "Remote" : `In person${r.meeting_location ? ` · ${r.meeting_location}` : ""}`}</div>
+            {r.chosen_slot && <div className="text-sm">Chosen time: <strong>{r.chosen_slot}</strong></div>}
             <div className="text-muted-foreground">{r.whatsapp}{r.email && ` · ${r.email}`} · {PAY[r.payment_method]} · Ref {r.reference} · {format(new Date(r.created_at), "d MMM, h:mm a")}</div>
             {r.notes && <div>“{r.notes}”</div>}
           </div>
