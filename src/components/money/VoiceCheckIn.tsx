@@ -301,7 +301,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
                 <>
                   <p className="text-xs text-muted-foreground">Question {step + 1} of {prompts.length} — skip any that don't apply.</p>
                   <p className="font-medium">{prompts[step]}</p>
-                  <Textarea rows={3} value={answers[step] ?? ''} onChange={(e) => setAnswer(step, e.target.value)} placeholder="e.g. Took out 6,000 from Grandma's on the 2nd" />
+                  <Textarea rows={3} value={answers[step] ?? ''} onChange={(e) => setAnswer(step, e.target.value)} placeholder="e.g. Took out 1,000 from my savings on the 2nd" />
                   <div className="flex flex-wrap gap-2">
                     <MicButton onText={(t) => appendAnswer(step, t)} />
                     <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>Back</Button>
@@ -320,7 +320,12 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
                   ))}
                 </div>
               )}
-              <Textarea rows={6} value={free} onChange={(e) => setFree(e.target.value)} placeholder="e.g. Took out 4,500 from Grandma's for cash wages, moved 3,000 from Grandpa to my account, paid Flow 395…" />
+              <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
+                <p className="font-medium">How to use it</p>
+                <p className="text-muted-foreground">Tap <strong>Speak</strong> to start, talk naturally, then tap again to stop when you're finished. Or just type.</p>
+                <p className="text-muted-foreground">Try saying: "Spent 250 on groceries at the supermarket, paid 400 for the light bill, and 60 for school lunch."</p>
+              </div>
+              <Textarea rows={5} value={free} onChange={(e) => setFree(e.target.value)} placeholder="What did you spend, where, and what was it for?" />
               <div className="flex flex-wrap gap-2">
                 <MicButton onText={(t) => setFree((f) => `${f} ${t}`.trim())} />
                 {daily && (
