@@ -27,7 +27,15 @@ One page listing every user, newest first. Each row shows:
 ## 4. Tracking
 - Send Google Analytics events at each step (household created, receipt scanned, third scan of the day) so the Google Analytics funnel matches the admin checklist.
 
+## 5. Branded link previews (WhatsApp, Instagram, Facebook, X)
+- Replace the Lovable image currently shown when nuacha.com links are shared with a Nuacha-branded preview image (calm household scene, Nuacha wordmark, tagline "A softer way to track spending").
+- Remove the Lovable placeholder image and the "@lovable_dev" handle from the site's preview settings.
+- Give the main shared pages their own wording: Learning Center ("Learn Nuacha step by step"), Updates, Get started / plans, Payroll, and Budget.
+- Honest limit: WhatsApp and Facebook only read the site's single default preview, so every link will show the Nuacha image and the main Nuacha wording. Per-page wording shows up in Google and other apps that run the page's code. Fully separate previews for each page would need the app upgraded to a newer setup, which can come later.
+- After publishing, WhatsApp may keep showing the old preview for a while. Pasting the link into Facebook's Sharing Debugger forces a refresh.
+
 ## Technical details
+- Link previews: generate a 1200x630 og image into `public/og-nuacha.jpg`, set absolute `https://nuacha.com/og-nuacha.jpg` for og:image/twitter:image, and add og:url, og:site_name, and twitter:title/description in index.html. Add react-helmet-async per-route titles and descriptions for key routes.
 - New tables: `nudge_templates` (name, stage, channel, message) and `admin_communications` (admin_id, target_user_id, template_id, message, channel, sent_at). Both include GRANTs, and RLS limits access to `has_role(auth.uid(),'admin')`.
 - A security-definer function `admin_user_journeys()` checks `has_role` and returns one row per user from auth.users + profiles + families + scan_usage + last communication. Progress is calculated live, with no cached snapshot table.
 - Route `/admin/users`, protected by `useAdminRole` and linked from the admin menu. Reuse existing WhatsApp helpers in `src/utils/whatsapp.ts`.
