@@ -79,7 +79,7 @@ export default function Setup() {
           <span className="text-muted-foreground">Not sure yet? Try it first:</span>
           <Link className="underline" to="/?start=scan">Try a free scan</Link>
           <Link className="underline" to="/updates?tab=learning&module=getting-started">Watch the first lesson</Link>
-          <Link className="underline" to="/map">See what's possible</Link>
+          <Link className="underline" to="/updates?tab=features">See what's possible</Link>
         </div>
       </div>
 
