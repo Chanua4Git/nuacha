@@ -23,6 +23,7 @@ import Demo from "./pages/Demo";
 import Options from "./pages/Options";
 import Navbar from "./components/Navbar";
 import TalkItThroughLauncher from "@/components/money/TalkItThroughLauncher";
+import WhatsAppNumberPrompt from "@/components/auth/WhatsAppNumberPrompt";
 import { ExpenseProvider } from "./context/ExpenseContext";
 
 import Reports from "./pages/Reports";
@@ -111,6 +112,7 @@ const App = () => {
                   <ScrollToTop />
                   <Navbar />
                   <TalkItThroughLauncher />
+                  <WhatsAppNumberPrompt />
                   <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Landing />} />
