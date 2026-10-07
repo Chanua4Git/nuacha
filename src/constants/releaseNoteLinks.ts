@@ -11,7 +11,7 @@ export function getReleaseNoteLink(note: ReleaseNote): ReleaseNoteLink {
   const title = note.title.toLowerCase();
 
   if (match(title, ['setup with chan', 'booking'])) return { label: 'Choose your setup and date', path: '/setup#setup-calendar' };
-  if (match(title, ['prompts made for you', 'talk it through', 'check-in'])) return { label: 'Try Talk it through', path: '/?talk=true' };
+  if (match(title, ['prompts made for you', 'talk it through', 'talk-it-through', 'talk', 'voice', 'check-in', 'check in'])) return { label: 'Try Talk it through', path: '/?talk=true' };
   if (match(title, ['learning lesson', 'developer updates'])) return { label: 'Explore the lessons', path: '/updates?tab=learning' };
   if (match(title, ['start before you sign in', 'three free scans', 'receipt scanning in action', 'smart receipt scanning', 'first receipt'])) return { label: 'Try your first scan', path: '/?start=scan' };
   if (match(title, ['who pays for what', 'business income', 'credit card', 'accounts, cash', 'paid from'])) return { label: 'Open Cash & Accounts', path: '/money' };
