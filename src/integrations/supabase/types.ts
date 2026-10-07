@@ -2471,6 +2471,7 @@ export type Database = {
       setup_requests: {
         Row: {
           amount_ttd: number
+          chosen_slot: string | null
           created_at: string
           email: string | null
           id: string
@@ -2488,6 +2489,7 @@ export type Database = {
         }
         Insert: {
           amount_ttd: number
+          chosen_slot?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -2505,6 +2507,7 @@ export type Database = {
         }
         Update: {
           amount_ttd?: number
+          chosen_slot?: string | null
           created_at?: string
           email?: string | null
           id?: string
