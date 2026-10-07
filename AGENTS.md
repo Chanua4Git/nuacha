@@ -7,3 +7,4 @@
 - Voice/typed money check-ins are parsed server-side into suggestions only; the app writes entries solely after the user reviews and taps Save.
 - Keep guest Talk-it-through drafts (note + receipt photos) only in the browser until sign-in; nothing is uploaded or parsed before then, because parsing and storage require an authenticated user.
 - Manual-number admin nudges open WhatsApp drafts without creating users or delivery records, because opening a draft does not prove a message was sent.
+- Setup checkout routes fixed-price packages to their own invoices and keeps requests separate from payment and calendar confirmations; admin deletion removes only the request, not payments or appointments.
