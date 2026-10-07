@@ -4,11 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { NUACHA_BANK_DETAILS, NUACHA_WHATSAPP_NUMBER, NUACHA_WIPAY_ME_URL } from "@/constants/nuachaPayment";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
-import { Check, HeartHandshake, Sparkles, CalendarDays, Copy } from "lucide-react";
+import { Check, HeartHandshake, Sparkles, CalendarDays, Copy, CircleHelp } from "lucide-react";
 
 type Pkg = "hand_holding" | "done_for_you";
 const PACKAGES: Record<Pkg, { title: string; price: number; icon: any; blurb: string; points: string[] }> = {
@@ -25,6 +27,10 @@ const PACKAGES: Record<Pkg, { title: string; price: number; icon: any; blurb: st
 };
 
 const makeRef = () => `SETUP-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+const SETUP_INVOICES: Record<Pkg, string> = {
+  hand_holding: "https://tt.wipayfinancial.com/Invoice/view?id=183698&signature=c9ef580c9322efc0b80708e85ca0e649d281064195edbe728423f8f505301c32",
+  done_for_you: "https://tt.wipayfinancial.com/Invoice/view?id=183819&signature=ada66b4d0cead373c04eaca5fd7704d61ca28b3929b283317da8555f43b5f239",
+};
 
 export default function Setup() {
   const [pkg, setPkg] = useState<Pkg | null>(null);
@@ -50,7 +56,11 @@ export default function Setup() {
 
   const submit = async () => {
     if (!pkg || !p) return;
-    if (!name.trim() || whatsapp.replace(/\D/g, "").length < 7) { toast("Let's add your name and WhatsApp number first."); return; }
+    if (!name.trim()) { toast("Let's add the name you'd like me to use."); return; }
+    if (!/^[1-9]\d{6,14}$/.test(whatsapp.replace(/\D/g, ""))) { toast("Please add your full WhatsApp number, including country code — for example +1 868 123 4567."); return; }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast("Please check your email address, or leave it blank."); return; }
+    const paymentUrl = pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL;
+    const paymentWindow = pay !== "bank" ? window.open("about:blank", "_blank") : null;
     setBusy(true);
     const { data: { session } } = await supabase.auth.getSession();
     const { error } = await (supabase.from as any)("setup_requests").insert({
@@ -59,14 +69,17 @@ export default function Setup() {
       reference: ref, notes: notes.trim().slice(0, 1000) || null,
     });
     setBusy(false);
-    if (error) { toast("That didn't send — let's try again in a moment."); return; }
+    if (error) { paymentWindow?.close(); toast("That didn't send — let's try again in a moment."); return; }
     trackEvent("setup_request", { package: pkg, payment: pay });
     setDone(ref);
-    if (pay !== "bank") window.open(NUACHA_WIPAY_ME_URL, "_blank");
+    if (pay !== "bank") {
+      if (paymentWindow) { paymentWindow.opener = null; paymentWindow.location.href = paymentUrl; }
+      else toast("Your request is saved. Tap Open payment to continue.");
+    }
   };
 
   const book = () => {
-    const msg = `Hi Chan! I've paid for ${p?.title} setup (TT$${p?.price}, ${mode === "remote" ? "remote" : "in person"}). Reference ${ref}. When can we book?`;
+    const msg = `Hi Chan! I'd like to arrange ${p?.title} setup (TT$${p?.price}, ${mode === "remote" ? "remote" : "in person"}). Reference ${ref}. Can we confirm payment and a time?`;
     window.open(bookingUrl || `https://wa.me/${NUACHA_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -109,11 +122,18 @@ export default function Setup() {
               <Button variant={mode === "in_person" ? "default" : "outline"} onClick={() => setMode("in_person")}>In person</Button>
             </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-3">
-            <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
-            <Input placeholder="WhatsApp number" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} maxLength={30} />
-            <Input placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
-          </div>
+          <TooltipProvider><div className="grid md:grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1"><Label htmlFor="setup-name">Your name</Label><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label="Name guidance"><CircleHelp className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Use the name you'd like me to call you. Spaces, hyphens and apostrophes are welcome.</TooltipContent></Tooltip></div>
+              <Input id="setup-name" autoComplete="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1"><Label htmlFor="setup-whatsapp">WhatsApp number</Label><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label="WhatsApp number guidance"><CircleHelp className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Include your country code. For Trinidad & Tobago: +1 868 followed by your seven-digit number.</TooltipContent></Tooltip></div>
+              <Input id="setup-whatsapp" type="tel" autoComplete="tel" aria-describedby="setup-phone-hint" placeholder="+1 868 123 4567" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} maxLength={30} />
+              <p id="setup-phone-hint" className="text-xs text-muted-foreground">Include country code, e.g. +1 868 123 4567.</p>
+            </div>
+            <div className="space-y-2"><Label htmlFor="setup-email" className="flex items-center h-6">Email (optional)</Label><Input id="setup-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} /></div>
+          </div></TooltipProvider>
           <Textarea placeholder="Anything I should know? (family size, what feels hardest)" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />
           <div className="space-y-2">
             <p className="font-medium">How would you like to pay?</p>
@@ -123,7 +143,7 @@ export default function Setup() {
               <Button variant={pay === "bank" ? "default" : "outline"} onClick={() => setPay("bank")}>Bank transfer</Button>
             </div>
             <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
-              {pay === "wipay" && <p>We'll open WiPay — enter <strong>TT${p.price}</strong> and add reference <strong>{ref}</strong>.</p>}
+              {pay === "wipay" && <p>We'll open the WiPay invoice for <strong>{p.title} · TT${p.price}</strong>. Keep reference <strong>{ref}</strong> with your payment confirmation.</p>}
               {pay === "pwyw" && <p>We'll open WiPay — pay what feels right for you and add reference <strong>{ref}</strong>. Every bit helps.</p>}
               {pay === "bank" && <>
                 <p><strong>{NUACHA_BANK_DETAILS.bankName}</strong> · {NUACHA_BANK_DETAILS.accountType}</p>
@@ -139,9 +159,10 @@ export default function Setup() {
 
       {done && p && (
         <Card><CardContent className="p-6 space-y-3 text-center">
-          <h2 className="text-2xl font-playfair">Thank you — your spot is saved 🌿</h2>
-          <p className="text-muted-foreground">Reference <strong>{done}</strong>. Once you've paid, pick a time that suits you.</p>
-          <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />Book a time</Button>
+          <h2 className="text-2xl font-playfair">Thank you — your request is saved 🌿</h2>
+          <p className="text-muted-foreground">Reference <strong>{done}</strong>. Payment and your appointment are confirmed separately.</p>
+          {pay !== "bank" && pkg && <Button variant="outline" asChild><a href={pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Open payment</a></Button>}
+          <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />{bookingUrl ? "Book a time" : "Arrange a time on WhatsApp"}</Button>
         </CardContent></Card>
       )}
     </div>

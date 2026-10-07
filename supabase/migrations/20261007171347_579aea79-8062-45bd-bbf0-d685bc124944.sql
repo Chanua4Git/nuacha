@@ -1,0 +1,2 @@
+GRANT DELETE ON public.setup_requests TO authenticated;
+CREATE POLICY "Admins delete setup requests" ON public.setup_requests FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'::public.app_role));
