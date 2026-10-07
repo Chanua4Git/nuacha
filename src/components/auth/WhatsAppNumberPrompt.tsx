@@ -10,6 +10,8 @@ import { identifyUser, trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 
 /** Asks signed-in people without a WhatsApp number (e.g. Google sign-ups) for one, once per day. */
+export const PENDING_KEY = "wa_prompt_pending";
+
 export default function WhatsAppNumberPrompt() {
   const { user, isLoading } = useAuth();
   const [open, setOpen] = useState(false);
@@ -58,17 +60,24 @@ export default function WhatsAppNumberPrompt() {
     const has = (user.user_metadata as any)?.phone_number || user.phone;
     const key = `wa_prompt_${user.id}`;
     const last = Number(localStorage.getItem(key) || 0);
+    if (fromLink) return;
     if (!has && Date.now() - last > 24 * 60 * 60 * 1000) {
       const t = setTimeout(() => { setOpen(true); trackEvent("whatsapp_prompt_shown", { method: provider }); }, 2500);
       return () => clearTimeout(t);
     }
-  }, [user]);
+  }, [user, fromLink]);
 
   if (!user) return null;
+
+  const clearLink = () => {
+    setFromLink(false);
+    if (new URLSearchParams(location.search).get("add") === "whatsapp") navigate(location.pathname, { replace: true });
+  };
 
   const later = () => {
     localStorage.setItem(`wa_prompt_${user.id}`, String(Date.now()));
     setOpen(false);
+    clearLink();
   };
 
   const save = async () => {
@@ -80,6 +89,7 @@ export default function WhatsAppNumberPrompt() {
     trackEvent("whatsapp_number_added");
     toast.success("Thank you — that's saved.");
     setOpen(false);
+    clearLink();
   };
 
   return (
