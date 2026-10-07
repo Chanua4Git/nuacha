@@ -11,8 +11,9 @@ import { toast } from "sonner";
 
 /** Asks signed-in people without a WhatsApp number (e.g. Google sign-ups) for one, once per day. */
 export default function WhatsAppNumberPrompt() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [open, setOpen] = useState(false);
+  const [fromLink, setFromLink] = useState(false);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const location = useLocation();
@@ -20,20 +21,29 @@ export default function WhatsAppNumberPrompt() {
 
   // Direct link: nuacha.com/?add=whatsapp opens this prompt (after sign-in if needed).
   useEffect(() => {
+    if (isLoading) return; // wait until we know whether they're signed in
     const wants = new URLSearchParams(location.search).get("add") === "whatsapp";
-    if (wants) {
-      sessionStorage.setItem("wa_prompt_pending", "1");
-      trackEvent("whatsapp_link_open");
-      if (!user) {
-        toast("Sign in first, then we'll ask for your WhatsApp number 🌿");
-        navigate("/login");
+    if (wants) trackEvent("whatsapp_link_open");
+    const pendingAt = Number(localStorage.getItem(PENDING_KEY) || 0);
+    const pending = pendingAt && Date.now() - pendingAt < 30 * 60 * 1000;
+    if (!user) {
+      if (wants) {
+        localStorage.setItem(PENDING_KEY, String(Date.now()));
+        if (location.pathname !== "/login") {
+          toast("Sign in to add your WhatsApp number 🌿");
+          navigate("/login");
+        }
       }
+      return;
     }
-    if (user && sessionStorage.getItem("wa_prompt_pending")) {
-      sessionStorage.removeItem("wa_prompt_pending");
+    if (wants || pending) {
+      localStorage.removeItem(PENDING_KEY);
+      const existing = (user.user_metadata as any)?.phone_number || user.phone || "";
+      if (existing) setPhone(existing.startsWith("+") ? existing : `+${existing}`);
+      setFromLink(true);
       setOpen(true);
     }
-  }, [location.search, user]);
+  }, [location.search, location.pathname, user, isLoading]);
 
   useEffect(() => {
     identifyUser(user?.id ?? null);
