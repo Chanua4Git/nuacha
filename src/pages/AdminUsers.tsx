@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Circle, MessageCircle, Mail, Loader2 } from "lucide-react";
+import { Check, Circle, MessageCircle, Mail, Loader2, Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Journey = {
@@ -127,6 +127,14 @@ export default function AdminUsers() {
           <h1 className="text-3xl font-playfair">New sign-ups</h1>
           <p className="text-muted-foreground">See where each person is and gently help them to their first three scans.</p>
         </div>
+        <div className="flex flex-wrap gap-2 items-center">
+        <Button variant="outline" onClick={async () => {
+          const t = templates.find((x) => x.stage === 'share');
+          const text = t?.message || 'Try your first Nuacha scan: https://nuacha.com/?start=scan&ref=share';
+          if (navigator.share) { try { await navigator.share({ text }); return; } catch { /* fall through */ } }
+          await navigator.clipboard.writeText(text);
+          toast.success("Share message copied", { description: "Paste it into WhatsApp, Facebook or Instagram." });
+        }}><Share2 className="h-4 w-4 mr-1" />Share first-scan link</Button>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -137,6 +145,7 @@ export default function AdminUsers() {
             <SelectItem value="done">Reached 3 scans</SelectItem>
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       {loading ? <Loader2 className="animate-spin mx-auto" /> : (
@@ -207,6 +216,7 @@ export default function AdminUsers() {
           </Select>
           <Textarea rows={6} value={message} onChange={(e) => setMessage(e.target.value)} />
           <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => { navigator.clipboard.writeText(message); toast.success("Copied — paste it anywhere"); }}><Copy className="h-4 w-4 mr-1" />Copy</Button>
             <Button variant="outline" onClick={() => send("email")}><Mail className="h-4 w-4 mr-1" />Email</Button>
             <Button onClick={() => send("whatsapp")} disabled={!nudging?.phone}><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</Button>
           </div>
@@ -221,7 +231,7 @@ export default function AdminUsers() {
             <Select value={editing.stage} onValueChange={(v) => setEditing({ ...editing, stage: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["needs_phone", "no_household", "no_scan", "under_three", "re_engagement", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
+                {["needs_phone", "no_household", "no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea rows={5} value={editing.message} onChange={(e) => setEditing({ ...editing, message: e.target.value })} />
