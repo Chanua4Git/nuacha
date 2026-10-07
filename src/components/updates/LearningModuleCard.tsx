@@ -10,6 +10,7 @@ import { LearningModule } from '@/constants/learningCenterData';
 import { LearningStepCard } from './LearningStepCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
 import { toast } from 'sonner';
+import { LessonQuestion } from './LessonQuestion';
 import { type ModuleStatus } from '@/utils/learningVisuals';
 
 interface LearningModuleCardProps {
@@ -185,6 +186,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
                 initialExpanded={step.id === highlightStepId}
               />
             ))}
+            <LessonQuestion moduleId={module.id} moduleTitle={module.title} />
           </CollapsibleContent>
         </CardContent>
       </Card>
