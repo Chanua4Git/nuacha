@@ -97,6 +97,8 @@ const Payroll: React.FC = () => {
   // Persist active tab across app switches
   const [activeTab, setActiveTab] = useState<'about' | 'dashboard' | 'employees' | 'calculator' | 'log' | 'reports' | 'subscription'>(() => {
     try {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      if (urlTab && ['about','dashboard','employees','calculator','log','payslips','reports'].includes(urlTab)) return urlTab as any;
       const savedTab = sessionStorage.getItem('payroll_page_activeTab');
       return (savedTab as any) || 'about';
     } catch {

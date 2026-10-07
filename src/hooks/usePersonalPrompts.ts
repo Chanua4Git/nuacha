@@ -109,7 +109,8 @@ export const usePersonalPrompts = (enabled: boolean) => {
       else if (places[1]) parts.push(`${money(median(places[1][1].amounts))} at ${places[1][0]}`);
       let ex = parts.join(', ');
       if (ex && accountName) ex += ` from ${accountName}`;
-      const examples = ex ? [ex.charAt(0).toUpperCase() + ex.slice(1) + '.'] : [];
+      void ex;
+      const examples = ['I spent 300 at nuacha.com for a done-for-you setup, paid from my savings account ending 1234.'];
 
       const empty = !places.length && !people.length && !accounts.length;
       setData({ examples, nudges: nudges.slice(0, 2), accountName, personName, empty });

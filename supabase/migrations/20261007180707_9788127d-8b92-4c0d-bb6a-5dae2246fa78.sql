@@ -1,0 +1,1 @@
+ALTER TABLE public.setup_requests ADD COLUMN IF NOT EXISTS chosen_slot text;
