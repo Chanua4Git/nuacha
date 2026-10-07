@@ -142,6 +142,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       budget_allocations: {
         Row: {
           created_at: string
@@ -2055,6 +2073,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_note: string | null
           created_at: string | null
           id: string
           last_checkin_at: string | null
@@ -2062,6 +2081,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_note?: string | null
           created_at?: string | null
           id: string
           last_checkin_at?: string | null
@@ -2069,6 +2089,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_note?: string | null
           created_at?: string | null
           id?: string
           last_checkin_at?: string | null
@@ -2444,6 +2465,57 @@ export type Database = {
           scan_date?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      setup_requests: {
+        Row: {
+          amount_ttd: number
+          created_at: string
+          email: string | null
+          id: string
+          mode: string
+          name: string
+          notes: string | null
+          package: string
+          payment_method: string
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string | null
+          whatsapp: string
+        }
+        Insert: {
+          amount_ttd: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          mode: string
+          name: string
+          notes?: string | null
+          package: string
+          payment_method: string
+          reference: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          whatsapp: string
+        }
+        Update: {
+          amount_ttd?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          mode?: string
+          name?: string
+          notes?: string | null
+          package?: string
+          payment_method?: string
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          whatsapp?: string
         }
         Relationships: []
       }
