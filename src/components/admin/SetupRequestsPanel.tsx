@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
-type Req = { id: string; name: string; whatsapp: string; email: string | null; package: string; amount_ttd: number; mode: string; meeting_location: string | null; payment_method: string; reference: string; status: string; notes: string | null; created_at: string };
+type Req = { id: string; name: string; whatsapp: string; email: string | null; package: string; amount_ttd: number; mode: string; chosen_slot?: string | null; meeting_location: string | null; payment_method: string; reference: string; status: string; notes: string | null; created_at: string };
 const PKG: Record<string, string> = { hand_holding: "Hand-holding", done_for_you: "Done-for-you" };
 const PAY: Record<string, string> = { wipay: "WiPay", pwyw: "Pay what you can", bank: "Bank transfer" };
 

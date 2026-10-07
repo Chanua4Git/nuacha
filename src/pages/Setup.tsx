@@ -62,6 +62,12 @@ export default function Setup() {
   const [done, setDone] = useState<string | null>(null);
   const [bookingUrl, setBookingUrl] = useState<string | null>(null);
   const [ref] = useState(makeRef);
+  const [slotDate, setSlotDate] = useState("");
+  const [slotTime, setSlotTime] = useState("");
+  const [slotSaved, setSlotSaved] = useState(false);
+  const chosenSlot = slotDate && slotTime
+    ? `${new Date(`${slotDate}T${slotTime}`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${new Date(`${slotDate}T${slotTime}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+    : "";
 
   useEffect(() => {
     document.title = "Setup with Nuacha — hand-holding or done-for-you";
@@ -97,6 +103,7 @@ export default function Setup() {
       user_id: session?.user.id ?? null, name: name.trim().slice(0, 120), whatsapp: whatsapp.trim().slice(0, 30),
       email: email.trim().slice(0, 200) || null, package: pkg, amount_ttd: p.price, mode, payment_method: pay,
       meeting_location: mode === "in_person" ? meetingLocation : null,
+      chosen_slot: slotSaved ? chosenSlot : null,
       reference: ref, notes: notes.trim().slice(0, 1000) || null,
     });
     setBusy(false);
@@ -211,24 +218,45 @@ export default function Setup() {
             </Button>
           )}
         </div>
+        {slotSaved && chosenSlot ? (
+          <div className="rounded-lg border-2 border-primary bg-card p-6 text-center space-y-3">
+            <Check className="mx-auto h-8 w-8 text-primary" />
+            <p className="text-sm font-medium text-primary">Your chosen time</p>
+            <p className="text-2xl font-playfair">{chosenSlot}</p>
+            <p className="text-sm text-muted-foreground">Google has emailed your booking confirmation. No need to book again.</p>
+            <Button variant="outline" size="sm" onClick={() => setSlotSaved(false)}>Change my time</Button>
+          </div>
+        ) : (<>
         {calendarEmbedUrl ? (
-          <div className="overflow-hidden rounded-lg border bg-card">
-            <iframe
-              src={calendarEmbedUrl}
-              title="Choose a date for your Nuacha setup session"
-              loading="lazy"
-              className="block h-[720px] w-full border-0 sm:h-[760px]"
-            />
-            <div className="border-t p-3 text-center text-sm text-muted-foreground">
-              Calendar not showing? <button type="button" onClick={openCalendar} className="font-medium text-primary underline underline-offset-4">Open it in a new window</button>.
+            <div className="overflow-hidden rounded-lg border bg-card">
+              <iframe
+                src={calendarEmbedUrl}
+                title="Choose a date for your Nuacha setup session"
+                loading="lazy"
+                className="block h-[720px] w-full border-0 sm:h-[760px]"
+              />
+              <div className="border-t p-3 text-center text-sm text-muted-foreground">
+                Calendar not showing? <button type="button" onClick={openCalendar} className="font-medium text-primary underline underline-offset-4">Open it in a new window</button>.
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="rounded-lg border bg-card p-6 text-center space-y-3">
-            <CalendarDays className="mx-auto h-6 w-6 text-primary" />
-            <p className="text-muted-foreground">The booking calendar is being prepared. Save your request above and we’ll arrange a time with you on WhatsApp.</p>
-          </div>
-        )}
+          ) : (
+            <div className="rounded-lg border bg-card p-6 text-center space-y-3">
+              <CalendarDays className="mx-auto h-6 w-6 text-primary" />
+              <p className="text-muted-foreground">The booking calendar is being prepared. Save your request above and we’ll arrange a time with you on WhatsApp.</p>
+            </div>
+          )}
+          {calendarEmbedUrl && (
+            <div className="rounded-lg border bg-accent/40 p-4 space-y-3">
+              <p className="font-medium">Booked a time? Tell us what you chose so it shows here.</p>
+              <p className="text-sm text-muted-foreground">After you tap Book and see "Booking confirmed", enter the same date and time below.</p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1"><Label htmlFor="slot-date">Date</Label><Input id="slot-date" type="date" value={slotDate} onChange={(e) => setSlotDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label htmlFor="slot-time">Time</Label><Input id="slot-time" type="time" value={slotTime} onChange={(e) => setSlotTime(e.target.value)} /></div>
+                <Button disabled={!slotDate || !slotTime} onClick={() => { setSlotSaved(true); trackEvent("setup_slot_chosen"); }}><Check className="mr-2 h-4 w-4" />I booked this time</Button>
+              </div>
+            </div>
+          )}
+        </>)}
       </section>
 
       {p && !done && (
@@ -262,7 +290,13 @@ export default function Setup() {
           <p className="text-muted-foreground">Reference <strong>{done}</strong>. Payment and your appointment are confirmed separately.</p>
           {mode === "in_person" && meetingLocation && <p className="text-sm">Meeting place: <strong>{meetingLocation}</strong></p>}
           {pay !== "bank" && pkg && <Button variant="outline" asChild><a href={pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Open payment</a></Button>}
-          <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />{bookingUrl ? "Pick or confirm your date" : "Arrange a time on WhatsApp"}</Button>
+          {slotSaved && chosenSlot ? (
+            <div className="mx-auto max-w-sm rounded-lg border bg-accent/40 p-3"><p className="text-sm text-muted-foreground">Booked date</p><p className="font-medium"><CalendarDays className="mr-2 inline h-4 w-4" />{chosenSlot}</p></div>
+          ) : bookingUrl ? (
+            <p className="text-sm"><a href="#setup-calendar" className="text-primary underline underline-offset-4">Haven't picked a time yet? Choose it on the calendar above.</a></p>
+          ) : (
+            <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />Arrange a time on WhatsApp</Button>
+          )}
         </CardContent></Card>
       )}
     </div>
