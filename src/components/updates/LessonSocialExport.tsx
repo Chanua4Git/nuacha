@@ -36,15 +36,22 @@ async function render(module: LearningModule, w: number, h: number) {
 
   const pad = 90, maxW = w - pad * 2;
   const scale = h >= 1900 ? 1 : h >= 1300 ? 0.85 : 0.72;
-  let y = pad + 40;
   ctx.fillStyle = PRIMARY; ctx.font = `600 ${44 * scale}px "Playfair Display", serif`;
-  ctx.fillText('Nuacha', pad, y); y += 40 * scale;
+  ctx.fillText('Nuacha', pad, pad + 40);
   ctx.fillStyle = SOFT; ctx.font = `400 ${28 * scale}px Inter, sans-serif`;
-  ctx.fillText(`${module.track} · ${module.estimatedTime || ''}`.replace(/ · $/, ''), pad, y += 30 * scale);
-  y += 60 * scale;
+  ctx.fillText(`${module.track} · ${module.estimatedTime || ''}`.replace(/ · $/, ''), pad, pad + 40 + 50 * scale);
+
+  // Measure the title + steps block so it sits in the middle of the free space.
+  const top = pad + 40 + 110 * scale, bottom = h - pad - 160 * scale;
+  ctx.font = `600 ${76 * scale}px "Playfair Display", serif`;
+  const titleLines = wrap(ctx, module.title, maxW);
+  ctx.font = `500 ${38 * scale}px Inter, sans-serif`;
+  const stepLines = module.steps.slice(0, 5).map((st) => wrap(ctx, st.title, maxW - 90 * scale));
+  const blockH = titleLines.length * 90 * scale + 60 * scale + stepLines.reduce((a, l) => a + l.length * 48 * scale + 50 * scale, 0);
+  let y = Math.max(top + 70 * scale, top + (bottom - top - blockH) / 2 + 70 * scale);
 
   ctx.fillStyle = TEXT; ctx.font = `600 ${76 * scale}px "Playfair Display", serif`;
-  for (const l of wrap(ctx, module.title, maxW)) { ctx.fillText(l, pad, y); y += 90 * scale; }
+  for (const l of titleLines) { ctx.fillText(l, pad, y); y += 90 * scale; }
   y += 30 * scale;
 
   const steps = module.steps.slice(0, 5);
@@ -62,7 +69,7 @@ async function render(module: LearningModule, w: number, h: number) {
   const by = h - pad - 110 * scale;
   ctx.beginPath(); (ctx as any).roundRect?.(pad, by, maxW, 110 * scale, 55 * scale); ctx.fill();
   ctx.fillStyle = BG; ctx.font = `600 ${38 * scale}px Inter, sans-serif`; ctx.textAlign = 'center';
-  ctx.fillText('Try it free at nuacha.com 🇹🇹', w / 2, by + 68 * scale); ctx.textAlign = 'left';
+  ctx.fillText('Try it free at nuacha.com', w / 2, by + 68 * scale); ctx.textAlign = 'left';
 
   return new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
 }
