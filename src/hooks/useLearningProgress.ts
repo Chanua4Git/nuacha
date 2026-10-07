@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'nuacha_learning_progress';
 
@@ -22,6 +23,50 @@ export function useLearningProgress() {
       return { modules: {} };
     }
   });
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const loaded = useRef(false);
+  const sent = useRef<Record<string, string>>({});
+
+  // Signed in: merge saved account progress with this browser's, once.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session || cancelled) return;
+      const { data } = await supabase.from('learning_progress').select('module_id, steps_completed, completed').eq('user_id', session.user.id);
+      if (cancelled) return;
+      setProgress(prev => {
+        const modules = { ...prev.modules };
+        for (const r of data ?? []) {
+          const local = modules[r.module_id] || { completed: false, stepsCompleted: [] };
+          modules[r.module_id] = {
+            completed: local.completed || r.completed,
+            stepsCompleted: Array.from(new Set([...(local.stepsCompleted || []), ...(r.steps_completed || [])])),
+          };
+        }
+        for (const [id, m] of Object.entries(modules)) sent.current[id] = JSON.stringify([m.stepsCompleted || [], !!m.completed]);
+        // Upload browser-only progress once by clearing its marker
+        for (const id of Object.keys(prev.modules)) if (!(data ?? []).some(r => r.module_id === id)) delete sent.current[id];
+        return { ...prev, modules };
+      });
+      loaded.current = true;
+      setUserId(session.user.id);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Keep the account copy up to date.
+  useEffect(() => {
+    if (!userId || !loaded.current) return;
+    const t = setTimeout(() => {
+      // Only send modules this screen actually changed, so other open cards can't overwrite them.
+      const rows = Object.entries(progress.modules)
+        .map(([module_id, m]) => ({ user_id: userId, module_id, steps_completed: m.stepsCompleted || [], completed: !!m.completed }))
+        .filter(r => { const k = JSON.stringify([r.steps_completed, r.completed]); if (sent.current[r.module_id] === k) return false; sent.current[r.module_id] = k; return true; });
+      if (rows.length) supabase.from('learning_progress').upsert(rows).then(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [progress, userId]);
 
   useEffect(() => {
     try {

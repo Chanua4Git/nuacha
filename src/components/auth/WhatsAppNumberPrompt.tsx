@@ -16,6 +16,7 @@ export default function WhatsAppNumberPrompt() {
   const { user, isLoading } = useAuth();
   const [open, setOpen] = useState(false);
   const [fromLink, setFromLink] = useState(false);
+  const [onFile, setOnFile] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const location = useLocation();
@@ -40,10 +41,14 @@ export default function WhatsAppNumberPrompt() {
     }
     if (wants || pending) {
       localStorage.removeItem(PENDING_KEY);
-      const existing = (user.user_metadata as any)?.phone_number || user.phone || "";
-      if (existing) setPhone(existing.startsWith("+") ? existing : `+${existing}`);
       setFromLink(true);
-      setOpen(true);
+      (async () => {
+        const { data } = await supabase.auth.getUser();
+        const { data: prof } = await supabase.from("profiles").select("phone_number").eq("id", user.id).maybeSingle();
+        const existing = (data.user?.user_metadata as any)?.phone_number || data.user?.phone || prof?.phone_number || "";
+        if (existing) { const n = existing.startsWith("+") ? existing : `+${existing}`; setPhone(n); setOnFile(n); }
+        setOpen(true);
+      })();
     }
   }, [location.search, location.pathname, user, isLoading]);
 
@@ -86,6 +91,8 @@ export default function WhatsAppNumberPrompt() {
     const { error } = await supabase.auth.updateUser({ data: { phone_number: phone } });
     setSaving(false);
     if (error) { toast("That didn't save — let's try again in a moment."); return; }
+    await supabase.from("profiles").upsert({ id: user.id, phone_number: phone });
+    setOnFile(phone);
     trackEvent("whatsapp_number_added");
     toast.success("Thank you — that's saved.");
     setOpen(false);
@@ -98,7 +105,9 @@ export default function WhatsAppNumberPrompt() {
         <DialogHeader>
           <DialogTitle className="font-playfair">One small thing</DialogTitle>
           <DialogDescription>
-            Add your WhatsApp number so we can gently help if you get stuck. We'll never spam you.
+            {onFile
+              ? <>We have <strong>{onFile}</strong> on file. Want to change it?</>
+              : <>Add your WhatsApp number so we can gently help if you get stuck. We'll never spam you.</>}
           </DialogDescription>
         </DialogHeader>
         <PhoneInput
@@ -109,8 +118,8 @@ export default function WhatsAppNumberPrompt() {
           className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
         />
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" onClick={later}>Maybe later</Button>
-          <Button onClick={save} disabled={!phone || saving}>Save number</Button>
+          <Button variant="ghost" onClick={later}>{onFile ? "Keep it" : "Maybe later"}</Button>
+          <Button onClick={save} disabled={!phone || saving || phone === onFile}>{onFile ? "Save change" : "Save number"}</Button>
         </div>
       </DialogContent>
     </Dialog>
