@@ -32,6 +32,7 @@ import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import Updates from "./pages/Updates";
+import AdminUsers from "./pages/AdminUsers";
 import MoneyPots from "./pages/MoneyPots";
 import GetStarted from "./pages/GetStarted";
 import GetStartedStayingOrganized from "./pages/GetStartedStayingOrganized";
@@ -116,6 +117,7 @@ const App = () => {
                   <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Landing />} />
+                    <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
                     <Route path="/app" element={
                       <ProtectedRoute>
                         <Index />
