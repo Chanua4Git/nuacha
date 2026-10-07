@@ -42,7 +42,8 @@ const Receipts = () => {
     place: filters.searchTerm,
     minAmount: filters.minAmount,
     maxAmount: filters.maxAmount,
-    searchTerm: filters.searchTerm
+    searchTerm: filters.searchTerm,
+    allFamilies: true
   };
   
   const { expenses } = useExpenses(expenseFilters);

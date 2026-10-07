@@ -42,7 +42,8 @@ const ReceiptGallery: React.FC<ReceiptGalleryProps> = ({
     place: filters.searchTerm,
     minAmount: filters.minAmount,
     maxAmount: filters.maxAmount,
-    searchTerm: filters.searchTerm
+    searchTerm: filters.searchTerm,
+    allFamilies: true
   };
 
   const { expenses, isLoading, error } = useExpenses(expenseFilters);

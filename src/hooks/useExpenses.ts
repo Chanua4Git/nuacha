@@ -17,6 +17,7 @@ export interface ExpenseFilters {
   searchTerm?: string;
   hasReceipt?: boolean;
   paymentMethod?: string;
+  allFamilies?: boolean;
 }
 
 export const useExpenses = (filters?: ExpenseFilters) => {
@@ -35,7 +36,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
 
       // CRITICAL FIX: Only fetch expenses when a specific family is selected
       // This prevents the race condition where expenses from all families are loaded initially
-      if (!filters?.familyId) {
+      if (!filters?.familyId && !filters?.allFamilies) {
         console.log('No family selected, not fetching expenses');
         setExpenses([]);
         setIsLoading(false);
@@ -44,13 +45,17 @@ export const useExpenses = (filters?: ExpenseFilters) => {
       
       setIsLoading(true);
       try {
-        console.log('Fetching expenses for user:', user.id, 'family:', filters.familyId);
-        
-        // Start with a basic query and apply specific family filter
+        let familyIds: string[] = filters.familyId ? [filters.familyId] : [];
+        if (!filters.familyId) {
+          const { data: fams } = await supabase.from('families').select('id').eq('user_id', user.id);
+          familyIds = (fams || []).map((f: any) => f.id);
+          if (familyIds.length === 0) { setExpenses([]); setIsLoading(false); return; }
+        }
+
         let query = supabase
           .from('expenses')
           .select('*')
-          .eq('family_id', filters.familyId);
+          .in('family_id', familyIds);
         
         console.log('Filtering by specific family:', filters.familyId);
         
@@ -151,7 +156,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
     filters?.place,
     filters?.minAmount,
     filters?.maxAmount,
-    filters?.searchTerm
+    filters?.searchTerm,
+    filters?.allFamilies
   ]);
 
   const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
