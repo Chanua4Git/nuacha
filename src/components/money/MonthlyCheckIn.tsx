@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { computeAvailable, type MoneyAccount, type CashWithdrawal, type LinkedItem } from '@/hooks/useMoneyPots';
 import type { AccountTransfer } from '@/hooks/useTransfers';
 import VoiceCheckIn from './VoiceCheckIn';
+import { useAuth } from '@/auth/contexts/AuthProvider';
+
+const ROUTINE_OWNER_EMAIL = 'chanuajohnson4@gmail.com';
 
 const tt = (n: number) => `TT$${n.toLocaleString('en-TT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -28,6 +31,8 @@ const WEEKLY_SPENDING = 500;
 
 /** One calm view of the month: came in, went out by pot, what's left, what to tidy. */
 const MonthlyCheckIn = (p: Props) => {
+  const { user } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === ROUTINE_OWNER_EMAIL;
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [cashPlan, setCashPlan] = useState<{ name: string; amount: number }[]>([]);
   const [untidy, setUntidy] = useState(0);
@@ -39,6 +44,7 @@ const MonthlyCheckIn = (p: Props) => {
   const weeks = differenceInCalendarWeeks(endOfMonth(parseISO(p.monthStart)), parseISO(p.monthStart)) + 1;
   const otherWeeks = Math.ceil(weeks / 2);
   useEffect(() => {
+    if (!isOwner) { setCashPlan([]); return; }
     setCashPlan([
       { name: `Leslie-Ann Dolly Jackman — night nurse (5 nights × TT$250 × ${weeks} weeks)`, amount: 5 * 250 * weeks },
       { name: `Tricia Crawford — fill-in (1 night × TT$250 weekly + 1 day × TT$280 every other week)`, amount: 250 * weeks + 280 * otherWeeks },
@@ -47,8 +53,8 @@ const MonthlyCheckIn = (p: Props) => {
       { name: 'Schawn Millington — groundsman (4 days × TT$300)', amount: 4 * 300 },
       { name: `Spending money (${weeks} weeks × TT$${WEEKLY_SPENDING})`, amount: weeks * WEEKLY_SPENDING },
     ]);
-  }, [weeks, otherWeeks]);
-  const notCash = [
+  }, [weeks, otherWeeks, isOwner]);
+  const notCash = !isOwner ? [] : [
     { name: 'A N-Collymore (Angela) — paid straight from Grandpa’s pension', amount: null as number | null },
     { name: 'Carlene Williams Kimloaz — 2 weekends × TT$700 (TT$35/hr × 10 hrs × 2 days), paid from Chan’s account', amount: 1400 },
     { name: `Groceries — TT$800–1,000 a week on debit (${weeks} weeks)`, amount: null },
