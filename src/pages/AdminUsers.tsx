@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Circle, MessageCircle, Mail, Loader2, Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { SetupRequestsPanel } from "@/components/admin/SetupRequestsPanel";
 
 type Journey = {
   user_id: string; email: string; phone: string | null; provider: string;
@@ -23,6 +24,7 @@ type Journey = {
   last_nudge_at: string | null; nudge_count: number;
   completed_modules?: string[]; last_module?: string | null; last_learning_at?: string | null;
   open_questions?: { module: string; message: string; at: string }[];
+  admin_note?: string | null;
 };
 const nextLesson = (j: Journey) => learningModules.find((m) => !(j.completed_modules || []).includes(m.id)) || null;
 const moduleTitle = (id?: string | null) => learningModules.find((m) => m.id === id)?.title || id || "";
@@ -56,6 +58,7 @@ export default function AdminUsers() {
   const [templateId, setTemplateId] = useState("");
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState<Template | null>(null);
+  const [editUser, setEditUser] = useState<{ j: Journey; phone: string; note: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -64,8 +67,10 @@ export default function AdminUsers() {
       (supabase.from as any)("nudge_templates").select("*").order("created_at"),
       (supabase.rpc as any)("admin_learning_overview"),
     ]);
+    const { data: notes } = await (supabase.from as any)("profiles").select("id, admin_note");
+    const noteBy = new Map(((notes as any[]) || []).map((n) => [n.id, n.admin_note]));
     const byUser = new Map(((lo as any[]) || []).map((r) => [r.user_id, r]));
-    j = ((j as Journey[]) || []).map((r) => ({ ...r, ...(byUser.get(r.user_id) || {}) }));
+    j = ((j as Journey[]) || []).map((r) => ({ ...r, ...(byUser.get(r.user_id) || {}), admin_note: noteBy.get(r.user_id) ?? null }));
     if (error) toast("Couldn't load users", { description: error.message });
     setRows((j as Journey[]) || []);
     setTemplates((t as Template[]) || []);
@@ -115,6 +120,15 @@ export default function AdminUsers() {
     load();
   };
 
+  const saveUser = async () => {
+    if (!editUser) return;
+    const phone = editUser.phone.trim();
+    if (phone && phone.replace(/\D/g, "").length < 7) return toast("That number looks a little short.");
+    const { error } = await (supabase.from as any)("profiles").upsert({ id: editUser.j.user_id, phone_number: phone || null, admin_note: editUser.note.trim() || null });
+    if (error) return toast("Couldn't save", { description: error.message });
+    toast.success("Saved"); setEditUser(null); load();
+  };
+
   const saveTemplate = async () => {
     if (!editing) return;
     const { id, ...rest } = editing;
@@ -161,6 +175,17 @@ export default function AdminUsers() {
         </div>
       </div>
 
+      <SetupRequestsPanel />
+
+      <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Edit {editUser?.j.email}</DialogTitle></DialogHeader>
+          <Input placeholder="WhatsApp number, e.g. +1 868 123 4567" value={editUser?.phone || ""} onChange={(e) => editUser && setEditUser({ ...editUser, phone: e.target.value })} maxLength={30} />
+          <Textarea placeholder="Private note (only admins see this)" value={editUser?.note || ""} onChange={(e) => editUser && setEditUser({ ...editUser, note: e.target.value })} maxLength={1000} />
+          <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditUser(null)}>Cancel</Button><Button onClick={saveUser}>Save</Button></div>
+        </DialogContent>
+      </Dialog>
+
       {loading ? <Loader2 className="animate-spin mx-auto" /> : (
         <div className="space-y-3">
           {filtered.map((j) => {
@@ -181,6 +206,7 @@ export default function AdminUsers() {
                       {j.last_module && <> · last: {moduleTitle(j.last_module)}{j.last_learning_at && ` · ${formatDistanceToNow(new Date(j.last_learning_at))} ago`}</>}
                       {nextLesson(j) && <> · next: <span className="text-foreground">{nextLesson(j)!.title}</span></>}
                     </div>
+                    {j.admin_note && <div className="text-sm italic text-muted-foreground">Note: {j.admin_note}</div>}
                     {(j.open_questions || []).length > 0 && (
                       <div className="text-sm rounded-lg bg-accent/50 px-3 py-2">
                         <span className="font-medium">Question on {moduleTitle(j.open_questions![0].module)}:</span> “{j.open_questions![0].message}”
@@ -204,6 +230,7 @@ export default function AdminUsers() {
                     <div className="flex flex-wrap gap-2">
                       {(j.open_questions || []).length > 0 && <Button size="sm" variant="secondary" onClick={() => openNudge(j, "lesson_reply")}>Reply to question</Button>}
                       {nextLesson(j) && <Button size="sm" variant="outline" onClick={() => openNudge(j, "learning")}>Next lesson</Button>}
+                      <Button size="sm" variant="ghost" onClick={() => setEditUser({ j, phone: j.phone || "", note: j.admin_note || "" })}>Edit</Button>
                       <Button size="sm" onClick={() => openNudge(j)} disabled={s === "done" && templates.length === 0}>Nudge</Button>
                     </div>
                   </div>
