@@ -1,4 +1,4 @@
-import { LucideIcon, Receipt, Users, PiggyBank, Baby, Heart, Home, HandHeart, GraduationCap, Briefcase, Shield, Calculator } from 'lucide-react';
+import { LucideIcon, Receipt, Users, PiggyBank, Baby, Heart, Home, HandHeart, GraduationCap, Briefcase, Shield, Calculator, Mic, Wallet, CreditCard, Map, Image as ImageIcon, GraduationCap as Lessons, HeartHandshake } from 'lucide-react';
 
 export interface FeatureShowcaseItem {
   id: string;
@@ -38,6 +38,13 @@ export const featureTypeFilters = [
 ];
 
 export const features: FeatureShowcaseItem[] = [
+  { id: 'talk-it-through', title: 'Talk it through', description: 'Tap Speak and say what you spent — "250 on groceries, 400 for the light bill". Nuacha shows what it understood and nothing saves until you say so. Daily and monthly check-ins included.', icon: Mic, benefitsFor: ['Families & Parents', 'Caregivers', 'Self-Employed', 'Consumers'], featureTypes: ['receipts', 'budgeting'], ctaText: 'Try Talk it through', ctaPath: '/' },
+  { id: 'accounts-paid-from', title: 'Accounts, cash & "Paid from"', description: 'Add your bank accounts, log cash withdrawals and choose which account paid for each expense. Balances work themselves out, and usual accounts fill in for you.', icon: Wallet, benefitsFor: ['Families & Parents', 'Caregivers', 'Homeowners'], featureTypes: ['budgeting'], ctaText: 'Open Cash & Accounts', ctaPath: '/money' },
+  { id: 'credit-card', title: 'Credit card tracking', description: 'See card purchases next to everything else and keep an eye on your limit.', icon: CreditCard, benefitsFor: ['Consumers', 'Families & Parents'], featureTypes: ['budgeting'], ctaText: 'See your accounts', ctaPath: '/money' },
+  { id: 'nuacha-map', title: 'Your Nuacha map', description: 'One simple picture of everything Nuacha can do, what you have tried, and your easiest next step.', icon: Map, benefitsFor: ['Families & Parents', 'Consumers', 'Students'], featureTypes: ['reports'], ctaText: 'Open your dashboard', ctaPath: '/dashboard' },
+  { id: 'story-cards', title: 'Story cards & summaries', description: 'Turn your week, month or year into a shareable image. Private receipt details stay blurred and never leave your phone.', icon: ImageIcon, benefitsFor: ['Families & Parents', 'Consumers'], featureTypes: ['reports'], ctaText: 'See your reports', ctaPath: '/reports' },
+  { id: 'learning-lessons', title: 'Short lessons, with help', description: '2–3 minute lessons that remember your progress on any device. Stuck? Ask a question at the end of any lesson.', icon: Lessons, benefitsFor: ['Families & Parents', 'Students', 'Consumers'], featureTypes: ['receipts'], ctaText: 'Start learning', ctaPath: '/updates?tab=learning' },
+  { id: 'setup-session', title: 'Setup with Chan', description: 'Hand-holding (TT$100) or done-for-you (TT$300), remote or in person. Bring your receipts — we handle the rest.', icon: HeartHandshake, benefitsFor: ['Families & Parents', 'Caregivers', 'Small Business'], featureTypes: ['family'], isLocalTT: true, ctaText: 'Choose a setup', ctaPath: '/setup' },
   {
     id: 'receipt-scanning',
     title: 'Smart Receipt Scanning',
