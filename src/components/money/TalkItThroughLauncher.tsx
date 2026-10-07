@@ -30,6 +30,15 @@ const TalkItThroughLauncher = () => {
     return () => window.removeEventListener(TALK_EVENT, h);
   }, [user]);
 
+  // Open directly from a shared link like nuacha.com/?talk=true
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).get('talk')) return;
+    setOpen(true);
+    if (!user) trackEvent('checkin_open_guest');
+    navigate(location.pathname, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   // After signing in, pick up a guest's saved note.
   useEffect(() => {
     if (!user) return;
