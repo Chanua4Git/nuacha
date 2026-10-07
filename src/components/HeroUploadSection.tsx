@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Leaf } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { openReceiptPicker } from "@/hooks/useReceiptPicker";
 
 interface HeroUploadSectionProps {
@@ -19,6 +21,14 @@ const HeroUploadSection = ({
   isBusy = false,
 }: HeroUploadSectionProps) => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const guided = params.get('start') === 'scan';
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!guided) return;
+    trackEvent('first_scan_link_open', { ref: params.get('ref') || 'direct' });
+    setTimeout(() => rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+  }, [guided]);
 
   const fallback = (mode: 'camera' | 'upload') => {
     if (onFileSelect) {
@@ -41,7 +51,7 @@ const HeroUploadSection = ({
   };
 
   return (
-    <div className="relative py-16 px-4 md:px-6 lg:px-8">
+    <div ref={rootRef} id="first-scan" className="relative py-16 px-4 md:px-6 lg:px-8">
       {/* Gentle background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#C3DCD1]/30 via-[#F4E8D3]/20 to-[#F1CBC7]/20 rounded-3xl"></div>
       
@@ -62,6 +72,18 @@ const HeroUploadSection = ({
             </p>
           </div>
 
+          {guided && (
+            <div className="mx-auto max-w-xl rounded-2xl border border-primary/30 bg-card p-4 text-left shadow-sm">
+              <p className="font-medium">Welcome 🌿 Let's do your first scan together</p>
+              <ol className="mt-2 list-decimal pl-5 text-sm text-muted-foreground space-y-1">
+                <li>Tap <strong>Snap Receipt</strong> below (or Upload if it's already on your phone).</li>
+                <li>Take a clear photo of any receipt from today.</li>
+                <li>Check what Nuacha read, then save. That's it ✨</li>
+              </ol>
+              <p className="mt-2 text-xs text-muted-foreground">3 free scans every day. No pressure — take your time.</p>
+            </div>
+          )}
+
           {/* Prominent action buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Button
@@ -69,7 +91,7 @@ const HeroUploadSection = ({
               size="lg"
               disabled={isBusy}
               onClick={handleCameraAction}
-              className="group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 max-w-xs sm:max-w-none"
+              className={`${guided ? 'ring-4 ring-primary/40 ring-offset-2 animate-pulse ' : ''}group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 max-w-xs sm:max-w-none`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#5A7684]/80 to-[#5A7684] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="relative flex items-center space-x-3">
