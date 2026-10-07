@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Make each Learning module's social download create a vertical lesson video from the loaded module, while keeping image formats available.
+
 - [x] Clarify setup deliverables, TT$300 onboarding and follow-up quotation, tentative visit schedule, and honest calendar reminder (public page and reminder browser-tested).
 
 - [x] Add booking, package, meeting-place, and calendar deep links to `/updates` and preselect their choices on `/setup`.

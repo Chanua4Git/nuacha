@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Download } from 'lucide-react';
+import { Download, Film, Image } from 'lucide-react';
 import type { LearningModule } from '@/constants/learningCenterData';
 import { trackEvent } from '@/lib/analytics';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 const SIZES = [
   { key: 'story', label: 'Story / TikTok (1080×1920)', w: 1080, h: 1920 },
@@ -29,7 +31,8 @@ async function render(module: LearningModule, w: number, h: number) {
     document.fonts.load('400 32px Inter'),
   ]).catch(() => {});
   const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
   ctx.fillStyle = BG; ctx.fillRect(0, 0, w, h);
   ctx.fillStyle = GREEN; ctx.beginPath(); ctx.arc(w - 80, 120, 260, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = ACCENT; ctx.beginPath(); ctx.arc(60, h - 80, 300, 0, Math.PI * 2); ctx.fill();
@@ -74,23 +77,237 @@ async function render(module: LearningModule, w: number, h: number) {
   return new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
 }
 
+const VIDEO_WIDTH = 1080;
+const VIDEO_HEIGHT = 1920;
+const VIDEO_FPS = 30;
+const INTRO_SECONDS = 2.6;
+const STEP_SECONDS = 3.4;
+const OUTRO_SECONDS = 2.4;
+
+const ease = (value: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, value)), 3);
+
+function drawVideoFrame(
+  ctx: CanvasRenderingContext2D,
+  module: LearningModule,
+  elapsed: number,
+) {
+  const w = VIDEO_WIDTH;
+  const h = VIDEO_HEIGHT;
+  const total = INTRO_SECONDS + module.steps.length * STEP_SECONDS + OUTRO_SECONDS;
+  const fadeIn = ease(Math.min(1, elapsed / 0.45));
+  const fadeOut = ease(Math.min(1, (total - elapsed) / 0.45));
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, w, h);
+
+  const drift = Math.sin(elapsed * 0.7) * 24;
+  ctx.fillStyle = GREEN;
+  ctx.beginPath();
+  ctx.arc(w - 50 + drift, 115, 310, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = ACCENT;
+  ctx.beginPath();
+  ctx.arc(25 - drift, h - 40, 350, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalAlpha = opacity;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = PRIMARY;
+  ctx.font = '600 48px "Playfair Display", serif';
+  ctx.fillText('Nuacha', 82, 118);
+  ctx.fillStyle = SOFT;
+  ctx.font = '400 30px Inter, sans-serif';
+  ctx.fillText(`${module.track} · ${module.estimatedTime || 'Quick lesson'}`, 82, 170);
+
+  if (elapsed < INTRO_SECONDS) {
+    const local = elapsed / INTRO_SECONDS;
+    const rise = (1 - ease(Math.min(1, local * 1.8))) * 55;
+    ctx.fillStyle = TEXT;
+    ctx.font = '600 88px "Playfair Display", serif';
+    const titleLines = wrap(ctx, module.title, w - 164);
+    let y = 690 + rise - (titleLines.length - 1) * 54;
+    titleLines.forEach((line) => {
+      ctx.fillText(line, 82, y);
+      y += 108;
+    });
+    ctx.fillStyle = SOFT;
+    ctx.font = '400 38px Inter, sans-serif';
+    const descriptionLines = wrap(ctx, module.description, w - 164).slice(0, 4);
+    y += 42;
+    descriptionLines.forEach((line) => {
+      ctx.fillText(line, 82, y);
+      y += 54;
+    });
+  } else if (elapsed < total - OUTRO_SECONDS) {
+    const stepTime = elapsed - INTRO_SECONDS;
+    const index = Math.min(module.steps.length - 1, Math.floor(stepTime / STEP_SECONDS));
+    const step = module.steps[index];
+    const local = (stepTime % STEP_SECONDS) / STEP_SECONDS;
+    const rise = (1 - ease(Math.min(1, local * 2.2))) * 44;
+
+    ctx.fillStyle = PRIMARY;
+    ctx.beginPath();
+    ctx.arc(116, 585 + rise, 43, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = BG;
+    ctx.font = '600 38px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(index + 1), 116, 599 + rise);
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = TEXT;
+    ctx.font = '600 78px "Playfair Display", serif';
+    const titleLines = wrap(ctx, step.title, w - 164);
+    let y = 720 + rise;
+    titleLines.forEach((line) => {
+      ctx.fillText(line, 82, y);
+      y += 94;
+    });
+
+    ctx.fillStyle = SOFT;
+    ctx.font = '400 40px Inter, sans-serif';
+    const descriptionLines = wrap(ctx, step.description, w - 164).slice(0, 5);
+    y += 48;
+    descriptionLines.forEach((line) => {
+      ctx.fillText(line, 82, y);
+      y += 58;
+    });
+
+    const progressWidth = w - 164;
+    ctx.fillStyle = ACCENT;
+    ctx.fillRect(82, 1560, progressWidth, 10);
+    ctx.fillStyle = PRIMARY;
+    ctx.fillRect(82, 1560, progressWidth * ((index + local) / module.steps.length), 10);
+    ctx.fillStyle = SOFT;
+    ctx.font = '500 28px Inter, sans-serif';
+    ctx.fillText(`Step ${index + 1} of ${module.steps.length}`, 82, 1625);
+  } else {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = TEXT;
+    ctx.font = '600 86px "Playfair Display", serif';
+    ctx.fillText('Ready when you are.', w / 2, 790);
+    ctx.fillStyle = SOFT;
+    ctx.font = '400 42px Inter, sans-serif';
+    ctx.fillText('Try the lesson for yourself.', w / 2, 875);
+    ctx.fillStyle = PRIMARY;
+    ctx.beginPath();
+    ctx.roundRect(82, 1110, w - 164, 132, 66);
+    ctx.fill();
+    ctx.fillStyle = BG;
+    ctx.font = '600 40px Inter, sans-serif';
+    ctx.fillText('Try it free at nuacha.com', w / 2, 1192);
+    ctx.textAlign = 'left';
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+async function renderVideo(module: LearningModule): Promise<{ blob: Blob; extension: string } | null> {
+  if (typeof MediaRecorder === 'undefined') return null;
+  await Promise.all([
+    document.fonts.load('600 88px "Playfair Display"'),
+    document.fonts.load('400 42px Inter'),
+  ]).catch(() => {});
+
+  const canvas = document.createElement('canvas');
+  canvas.width = VIDEO_WIDTH;
+  canvas.height = VIDEO_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  if (!ctx || !canvas.captureStream) return null;
+
+  const supportedTypes = ['video/mp4;codecs=h264', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  const mimeType = supportedTypes.find((type) => MediaRecorder.isTypeSupported(type));
+  if (!mimeType) return null;
+
+  const stream = canvas.captureStream(VIDEO_FPS);
+  const chunks: BlobPart[] = [];
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+  const completed = new Promise<Blob>((resolve, reject) => {
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+    recorder.onerror = () => reject(new Error('The video could not be recorded.'));
+    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+  });
+
+  const totalSeconds = INTRO_SECONDS + module.steps.length * STEP_SECONDS + OUTRO_SECONDS;
+  const startedAt = performance.now();
+  recorder.start(250);
+
+  await new Promise<void>((resolve) => {
+    const paint = (now: number) => {
+      const elapsed = (now - startedAt) / 1000;
+      drawVideoFrame(ctx, module, Math.min(elapsed, totalSeconds));
+      if (elapsed < totalSeconds) requestAnimationFrame(paint);
+      else resolve();
+    };
+    requestAnimationFrame(paint);
+  });
+
+  recorder.stop();
+  stream.getTracks().forEach((track) => track.stop());
+  const blob = await completed;
+  return { blob, extension: mimeType.includes('mp4') ? 'mp4' : 'webm' };
+}
+
 /** Download a branded, social-sized image of a lesson. Generic lesson content only — no personal data. */
 export function LessonSocialExport({ module }: { module: LearningModule }) {
+  const [isCreatingVideo, setIsCreatingVideo] = useState(false);
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   const download = async (s: typeof SIZES[number]) => {
     const blob = await render(module, s.w, s.h);
     if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `nuacha-${module.id}-${s.key}.png`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    downloadBlob(blob, `nuacha-${module.id}-${s.key}.png`);
     trackEvent('lesson_social_download', { module_id: module.id, size: s.key });
   };
+
+  const downloadVideo = async () => {
+    setIsCreatingVideo(true);
+    try {
+      const result = await renderVideo(module);
+      if (!result) {
+        toast.error('Video creation is not available in this browser. You can still download an image.');
+        return;
+      }
+      downloadBlob(result.blob, `nuacha-${module.id}-story-video.${result.extension}`);
+      trackEvent('lesson_social_video_download', { module_id: module.id, format: result.extension });
+      toast.success('Your lesson video is ready to share.');
+    } catch (error) {
+      console.error('Lesson video creation failed:', error);
+      toast.error('The video could not be created. Please try again.');
+    } finally {
+      setIsCreatingVideo(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2"><Download className="w-4 h-4" />For socials</Button>
+        <Button variant="ghost" size="sm" className="gap-2" disabled={isCreatingVideo}>
+          {isCreatingVideo ? <Film className="w-4 h-4 animate-pulse" /> : <Download className="w-4 h-4" />}
+          {isCreatingVideo ? 'Creating video…' : 'For socials'}
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {SIZES.map((s) => <DropdownMenuItem key={s.key} onClick={() => download(s)}>{s.label}</DropdownMenuItem>)}
+        <DropdownMenuItem onClick={downloadVideo} className="gap-2">
+          <Film className="h-4 w-4" /> Story video (1080×1920)
+        </DropdownMenuItem>
+        {SIZES.map((s) => (
+          <DropdownMenuItem key={s.key} onClick={() => download(s)} className="gap-2">
+            <Image className="h-4 w-4" /> {s.label}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
