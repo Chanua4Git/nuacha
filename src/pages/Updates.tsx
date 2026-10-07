@@ -112,14 +112,14 @@ export default function Updates() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-primary">Now booking</p>
                   <h2 id="setup-invitation-heading" className="text-2xl font-semibold">Want Nuacha set up with you?</h2>
-                  <p className="max-w-3xl text-muted-foreground">Choose gentle guidance while you set it up, or bring your receipts and details and have it done for you. Sessions are available remotely or in person.</p>
+                  <p className="max-w-3xl text-muted-foreground">Choose a guided starting session for TT$100, or begin done-for-you support with TT$300 onboarding and planning. Further work and visits are quoted separately after agreeing your priorities. Meet remotely by video or in person.</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <Button asChild className="h-auto min-h-12 justify-start whitespace-normal py-3">
                     <a href="/setup?package=hand_holding&mode=remote#setup-details"><HeartHandshake className="mr-2 h-4 w-4 shrink-0" />Hand-holding · TT$100</a>
                   </Button>
                   <Button asChild variant="outline" className="h-auto min-h-12 justify-start whitespace-normal py-3">
-                    <a href="/setup?package=done_for_you&mode=remote#setup-details"><WandSparkles className="mr-2 h-4 w-4 shrink-0" />Done-for-you · TT$300</a>
+                    <a href="/setup?package=done_for_you&mode=remote#setup-details"><WandSparkles className="mr-2 h-4 w-4 shrink-0" />Done-for-you onboarding · TT$300</a>
                   </Button>
                   <Button asChild variant="outline" className="h-auto min-h-12 justify-start whitespace-normal py-3">
                     <a href="/setup?package=hand_holding&mode=in_person#setup-details"><MapPin className="mr-2 h-4 w-4 shrink-0" />Choose an in-person place</a>

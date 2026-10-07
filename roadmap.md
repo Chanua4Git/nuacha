@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Clarify setup deliverables, TT$300 onboarding and follow-up quotation, tentative visit schedule, and honest calendar reminder (public page and reminder browser-tested).
+
 - [x] Add booking, package, meeting-place, and calendar deep links to `/updates` and preselect their choices on `/setup`.
 - [x] Give every What's New card a relevant deep link to try, learn, or explore that specific update.
 - [x] Make `/setup` a clear two-step flow and show the saved booking calendar on the page with a new-window fallback.
