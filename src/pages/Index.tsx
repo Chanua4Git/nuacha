@@ -140,7 +140,7 @@ const Index = () => {
           </div>
           
           <div>
-            <div className="space-y-6">
+            <div id="reminders" className="space-y-6 scroll-mt-24" ref={(el) => { if (el && window.location.hash === '#reminders') setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 400); }}>
               <RemindersList />
             </div>
           </div>

@@ -454,7 +454,7 @@ const AccountDialog = ({
           <DialogDescription>Only the last 4 digits are kept — never the full account number.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Field label="Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Grandma's pension" /></Field>
+          <Field label="Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Savings account ending 1234" /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Last 4 digits"><Input inputMode="numeric" maxLength={4} value={form.last4} onChange={(e) => setForm({ ...form, last4: e.target.value.replace(/\D/g, '') })} /></Field>
             <Field label="Comes in monthly (TT$)"><Input type="number" inputMode="decimal" value={form.income} onChange={(e) => setForm({ ...form, income: e.target.value })} /></Field>

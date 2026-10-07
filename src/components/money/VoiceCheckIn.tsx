@@ -335,7 +335,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
               <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
                 <p className="font-medium">How to use it</p>
                 <p className="text-muted-foreground">Tap <strong>Speak</strong> to start, talk naturally, then tap again to stop when you're finished. Or just type.</p>
-                <p className="text-muted-foreground">Try saying: "{personal?.examples[0] ?? 'Spent 250 on groceries at the supermarket, paid 400 for the light bill, and 60 for school lunch.'}"</p>
+                <p className="text-muted-foreground">Try saying: "{'I spent 300 at nuacha.com for a done-for-you setup, paid from my savings account ending 1234.'}"</p>
                 {personal?.empty && <p className="text-muted-foreground">Start with one thing you bought today.</p>}
               </div>
               {personal && personal.nudges.length > 0 && (

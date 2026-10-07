@@ -134,7 +134,7 @@ const Reports = () => {
           </Card>
         ) : (
           <>
-            <Tabs defaultValue="expenses" onValueChange={setReportType} className="mb-8">
+            <Tabs defaultValue={["expenses","category","time"].includes(new URLSearchParams(window.location.search).get('tab') || "") ? new URLSearchParams(window.location.search).get('tab')! : "expenses"} onValueChange={setReportType} className="mb-8">
               <TabsList>
                 <TabsTrigger value="expenses">
                   <ListFilter className="h-4 w-4 mr-2" />

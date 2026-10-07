@@ -57,7 +57,7 @@ const Options = () => {
         
         <CategoryCleanupBanner />
 
-          <Tabs defaultValue="families">
+          <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || "families"}>
             <TabsList className="mb-6">
               <TabsTrigger value="families">
                 <Users className="h-4 w-4 mr-2" />
