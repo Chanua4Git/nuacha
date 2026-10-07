@@ -59,6 +59,15 @@ export default function AdminUsers() {
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState<Template | null>(null);
   const [editUser, setEditUser] = useState<{ j: Journey; phone: string; note: string } | null>(null);
+  const [manualNudge, setManualNudge] = useState<{ phone: string; name: string; templateId: string; message: string } | null>(null);
+
+  const openManualNudge = (template?: Template) => {
+    const chosen = template || templates.find((t) => t.name === "Invite to setup") || templates[0];
+    setManualNudge({ phone: "", name: "", templateId: chosen?.id || "", message: chosen?.message || "" });
+  };
+  const manualMessage = manualNudge?.message.replace(/\[Name\]/g, manualNudge.name.trim() || "there") || "";
+  const manualDigits = manualNudge?.phone.replace(/\D/g, "") || "";
+  const validManualPhone = /^[1-9]\d{6,14}$/.test(manualDigits);
 
   const load = async () => {
     setLoading(true);
@@ -155,6 +164,7 @@ export default function AdminUsers() {
           <p className="text-muted-foreground">See where each person is and gently help them to their first three scans.</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
+        <Button variant="outline" onClick={() => openManualNudge()}><MessageCircle className="h-4 w-4 mr-1" />Nudge a number</Button>
         <Button variant="outline" onClick={async () => {
           const t = templates.find((x) => x.stage === 'share');
           const text = t?.message || 'Try your first Nuacha scan: https://nuacha.com/?start=scan&ref=share';
@@ -255,11 +265,44 @@ export default function AdminUsers() {
                 <div className="font-medium text-sm">{t.name} <span className="text-muted-foreground font-normal">· {STAGE_LABEL[t.stage] || t.stage}</span></div>
                 <p className="text-sm text-muted-foreground">{t.message}</p>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(t)}>Edit</Button>
+              <div className="flex shrink-0 flex-col gap-1">
+                <Button size="sm" variant="outline" onClick={() => openManualNudge(t)}>Use</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(t)}>Edit</Button>
+              </div>
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <Dialog open={!!manualNudge} onOpenChange={(open) => !open && setManualNudge(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader><DialogTitle>Nudge a number</DialogTitle></DialogHeader>
+          {manualNudge && <>
+            <label className="text-sm" htmlFor="nudge-phone">WhatsApp number (include country code)</label>
+            <Input id="nudge-phone" type="tel" placeholder="+1 868 123 4567" value={manualNudge.phone} onChange={(e) => setManualNudge({ ...manualNudge, phone: e.target.value })} maxLength={30} />
+            {manualNudge.phone && !validManualPhone && <p className="text-sm text-muted-foreground">Please include the country code and full phone number.</p>}
+            <label className="text-sm" htmlFor="nudge-name">Name (optional)</label>
+            <Input id="nudge-name" value={manualNudge.name} onChange={(e) => setManualNudge({ ...manualNudge, name: e.target.value })} maxLength={100} />
+            <Select value={manualNudge.templateId} onValueChange={(id) => {
+              const template = templates.find((t) => t.id === id);
+              if (template) setManualNudge({ ...manualNudge, templateId: id, message: template.message });
+            }}>
+              <SelectTrigger><SelectValue placeholder="Choose a message" /></SelectTrigger>
+              <SelectContent>{templates.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+            </Select>
+            <label className="text-sm" htmlFor="manual-nudge-message">Message</label>
+            <Textarea id="manual-nudge-message" rows={8} value={manualNudge.message} onChange={(e) => setManualNudge({ ...manualNudge, message: e.target.value })} />
+            <p className="text-xs text-muted-foreground">WhatsApp opens a draft for you to send. This does not create a sign-up or mark a message as sent.</p>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="ghost" disabled={!manualMessage.trim()} onClick={async () => {
+                try { await navigator.clipboard.writeText(manualMessage); toast.success("Copied — paste it anywhere"); }
+                catch { toast("Couldn't copy. You can select and copy the message above."); }
+              }}><Copy className="h-4 w-4 mr-1" />Copy</Button>
+              <Button disabled={!validManualPhone || !manualMessage.trim()} onClick={() => window.open(generateWhatsAppUrl(manualDigits, manualMessage), "_blank", "noopener,noreferrer")}><MessageCircle className="h-4 w-4 mr-1" />Open WhatsApp</Button>
+            </div>
+          </>}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!nudging} onOpenChange={(o) => !o && setNudging(null)}>
         <DialogContent className="max-w-md rounded-2xl">
