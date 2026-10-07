@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Add setup field guidance, package-specific WiPay invoices, and admin request deletion/status management.
+
 - [x] Save setup invitation nudge and add manual-number messaging on Sign-ups (signed-in interaction not tested).
 
 - [x] Add private per-receipt story downloads.
