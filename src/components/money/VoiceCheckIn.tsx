@@ -17,6 +17,7 @@ import { setPaidFrom } from '@/lib/paidFrom';
 import GuestAuthStep from './GuestAuthStep';
 import { saveDraft, clearDraft, draftFiles, type CheckinDraft } from '@/lib/checkinDraft';
 import { trackEvent } from '@/lib/analytics';
+import { usePersonalPrompts } from '@/hooks/usePersonalPrompts';
 
 type Kind = 'withdrawal' | 'transfer' | 'expense' | 'income';
 interface Item {
@@ -118,6 +119,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
   const [free, setFree] = useState('');
   const [mode, setMode] = useState<'guided' | 'free'>('guided');
   const [busy, setBusy] = useState(false);
+  const personal = usePersonalPrompts(open && !guest);
   const [items, setItems] = useState<Item[] | null>(null);
   const [note, setNote] = useState('');
   const [familyId, setFamilyId] = useState('');
@@ -311,7 +313,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
                 <>
                   <p className="text-xs text-muted-foreground">Question {step + 1} of {prompts.length} — skip any that don't apply.</p>
                   <p className="font-medium">{prompts[step]}</p>
-                  <Textarea rows={3} value={answers[step] ?? ''} onChange={(e) => setAnswer(step, e.target.value)} placeholder="e.g. Took out 1,000 from my savings on the 2nd" />
+                  <Textarea rows={3} value={answers[step] ?? ''} onChange={(e) => setAnswer(step, e.target.value)} placeholder={personal?.accountName ? `e.g. Took out 1,000 from ${personal.accountName} on the 2nd` : 'e.g. Took out 1,000 from my savings on the 2nd'} />
                   <div className="flex flex-wrap gap-2">
                     <MicButton onText={(t) => appendAnswer(step, t)} />
                     <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>Back</Button>
@@ -333,8 +335,17 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
               <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
                 <p className="font-medium">How to use it</p>
                 <p className="text-muted-foreground">Tap <strong>Speak</strong> to start, talk naturally, then tap again to stop when you're finished. Or just type.</p>
-                <p className="text-muted-foreground">Try saying: "Spent 250 on groceries at the supermarket, paid 400 for the light bill, and 60 for school lunch."</p>
+                <p className="text-muted-foreground">Try saying: "{personal?.examples[0] ?? 'Spent 250 on groceries at the supermarket, paid 400 for the light bill, and 60 for school lunch.'}"</p>
+                {personal?.empty && <p className="text-muted-foreground">Start with one thing you bought today.</p>}
               </div>
+              {personal && personal.nudges.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {personal.nudges.map((n) => (
+                    <Button key={n.label} type="button" size="sm" variant="secondary" className="rounded-full"
+                      onClick={() => setFree((f) => (f ? `${f}\n${n.starter}` : n.starter))}>{n.label}</Button>
+                  ))}
+                </div>
+              )}
               <Textarea rows={5} value={free} onChange={(e) => setFree(e.target.value)} placeholder="What did you spend, where, and what was it for?" />
               <div className="flex flex-wrap gap-2">
                 <MicButton onText={(t) => setFree((f) => `${f} ${t}`.trim())} />
