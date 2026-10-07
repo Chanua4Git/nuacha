@@ -277,6 +277,11 @@ const Navbar = () => {
             >
               <Link to="/updates">Updates</Link>
             </Button>
+            {isAdmin && (
+              <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
+                <Link to="/admin/users">Sign-ups</Link>
+              </Button>
+            )}
             <AuthButton />
           </nav>
         )}
