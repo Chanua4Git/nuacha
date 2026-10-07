@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Save setup invitation nudge and add manual-number messaging on Sign-ups.
+- [x] Save setup invitation nudge and add manual-number messaging on Sign-ups (signed-in interaction not tested).
 
 - [x] Add private per-receipt story downloads.
 - [x] Add monthly, family, and annual recap story downloads.
