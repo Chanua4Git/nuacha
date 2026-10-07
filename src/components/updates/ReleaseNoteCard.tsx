@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ReleaseNote } from '@/types/updates';
-import { Sparkles, Wrench, Bug, BookOpen, Eye } from 'lucide-react';
+import { getReleaseNoteLink } from '@/constants/releaseNoteLinks';
+import { Sparkles, Wrench, Bug, BookOpen, Eye, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 const CATEGORY_CONFIG = {
@@ -19,6 +21,7 @@ interface ReleaseNoteCardProps {
 export function ReleaseNoteCard({ note }: ReleaseNoteCardProps) {
   const config = CATEGORY_CONFIG[note.category];
   const Icon = config.icon;
+  const smartLink = getReleaseNoteLink(note);
 
   return (
     <Card>
@@ -69,6 +72,14 @@ export function ReleaseNoteCard({ note }: ReleaseNoteCardProps) {
             ))}
           </div>
         )}
+        <div className="mt-5 border-t pt-4">
+          <Button asChild variant="outline" className="h-auto min-h-10 whitespace-normal text-left">
+            <a href={smartLink.path}>
+              {smartLink.label}
+              <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
+            </a>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
