@@ -11,6 +11,7 @@ import { LearningStepCard } from './LearningStepCard';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
 import { toast } from 'sonner';
 import { LessonQuestion } from './LessonQuestion';
+import { LessonSocialExport } from './LessonSocialExport';
 import { type ModuleStatus } from '@/utils/learningVisuals';
 
 interface LearningModuleCardProps {
@@ -169,6 +170,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
                     'Mark Complete'
                   )}
                 </Button>
+                <LessonSocialExport module={module} />
               </>
             )}
           </div>
