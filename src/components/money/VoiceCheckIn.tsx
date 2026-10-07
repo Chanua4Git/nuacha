@@ -41,7 +41,14 @@ const PERIODS = [
 
 const KIND_LABEL: Record<Kind, string> = { withdrawal: 'Cash taken out', transfer: 'Moved between accounts', expense: 'Spent', income: 'Money received' };
 
-const FIXED_PROMPTS = [
+const GENERIC_PROMPTS = [
+  'Did you take out any cash this month? How much, and from which account?',
+  'Did you pay anyone in cash (help at home, a sitter, a handyman)? Who, and how much?',
+  'Did any money come in (salary, family support, side income)? How much?',
+  'Anything else you paid or took out?',
+];
+const OWNER_EMAIL = 'chanuajohnson4@gmail.com';
+const OWNER_PROMPTS = [
   'Any nurse fill-ins or cash wages this week? Who, which days, how much?',
   'Did your brother send anything? How much, and into which account?',
   'Any Garden Ohm business costs (like paying someone for a workshop)?',
@@ -129,9 +136,12 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
       clearDraft();
     }
     setFamilyId(families.find((f) => /peltier/i.test(f.name))?.id ?? families[0]?.id ?? '');
-    (supabase as any).from('money_routines').select('prompt').eq('is_active', true).not('prompt', 'is', null).order('sort_order')
-      .then(({ data }: any) => {
-        const list = [...(data ?? []).map((r: any) => r.prompt as string), ...FIXED_PROMPTS];
+    Promise.all([
+      supabase.auth.getUser(),
+      (supabase as any).from('money_routines').select('prompt').eq('is_active', true).not('prompt', 'is', null).order('sort_order'),
+    ]).then(([{ data: u }, { data }]: any) => {
+        const own = u?.user?.email?.toLowerCase() === OWNER_EMAIL;
+        const list = [...(data ?? []).map((r: any) => r.prompt as string), ...(own ? OWNER_PROMPTS : GENERIC_PROMPTS)];
         setPrompts(list);
         setAnswers(list.map(() => ''));
       });
