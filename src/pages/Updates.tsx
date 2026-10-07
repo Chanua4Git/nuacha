@@ -129,6 +129,10 @@ export default function Updates() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">Pick your option, place and date first, then choose WiPay, pay what you can, or bank transfer.</p>
+                <div className="border-l-2 border-primary pl-3 text-sm">
+                  <p className="font-medium">October 7, 2026 · Booking is clearer</p>
+                  <p className="text-muted-foreground">You can now compare both setup options, choose remote or an approved in-person meeting place, see live calendar availability and continue to your preferred payment route.</p>
+                </div>
               </div>
             </section>
             <ReleaseNotesList />
