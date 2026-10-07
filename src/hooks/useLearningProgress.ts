@@ -26,6 +26,7 @@ export function useLearningProgress() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const loaded = useRef(false);
+  const sent = useRef<Record<string, string>>({});
 
   // Signed in: merge saved account progress with this browser's, once.
   useEffect(() => {
@@ -43,6 +44,9 @@ export function useLearningProgress() {
             stepsCompleted: Array.from(new Set([...(local.stepsCompleted || []), ...(r.steps_completed || [])])),
           };
         }
+        for (const [id, m] of Object.entries(modules)) sent.current[id] = JSON.stringify([m.stepsCompleted || [], !!m.completed]);
+        // Upload browser-only progress once by clearing its marker
+        for (const id of Object.keys(prev.modules)) if (!(data ?? []).some(r => r.module_id === id)) delete sent.current[id];
         return { ...prev, modules };
       });
       loaded.current = true;
@@ -55,9 +59,10 @@ export function useLearningProgress() {
   useEffect(() => {
     if (!userId || !loaded.current) return;
     const t = setTimeout(() => {
-      const rows = Object.entries(progress.modules).map(([module_id, m]) => ({
-        user_id: userId, module_id, steps_completed: m.stepsCompleted || [], completed: !!m.completed,
-      }));
+      // Only send modules this screen actually changed, so other open cards can't overwrite them.
+      const rows = Object.entries(progress.modules)
+        .map(([module_id, m]) => ({ user_id: userId, module_id, steps_completed: m.stepsCompleted || [], completed: !!m.completed }))
+        .filter(r => { const k = JSON.stringify([r.steps_completed, r.completed]); if (sent.current[r.module_id] === k) return false; sent.current[r.module_id] = k; return true; });
       if (rows.length) supabase.from('learning_progress').upsert(rows).then(() => {});
     }, 800);
     return () => clearTimeout(t);
