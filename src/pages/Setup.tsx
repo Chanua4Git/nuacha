@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NUACHA_BANK_DETAILS, NUACHA_WHATSAPP_NUMBER, NUACHA_WIPAY_ME_URL } from "@/constants/nuachaPayment";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
-import { Check, HeartHandshake, Sparkles, CalendarDays, Copy, CircleHelp, ExternalLink } from "lucide-react";
+import { Check, ChevronDown, HeartHandshake, Sparkles, CalendarDays, Copy, CircleHelp, ExternalLink } from "lucide-react";
 
 type Pkg = "hand_holding" | "done_for_you";
 const PACKAGES: Record<Pkg, { title: string; price: number; icon: any; blurb: string; points: string[] }> = {
@@ -78,16 +78,29 @@ export default function Setup() {
 
   useEffect(() => {
     const section = searchParams.get("section");
-    const targetId = section === "calendar" ? "setup-calendar" : pkg ? "setup-details" : null;
-    if (!targetId) return;
+    const targetId = section === "calendar" ? "setup-calendar" : requestedPackage ? "setup-details" : null;
+    if (!targetId || deepLinkScrolled.current) return;
+    deepLinkScrolled.current = true;
     const timer = window.setTimeout(() => {
       document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [pkg, searchParams]);
+  }, [searchParams, requestedPackage]);
 
+  const deepLinkScrolled = useRef(false);
   const p = pkg ? PACKAGES[pkg] : null;
   const calendarEmbedUrl = getCalendarEmbedUrl(bookingUrl);
+
+  const scrollToSection = (id: string) => {
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+  const choosePackage = (k: Pkg, target: "plan" | "details") => {
+    setPkg(k);
+    setDone(null);
+    scrollToSection(target === "plan" ? "setup-plan" : "setup-details");
+  };
 
   const submit = async () => {
     if (!pkg || !p) return;
@@ -157,21 +170,40 @@ export default function Setup() {
         {(Object.keys(PACKAGES) as Pkg[]).map((k) => {
           const it = PACKAGES[k]; const Icon = it.icon; const on = pkg === k;
           return (
-            <Card key={k} className={`cursor-pointer transition ${on ? "ring-2 ring-primary" : ""}`} onClick={() => { setPkg(k); setDone(null); }}>
+            <Card key={k} className={`cursor-pointer transition ${on ? "ring-2 ring-primary" : ""}`} onClick={() => choosePackage(k, "plan")}>
               <CardContent className="p-6 space-y-3">
                 <div className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /><h2 className="text-xl font-playfair">{it.title}</h2></div>
                 <p className="text-3xl font-semibold">TT${it.price}</p>
                 <p className="text-muted-foreground">{it.blurb}</p>
                 <ul className="space-y-1 text-sm">{it.points.map((pt) => <li key={pt} className="flex gap-2"><Check className="h-4 w-4 text-primary mt-0.5" />{pt}</li>)}</ul>
-                <Button variant={on ? "default" : "outline"} className="w-full">{on ? "Chosen" : `Choose ${it.title}`}</Button>
+                <Button type="button" variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={(e) => { e.stopPropagation(); choosePackage(k, "plan"); }}>
+                  <ChevronDown className="mr-1 h-4 w-4" /> More about {it.title}
+                </Button>
+                <Button type="button" variant={on ? "default" : "outline"} className="w-full" onClick={(e) => { e.stopPropagation(); choosePackage(k, "details"); }}>{on ? "Chosen — add your details" : `Choose ${it.title}`}</Button>
+                <p className="text-center text-xs text-muted-foreground">Tap the card for more details</p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {pkg === "done_for_you" && (
-        <section className="space-y-5 border-y py-6" aria-labelledby="setup-plan-heading">
+      {pkg && (
+        <section id="setup-plan" className="scroll-mt-24 space-y-5 border-y py-6" aria-labelledby="setup-plan-heading">
+          {pkg === "hand_holding" ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-primary">Hand-holding · what your session covers</p>
+            <h2 className="text-2xl font-playfair">One guided session, together.</h2>
+            <p className="text-muted-foreground">We sit together — remotely by video, or in person at the place you choose — and you do the steps with me beside you.</p>
+            <ul className="space-y-1 text-sm">
+              <li className="flex gap-2"><Check className="h-4 w-4 text-primary mt-0.5" />Start your household and add the people in it</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 text-primary mt-0.5" />Review up to three receipts together</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 text-primary mt-0.5" />Try Talk it through — voice or typing</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 text-primary mt-0.5" />Leave with clear next steps, and book another session whenever you like</li>
+            </ul>
+            <p className="text-sm text-muted-foreground"><strong className="text-foreground">Bring what you have:</strong> a few receipts, your household or business names, and the people to include. No banking passwords or sign-in codes are needed.</p>
+          </div>
+          ) : (
+          <>
           <div className="space-y-2">
             <p className="text-sm font-medium text-primary">Done-for-you · a staged approach</p>
             <h2 id="setup-plan-heading" className="text-2xl font-playfair">A useful first visit. A clear plan for the rest.</h2>
@@ -192,6 +224,8 @@ export default function Setup() {
             <p><strong>Bring what you have:</strong> receipts, household or business names, the people to include, income and regular-cost estimates, and your priorities. No banking passwords or sign-in codes are needed.</p>
             <p className="text-muted-foreground">We review up to three receipts at each visit, within the free plan’s three scans per account per day. If you have already used some scans that day, fewer may be available. After setup, keep going with three free scans daily, or subscribe for unlimited scans. Subscription fees are separate from setup and follow-up visits; unlimited scans do not include unlimited personal support.</p>
           </div>
+          </>
+          )}
         </section>
       )}
 
