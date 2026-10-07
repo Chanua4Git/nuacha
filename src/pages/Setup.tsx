@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,8 +47,11 @@ const getCalendarEmbedUrl = (url: string | null) => {
 };
 
 export default function Setup() {
-  const [pkg, setPkg] = useState<Pkg | null>(null);
-  const [mode, setMode] = useState<"remote" | "in_person">("remote");
+  const [searchParams] = useSearchParams();
+  const requestedPackage = searchParams.get("package");
+  const requestedMode = searchParams.get("mode");
+  const [pkg, setPkg] = useState<Pkg | null>(requestedPackage === "hand_holding" || requestedPackage === "done_for_you" ? requestedPackage : null);
+  const [mode, setMode] = useState<"remote" | "in_person">(requestedMode === "in_person" ? "in_person" : "remote");
   const [meetingLocation, setMeetingLocation] = useState("");
   const [pay, setPay] = useState<"wipay" | "pwyw" | "bank">("wipay");
   const [name, setName] = useState("");
@@ -66,6 +69,16 @@ export default function Setup() {
     (supabase.from as any)("app_settings").select("value").eq("key", "booking_url").maybeSingle()
       .then(({ data }: any) => setBookingUrl(data?.value || null));
   }, []);
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    const targetId = section === "calendar" ? "setup-calendar" : pkg ? "setup-details" : null;
+    if (!targetId) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [pkg, searchParams]);
 
   const p = pkg ? PACKAGES[pkg] : null;
   const calendarEmbedUrl = getCalendarEmbedUrl(bookingUrl);
@@ -151,7 +164,7 @@ export default function Setup() {
       </div>
 
       {p && !done && (
-        <Card><CardContent className="p-6 space-y-5">
+        <Card id="setup-details" className="scroll-mt-24"><CardContent className="p-6 space-y-5">
           <div className="space-y-2">
             <p className="font-medium">Where would you like to meet?</p>
             <div className="flex gap-2">
@@ -185,7 +198,7 @@ export default function Setup() {
         </CardContent></Card>
       )}
 
-      <section className="space-y-4" aria-labelledby="setup-calendar-heading">
+      <section id="setup-calendar" className="scroll-mt-24 space-y-4" aria-labelledby="setup-calendar-heading">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
             <p className="text-sm font-medium text-primary">Choose your date</p>
