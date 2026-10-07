@@ -65,6 +65,44 @@ export type Database = {
           },
         ]
       }
+      admin_communications: {
+        Row: {
+          admin_id: string
+          channel: string
+          id: string
+          message: string
+          sent_at: string
+          target_user_id: string
+          template_id: string | null
+        }
+        Insert: {
+          admin_id: string
+          channel: string
+          id?: string
+          message: string
+          sent_at?: string
+          target_user_id: string
+          template_id?: string | null
+        }
+        Update: {
+          admin_id?: string
+          channel?: string
+          id?: string
+          message?: string
+          sent_at?: string
+          target_user_id?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_communications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "nudge_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_tasks: {
         Row: {
           category: string | null
@@ -1491,6 +1529,36 @@ export type Database = {
           },
         ]
       }
+      nudge_templates: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          message: string
+          name: string
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          message: string
+          name: string
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          message?: string
+          name?: string
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       paid_from_defaults: {
         Row: {
           account_id: string | null
@@ -2646,6 +2714,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_user_journeys: {
+        Args: never
+        Returns: {
+          best_day_scans: number
+          email: string
+          expense_count: number
+          family_count: number
+          joined_at: string
+          last_nudge_at: string
+          last_sign_in_at: string
+          nudge_count: number
+          phone: string
+          provider: string
+          scans_today: number
+          total_scans: number
+          user_id: string
+        }[]
+      }
       clean_duplicate_families: { Args: never; Returns: undefined }
       cleanup_duplicate_budget_categories: { Args: never; Returns: undefined }
       cleanup_duplicate_categories_advanced: {
