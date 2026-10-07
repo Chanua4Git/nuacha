@@ -12,6 +12,7 @@ import { useAuthPreview } from '@/contexts/AuthPreviewContext';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import NavigationDropdown from '@/components/navigation/NavigationDropdown';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 // Only hide navbar on auth pages and special demo pages
 const HIDDEN_ROUTES = ['/reset-password', '/reset-password/confirm'];
@@ -70,6 +71,7 @@ const Navbar = () => {
     ...payrollItems,
   ] : [];
 
+  const { isAdmin } = useAdminRole();
   const isActive = (path: string) => {
     return location.pathname === path;
   };
@@ -277,6 +279,11 @@ const Navbar = () => {
             >
               <Link to="/updates">Updates</Link>
             </Button>
+            {isAdmin && (
+              <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
+                <Link to="/admin/users">Sign-ups</Link>
+              </Button>
+            )}
             <AuthButton />
           </nav>
         )}
