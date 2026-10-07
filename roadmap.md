@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Make `/setup` a clear two-step flow and show the saved booking calendar on the page with a new-window fallback.
+
 - [x] Add setup field guidance, package-specific WiPay invoices, and admin request deletion/status management (payment destinations browser-tested; authenticated admin actions not tested).
 
 - [x] Save setup invitation nudge and add manual-number messaging on Sign-ups (signed-in interaction not tested).
