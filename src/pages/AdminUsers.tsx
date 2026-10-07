@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { learningModules } from "@/constants/learningCenterData";
 import { Navigate } from "react-router-dom";
 import { formatDistanceToNow, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,11 @@ type Journey = {
   joined_at: string; last_sign_in_at: string | null; family_count: number;
   total_scans: number; scans_today: number; best_day_scans: number; expense_count: number;
   last_nudge_at: string | null; nudge_count: number;
+  completed_modules?: string[]; last_module?: string | null; last_learning_at?: string | null;
+  open_questions?: { module: string; message: string; at: string }[];
 };
+const nextLesson = (j: Journey) => learningModules.find((m) => !(j.completed_modules || []).includes(m.id)) || null;
+const moduleTitle = (id?: string | null) => learningModules.find((m) => m.id === id)?.title || id || "";
 type Template = { id: string; name: string; stage: string; channel: string; message: string };
 
 const stageOf = (j: Journey) => {
@@ -33,6 +38,7 @@ const stageOf = (j: Journey) => {
 const STAGE_LABEL: Record<string, string> = {
   needs_phone: "Needs phone", no_household: "No household yet", no_scan: "Hasn't scanned",
   under_three: "Under 3 scans in a day", done: "Reached 3 scans 🎉",
+  learning: "Next lesson", lesson_reply: "Lesson question reply",
 };
 const firstName = (email: string) => {
   const n = email.split("@")[0].replace(/[0-9._-]+/g, " ").trim().split(" ")[0] || "there";
@@ -53,10 +59,13 @@ export default function AdminUsers() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: j, error }, { data: t }] = await Promise.all([
+    let [{ data: j, error }, { data: t }, { data: lo }] = await Promise.all([
       (supabase.rpc as any)("admin_user_journeys"),
       (supabase.from as any)("nudge_templates").select("*").order("created_at"),
+      (supabase.rpc as any)("admin_learning_overview"),
     ]);
+    const byUser = new Map(((lo as any[]) || []).map((r) => [r.user_id, r]));
+    j = ((j as Journey[]) || []).map((r) => ({ ...r, ...(byUser.get(r.user_id) || {}) }));
     if (error) toast("Couldn't load users", { description: error.message });
     setRows((j as Journey[]) || []);
     setTemplates((t as Template[]) || []);
@@ -77,10 +86,14 @@ export default function AdminUsers() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const fill = (tpl: string, j: Journey) =>
-    tpl.replace(/\[Name\]/g, firstName(j.email)).replace(/\[X\]/g, String(j.scans_today));
+    tpl.replace(/\[Name\]/g, firstName(j.email)).replace(/\[X\]/g, String(j.scans_today))
+      .replace(/\[Lesson\]/g, nextLesson(j)?.title || "your next lesson")
+      .replace(/\[Link\]/g, `https://nuacha.com/updates?tab=learning${nextLesson(j) ? `&module=${nextLesson(j)!.id}` : ""}`)
+      .replace(/\[Question\]/g, j.open_questions?.[0]?.message || "")
+      .replace(/\[QuestionLesson\]/g, moduleTitle(j.open_questions?.[0]?.module));
 
-  const openNudge = (j: Journey) => {
-    const s = stageOf(j);
+  const openNudge = (j: Journey, stage?: string) => {
+    const s = stage || stageOf(j);
     const tpl = templates.find((t) => t.stage === s) || templates.find((t) => t.stage === "re_engagement") || templates[0];
     setNudging(j);
     setTemplateId(tpl?.id || "");
@@ -163,6 +176,16 @@ export default function AdminUsers() {
                       <span>Joined {format(new Date(j.joined_at), "d MMM, h:mm a")}</span>
                       {j.last_sign_in_at && <span>Active {formatDistanceToNow(new Date(j.last_sign_in_at))} ago</span>}
                     </div>
+                    <div className="text-sm text-muted-foreground">
+                      Learning: {(j.completed_modules || []).length} of {learningModules.length} lessons
+                      {j.last_module && <> · last: {moduleTitle(j.last_module)}{j.last_learning_at && ` · ${formatDistanceToNow(new Date(j.last_learning_at))} ago`}</>}
+                      {nextLesson(j) && <> · next: <span className="text-foreground">{nextLesson(j)!.title}</span></>}
+                    </div>
+                    {(j.open_questions || []).length > 0 && (
+                      <div className="text-sm rounded-lg bg-accent/50 px-3 py-2">
+                        <span className="font-medium">Question on {moduleTitle(j.open_questions![0].module)}:</span> “{j.open_questions![0].message}”
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-2 pt-1">
                       {steps(j).map((st) => (
                         <span key={st.label} className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-0.5 ${st.ok ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>
@@ -178,7 +201,11 @@ export default function AdminUsers() {
                     <span className="text-xs text-muted-foreground">
                       {j.last_nudge_at ? `Nudged ${formatDistanceToNow(new Date(j.last_nudge_at))} ago (${j.nudge_count})` : "Not nudged yet"}
                     </span>
-                    <Button size="sm" onClick={() => openNudge(j)} disabled={s === "done" && templates.length === 0}>Nudge</Button>
+                    <div className="flex flex-wrap gap-2">
+                      {(j.open_questions || []).length > 0 && <Button size="sm" variant="secondary" onClick={() => openNudge(j, "lesson_reply")}>Reply to question</Button>}
+                      {nextLesson(j) && <Button size="sm" variant="outline" onClick={() => openNudge(j, "learning")}>Next lesson</Button>}
+                      <Button size="sm" onClick={() => openNudge(j)} disabled={s === "done" && templates.length === 0}>Nudge</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
