@@ -70,6 +70,7 @@ const Navbar = () => {
     ...payrollItems,
   ] : [];
 
+  const { isAdmin } = useAdminRole();
   const isActive = (path: string) => {
     return location.pathname === path;
   };
