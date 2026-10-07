@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { NUACHA_BANK_DETAILS, NUACHA_WHATSAPP_NUMBER, NUACHA_WIPAY_ME_URL } from "@/constants/nuachaPayment";
@@ -31,10 +32,24 @@ const SETUP_INVOICES: Record<Pkg, string> = {
   hand_holding: "https://tt.wipayfinancial.com/Invoice/view?id=183698&signature=c9ef580c9322efc0b80708e85ca0e649d281064195edbe728423f8f505301c32",
   done_for_you: "https://tt.wipayfinancial.com/Invoice/view?id=183819&signature=ada66b4d0cead373c04eaca5fd7704d61ca28b3929b283317da8555f43b5f239",
 };
+const IN_PERSON_LOCATIONS = [
+  "Starbucks Maraval",
+  "Starbucks Brentwood",
+  "Starbucks Couva",
+  "Starbucks South Park",
+  "The Garden Ohm, Freeport",
+] as const;
+
+const getCalendarEmbedUrl = (url: string | null) => {
+  if (!url) return null;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}gv=true`;
+};
 
 export default function Setup() {
   const [pkg, setPkg] = useState<Pkg | null>(null);
   const [mode, setMode] = useState<"remote" | "in_person">("remote");
+  const [meetingLocation, setMeetingLocation] = useState("");
   const [pay, setPay] = useState<"wipay" | "pwyw" | "bank">("wipay");
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -53,12 +68,14 @@ export default function Setup() {
   }, []);
 
   const p = pkg ? PACKAGES[pkg] : null;
+  const calendarEmbedUrl = getCalendarEmbedUrl(bookingUrl);
 
   const submit = async () => {
     if (!pkg || !p) return;
     if (!name.trim()) { toast("Let's add the name you'd like me to use."); return; }
     if (!/^[1-9]\d{6,14}$/.test(whatsapp.replace(/\D/g, ""))) { toast("Please add your full WhatsApp number, including country code — for example +1 868 123 4567."); return; }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast("Please check your email address, or leave it blank."); return; }
+    if (mode === "in_person" && !meetingLocation) { toast("Please choose where you'd like to meet."); return; }
     const paymentUrl = pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL;
     const paymentWindow = pay !== "bank" ? window.open("about:blank", "_blank") : null;
     setBusy(true);
@@ -66,6 +83,7 @@ export default function Setup() {
     const { error } = await (supabase.from as any)("setup_requests").insert({
       user_id: session?.user.id ?? null, name: name.trim().slice(0, 120), whatsapp: whatsapp.trim().slice(0, 30),
       email: email.trim().slice(0, 200) || null, package: pkg, amount_ttd: p.price, mode, payment_method: pay,
+      meeting_location: mode === "in_person" ? meetingLocation : null,
       reference: ref, notes: notes.trim().slice(0, 1000) || null,
     });
     setBusy(false);
@@ -105,15 +123,15 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center" aria-label="Setup booking steps">
         <div className="flex min-h-16 items-center gap-3 rounded-lg border bg-card p-4">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">1</span>
-          <div><p className="font-medium">Your details & payment</p><p className="text-sm text-muted-foreground">Choose the help that feels right.</p></div>
+          <div><p className="font-medium">Your details & date</p><p className="text-sm text-muted-foreground">Choose your setup, place and time.</p></div>
         </div>
         <span className="hidden text-muted-foreground sm:block" aria-hidden="true">→</span>
         <div className="flex min-h-16 items-center gap-3 rounded-lg border bg-card p-4">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">2</span>
-          <div><p className="font-medium">Pick your date</p><p className="text-sm text-muted-foreground">Choose an available time on the calendar.</p></div>
+          <div><p className="font-medium">Complete payment</p><p className="text-sm text-muted-foreground">Choose WiPay, pay what you can, or bank transfer.</p></div>
         </div>
       </div>
-      <p className="text-center text-sm text-muted-foreground">You can see available times below. Your payment and calendar appointment are confirmed separately.</p>
+      <p className="text-center text-sm text-muted-foreground">Choose your details and date first, then continue to payment. Your payment and appointment are confirmed separately.</p>
 
       <div className="grid md:grid-cols-2 gap-4">
         {(Object.keys(PACKAGES) as Pkg[]).map((k) => {
@@ -137,10 +155,20 @@ export default function Setup() {
           <div className="space-y-2">
             <p className="font-medium">Where would you like to meet?</p>
             <div className="flex gap-2">
-              <Button variant={mode === "remote" ? "default" : "outline"} onClick={() => setMode("remote")}>Remote</Button>
+              <Button variant={mode === "remote" ? "default" : "outline"} onClick={() => { setMode("remote"); setMeetingLocation(""); }}>Remote</Button>
               <Button variant={mode === "in_person" ? "default" : "outline"} onClick={() => setMode("in_person")}>In person</Button>
             </div>
           </div>
+          {mode === "in_person" && (
+            <div className="space-y-2">
+              <Label htmlFor="setup-location">Choose your in-person meeting place</Label>
+              <Select value={meetingLocation} onValueChange={setMeetingLocation}>
+                <SelectTrigger id="setup-location"><SelectValue placeholder="Select a Starbucks or The Garden Ohm" /></SelectTrigger>
+                <SelectContent>{IN_PERSON_LOCATIONS.map((location) => <SelectItem key={location} value={location}>{location}</SelectItem>)}</SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">We’ll meet at the location you choose here.</p>
+            </div>
+          )}
           <TooltipProvider><div className="grid md:grid-cols-3 gap-3">
             <div className="space-y-2">
               <div className="flex items-center gap-1"><Label htmlFor="setup-name">Your name</Label><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label="Name guidance"><CircleHelp className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Use the name you'd like me to call you. Spaces, hyphens and apostrophes are welcome.</TooltipContent></Tooltip></div>
@@ -154,41 +182,13 @@ export default function Setup() {
             <div className="space-y-2"><Label htmlFor="setup-email" className="flex items-center h-6">Email (optional)</Label><Input id="setup-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} /></div>
           </div></TooltipProvider>
           <Textarea placeholder="Anything I should know? (family size, what feels hardest)" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />
-          <div className="space-y-2">
-            <p className="font-medium">How would you like to pay?</p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant={pay === "wipay" ? "default" : "outline"} onClick={() => setPay("wipay")}>WiPay — TT${p.price}</Button>
-              <Button variant={pay === "pwyw" ? "default" : "outline"} onClick={() => setPay("pwyw")}>Pay what you can</Button>
-              <Button variant={pay === "bank" ? "default" : "outline"} onClick={() => setPay("bank")}>Bank transfer</Button>
-            </div>
-            <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
-              {pay === "wipay" && <p>We'll open the WiPay invoice for <strong>{p.title} · TT${p.price}</strong>. Keep reference <strong>{ref}</strong> with your payment confirmation.</p>}
-              {pay === "pwyw" && <p>We'll open WiPay — pay what feels right for you and add reference <strong>{ref}</strong>. Every bit helps.</p>}
-              {pay === "bank" && <>
-                <p><strong>{NUACHA_BANK_DETAILS.bankName}</strong> · {NUACHA_BANK_DETAILS.accountType}</p>
-                <p>Account {NUACHA_BANK_DETAILS.accountNumber} · {NUACHA_BANK_DETAILS.accountHolder}</p>
-                <p>Amount <strong>TT${p.price}</strong> · Reference <strong>{ref}</strong>
-                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(ref); toast.success("Reference copied"); }}><Copy className="h-3 w-3" /></Button></p>
-              </>}
-            </div>
-          </div>
-          <Button size="lg" onClick={submit} disabled={busy}>{pay === "bank" ? "I'll transfer — save my spot" : "Continue to payment"}</Button>
-        </CardContent></Card>
-      )}
-
-      {done && p && (
-        <Card><CardContent className="p-6 space-y-3 text-center">
-          <h2 className="text-2xl font-playfair">Thank you — your request is saved 🌿</h2>
-          <p className="text-muted-foreground">Reference <strong>{done}</strong>. Payment and your appointment are confirmed separately.</p>
-          {pay !== "bank" && pkg && <Button variant="outline" asChild><a href={pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Open payment</a></Button>}
-          <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />{bookingUrl ? "Pick or confirm your date" : "Arrange a time on WhatsApp"}</Button>
         </CardContent></Card>
       )}
 
       <section className="space-y-4" aria-labelledby="setup-calendar-heading">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-primary">Step 2</p>
+            <p className="text-sm font-medium text-primary">Choose your date</p>
             <h2 id="setup-calendar-heading" className="text-2xl font-playfair">Pick your date on the calendar</h2>
             <p className="text-sm text-muted-foreground">Choose a time that works for you. Please also complete your details and payment above.</p>
           </div>
@@ -198,10 +198,10 @@ export default function Setup() {
             </Button>
           )}
         </div>
-        {bookingUrl ? (
+        {calendarEmbedUrl ? (
           <div className="overflow-hidden rounded-lg border bg-card">
             <iframe
-              src={bookingUrl}
+              src={calendarEmbedUrl}
               title="Choose a date for your Nuacha setup session"
               loading="lazy"
               className="block h-[720px] w-full border-0 sm:h-[760px]"
@@ -217,6 +217,41 @@ export default function Setup() {
           </div>
         )}
       </section>
+
+      {p && !done && (
+        <Card><CardContent className="p-6 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-primary">Step 2</p>
+            <h2 className="text-2xl font-playfair">How would you like to pay?</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant={pay === "wipay" ? "default" : "outline"} onClick={() => setPay("wipay")}>WiPay — TT${p.price}</Button>
+            <Button variant={pay === "pwyw" ? "default" : "outline"} onClick={() => setPay("pwyw")}>Pay what you can</Button>
+            <Button variant={pay === "bank" ? "default" : "outline"} onClick={() => setPay("bank")}>Bank transfer</Button>
+          </div>
+          <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
+            {pay === "wipay" && <p>We'll open the WiPay invoice for <strong>{p.title} · TT${p.price}</strong>. Keep reference <strong>{ref}</strong> with your payment confirmation.</p>}
+            {pay === "pwyw" && <p>We'll open WiPay — pay what feels right for you and add reference <strong>{ref}</strong>. Every bit helps.</p>}
+            {pay === "bank" && <>
+              <p><strong>{NUACHA_BANK_DETAILS.bankName}</strong> · {NUACHA_BANK_DETAILS.accountType}</p>
+              <p>Account {NUACHA_BANK_DETAILS.accountNumber} · {NUACHA_BANK_DETAILS.accountHolder}</p>
+              <p>Amount <strong>TT${p.price}</strong> · Reference <strong>{ref}</strong>
+                <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(ref); toast.success("Reference copied"); }}><Copy className="h-3 w-3" /></Button></p>
+            </>}
+          </div>
+          <Button size="lg" onClick={submit} disabled={busy}>{pay === "bank" ? "I'll transfer — save my request" : "Continue to payment"}</Button>
+        </CardContent></Card>
+      )}
+
+      {done && p && (
+        <Card><CardContent className="p-6 space-y-3 text-center">
+          <h2 className="text-2xl font-playfair">Thank you — your request is saved 🌿</h2>
+          <p className="text-muted-foreground">Reference <strong>{done}</strong>. Payment and your appointment are confirmed separately.</p>
+          {mode === "in_person" && meetingLocation && <p className="text-sm">Meeting place: <strong>{meetingLocation}</strong></p>}
+          {pay !== "bank" && pkg && <Button variant="outline" asChild><a href={pay === "wipay" ? SETUP_INVOICES[pkg] : NUACHA_WIPAY_ME_URL} target="_blank" rel="noopener noreferrer">Open payment</a></Button>}
+          <Button size="lg" onClick={book}><CalendarDays className="h-4 w-4 mr-2" />{bookingUrl ? "Pick or confirm your date" : "Arrange a time on WhatsApp"}</Button>
+        </CardContent></Card>
+      )}
     </div>
   );
 }

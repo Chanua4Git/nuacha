@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
-type Req = { id: string; name: string; whatsapp: string; email: string | null; package: string; amount_ttd: number; mode: string; payment_method: string; reference: string; status: string; notes: string | null; created_at: string };
+type Req = { id: string; name: string; whatsapp: string; email: string | null; package: string; amount_ttd: number; mode: string; meeting_location: string | null; payment_method: string; reference: string; status: string; notes: string | null; created_at: string };
 const PKG: Record<string, string> = { hand_holding: "Hand-holding", done_for_you: "Done-for-you" };
 const PAY: Record<string, string> = { wipay: "WiPay", pwyw: "Pay what you can", bank: "Bank transfer" };
 
@@ -67,7 +67,7 @@ export function SetupRequestsPanel() {
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">No requests yet — and that's okay.</p> : rows.map((r) => (
         <div key={r.id} className="rounded-xl border p-3 flex flex-col md:flex-row md:items-center gap-3">
           <div className="flex-1 min-w-0 break-words text-sm space-y-0.5">
-            <div className="font-medium">{r.name} · {PKG[r.package]} TT${r.amount_ttd} · {r.mode === "remote" ? "Remote" : "In person"}</div>
+            <div className="font-medium">{r.name} · {PKG[r.package]} TT${r.amount_ttd} · {r.mode === "remote" ? "Remote" : `In person${r.meeting_location ? ` · ${r.meeting_location}` : ""}`}</div>
             <div className="text-muted-foreground">{r.whatsapp}{r.email && ` · ${r.email}`} · {PAY[r.payment_method]} · Ref {r.reference} · {format(new Date(r.created_at), "d MMM, h:mm a")}</div>
             {r.notes && <div>“{r.notes}”</div>}
           </div>
@@ -77,7 +77,7 @@ export function SetupRequestsPanel() {
               <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
               <SelectContent>{["new", "paid", "booked", "done", "cancelled"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={() => window.open(generateWhatsAppUrl(r.whatsapp, `Hi ${r.name.split(" ")[0]}! Thank you for booking ${PKG[r.package]} setup 🌿 (ref ${r.reference}).`), "_blank")}>WhatsApp</Button>
+            <Button size="sm" variant="outline" onClick={() => window.open(generateWhatsAppUrl(r.whatsapp, `Hi ${r.name.split(" ")[0]}! Thank you for booking ${PKG[r.package]} setup${r.meeting_location ? ` at ${r.meeting_location}` : ""} 🌿 (ref ${r.reference}).`), "_blank")}>WhatsApp</Button>
             <Button size="icon" variant="ghost" aria-label={`Delete request ${r.reference}`} title="Delete request" onClick={() => setDeleting(r)}><Trash2 className="h-4 w-4" /></Button>
           </div>
         </div>
