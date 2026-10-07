@@ -17,6 +17,7 @@ export interface ExpenseFilters {
   searchTerm?: string;
   hasReceipt?: boolean;
   paymentMethod?: string;
+  allFamilies?: boolean;
 }
 
 export const useExpenses = (filters?: ExpenseFilters) => {
@@ -155,7 +156,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
     filters?.place,
     filters?.minAmount,
     filters?.maxAmount,
-    filters?.searchTerm
+    filters?.searchTerm,
+    filters?.allFamilies
   ]);
 
   const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
