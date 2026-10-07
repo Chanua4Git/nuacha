@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Add booking, package, meeting-place, and calendar deep links to `/updates` and preselect their choices on `/setup`.
 - [x] Make `/setup` a clear two-step flow and show the saved booking calendar on the page with a new-window fallback.
 - [x] Fix the Google Calendar embed, move payment below it, and save required in-person meeting locations.
 

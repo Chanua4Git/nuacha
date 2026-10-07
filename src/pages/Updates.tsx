@@ -9,7 +9,7 @@ import { LearningVisualAdmin } from '@/components/updates/LearningVisualAdmin';
 import { AdminTaskList } from '@/components/updates/AdminTaskList';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, GraduationCap, Eye, MessageSquare, Database, Settings } from 'lucide-react';
+import { Sparkles, GraduationCap, Eye, MessageSquare, Database, Settings, CalendarDays, HeartHandshake, WandSparkles, MapPin } from 'lucide-react';
 import { seedReleaseNotes } from '@/utils/seedReleaseNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
@@ -107,6 +107,30 @@ export default function Updates() {
           </TabsList>
 
           <TabsContent value="whats-new" className="space-y-6">
+            <section className="border-y bg-accent/25 px-4 py-6 sm:px-6" aria-labelledby="setup-invitation-heading">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-primary">Now booking</p>
+                  <h2 id="setup-invitation-heading" className="text-2xl font-semibold">Want Nuacha set up with you?</h2>
+                  <p className="max-w-3xl text-muted-foreground">Choose gentle guidance while you set it up, or bring your receipts and details and have it done for you. Sessions are available remotely or in person.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Button asChild className="h-auto min-h-12 justify-start whitespace-normal py-3">
+                    <a href="/setup?package=hand_holding&mode=remote#setup-details"><HeartHandshake className="mr-2 h-4 w-4 shrink-0" />Hand-holding · TT$100</a>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto min-h-12 justify-start whitespace-normal py-3">
+                    <a href="/setup?package=done_for_you&mode=remote#setup-details"><WandSparkles className="mr-2 h-4 w-4 shrink-0" />Done-for-you · TT$300</a>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto min-h-12 justify-start whitespace-normal py-3">
+                    <a href="/setup?package=hand_holding&mode=in_person#setup-details"><MapPin className="mr-2 h-4 w-4 shrink-0" />Choose an in-person place</a>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto min-h-12 justify-start whitespace-normal py-3">
+                    <a href="/setup?section=calendar#setup-calendar"><CalendarDays className="mr-2 h-4 w-4 shrink-0" />See available dates</a>
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">Pick your option, place and date first, then choose WiPay, pay what you can, or bank transfer.</p>
+              </div>
+            </section>
             <ReleaseNotesList />
           </TabsContent>
 
