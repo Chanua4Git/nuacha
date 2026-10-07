@@ -95,6 +95,10 @@ export default function AdminUsers() {
     if (filter === "done") return s === "done";
     return true;
   }), [rows, filter]);
+  const [showMine, setShowMine] = useState(false);
+  const isMine = (j: Journey) => j.email?.toLowerCase().includes("chanuajohnson");
+  const mine = filtered.filter(isMine);
+  const others = filtered.filter((j) => !isMine(j));
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -198,7 +202,13 @@ export default function AdminUsers() {
 
       {loading ? <Loader2 className="animate-spin mx-auto" /> : (
         <div className="space-y-3">
-          {filtered.map((j) => {
+          {mine.length > 0 && (
+            <Button variant="outline" className="w-full justify-between" onClick={() => setShowMine(!showMine)}>
+              <span>My accounts (chanuajohnson) · {mine.length}</span>
+              <span className="text-muted-foreground text-sm">{showMine ? "Hide" : "Show"}</span>
+            </Button>
+          )}
+          {[...(showMine ? mine : []), ...others].map((j) => {
             const s = stageOf(j);
             return (
               <Card key={j.user_id}>
@@ -224,7 +234,7 @@ export default function AdminUsers() {
                     )}
                     <div className="flex flex-wrap gap-2 pt-1">
                       {steps(j).map((st) => (
-                        <span key={st.label} className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-0.5 ${st.ok ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>
+                        <span key={st.label} className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-0.5 ${st.ok && st.label === "First scan" ? "bg-destructive text-destructive-foreground font-semibold" : st.ok ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>
                           {st.ok ? <Check className="h-3 w-3" /> : <Circle className="h-3 w-3" />}{st.label}
                         </span>
                       ))}
