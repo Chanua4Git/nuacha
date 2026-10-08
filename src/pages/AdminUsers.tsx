@@ -206,7 +206,7 @@ export default function AdminUsers() {
         </nav>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Sign-up summary">
+      <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5" aria-label="Sign-up summary">
         {[
           { label: "Signed up today", value: joinedToday, icon: CalendarDays, note: "Newest at the top of the list" },
           { label: "Total sign-ups", value: others.length, icon: Users, note: "Excludes your test accounts" },
