@@ -1,4 +1,6 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { useExpense } from '@/context/ExpenseContext';
 import ExpenseCard from './ExpenseCard';
@@ -30,7 +32,7 @@ interface ExpenseListProps {
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const expenseContext = useContextAwareExpense();
-  const { filteredExpenses, expenses: allExpenses, deleteExpense, updateExpense, selectedFamily, families } = useExpense();
+  const { filteredExpenses, expenses: allExpenses, deleteExpense, updateExpense, selectedFamily, setSelectedFamily, families } = useExpense();
   const { user } = useAuth();
   const { categories } = useCategories();
   
@@ -139,6 +141,46 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
     ? expenses.filter(e => duplicateExpenseIds.has(e.id))
     : expenses;
   
+  // "Just added" highlight after a Talk-it-through save (?new=id1,id2&fam=familyId)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
+  const newParam = searchParams.get('new');
+  const famParam = searchParams.get('fam');
+
+  useEffect(() => {
+    if (!famParam || selectedFamily?.id === famParam) return;
+    const fam = families.find((f) => f.id === famParam);
+    if (fam) setSelectedFamily(fam);
+  }, [famParam, families, selectedFamily?.id, setSelectedFamily]);
+
+  useEffect(() => {
+    if (!newParam) return;
+    if (famParam && selectedFamily?.id !== famParam) return;
+    const ids = newParam.split(',').filter(Boolean);
+    const found = allExpenses.filter((e) => ids.includes(e.id));
+    if (!found.length) return; // wait for the list to load
+    // Make sure the period being viewed includes the newest saved entry
+    const d = parseReceiptCalendarDate(found[0].date);
+    if (d && (d < selectedPeriod.startDate || d > selectedPeriod.endDate)) {
+      const startDate = new Date(d.getFullYear(), d.getMonth(), 1);
+      const endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      setSelectedPeriod({ type: 'monthly', startDate, endDate, displayName: startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) });
+    }
+    setSelectedTab('all');
+    setJustAdded(new Set(ids));
+    const next = new URLSearchParams(searchParams);
+    next.delete('new');
+    next.delete('fam');
+    setSearchParams(next, { replace: true });
+    setTimeout(() => {
+      const el = document.querySelector(`[data-expense-id="${ids[0]}"]`);
+      (el ?? document.querySelector('main'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    const t = setTimeout(() => setJustAdded(new Set()), 8000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newParam, allExpenses, selectedFamily?.id]);
+
   const totalAmount = displayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   const handleExpenseSelection = (expenseId: string, selected: boolean) => {
@@ -360,6 +402,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
               onDownloadStory={canCreateStories ? setSelectedExpenseForStory : undefined}
               onCategoryChange={handleCategoryChange}
               isDuplicate={duplicateExpenseIds.has(expense.id)}
+              isNew={justAdded.has(expense.id)}
               isSelected={selectedExpenses.has(expense.id)}
               onSelectionChange={handleExpenseSelection}
               showBulkSelect={showBulkSelect}
