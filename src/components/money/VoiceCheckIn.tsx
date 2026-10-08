@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { receiptDateString } from '@/utils/receipt/calendarDate';
 import { format } from 'date-fns';
 import { Mic, Square, Trash2, Loader2, ChevronRight, Camera, ImagePlus, X } from 'lucide-react';
 import { handleReceiptUpload } from '@/utils/receipt/uploadHandling';
@@ -184,7 +185,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
         const ocr = await processReceiptWithEdgeFunction(url, pickedFamily());
         if (ocr.error) { set({ url, status: 'failed' }); return; }
         const total = Number(String(ocr.amount ?? '').replace(/[^0-9.]/g, '')) || null;
-        set({ url, status: 'ready', ocr, vendor: ocr.place ?? null, total, date: ocr.date ? format(new Date(ocr.date), 'yyyy-MM-dd') : null });
+        set({ url, status: 'ready', ocr, vendor: ocr.place ?? null, total, date: receiptDateString(ocr.date) });
       } catch { set({ status: 'failed' }); }
     });
   };
