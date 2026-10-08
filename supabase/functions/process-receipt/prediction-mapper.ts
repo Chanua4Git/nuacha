@@ -207,7 +207,8 @@ export function mapPredictionToResult(inference: any, document: any): MindeeOCRR
       } : undefined,
       
       date: {
-        value: dateValidation.correctedDate.toISOString(),
+        // Calendar day only (YYYY-MM-DD) so time zones can't shift it
+        value: `${dateValidation.correctedDate.getFullYear()}-${String(dateValidation.correctedDate.getMonth() + 1).padStart(2, '0')}-${String(dateValidation.correctedDate.getDate()).padStart(2, '0')}`,
         confidence: dateValidation.confidence
       },
       

@@ -280,7 +280,9 @@ serve(async (req) => {
     // Implement fallback date handling if date is undefined
     if (!result.date && imageData) {
       console.log('⚠️ Date is undefined, using current timestamp as fallback');
-      result.date = new Date();
+      // Today's calendar day in Trinidad (UTC-4), never a UTC timestamp
+      const tt = new Date(Date.now() - 4 * 3600 * 1000);
+      (result as any).date = tt.toISOString().slice(0, 10);
       console.log('📅 Fallback date set to:', result.date);
     }
     
