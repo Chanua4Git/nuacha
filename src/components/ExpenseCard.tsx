@@ -25,6 +25,7 @@ interface ExpenseCardProps {
   onSelectionChange?: (expenseId: string, selected: boolean) => void;
   showBulkSelect?: boolean;
   isDuplicate?: boolean;
+  isNew?: boolean;
   duplicateConfidence?: number;
 }
 
@@ -39,6 +40,7 @@ const ExpenseCard = ({
   onSelectionChange, 
   showBulkSelect = false,
   isDuplicate = false,
+  isNew = false,
   duplicateConfidence
 }: ExpenseCardProps) => {
   const { categories } = useExpense();
@@ -53,7 +55,15 @@ const ExpenseCard = ({
   };
   
   return (
-    <Card className={cn("mb-4 overflow-hidden", isDuplicate && "border-orange-200 bg-orange-50")}>
+    <Card
+      data-expense-id={expense.id}
+      className={cn("mb-4 overflow-hidden transition-colors duration-700", isDuplicate && "border-orange-200 bg-orange-50", isNew && "border-primary ring-2 ring-primary/40 bg-accent/40")}
+    >
+      {isNew && (
+        <div className="px-4 pt-3">
+          <Badge variant="secondary" className="bg-primary text-primary-foreground">Just added</Badge>
+        </div>
+      )}
       <div 
         className="h-2" 
         style={{ backgroundColor: category?.color || '#CBD5E1' }}
