@@ -95,7 +95,7 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   accounts: { id: string; name: string }[];
   families: { id: string; name: string }[];
-  onSaved: () => void;
+  onSaved: (info?: { expenseIds: string[]; familyId?: string }) => void;
   /** Daily check-in: opens on the free note, with a time period and receipts. */
   daily?: boolean;
   /** Not signed in: keep the note on this device and ask to sign in first. */
@@ -234,6 +234,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
     if (!user) return;
     setBusy(true);
     let saved = 0;
+    const expenseIds: string[] = [];
     try {
       for (const it of items) {
         if (!it.amount || it.amount <= 0) continue;
@@ -257,6 +258,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
             receipt_url: it.receipt_index != null ? receipts[it.receipt_index]?.url ?? null : null, place: it.place || it.person || it.description, expense_type: 'actual',
           }).select('id').single();
           if (error) throw error;
+          if (exp?.id) expenseIds.push(exp.id);
           const rOcr = it.receipt_index != null ? receipts[it.receipt_index]?.ocr : undefined;
           if (exp && rOcr) { try { await saveReceiptDetailsAndLineItems(exp.id, rOcr); } catch (e) { console.error('receipt details', e); } }
           const mem = lineMember[items.indexOf(it)];
@@ -268,7 +270,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
       trackEvent('checkin_saved', { lines: saved });
       await (supabase as any).from('profiles').update({ last_checkin_at: new Date().toISOString() }).eq('id', user.id);
       toast.success(saved ? "That's saved. Keep going at your own pace." : 'Nothing needed saving.');
-      onSaved();
+      onSaved({ expenseIds, familyId: familyId || undefined });
       onOpenChange(false);
     } catch (e) {
       console.error(e);
