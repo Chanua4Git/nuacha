@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { learningModules } from "@/constants/learningCenterData";
 import { Navigate } from "react-router-dom";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, isToday } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -166,6 +166,7 @@ export default function AdminUsers() {
 
   const visibleUsers = [...(showMine ? mine : []), ...others];
   const joinedThisWeek = others.filter((j) => Date.now() - new Date(j.joined_at).getTime() < 7 * 864e5).length;
+  const joinedToday = others.filter((j) => isToday(new Date(j.joined_at))).length;
   const awaitingAction = others.filter((j) => ["needs_phone", "no_household", "no_scan"].includes(stageOf(j))).length;
   const readyToNudge = others.filter((j) => stageOf(j) !== "done").length;
   const nextAction = (j: Journey) => {
@@ -205,8 +206,9 @@ export default function AdminUsers() {
         </nav>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Sign-up summary">
+      <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5" aria-label="Sign-up summary">
         {[
+          { label: "Signed up today", value: joinedToday, icon: CalendarDays, note: "Newest at the top of the list" },
           { label: "Total sign-ups", value: others.length, icon: Users, note: "Excludes your test accounts" },
           { label: "New this week", value: joinedThisWeek, icon: UserPlus, note: "Joined in the last 7 days" },
           { label: "Awaiting action", value: awaitingAction, icon: CircleAlert, note: "Missing a key first step" },
