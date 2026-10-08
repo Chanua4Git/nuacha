@@ -1,5 +1,6 @@
 
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
+import { parseReceiptCalendarDate } from './calendarDate';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MindeeResponse } from './types';
@@ -165,16 +166,8 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse | any): OCRResult 
   // Normalize date
   const extractDate = (): Date | undefined => {
     const anyResp: any = ocrResponse;
-    if (anyResp?.date instanceof Date) return anyResp.date;
-    if (typeof anyResp?.date === 'string') {
-      const parsed = new Date(anyResp.date);
-      return isNaN(parsed.getTime()) ? undefined : parsed;
-    }
-    if (anyResp?.date?.value) {
-      const parsed = new Date(anyResp.date.value);
-      return isNaN(parsed.getTime()) ? undefined : parsed;
-    }
-    return undefined;
+    // Calendar day only — never let a time zone shift the receipt's date
+    return parseReceiptCalendarDate(anyResp?.date);
   };
 
   const supplierName = (ocrResponse as any)?.supplier?.value;

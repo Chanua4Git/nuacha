@@ -1,3 +1,4 @@
+import { parseReceiptCalendarDate } from './calendarDate';
 import { toast } from 'sonner';
 
 /**
@@ -15,22 +16,8 @@ export interface DateValidationResult {
  * Helper function to parse dates in local timezone
  */
 function parseLocalDate(dateString: string): Date {
-  if (!dateString) return new Date(NaN);
-  // YYYY-MM-DD -> construct as local date (no timezone shift)
-  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/;
-  const isoWithTZ = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
-  const m = dateString.match(ymd);
-  if (m) {
-    const [, year, month, day] = m;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  }
-  // If ISO string with explicit timezone (Z or +hh:mm), preserve calendar day
-  if (isoWithTZ.test(dateString)) {
-    const d = new Date(dateString);
-    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  }
-  // Fallback to native parsing (may be local time)
-  return new Date(dateString);
+  // Shared calendar-day rule: never let a time zone shift the receipt's date
+  return parseReceiptCalendarDate(dateString) ?? new Date(NaN);
 }
 
 /**
@@ -112,7 +99,7 @@ export function validateAndCorrectDate(
  * Converts DD/MM/YYYY format to MM/DD/YYYY for JavaScript Date parsing
  * T&T uses DD/MM/YYYY format, so we prioritize this interpretation
  */
-function convertDDMMToMMDD(dateString: string): string {
+export function convertDDMMToMMDD(dateString: string): string {
   // Match patterns like DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
   const ddmmPattern = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/;
   const match = dateString.match(ddmmPattern);
@@ -166,8 +153,8 @@ function correctCommonOcrMistakes(dateString: string): string {
   // Step 3: Add century to 2-digit years
   corrected = corrected.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/, '$1/$2/20$3');
   
-  // Step 4: Convert DD/MM/YYYY to MM/DD/YYYY for T&T format
-  corrected = convertDDMMToMMDD(corrected);
+  // Step 4: DD/MM/YYYY is read Trinidad-style by the shared calendar-day rule,
+  // so no MM/DD swap is needed here (swapping would flip day and month).
 
   console.log('🔧 Date correction:', { original: dateString, corrected });
   return corrected;

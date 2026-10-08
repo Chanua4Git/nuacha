@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FamilySelector from '@/components/FamilySelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -294,7 +295,7 @@ const Reports = () => {
                                 const category = categories.find(c => c.id === expense.category);
                                 return (
                                   <tr key={expense.id} className="border-t">
-                                    <td className="p-3">{format(new Date(expense.date), 'MMM d, yyyy')}</td>
+                                    <td className="p-3">{format(parseReceiptCalendarDate(expense.date) ?? new Date(expense.date), 'MMM d, yyyy')}</td>
                                     <td className="p-3">{expense.description}</td>
                                     <td className="p-3">
                                       <span

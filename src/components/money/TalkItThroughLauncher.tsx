@@ -77,7 +77,15 @@ const TalkItThroughLauncher = () => {
         onOpenChange={(o) => { setOpen(o); if (!o) setResume(null); }}
         accounts={accounts}
         families={families}
-        onSaved={() => window.dispatchEvent(new Event(CHECKIN_SAVED_EVENT))}
+        onSaved={(info) => {
+          window.dispatchEvent(new Event(CHECKIN_SAVED_EVENT));
+          // Take people straight to Expenses so they can see what was just added
+          if (info?.expenseIds.length) {
+            const q = new URLSearchParams({ tab: 'expenses', new: info.expenseIds.join(',') });
+            if (info.familyId) q.set('fam', info.familyId);
+            navigate(`/app?${q.toString()}`);
+          }
+        }}
       />
     </>
   );

@@ -22,3 +22,6 @@
 - [ ] Confirm October seed assumptions with the user (0273 withdrawals, pension-as-income, plumbing and nurse links).
 - [x] Monthly check-in on Cash & Accounts with voice "Talk it through" (guided + free), transfers, routines, nurse roles.
 - [ ] Confirm Leslie-Ann is the regular night nurse and the TT$5,000 Grandpa withdrawal purpose (waiting on user).
+- [x] Receipt dates no longer shift to the day before (all scan paths) + automatic checks
+- [x] Talk-it-through save opens Expenses with new entries highlighted
+- [ ] Correct past scans saved one day early — waiting on owner's yes

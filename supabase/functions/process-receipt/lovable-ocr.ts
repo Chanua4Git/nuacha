@@ -12,7 +12,7 @@ type NormalizedLineItem = {
 
 type NormalizedResult = {
   amount?: number | null;
-  date?: Date | null;
+  date?: string | null; // YYYY-MM-DD calendar day
   description?: string | null;
   supplier?: { value?: string | null } | null;
   place?: string | null;
@@ -211,56 +211,51 @@ Be extremely precise with decimal points and currency amounts. Each line item MU
   }
 }
 
+// Receipt dates travel as calendar strings (YYYY-MM-DD), never timestamps,
+// so a time-zone difference can never shift the day.
+function pad2(n: number) { return n.toString().padStart(2, '0'); }
+function isValidYMD(y: number, m: number, d: number) {
+  if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y > 1900)) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+// "Tomorrow" in Trinidad (UTC-4) as YYYY-MM-DD, used to catch impossible future dates.
+function ttTomorrow(): string {
+  const now = new Date(Date.now() - 4 * 3600 * 1000 + 24 * 3600 * 1000);
+  return `${now.getUTCFullYear()}-${pad2(now.getUTCMonth() + 1)}-${pad2(now.getUTCDate())}`;
+}
+
+export function normalizeReceiptDate(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const s = raw.trim();
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) {
+    // The AI was told to convert DD/MM to YYYY-MM-DD already, so trust it.
+    const y = +iso[1], m = +iso[2], d = +iso[3];
+    if (!isValidYMD(y, m, d)) return null;
+    const out = `${y}-${pad2(m)}-${pad2(d)}`;
+    // Only if that lands in the future and the swapped reading doesn't, swap.
+    if (out > ttTomorrow() && d <= 12 && isValidYMD(y, d, m)) {
+      const swapped = `${y}-${pad2(d)}-${pad2(m)}`;
+      if (swapped <= ttTomorrow()) return swapped;
+    }
+    return out;
+  }
+  const parts = s.split(/[-\/\.\s]+/);
+  if (parts.length === 3 && parts.every((p) => /^\d+$/.test(p))) {
+    // T&T: first number is DAY, second is MONTH
+    let first = +parts[0], second = +parts[1];
+    const y = parts[2].length === 2 ? 2000 + +parts[2] : +parts[2];
+    if (first <= 12 && second > 12) [first, second] = [second, first];
+    return isValidYMD(y, second, first) ? `${y}-${pad2(second)}-${pad2(first)}` : null;
+  }
+  return null;
+}
+
 function normalizeExtractedData(data: any): NormalizedResult {
   try {
-    // Parse and validate the date with T&T DD/MM/YYYY priority
-    let parsedDate: Date | null = null;
-    if (data.date) {
-      // Check if date is already in YYYY-MM-DD format from AI
-      if (data.date.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
-        const parts = data.date.split('-');
-        const year = parts[0];
-        const secondPart = parseInt(parts[1]); // What AI thinks is month
-        const thirdPart = parseInt(parts[2]);   // What AI thinks is day
-        
-        // T&T DATE RULE: For ambiguous dates where both values <= 12,
-        // ALWAYS interpret as DD/MM (T&T standard), not MM/DD (US standard)
-        // The AI may have returned YYYY-MM-DD thinking month-first, but receipt was DD/MM
-        if (secondPart <= 12 && thirdPart <= 12 && secondPart !== thirdPart) {
-          // Swap: treat secondPart as day, thirdPart as month
-          const correctedDateStr = `${year}-${thirdPart.toString().padStart(2, '0')}-${secondPart.toString().padStart(2, '0')}`;
-          console.log(`🔄 T&T date format correction (ambiguous): ${data.date} → ${correctedDateStr} (enforcing DD/MM)`);
-          parsedDate = new Date(correctedDateStr);
-        } else {
-          // Unambiguous: one value > 12, so parsing is clear
-          parsedDate = new Date(data.date);
-        }
-      } else {
-        // Input might be in DD/MM/YYYY or other format
-        const parts = data.date.split(/[-\/\.]/);
-        if (parts.length === 3) {
-          const first = parseInt(parts[0]);
-          const second = parseInt(parts[1]);
-          const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-          
-          // T&T: First number is DAY, second is MONTH
-          const correctedDateStr = `${year}-${second.toString().padStart(2, '0')}-${first.toString().padStart(2, '0')}`;
-          console.log(`🔄 T&T date format parse: ${data.date} → ${correctedDateStr}`);
-          parsedDate = new Date(correctedDateStr);
-        } else {
-          parsedDate = new Date(data.date);
-        }
-      }
-      
-      // Final validation: reject invalid dates
-      if (isNaN(parsedDate.getTime())) {
-        console.warn(`⚠️ Could not parse date: ${data.date}`);
-        parsedDate = null;
-      } else {
-        // Log the final parsed date for verification
-        console.log(`✅ Final parsed date: ${parsedDate.toISOString().split('T')[0]} from input: ${data.date}`);
-      }
-    }
+    const parsedDate = normalizeReceiptDate(data.date);
+    if (data.date) console.log(`📅 Receipt date: ${data.date} → ${parsedDate ?? 'unreadable'}`);
 
     // Normalize line items
     const lineItems: NormalizedLineItem[] = Array.isArray(data.line_items)
@@ -319,7 +314,7 @@ function normalizeExtractedData(data: any): NormalizedResult {
     console.log("📊 Normalized result:", {
       merchant: data.merchant_name,
       amount: data.total_amount,
-      date: parsedDate?.toISOString(),
+      date: parsedDate,
       lineItemCount: lineItems.length,
       confidence
     });

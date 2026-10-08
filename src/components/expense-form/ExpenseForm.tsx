@@ -1031,7 +1031,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
                 <label className="text-sm font-medium">Paid on date (optional)</label>
                 <Input
                   type="date"
-                  value={paidOnDate ? paidOnDate.toISOString().slice(0,10) : ''}
+                  value={paidOnDate ? format(paidOnDate, 'yyyy-MM-dd') : ''}
                   onChange={(e) => setPaidOnDate(e.target.value ? new Date(e.target.value) : undefined)}
                 />
               </div>

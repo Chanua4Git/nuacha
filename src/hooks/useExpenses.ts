@@ -25,6 +25,13 @@ export const useExpenses = (filters?: ExpenseFilters) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
+  // Bumped when Talk-it-through saves, so the list picks up new entries right away
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    const bump = () => setReloadKey((k) => k + 1);
+    window.addEventListener('nuacha:checkin-saved', bump);
+    return () => window.removeEventListener('nuacha:checkin-saved', bump);
+  }, []);
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -157,7 +164,8 @@ export const useExpenses = (filters?: ExpenseFilters) => {
     filters?.minAmount,
     filters?.maxAmount,
     filters?.searchTerm,
-    filters?.allFamilies
+    filters?.allFamilies,
+    reloadKey
   ]);
 
   const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
