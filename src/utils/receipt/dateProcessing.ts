@@ -99,7 +99,7 @@ export function validateAndCorrectDate(
  * Converts DD/MM/YYYY format to MM/DD/YYYY for JavaScript Date parsing
  * T&T uses DD/MM/YYYY format, so we prioritize this interpretation
  */
-function convertDDMMToMMDD(dateString: string): string {
+export function convertDDMMToMMDD(dateString: string): string {
   // Match patterns like DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
   const ddmmPattern = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/;
   const match = dateString.match(ddmmPattern);
@@ -153,8 +153,8 @@ function correctCommonOcrMistakes(dateString: string): string {
   // Step 3: Add century to 2-digit years
   corrected = corrected.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/, '$1/$2/20$3');
   
-  // Step 4: Convert DD/MM/YYYY to MM/DD/YYYY for T&T format
-  corrected = convertDDMMToMMDD(corrected);
+  // Step 4: DD/MM/YYYY is read Trinidad-style by the shared calendar-day rule,
+  // so no MM/DD swap is needed here (swapping would flip day and month).
 
   console.log('🔧 Date correction:', { original: dateString, corrected });
   return corrected;
