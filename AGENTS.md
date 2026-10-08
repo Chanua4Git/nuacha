@@ -9,3 +9,5 @@
 - Manual-number admin nudges open WhatsApp drafts without creating users or delivery records, because opening a draft does not prove a message was sent.
 - Setup checkout routes fixed-price packages to their own invoices after location and calendar selection, stores one approved meeting place for in-person requests, shows Google's supported public booking embed with an external fallback, and keeps requests separate from payment and calendar confirmations; admin deletion removes only the request, not payments or appointments.
 - Generate Learning module social videos entirely in the browser from generic lesson content, because downloads should be immediate and must never include private user data.
+- Receipt dates travel as calendar strings (YYYY-MM-DD) from the receipt reader through the app and are read only via the shared calendar-date helper, never as timestamps or `new Date(isoString)`, so time zones can't shift the day.
+- After Talk-it-through saves expenses, send the user to Expenses with the new entry IDs in the link so they can see and highlight what was just added.
