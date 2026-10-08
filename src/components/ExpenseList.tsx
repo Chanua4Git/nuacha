@@ -176,10 +176,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
       const el = document.querySelector(`[data-expense-id="${ids[0]}"]`);
       (el ?? document.querySelector('main'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
-    const t = setTimeout(() => setJustAdded(new Set()), 8000);
-    return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newParam, allExpenses, selectedFamily?.id]);
+
+  useEffect(() => {
+    if (!justAdded.size) return;
+    const t = setTimeout(() => setJustAdded(new Set()), 8000);
+    return () => clearTimeout(t);
+  }, [justAdded]);
 
   const totalAmount = displayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
