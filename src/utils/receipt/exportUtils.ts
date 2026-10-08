@@ -1,3 +1,4 @@
+import { receiptDateString } from './calendarDate';
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -337,7 +338,7 @@ export const exportReceiptImages = async (
         const blob = await response.blob();
         
         // Create descriptive filename
-        const date = new Date(expense.date).toISOString().split('T')[0];
+        const date = receiptDateString(expense.date) ?? 'undated';
         const cleanDescription = expense.description.replace(/[^a-zA-Z0-9]/g, '-');
         const filename = `${date}_${cleanDescription}_${expense.amount.toFixed(2)}.jpg`;
         
