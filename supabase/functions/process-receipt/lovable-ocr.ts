@@ -12,7 +12,7 @@ type NormalizedLineItem = {
 
 type NormalizedResult = {
   amount?: number | null;
-  date?: Date | null;
+  date?: string | null; // YYYY-MM-DD calendar day
   description?: string | null;
   supplier?: { value?: string | null } | null;
   place?: string | null;
@@ -314,7 +314,7 @@ function normalizeExtractedData(data: any): NormalizedResult {
     console.log("📊 Normalized result:", {
       merchant: data.merchant_name,
       amount: data.total_amount,
-      date: parsedDate?.toISOString(),
+      date: parsedDate,
       lineItemCount: lineItems.length,
       confidence
     });
