@@ -53,7 +53,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const [filters, setFilters] = useState<ExpenseFilterValues>({});
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'duplicates' | 'review'>('all');
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [showBulkSelect, setShowBulkSelect] = useState(false);
   
