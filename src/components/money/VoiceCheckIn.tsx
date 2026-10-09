@@ -31,7 +31,8 @@ interface Item {
 }
 
 interface ReceiptPhoto {
-  preview: string; url: string | null; status: 'queued' | 'reading' | 'ready' | 'failed';
+  id: string; file?: File;
+  preview: string; url: string | null; status: 'queued' | 'waiting' | 'reading' | 'ready' | 'failed';
   vendor: string | null; date: string | null; total: number | null;
   ocr?: OCRResult;
 }
@@ -170,28 +171,61 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
 
   const pickedFamily = () => familyId || families.find((f) => /peltier/i.test(f.name))?.id || families[0]?.id;
 
-  const addReceipts = (files: FileList | File[] | null) => {
-    if (!files?.length) return;
-    const list = Array.from(files);
-    const start = filesRef.current.length;
-    filesRef.current = [...filesRef.current, ...list];
-    setReceipts((r) => [...r, ...list.map((f) => ({ preview: URL.createObjectURL(f), url: null, status: (guest ? 'queued' : 'reading') as ReceiptPhoto['status'], vendor: null, date: null, total: null }))]);
-    if (guest) return;
-    list.forEach(async (f, k) => {
-      const idx = start + k;
-      const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x, j) => (j === idx ? { ...x, ...patch } : x)));
+  // Read receipts a couple at a time so 10 photos don't all hit the reader at once.
+  const queueRef = useRef<{ id: string; file: File }[]>([]);
+  const activeRef = useRef(0);
+  const MAX_AT_ONCE = 2;
+
+  const pump = () => {
+    while (activeRef.current < MAX_AT_ONCE && queueRef.current.length) {
+      const job = queueRef.current.shift()!;
+      activeRef.current++;
+      readOne(job.id, job.file).finally(() => { activeRef.current--; pump(); });
+    }
+  };
+
+  const readOne = async (id: string, f: File) => {
+    const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    set({ status: 'reading' });
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const url = await handleReceiptUpload(f);
-        if (!url) { set({ status: 'failed' }); return; }
+        if (!url) throw new Error('upload');
         const ocr = await processReceiptWithEdgeFunction(url, pickedFamily());
-        if (ocr.error) { set({ url, status: 'failed' }); return; }
+        if (ocr.error) throw new Error(String(ocr.error));
         const total = Number(String(ocr.amount ?? '').replace(/[^0-9.]/g, '')) || null;
         set({ url, status: 'ready', ocr, vendor: ocr.place ?? null, total, date: receiptDateString(ocr.date) });
-      } catch { set({ status: 'failed' }); }
-    });
+        return;
+      } catch {
+        if (attempt === 0) await new Promise((res) => setTimeout(res, 2500));
+      }
+    }
+    set({ status: 'failed' });
   };
-  const removeReceipt = (i: number) => { filesRef.current = filesRef.current.filter((_, j) => j !== i); setReceipts((r) => r.filter((_, j) => j !== i)); };
-  const reading = receipts.some((r) => r.status === 'reading');
+
+  const addReceipts = (files: FileList | File[] | null) => {
+    if (!files?.length) return;
+    const list = Array.from(files).map((file) => ({ id: crypto.randomUUID(), file }));
+    filesRef.current = [...filesRef.current, ...list.map((l) => l.file)];
+    setReceipts((r) => [...r, ...list.map(({ id, file }) => ({ id, file, preview: URL.createObjectURL(file), url: null, status: (guest ? 'queued' : 'waiting') as ReceiptPhoto['status'], vendor: null, date: null, total: null }))]);
+    if (guest) return;
+    queueRef.current.push(...list);
+    pump();
+  };
+  const retryReceipt = (r: ReceiptPhoto) => {
+    if (!r.file) return;
+    setReceipts((all) => all.map((x) => (x.id === r.id ? { ...x, status: 'waiting' } : x)));
+    queueRef.current.push({ id: r.id, file: r.file });
+    pump();
+  };
+  const removeReceipt = (i: number) => {
+    const gone = receipts[i];
+    if (gone) queueRef.current = queueRef.current.filter((q) => q.id !== gone.id);
+    filesRef.current = filesRef.current.filter((_, j) => j !== i);
+    setReceipts((r) => r.filter((_, j) => j !== i));
+  };
+  const reading = receipts.some((r) => r.status === 'reading' || r.status === 'waiting');
+  const doneCount = receipts.filter((r) => r.status === 'ready' || r.status === 'failed').length;
 
   const setAnswer = (i: number, v: string) => setAnswers((a) => a.map((x, j) => (j === i ? v : x)));
   const appendAnswer = (i: number, t: string) => setAnswers((a) => a.map((x, j) => (j === i ? `${x} ${t}`.trim() : x)));
