@@ -1,6 +1,8 @@
 
 import { OCRResult, ReceiptLineItem as OCRReceiptLineItem } from '@/types/expense';
-import { parseReceiptCalendarDate } from './calendarDate';
+import { parseReceiptCalendarDate, toCalendarString } from './calendarDate';
+import { adjustScannedDate, rememberScannedDate } from './storeDateFormats';
+import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MindeeResponse } from './types';
@@ -174,7 +176,20 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse | any): OCRResult 
   const storeName = (ocrResponse as any)?.storeDetails?.name;
   const place = (ocrResponse as any)?.place || storeName || supplierName || '';
 
-  const processedDate = extractDate();
+  let processedDate = extractDate();
+  if (processedDate && place) {
+    const readerDate = toCalendarString(processedDate);
+    rememberScannedDate(place, readerDate);
+    const fix = adjustScannedDate(place, readerDate, toCalendarString(new Date()));
+    if (fix.adjusted) {
+      processedDate = parseReceiptCalendarDate(fix.date);
+      toast(`Date read as ${format(processedDate!, 'd MMM yyyy')}`, {
+        description: fix.reason === 'store'
+          ? `${place} prints day/month, so we used that. Change it if it looks off.`
+          : 'The date looked like it was in the future, so we swapped day and month. Change it if it looks off.',
+      });
+    }
+  }
   const amountStr = extractAmount();
 
   return {
