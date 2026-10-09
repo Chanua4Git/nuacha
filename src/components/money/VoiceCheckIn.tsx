@@ -131,10 +131,14 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
   const [needAuth, setNeedAuth] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
 
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) { wasOpen.current = false; return; }
+    // Only start fresh when the window opens, not when family lists refresh mid-read.
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setItems(null); setStep(0); setFree(''); setNote('');
-    setPeriod('today'); setReceipts([]); filesRef.current = []; setNeedAuth(false);
+    setPeriod('today'); setReceipts([]); filesRef.current = []; queueRef.current = []; setNeedAuth(false);
     if (daily) setMode('free');
     if (resume && !guest) {
       setFree(resume.free); setPeriod(resume.period || 'today'); setMode('free');
