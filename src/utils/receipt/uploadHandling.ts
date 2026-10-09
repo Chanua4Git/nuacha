@@ -68,7 +68,8 @@ async function uploadReceiptToStorage(file: File, userId: string): Promise<strin
     const processedFile = await convertHeicToJpeg(file);
     
     const fileExt = processedFile.name.split('.').pop();
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    // Unique per photo: several receipts uploaded in the same millisecond used to collide.
+    const fileName = `${userId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${fileExt}`;
     
     const { data, error } = await supabase.storage
       .from('receipts')
