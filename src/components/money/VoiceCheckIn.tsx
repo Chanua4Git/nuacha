@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setPaidFrom } from '@/lib/paidFrom';
 import GuestAuthStep from './GuestAuthStep';
+import { takePendingReceipts } from '@/lib/bulkReceipts';
 import { saveDraft, clearDraft, draftFiles, type CheckinDraft } from '@/lib/checkinDraft';
 import { trackEvent } from '@/lib/analytics';
 import { usePersonalPrompts } from '@/hooks/usePersonalPrompts';
@@ -140,6 +141,8 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
       draftFiles(resume).then((fs) => { addReceipts(fs); setAutoRun(true); });
       clearDraft();
     }
+    const handed = takePendingReceipts();
+    if (handed.length) { setMode('free'); setTimeout(() => addReceipts(handed), 0); }
     setFamilyId(families.find((f) => /peltier/i.test(f.name))?.id ?? families[0]?.id ?? '');
     Promise.all([
       supabase.auth.getUser(),
@@ -391,21 +394,30 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
                 {daily && (
                   <>
                     <Button type="button" variant="outline" onClick={() => cameraRef.current?.click()}><Camera className="h-4 w-4 mr-1" /> Snap receipt</Button>
-                    <Button type="button" variant="outline" onClick={() => photosRef.current?.click()}><ImagePlus className="h-4 w-4 mr-1" /> Add receipts</Button>
+                    <Button type="button" variant="outline" onClick={() => photosRef.current?.click()}><ImagePlus className="h-4 w-4 mr-1" /> Several receipts at once</Button>
                     <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
                     <input ref={photosRef} type="file" accept="image/*,.heic" multiple className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
                   </>
                 )}
               </div>
+              {daily && receipts.length === 0 && (
+                <p className="text-xs text-muted-foreground">Tip: tap <span className="font-medium">Several receipts at once</span> to pick up to 10 photos. Each is read on its own, then you check them and tap Save.</p>
+              )}
+              {receipts.length > 0 && !guest && (
+                <div className="rounded-lg border bg-muted/40 p-2 text-sm">
+                  {reading ? <>Reading {doneCount} of {receipts.length} receipts, two at a time. You can keep talking while I work.</> : <>All {receipts.length} receipts looked at{receipts.some((r) => r.status === 'failed') ? '. Tap "Try again" on any I couldn\'t read.' : '. Tap See what I understood to check them.'}</>}
+                </div>
+              )}
               {receipts.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {receipts.map((r, i) => (
-                    <div key={i} className="relative rounded-lg border overflow-hidden text-xs">
+                    <div key={r.id} className="relative rounded-lg border overflow-hidden text-xs">
                       <img src={r.preview} alt={`Receipt ${i + 1}`} className="h-20 w-full object-cover" />
                       <div className="p-1 break-words">
                         {r.status === 'queued' ? <span className="text-muted-foreground">Ready to read</span>
+                          : r.status === 'waiting' ? <span className="text-muted-foreground">Waiting in line</span>
                           : r.status === 'reading' ? <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Reading…</span>
-                          : r.status === 'failed' ? <span className="text-muted-foreground">Couldn't read this one</span>
+                          : r.status === 'failed' ? <button type="button" className="underline text-primary" onClick={() => retryReceipt(r)}>Couldn't read · Try again</button>
                           : <span>{r.vendor ?? 'Receipt'}{r.total ? ` · ${r.total.toFixed(2)}` : ''}</span>}
                       </div>
                       <button type="button" aria-label="Remove receipt" onClick={() => removeReceipt(i)} className="absolute top-1 right-1 rounded-full bg-background/90 p-0.5"><X className="h-3 w-3" /></button>
