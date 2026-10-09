@@ -16,3 +16,4 @@
 - A long receipt's total comes from the section that shows the printed total, otherwise from the deduplicated item sum, never from whichever section the reader felt surest about, so multi-photo totals stay right.
 - Long-receipt sections are joined by dropping only the run of lines where one photo overlaps the next, never by removing every look-alike line, so genuine repeats (4 × Red Pear) stay counted.
 - Bulk receipt photos are read through a small queue (two at a time, one automatic retry) with unique storage file names, because firing them all at once collided on names and overwhelmed the reader.
+- Receipts saved together become a device-local "Check these" batch in Expenses, shown regardless of receipt date, until the person marks them checked or finishes, because bulk receipts span many months.
