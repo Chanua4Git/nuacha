@@ -98,7 +98,7 @@ export default function AdminUsers() {
     const s = stageOf(r);
     const query = search.trim().toLowerCase();
     if (query && !`${r.email} ${r.phone || ""} ${r.admin_note || ""}`.toLowerCase().includes(query)) return false;
-    if (filter === "stuck") return s === "no_scan" || s === "no_household";
+    if (filter === "stuck") return ["no_scan", "no_household", "no_persons", "no_budget"].includes(s);
     if (filter === "phone") return !r.phone;
     if (filter === "week") return Date.now() - new Date(r.joined_at).getTime() < 7 * 864e5;
     if (filter === "done") return s === "done";
@@ -172,7 +172,7 @@ export default function AdminUsers() {
   const visibleUsers = [...(showMine ? mine : []), ...others];
   const joinedThisWeek = others.filter((j) => Date.now() - new Date(j.joined_at).getTime() < 7 * 864e5).length;
   const joinedToday = others.filter((j) => isToday(new Date(j.joined_at))).length;
-  const awaitingAction = others.filter((j) => ["needs_phone", "no_household", "no_scan"].includes(stageOf(j))).length;
+  const awaitingAction = others.filter((j) => ["needs_phone", "no_household", "no_persons", "no_budget", "no_scan"].includes(stageOf(j))).length;
   const readyToNudge = others.filter((j) => stageOf(j) !== "done").length;
   const nextAction = (j: Journey) => {
     const stage = stageOf(j);
