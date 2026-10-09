@@ -9,6 +9,7 @@ import { X, Camera, Upload, RefreshCw, Loader2, Plus, Layers } from 'lucide-reac
 import { removeBackground, loadImage } from '@/utils/receipt/backgroundRemoval';
 import { useScanUsageTracker } from '@/hooks/useScanUsageTracker';
 import { ScanLimitModal } from '@/components/ScanLimitModal';
+import { combineLongReceipt, calculateLineItemsSubtotal } from '@/utils/receipt/mergeReceipts';
 
 interface ReceiptSection {
   id: string;
@@ -39,6 +40,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
   const [sections, setSections] = useState<ReceiptSection[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [check, setCheck] = useState<{ itemsSum: number; printedTotal: number | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Scan limit tracking
@@ -83,7 +85,13 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
     onImagesUpload(files);
 
     // Auto-process if single image in Long Receipt Mode or always for single files
-    if (files.length === 1) {
+    if (isLongReceiptMode) {
+      // Long receipt: read each part as it arrives, but wait for "Done" to combine
+      for (const sec of newSections) setTimeout(() => processSection(sec.id, false, sec), 100);
+      toast(files.length > 1 ? 'Sections added' : 'Section added', {
+        description: 'Add the next part, or tap "Done – read it all" when you reach the bottom.'
+      });
+    } else if (files.length === 1) {
       console.log('🚀 Auto-processing single image in Long Receipt Mode');
       // Auto-process the single image after a brief delay to allow state to update
       setTimeout(async () => {
@@ -102,10 +110,6 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
           }
         }, 1000);
       }, 100);
-    } else if (isLongReceiptMode && files.length > 1) {
-      toast('Multiple sections captured', {
-        description: 'Review and process when ready.'
-      });
     }
   };
 
@@ -125,7 +129,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
     });
   };
 
-  const processSection = async (sectionId: string, withBackgroundRemoval = false) => {
+  const processSection = async (sectionId: string, withBackgroundRemoval = false, direct?: ReceiptSection) => {
     // Check scan limit before processing
     if (!hasUnlimitedScans) {
       if (isCheckingSubscription) {
@@ -144,7 +148,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
     ));
 
     try {
-      const section = sections.find(s => s.id === sectionId);
+      const section = direct ?? sections.find(s => s.id === sectionId);
       if (!section) return;
 
       let fileToProcess = section.file;
@@ -205,6 +209,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
       // Process all sections in parallel and collect results directly
       const processingPromises = sections.map(async (section) => {
         console.log('Processing section:', section.id);
+        if (section.ocrResult && !section.ocrResult.error) return section.ocrResult;
         
         let fileToProcess = section.file;
 
@@ -245,7 +250,8 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
       console.log('Valid results:', validResults);
 
       if (validResults.length > 0) {
-        const mergedResult = mergeOCRResults(validResults);
+        const mergedResult = combineLongReceipt(validResults);
+        setCheck({ itemsSum: mergedResult.itemsSum, printedTotal: mergedResult.printedTotal });
         console.log('Merged result:', mergedResult);
         
         onDataExtracted(mergedResult);
@@ -411,7 +417,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
           <div className="flex justify-between items-center">
             <h3 className="font-medium">Receipt Sections</h3>
             <div className="flex gap-2">
-              {isLongReceiptMode && sections.length > 1 && (
+              {isLongReceiptMode && sections.length >= 1 && (
                 <Button
                   onClick={processAllSections}
                   disabled={isProcessingAll || sections.some(s => s.isProcessing)}
@@ -420,10 +426,10 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
                   {isProcessingAll ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Processing All...
+                      Reading all parts...
                     </>
                   ) : (
-                    'Process All Sections'
+                    'Done – read it all'
                   )}
                 </Button>
               )}
@@ -500,7 +506,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
                     <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
                       Confidence: {Math.round((section.ocrResult.confidence || 0) * 100)}%
                       {section.ocrResult.lineItems && (
-                        <div>Items: {section.ocrResult.lineItems.length}</div>
+                        <div>Items: {section.ocrResult.lineItems.length} · Items in this part: ${calculateLineItemsSubtotal(section.ocrResult.lineItems).toFixed(2)}</div>
                       )}
                     </div>
                   )}
@@ -508,6 +514,21 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
               </Card>
             ))}
           </div>
+
+          {isLongReceiptMode && sections.some(s => s.ocrResult?.lineItems?.length) && (
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              Running total of all parts so far: <strong>${sections.reduce((t, s) => t + calculateLineItemsSubtotal(s.ocrResult?.lineItems || []), 0).toFixed(2)}</strong>
+              {check && (
+                <div className="mt-1 text-muted-foreground">
+                  Items add up to ${check.itemsSum.toFixed(2)}
+                  {check.printedTotal != null && <> · Receipt total ${check.printedTotal.toFixed(2)}</>}
+                  {check.printedTotal != null && Math.abs(check.printedTotal - check.itemsSum) > 0.05 && (
+                    <div className="mt-1">These differ by ${Math.abs(check.printedTotal - check.itemsSum).toFixed(2)}, so you may want to glance at the items before saving. We used the receipt total.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Add More Button */}
           {isLongReceiptMode && (
@@ -517,7 +538,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
               className="w-full border-2 border-dashed border-gray-300 h-16 flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Add Another Section
+              Add next section
             </Button>
           )}
         </div>
