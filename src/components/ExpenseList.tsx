@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { getReviewBatch, startReviewBatch, toggleReviewed, clearReviewBatch, type ReviewBatch } from '@/lib/reviewBatch';
+import { getReviewState, toggleReviewed, finishGroup, groupBulkSaves } from '@/lib/reviewBatch';
+import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
@@ -138,22 +139,39 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
   const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
-  // "Check these" batch: the last receipts saved together, shown together whatever their dates.
-  const [batch, setBatch] = useState<ReviewBatch | null>(() => getReviewBatch());
+  // "Check these": receipts saved together (bulk) are grouped into cards to check against paper copies.
+  const [review, setReview] = useState(() => getReviewState());
+  const [savedRows, setSavedRows] = useState<{ id: string; created_at: string }[]>([]);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   useEffect(() => {
-    const sync = () => setBatch(getReviewBatch());
-    window.addEventListener('nuacha:review-batch', sync);
-    return () => window.removeEventListener('nuacha:review-batch', sync);
+    const sync = () => setReview(getReviewState());
+    window.addEventListener('nuacha:review-state', sync);
+    return () => window.removeEventListener('nuacha:review-state', sync);
   }, []);
-  const batchExpenses = useMemo(
-    () => (batch ? (allExpenses || []).filter((e) => batch.ids.includes(e.id)) : []),
-    [batch, allExpenses],
+  useEffect(() => {
+    if (!selectedFamily?.id) return;
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    supabase.from('expenses').select('id,created_at').eq('family_id', selectedFamily.id).gte('created_at', since)
+      .then(({ data }) => setSavedRows((data ?? []) as any));
+  }, [selectedFamily?.id, allExpenses]);
+  const reviewGroups = useMemo(() => {
+    const live = new Set((allExpenses || []).map((e) => e.id));
+    return groupBulkSaves(savedRows)
+      .map((g) => g.filter((r) => live.has(r.id)))
+      .filter((g) => g.length >= 2)
+      .map((g) => ({ key: g[0].id, savedAt: g[0].created_at, ids: g.map((r) => r.id) }))
+      .filter((g) => !review.finished.includes(g.key));
+  }, [savedRows, allExpenses, review.finished]);
+  const activeGroup = reviewGroups.find((g) => g.key === openGroup) || null;
+  const groupExpenses = useMemo(
+    () => (activeGroup ? (allExpenses || []).filter((e) => activeGroup.ids.includes(e.id)) : []),
+    [activeGroup, allExpenses],
   );
 
   const displayExpenses = selectedTab === 'duplicates'
     ? expenses.filter(e => duplicateExpenseIds.has(e.id))
     : selectedTab === 'review'
-      ? batchExpenses
+      ? groupExpenses
       : expenses;
   
   // "Just added" highlight after a Talk-it-through save (?new=id1,id2&fam=familyId)
@@ -175,8 +193,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
     const found = allExpenses.filter((e) => ids.includes(e.id));
     if (!found.length) return; // wait for the list to load
     // Show everything just saved together in "Check these", whatever month each receipt is dated.
-    startReviewBatch(ids);
     setSelectedTab('review');
+    setOpenGroup(null);
     setJustAdded(new Set(ids));
     const next = new URLSearchParams(searchParams);
     next.delete('new');
@@ -319,14 +337,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
           <TabsList>
             <TabsTrigger value="all">All Expenses</TabsTrigger>
-            {batch && batch.ids.length > 0 && (
-              <TabsTrigger value="review" className="relative">
-                Check these
-                <Badge className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center text-xs">
-                  {batch.ids.length - batch.checked.filter((id) => batch.ids.includes(id)).length}
-                </Badge>
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="review" className="relative">
+              Check these
+              {reviewGroups.length > 0 && (
+                <Badge className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center text-xs">{reviewGroups.length}</Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="duplicates" className="relative">
               Duplicates
               {duplicateGroups.length > 0 && (
@@ -397,23 +413,49 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           />
         )}
         
-        {selectedTab === 'review' && batch && (
+        {selectedTab === 'review' && !activeGroup && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">Receipts you saved together are grouped here so you can check them against the paper copies. Tap a group to start.</p>
+            {reviewGroups.length === 0 && <p className="text-sm">Nothing waiting to be checked — and that's okay.</p>}
+            {reviewGroups.map((g) => {
+              const rows = (allExpenses || []).filter((e) => g.ids.includes(e.id));
+              const total = rows.reduce((t, e) => t + e.amount, 0);
+              const done = g.ids.filter((id) => review.checked.includes(id)).length;
+              return (
+                <button key={g.key} type="button" onClick={() => setOpenGroup(g.key)}
+                  className="w-full text-left rounded-2xl border bg-card p-4 shadow-sm hover:border-primary/50 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{g.ids.length} receipts saved together</span>
+                    <Badge variant={done === g.ids.length ? 'default' : 'secondary'}>{done} of {g.ids.length} checked</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {new Date(g.savedAt).toLocaleString('en-TT', { dateStyle: 'medium', timeStyle: 'short' })} · ${total.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{rows.map((e) => e.place).join(' · ')}</p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {selectedTab === 'review' && activeGroup && (
           <div className="mt-4 rounded-lg border border-primary/30 bg-card p-4 space-y-2">
-            <p className="font-medium">Your last {batch.ids.length} saved receipts, all in one place</p>
+            <Button size="sm" variant="ghost" className="px-0" onClick={() => setOpenGroup(null)}>← All groups</Button>
+            <p className="font-medium">{activeGroup.ids.length} receipts saved together</p>
             <p className="text-sm text-muted-foreground">
-              Hold each paper receipt next to its card. Check the store, date and total, fix anything with the pencil, then tap <span className="font-medium">Looks right</span>. Dates can be from any month, so they're all shown here together.
+              Hold each paper receipt next to its card. Check the store, date and total, fix anything with the pencil, then tap <span className="font-medium">Looks right</span>.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm">{batch.checked.filter((id) => batch.ids.includes(id)).length} of {batch.ids.length} checked</span>
-              <Button size="sm" variant="outline" onClick={() => { clearReviewBatch(); setSelectedTab('all'); toast.success("All checked. You're doing beautifully."); }}>
-                I'm done checking
+              <span className="text-sm">{activeGroup.ids.filter((id) => review.checked.includes(id)).length} of {activeGroup.ids.length} checked</span>
+              <Button size="sm" onClick={() => { finishGroup(activeGroup.key); setOpenGroup(null); toast.success("Finished checking. You're doing beautifully."); }}>
+                Finish checking
               </Button>
             </div>
           </div>
         )}
 
         <div className="bg-accent/30 p-4 rounded-lg">
-          <div className="text-sm text-muted-foreground mb-2">{selectedTab === 'review' ? 'Just saved (any date)' : selectedPeriod.displayName}</div>
+          <div className="text-sm text-muted-foreground mb-2">{selectedTab === 'review' ? (activeGroup ? 'This group (any date)' : 'Open a group to see its receipts') : selectedPeriod.displayName}</div>
           <div className="flex justify-between items-center">
             <div>
               <span className="text-sm text-muted-foreground">Total Amount</span>
@@ -431,14 +473,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         <div className="space-y-4">
           {displayExpenses.map((expense) => (
             <div key={expense.id} className="space-y-1">
-            {selectedTab === 'review' && batch && (
+            {selectedTab === 'review' && activeGroup && (
               <Button
                 size="sm"
-                variant={batch.checked.includes(expense.id) ? 'default' : 'outline'}
+                variant={review.checked.includes(expense.id) ? 'default' : 'outline'}
                 className="rounded-2xl"
                 onClick={() => toggleReviewed(expense.id)}
               >
-                {batch.checked.includes(expense.id) ? '✓ Looks right' : 'Looks right?'}
+                {review.checked.includes(expense.id) ? '✓ Looks right' : 'Looks right?'}
               </Button>
             )}
             <ExpenseCard 
@@ -460,7 +502,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
       ) : (
         <div className="text-center py-8">
           <p className="text-muted-foreground">
-            {selectedTab === 'duplicates' ? 'No duplicate expenses found' : 'No expenses found'}
+            {selectedTab === 'duplicates' ? 'No duplicate expenses found' : selectedTab === 'review' ? '' : 'No expenses found'}
           </p>
         </div>
       )}
