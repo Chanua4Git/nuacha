@@ -240,3 +240,59 @@ export function getPartialReceiptGuidance(ocrResult: OCRResult): string | null {
 
   return `Missing: ${missingParts.join(' and ')}. Scan the ${detection.missingHeader ? 'top' : 'bottom'} of the receipt to capture complete information.`;
 }
+
+const num = (v: unknown): number => {
+  if (v == null) return 0;
+  if (typeof v === 'number') return v;
+  if (typeof v === 'object' && 'amount' in (v as any)) return num((v as any).amount);
+  if (typeof v === 'object' && 'value' in (v as any)) return num((v as any).value);
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+};
+
+/** A section that shows the receipt's bottom: printed total, tax or payment. */
+function isFooterSection(r: OCRResult): boolean {
+  return !!(r.paymentMethod || num(r.tax) > 0 || num(r.total) > 0);
+}
+
+export interface LongReceiptResult extends OCRResult {
+  itemsSum: number;
+  printedTotal: number | null;
+}
+
+/**
+ * Combine sections of one long receipt (photographed top to bottom).
+ * Total = printed total from the footer section; otherwise the sum of all
+ * items after removing overlap duplicates. Never a single middle section's amount.
+ */
+export function combineLongReceipt(results: OCRResult[]): LongReceiptResult {
+  const valid = results.filter(Boolean);
+  if (valid.length === 0) throw new Error('No sections to combine');
+  const items = deduplicateLineItems(valid.flatMap((r) => r.lineItems || []));
+  const itemsSum = Math.round(calculateLineItemsSubtotal(items) * 100) / 100;
+  const footer = [...valid].reverse().find(isFooterSection);
+  const printed = footer ? num(footer.total) || num(footer.amount) : 0;
+  const printedTotal = printed > 0 ? printed : null;
+  const first = valid.find((r) => r.place) || valid[0];
+  const dated = valid.find((r) => r.date);
+  const amount = printedTotal ?? itemsSum;
+  return {
+    ...valid[0],
+    place: first.place || '',
+    description: first.description || first.place || valid[0].description || '',
+    storeDetails: first.storeDetails,
+    date: dated?.date,
+    lineItems: items,
+    amount: amount ? amount.toFixed(2) : '',
+    total: footer?.total,
+    tax: footer?.tax,
+    subtotal: footer?.subtotal,
+    discount: footer?.discount,
+    paymentMethod: footer?.paymentMethod,
+    receiptNumber: footer?.receiptNumber || valid[0].receiptNumber,
+    transactionTime: footer?.transactionTime || valid[0].transactionTime,
+    confidence: valid.reduce((s, r) => s + (r.confidence || 0), 0) / valid.length,
+    itemsSum,
+    printedTotal,
+  };
+}
