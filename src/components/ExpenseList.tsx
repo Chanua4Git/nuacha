@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { getReviewBatch, startReviewBatch, toggleReviewed, clearReviewBatch, type ReviewBatch } from '@/lib/reviewBatch';
 import { useSearchParams } from 'react-router-dom';
 import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
@@ -137,9 +138,23 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
   const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
-  const displayExpenses = selectedTab === 'duplicates' 
+  // "Check these" batch: the last receipts saved together, shown together whatever their dates.
+  const [batch, setBatch] = useState<ReviewBatch | null>(() => getReviewBatch());
+  useEffect(() => {
+    const sync = () => setBatch(getReviewBatch());
+    window.addEventListener('nuacha:review-batch', sync);
+    return () => window.removeEventListener('nuacha:review-batch', sync);
+  }, []);
+  const batchExpenses = useMemo(
+    () => (batch ? (allExpenses || []).filter((e) => batch.ids.includes(e.id)) : []),
+    [batch, allExpenses],
+  );
+
+  const displayExpenses = selectedTab === 'duplicates'
     ? expenses.filter(e => duplicateExpenseIds.has(e.id))
-    : expenses;
+    : selectedTab === 'review'
+      ? batchExpenses
+      : expenses;
   
   // "Just added" highlight after a Talk-it-through save (?new=id1,id2&fam=familyId)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -159,14 +174,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
     const ids = newParam.split(',').filter(Boolean);
     const found = allExpenses.filter((e) => ids.includes(e.id));
     if (!found.length) return; // wait for the list to load
-    // Make sure the period being viewed includes the newest saved entry
-    const d = parseReceiptCalendarDate(found[0].date);
-    if (d && (d < selectedPeriod.startDate || d > selectedPeriod.endDate)) {
-      const startDate = new Date(d.getFullYear(), d.getMonth(), 1);
-      const endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      setSelectedPeriod({ type: 'monthly', startDate, endDate, displayName: startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) });
-    }
-    setSelectedTab('all');
+    // Show everything just saved together in "Check these", whatever month each receipt is dated.
+    startReviewBatch(ids);
+    setSelectedTab('review');
     setJustAdded(new Set(ids));
     const next = new URLSearchParams(searchParams);
     next.delete('new');
@@ -306,9 +316,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           )}
         </div>
 
-        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'duplicates')}>
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
           <TabsList>
             <TabsTrigger value="all">All Expenses</TabsTrigger>
+            {batch && batch.ids.length > 0 && (
+              <TabsTrigger value="review" className="relative">
+                Check these
+                <Badge className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center text-xs">
+                  {batch.ids.length - batch.checked.filter((id) => batch.ids.includes(id)).length}
+                </Badge>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="duplicates" className="relative">
               Duplicates
               {duplicateGroups.length > 0 && (
@@ -379,8 +397,23 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           />
         )}
         
+        {selectedTab === 'review' && batch && (
+          <div className="mt-4 rounded-lg border border-primary/30 bg-card p-4 space-y-2">
+            <p className="font-medium">Your last {batch.ids.length} saved receipts, all in one place</p>
+            <p className="text-sm text-muted-foreground">
+              Hold each paper receipt next to its card. Check the store, date and total, fix anything with the pencil, then tap <span className="font-medium">Looks right</span>. Dates can be from any month, so they're all shown here together.
+            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm">{batch.checked.filter((id) => batch.ids.includes(id)).length} of {batch.ids.length} checked</span>
+              <Button size="sm" variant="outline" onClick={() => { clearReviewBatch(); setSelectedTab('all'); toast.success("All checked. You're doing beautifully."); }}>
+                I'm done checking
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-accent/30 p-4 rounded-lg">
-          <div className="text-sm text-muted-foreground mb-2">{selectedPeriod.displayName}</div>
+          <div className="text-sm text-muted-foreground mb-2">{selectedTab === 'review' ? 'Just saved (any date)' : selectedPeriod.displayName}</div>
           <div className="flex justify-between items-center">
             <div>
               <span className="text-sm text-muted-foreground">Total Amount</span>
@@ -397,8 +430,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
       {displayExpenses.length > 0 ? (
         <div className="space-y-4">
           {displayExpenses.map((expense) => (
+            <div key={expense.id} className="space-y-1">
+            {selectedTab === 'review' && batch && (
+              <Button
+                size="sm"
+                variant={batch.checked.includes(expense.id) ? 'default' : 'outline'}
+                className="rounded-2xl"
+                onClick={() => toggleReviewed(expense.id)}
+              >
+                {batch.checked.includes(expense.id) ? '✓ Looks right' : 'Looks right?'}
+              </Button>
+            )}
             <ExpenseCard 
-              key={expense.id} 
               expense={expense}
               onDelete={handleDeleteSingle}
               onEdit={onEditExpense ? handleEditExpense : undefined}
@@ -411,6 +454,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
               onSelectionChange={handleExpenseSelection}
               showBulkSelect={showBulkSelect}
             />
+            </div>
           ))}
         </div>
       ) : (
