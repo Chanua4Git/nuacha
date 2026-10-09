@@ -502,7 +502,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
       ) : (
         <div className="text-center py-8">
           <p className="text-muted-foreground">
-            {selectedTab === 'duplicates' ? 'No duplicate expenses found' : 'No expenses found'}
+            {selectedTab === 'duplicates' ? 'No duplicate expenses found' : selectedTab === 'review' ? '' : 'No expenses found'}
           </p>
         </div>
       )}

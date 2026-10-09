@@ -89,13 +89,13 @@ const HeroUploadSection = ({
           )}
 
           {/* Prominent action buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 justify-center items-center">
             <Button
               type="button"
               size="lg"
               disabled={isBusy}
               onClick={handleCameraAction}
-              className={`${guided ? 'ring-4 ring-primary/40 ring-offset-2 animate-pulse ' : ''}group relative overflow-hidden bg-[#5A7684] hover:bg-[#5A7684]/90 text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 max-w-xs sm:max-w-none`}
+              className={`${guided ? 'ring-4 ring-primary/40 ring-offset-2 animate-pulse ' : ''}group relative overflow-hidden border-2 border-primary bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 w-full max-w-sm lg:w-auto lg:min-w-[260px]`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[#5A7684]/80 to-[#5A7684] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="relative flex items-center space-x-3">
@@ -109,16 +109,16 @@ const HeroUploadSection = ({
               </div>
             </Button>
 
-            <div className="text-[#5C5C5C] font-light">or</div>
+            <div className="text-muted-foreground font-light">or</div>
 
-            <div className="relative max-w-xs sm:max-w-none">
+            <div className="relative w-full max-w-sm lg:w-auto">
               <Button
                 type="button"
                 size="lg"
                 disabled={isBusy}
                 onClick={handleUploadAction}
                 variant="outline"
-                className="group relative overflow-hidden border-2 border-[#5A7684] text-[#5A7684] hover:bg-[#5A7684] hover:text-white rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
+                className="w-full lg:min-w-[260px] group relative overflow-hidden border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-2xl px-6 sm:px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105"
               >
                 <div className="relative flex items-center space-x-3">
                   <div className="p-2 rounded-full bg-[#5A7684]/10 group-hover:bg-white/20 transition-colors duration-300 flex-shrink-0">
