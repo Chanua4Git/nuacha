@@ -163,15 +163,10 @@ export function mergeReceiptPages(pages: ReceiptPage[]): OCRResult {
   const lastPage = sortedPages[sortedPages.length - 1].ocrResult;
 
   // Combine all line items
-  const allLineItems: ReceiptLineItem[] = [];
-  sortedPages.forEach(page => {
-    if (page.ocrResult.lineItems) {
-      allLineItems.push(...page.ocrResult.lineItems);
-    }
-  });
+  const allLineItems: ReceiptLineItem[] = sortedPages.flatMap(p => p.ocrResult.lineItems || []);
 
-  // Deduplicate line items
-  const uniqueLineItems = deduplicateLineItems(allLineItems);
+  // Drop only the overlap between consecutive photos; keep genuine repeats
+  const uniqueLineItems = joinSectionItems(sortedPages.map(p => p.ocrResult.lineItems || []));
 
   // Calculate combined confidence
   const avgConfidence = sortedPages.reduce((sum, page) => 

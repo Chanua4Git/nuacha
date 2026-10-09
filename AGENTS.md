@@ -14,3 +14,4 @@
 
 - Scanned receipt dates pass through a per-store day/month memory (learned when the user saves a flipped date) and a future-date sense check, so till formats that confuse the reader self-correct.
 - A long receipt's total comes from the section that shows the printed total, otherwise from the deduplicated item sum, never from whichever section the reader felt surest about, so multi-photo totals stay right.
+- Long-receipt sections are joined by dropping only the run of lines where one photo overlaps the next, never by removing every look-alike line, so genuine repeats (4 × Red Pear) stay counted.
