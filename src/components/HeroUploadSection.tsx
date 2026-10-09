@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { openReceiptPicker } from "@/hooks/useReceiptPicker";
+import { setPendingReceipts } from "@/lib/bulkReceipts";
 
 interface HeroUploadSectionProps {
   onCameraClick?: () => void;
@@ -26,6 +27,7 @@ const HeroUploadSection = ({
   const [params] = useSearchParams();
   const guided = params.get('start') === 'scan';
   const rootRef = useRef<HTMLDivElement>(null);
+  const bulkRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!guided) return;
     trackEvent('first_scan_link_open', { ref: params.get('ref') || 'direct' });
@@ -143,10 +145,32 @@ const HeroUploadSection = ({
               Long receipt (2+ photos)
             </Button>
             <p className="text-xs text-muted-foreground">Receipt too long for one photo? Take it in parts, top to bottom.</p>
-            <Button type="button" variant="link" size="sm" className="gap-1" onClick={() => navigate('/?talk=true')}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isBusy}
+              onClick={() => bulkRef.current?.click()}
+              className="rounded-2xl gap-2"
+            >
               <Images className="h-4 w-4" />
-              Several receipts? Add them all at once
+              Several receipts at once (bulk)
             </Button>
+            <p className="text-xs text-muted-foreground">Pick up to 10 receipt photos. Each one is read on its own, then you check them and tap Save.</p>
+            <input
+              ref={bulkRef}
+              type="file"
+              accept="image/*,.heic"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                e.target.value = '';
+                if (!files.length) return;
+                setPendingReceipts(files);
+                trackEvent('bulk_receipts_picked', { count: files.length, from: 'home' });
+                navigate('/?talk=true');
+              }}
+            />
           </div>
 
           {/* Reassuring message */}

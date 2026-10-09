@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setPaidFrom } from '@/lib/paidFrom';
 import GuestAuthStep from './GuestAuthStep';
+import { takePendingReceipts } from '@/lib/bulkReceipts';
 import { saveDraft, clearDraft, draftFiles, type CheckinDraft } from '@/lib/checkinDraft';
 import { trackEvent } from '@/lib/analytics';
 import { usePersonalPrompts } from '@/hooks/usePersonalPrompts';
@@ -31,7 +32,8 @@ interface Item {
 }
 
 interface ReceiptPhoto {
-  preview: string; url: string | null; status: 'queued' | 'reading' | 'ready' | 'failed';
+  id: string; file?: File;
+  preview: string; url: string | null; status: 'queued' | 'waiting' | 'reading' | 'ready' | 'failed';
   vendor: string | null; date: string | null; total: number | null;
   ocr?: OCRResult;
 }
@@ -129,16 +131,22 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
   const [needAuth, setNeedAuth] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
 
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) { wasOpen.current = false; return; }
+    // Only start fresh when the window opens, not when family lists refresh mid-read.
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setItems(null); setStep(0); setFree(''); setNote('');
-    setPeriod('today'); setReceipts([]); filesRef.current = []; setNeedAuth(false);
+    setPeriod('today'); setReceipts([]); filesRef.current = []; queueRef.current = []; setNeedAuth(false);
     if (daily) setMode('free');
     if (resume && !guest) {
       setFree(resume.free); setPeriod(resume.period || 'today'); setMode('free');
       draftFiles(resume).then((fs) => { addReceipts(fs); setAutoRun(true); });
       clearDraft();
     }
+    const handed = takePendingReceipts();
+    if (handed.length) { setMode('free'); setTimeout(() => addReceipts(handed), 0); }
     setFamilyId(families.find((f) => /peltier/i.test(f.name))?.id ?? families[0]?.id ?? '');
     Promise.all([
       supabase.auth.getUser(),
@@ -170,28 +178,61 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
 
   const pickedFamily = () => familyId || families.find((f) => /peltier/i.test(f.name))?.id || families[0]?.id;
 
-  const addReceipts = (files: FileList | File[] | null) => {
-    if (!files?.length) return;
-    const list = Array.from(files);
-    const start = filesRef.current.length;
-    filesRef.current = [...filesRef.current, ...list];
-    setReceipts((r) => [...r, ...list.map((f) => ({ preview: URL.createObjectURL(f), url: null, status: (guest ? 'queued' : 'reading') as ReceiptPhoto['status'], vendor: null, date: null, total: null }))]);
-    if (guest) return;
-    list.forEach(async (f, k) => {
-      const idx = start + k;
-      const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x, j) => (j === idx ? { ...x, ...patch } : x)));
+  // Read receipts a couple at a time so 10 photos don't all hit the reader at once.
+  const queueRef = useRef<{ id: string; file: File }[]>([]);
+  const activeRef = useRef(0);
+  const MAX_AT_ONCE = 2;
+
+  const pump = () => {
+    while (activeRef.current < MAX_AT_ONCE && queueRef.current.length) {
+      const job = queueRef.current.shift()!;
+      activeRef.current++;
+      readOne(job.id, job.file).finally(() => { activeRef.current--; pump(); });
+    }
+  };
+
+  const readOne = async (id: string, f: File) => {
+    const set = (patch: Partial<ReceiptPhoto>) => setReceipts((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    set({ status: 'reading' });
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const url = await handleReceiptUpload(f);
-        if (!url) { set({ status: 'failed' }); return; }
+        if (!url) throw new Error('upload');
         const ocr = await processReceiptWithEdgeFunction(url, pickedFamily());
-        if (ocr.error) { set({ url, status: 'failed' }); return; }
+        if (ocr.error) throw new Error(String(ocr.error));
         const total = Number(String(ocr.amount ?? '').replace(/[^0-9.]/g, '')) || null;
         set({ url, status: 'ready', ocr, vendor: ocr.place ?? null, total, date: receiptDateString(ocr.date) });
-      } catch { set({ status: 'failed' }); }
-    });
+        return;
+      } catch {
+        if (attempt === 0) await new Promise((res) => setTimeout(res, 2500));
+      }
+    }
+    set({ status: 'failed' });
   };
-  const removeReceipt = (i: number) => { filesRef.current = filesRef.current.filter((_, j) => j !== i); setReceipts((r) => r.filter((_, j) => j !== i)); };
-  const reading = receipts.some((r) => r.status === 'reading');
+
+  const addReceipts = (files: FileList | File[] | null) => {
+    if (!files?.length) return;
+    const list = Array.from(files).map((file) => ({ id: crypto.randomUUID(), file }));
+    filesRef.current = [...filesRef.current, ...list.map((l) => l.file)];
+    setReceipts((r) => [...r, ...list.map(({ id, file }) => ({ id, file, preview: URL.createObjectURL(file), url: null, status: (guest ? 'queued' : 'waiting') as ReceiptPhoto['status'], vendor: null, date: null, total: null }))]);
+    if (guest) return;
+    queueRef.current.push(...list);
+    pump();
+  };
+  const retryReceipt = (r: ReceiptPhoto) => {
+    if (!r.file) return;
+    setReceipts((all) => all.map((x) => (x.id === r.id ? { ...x, status: 'waiting' } : x)));
+    queueRef.current.push({ id: r.id, file: r.file });
+    pump();
+  };
+  const removeReceipt = (i: number) => {
+    const gone = receipts[i];
+    if (gone) queueRef.current = queueRef.current.filter((q) => q.id !== gone.id);
+    filesRef.current = filesRef.current.filter((_, j) => j !== i);
+    setReceipts((r) => r.filter((_, j) => j !== i));
+  };
+  const reading = receipts.some((r) => r.status === 'reading' || r.status === 'waiting');
+  const doneCount = receipts.filter((r) => r.status === 'ready' || r.status === 'failed').length;
 
   const setAnswer = (i: number, v: string) => setAnswers((a) => a.map((x, j) => (j === i ? v : x)));
   const appendAnswer = (i: number, t: string) => setAnswers((a) => a.map((x, j) => (j === i ? `${x} ${t}`.trim() : x)));
@@ -357,21 +398,30 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
                 {daily && (
                   <>
                     <Button type="button" variant="outline" onClick={() => cameraRef.current?.click()}><Camera className="h-4 w-4 mr-1" /> Snap receipt</Button>
-                    <Button type="button" variant="outline" onClick={() => photosRef.current?.click()}><ImagePlus className="h-4 w-4 mr-1" /> Add receipts</Button>
+                    <Button type="button" variant="outline" onClick={() => photosRef.current?.click()}><ImagePlus className="h-4 w-4 mr-1" /> Several receipts at once</Button>
                     <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
                     <input ref={photosRef} type="file" accept="image/*,.heic" multiple className="hidden" onChange={(e) => { addReceipts(e.target.files); e.target.value = ''; }} />
                   </>
                 )}
               </div>
+              {daily && receipts.length === 0 && (
+                <p className="text-xs text-muted-foreground">Tip: tap <span className="font-medium">Several receipts at once</span> to pick up to 10 photos. Each is read on its own, then you check them and tap Save.</p>
+              )}
+              {receipts.length > 0 && !guest && (
+                <div className="rounded-lg border bg-muted/40 p-2 text-sm">
+                  {reading ? <>Reading {doneCount} of {receipts.length} receipts, two at a time. You can keep talking while I work.</> : <>All {receipts.length} receipts looked at{receipts.some((r) => r.status === 'failed') ? '. Tap "Try again" on any I couldn\'t read.' : '. Tap See what I understood to check them.'}</>}
+                </div>
+              )}
               {receipts.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {receipts.map((r, i) => (
-                    <div key={i} className="relative rounded-lg border overflow-hidden text-xs">
+                    <div key={r.id} className="relative rounded-lg border overflow-hidden text-xs">
                       <img src={r.preview} alt={`Receipt ${i + 1}`} className="h-20 w-full object-cover" />
                       <div className="p-1 break-words">
                         {r.status === 'queued' ? <span className="text-muted-foreground">Ready to read</span>
+                          : r.status === 'waiting' ? <span className="text-muted-foreground">Waiting in line</span>
                           : r.status === 'reading' ? <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Reading…</span>
-                          : r.status === 'failed' ? <span className="text-muted-foreground">Couldn't read this one</span>
+                          : r.status === 'failed' ? <button type="button" className="underline text-primary" onClick={() => retryReceipt(r)}>Couldn't read · Try again</button>
                           : <span>{r.vendor ?? 'Receipt'}{r.total ? ` · ${r.total.toFixed(2)}` : ''}</span>}
                       </div>
                       <button type="button" aria-label="Remove receipt" onClick={() => removeReceipt(i)} className="absolute top-1 right-1 rounded-full bg-background/90 p-0.5"><X className="h-3 w-3" /></button>
