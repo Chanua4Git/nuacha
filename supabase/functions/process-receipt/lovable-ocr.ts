@@ -89,6 +89,9 @@ EXTRACTION TIPS:
   - Set total_amount to 0 to indicate the total is not visible
   - The user will scan additional pages to capture the complete receipt
 - Tax and subtotal are separate from line items
+- List EVERY printed product line in order, top to bottom. If the same item is printed several times (e.g. "RED PEAR" on 4 lines), output it 4 times. Never merge or skip repeated lines.
+- Lines like "1 @ $9.99 each" or "0.220 kg @ $119.99/kg" are details of the next/previous item, not separate items.
+- For total_amount use the final paid total (e.g. "TOTAL SALES", "Rounded Total", "SUB TOTAL" at the very bottom, or the card/cash payment amount)
 - If you truly cannot read a price for an item, set it to 0.00 (but look harder first!)
 
 Be extremely precise with decimal points and currency amounts. Each line item MUST have a total_price extracted.`
