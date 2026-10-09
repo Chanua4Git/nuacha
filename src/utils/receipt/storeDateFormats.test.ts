@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { adjustScannedDate, learnFromSavedDate, rememberScannedDate, getStoreRule } from './storeDateFormats';
+const mem: Record<string, string> = {};
+(globalThis as any).localStorage ??= { getItem: (k: string) => mem[k] ?? null, setItem: (k: string, v: string) => { mem[k] = v; }, clear: () => { for (const k in mem) delete mem[k]; } };
 
 describe('store date memory', () => {
   beforeEach(() => localStorage.clear());
