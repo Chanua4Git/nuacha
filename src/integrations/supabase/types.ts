@@ -2372,6 +2372,30 @@ export type Database = {
         }
         Relationships: []
       }
+      review_marks: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          ref_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          ref_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          ref_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sahm_budget_submissions: {
         Row: {
           additional_info: Json | null
