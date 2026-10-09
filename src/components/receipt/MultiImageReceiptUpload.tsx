@@ -376,7 +376,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
               {isLongReceiptMode ? (
                 <>
                   <p className="text-lg font-medium mb-2">Capture Receipt Sections</p>
-                  <p className="text-sm">Take photos of each section from top to bottom</p>
+                  <p className="text-sm">Receipt too long for one photo? Take it in parts, top to bottom.</p>
                 </>
               ) : (
                 <>
