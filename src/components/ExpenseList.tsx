@@ -386,13 +386,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
                 {duplicateGroups.map((group) => (
                   <Card key={group.id} className="border-orange-200">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Badge variant="destructive" className={getConfidenceColor(group.confidence)}>
+                      <CardTitle className="text-sm flex flex-wrap items-center gap-2">
+                        <Badge variant="destructive" className="text-white">
                           {getConfidenceLabel(group.confidence)} Confidence
                         </Badge>
                         <span className="text-muted-foreground text-xs">
                           {getReasonLabel(group.reason)}
                         </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-auto h-7 text-xs"
+                          onClick={() => markNotDuplicates(group)}
+                        >
+                          These are different
+                        </Button>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
