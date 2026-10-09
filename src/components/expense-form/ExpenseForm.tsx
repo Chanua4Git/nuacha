@@ -81,7 +81,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   const [receiptImages, setReceiptImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
-  const [isLongReceiptMode, setIsLongReceiptMode] = useState(false);
+  const [isLongReceiptMode, setIsLongReceiptMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'long');
   const [showDetailedReceiptView, setShowDetailedReceiptView] = useState(false);
   const [autoSelectCategory, setAutoSelectCategory] = useState(false);  // 🆕 Flag for auto-selection
   const [manualEntryMode, setManualEntryMode] = useState(false); // Track manual entry choice
@@ -783,7 +783,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
   }
 
   // Determine if we should show the Hero Upload Section
-  const shouldShowHeroUpload = !imagePreview && !ocrResult && !manualEntryMode && !initialOcrData;
+  const shouldShowHeroUpload = !imagePreview && !ocrResult && !manualEntryMode && !initialOcrData && !isLongReceiptMode;
 
   return (
     <Card className="w-full max-w-xl mx-auto">
@@ -799,6 +799,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           onCameraClick={() => openReceiptPicker('camera', handleHeroFileSelect)}
           onUploadClick={() => openReceiptPicker('upload', handleHeroFileSelect)}
           onFileSelect={handleHeroFileSelect}
+          onLongReceiptClick={() => setIsLongReceiptMode(true)}
         />
               
               {/* Manual entry option */}

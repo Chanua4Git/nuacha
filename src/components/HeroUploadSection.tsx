@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Leaf } from "lucide-react";
+import { Camera, Upload, Leaf, Layers, Images } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
@@ -9,6 +9,7 @@ interface HeroUploadSectionProps {
   onCameraClick?: () => void;
   onUploadClick?: () => void;
   onFileSelect?: (file: File) => void;
+  onLongReceiptClick?: () => void;
   isDemo?: boolean;
   isBusy?: boolean;
 }
@@ -17,6 +18,7 @@ const HeroUploadSection = ({
   onCameraClick, 
   onUploadClick, 
   onFileSelect, 
+  onLongReceiptClick,
   isDemo = false,
   isBusy = false,
 }: HeroUploadSectionProps) => {
@@ -127,6 +129,24 @@ const HeroUploadSection = ({
                 </div>
               </Button>
             </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isBusy}
+              onClick={() => (onLongReceiptClick ? onLongReceiptClick() : navigate('/app?tab=add-expense&mode=long'))}
+              className="rounded-2xl gap-2"
+            >
+              <Layers className="h-4 w-4" />
+              Long receipt (2+ photos)
+            </Button>
+            <p className="text-xs text-muted-foreground">Receipt too long for one photo? Take it in parts, top to bottom.</p>
+            <Button type="button" variant="link" size="sm" className="gap-1" onClick={() => navigate('/?talk=true')}>
+              <Images className="h-4 w-4" />
+              Several receipts? Add them all at once
+            </Button>
           </div>
 
           {/* Reassuring message */}
