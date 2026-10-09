@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { receiptDateString } from '@/utils/receipt/calendarDate';
+import { learnFromSavedDate } from '@/utils/receipt/storeDateFormats';
 import { format } from 'date-fns';
 import { Mic, Square, Trash2, Loader2, ChevronRight, Camera, ImagePlus, X } from 'lucide-react';
 import { handleReceiptUpload } from '@/utils/receipt/uploadHandling';
@@ -259,6 +260,7 @@ const VoiceCheckIn = ({ open, onOpenChange, accounts, families: familiesProp, on
           }).select('id').single();
           if (error) throw error;
           if (exp?.id) expenseIds.push(exp.id);
+          if (it.receipt_index != null) learnFromSavedDate(it.place, it.date);
           const rOcr = it.receipt_index != null ? receipts[it.receipt_index]?.ocr : undefined;
           if (exp && rOcr) { try { await saveReceiptDetailsAndLineItems(exp.id, rOcr); } catch (e) { console.error('receipt details', e); } }
           const mem = lineMember[items.indexOf(it)];
