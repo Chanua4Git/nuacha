@@ -202,6 +202,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         .select();
       
       if (error) throw error;
+      learnFromSavedDate(data[0].place, data[0].date);
       
       // Map the returned data back to our Expense type
       const newExpense = {
@@ -281,6 +282,7 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         .select();
       
       if (error) throw error;
+      if (updates.date !== undefined && data?.[0]) learnFromSavedDate(data[0].place, String(updates.date));
       
       // Update the local state
       setExpenses(prev => prev.map(expense => {
