@@ -136,7 +136,33 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
       place: filters.place,
     });
   }, [filteredExpenses, filters, selectedPeriod, searchTerm]);
-  const duplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
+  const allDuplicateGroups = useMemo(() => detectDuplicates(allExpenses || []), [allExpenses]);
+  // Groups the person confirmed are NOT duplicates (saved to their account via review_marks)
+  const [notDuplicateKeys, setNotDuplicateKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    (supabase as any).from('review_marks').select('ref_id').eq('kind', 'not_duplicate')
+      .then(({ data }: any) => setNotDuplicateKeys(new Set((data ?? []).map((r: any) => r.ref_id))));
+  }, []);
+  const duplicateGroupKey = (group: { expenses: { id: string }[] }) =>
+    group.expenses.map((e) => e.id).sort().join('|');
+  const markNotDuplicates = async (group: { expenses: { id: string }[] }) => {
+    const key = duplicateGroupKey(group);
+    setNotDuplicateKeys((prev) => new Set([...prev, key]));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await (supabase as any).from('review_marks').upsert(
+        { user_id: user.id, kind: 'not_duplicate', ref_id: key },
+        { onConflict: 'user_id,kind,ref_id', ignoreDuplicates: true },
+      );
+    }
+  };
+  const duplicateGroups = useMemo(
+    () => allDuplicateGroups
+      .filter((g) => !notDuplicateKeys.has(duplicateGroupKey(g)))
+      // Only show groups whose expenses are visible in the current filter (avoids empty cards)
+      .filter((g) => g.expenses.filter((e) => expenses.some((x) => x.id === e.id)).length >= 2),
+    [allDuplicateGroups, notDuplicateKeys, expenses],
+  );
   const duplicateExpenseIds = new Set(duplicateGroups.flatMap(group => group.expenses.map(e => e.id)));
   
   // "Check these": receipts saved together (bulk) are grouped into cards to check against paper copies.
