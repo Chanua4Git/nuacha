@@ -30,4 +30,28 @@ describe('long receipt total', () => {
     ]);
     expect(r.amount).toBe('52.00');
   });
+
+  it('keeps genuine repeated lines like 4 × Red Pear', () => {
+    const r = combineLongReceipt([
+      { place: 'JTA', amount: '31.96', lineItems: [item('RED PEAR', '7.99'), item('RED PEAR', '7.99'), item('RED PEAR', '7.99'), item('RED PEAR', '7.99')] } as any,
+    ]);
+    expect(r.lineItems).toHaveLength(4);
+    expect(r.itemsSum).toBe(31.96);
+  });
+
+  it('uses the printed total from a single full-receipt photo even if items were missed', () => {
+    const r = combineLongReceipt([
+      { place: 'JTA', amount: '863.20', lineItems: [item('Broccoli', '21.24'), item('Kiwi', '26.40')] } as any,
+    ]);
+    expect(r.amount).toBe('863.20');
+  });
+
+  it('drops only the overlapping run between two photos', () => {
+    const r = combineLongReceipt([
+      { place: 'JTA', lineItems: [item('Flour', '16.99'), item('Eggs', '27.99'), item('Banana', '9.31'), item('Red pear', '7.99')] } as any,
+      { lineItems: [item('Banana', '9.31'), item('Red pear', '7.99'), item('Red pear', '7.99'), item('Oats', '46.99')] } as any,
+    ]);
+    expect(r.lineItems).toHaveLength(6);
+    expect(r.amount).toBe('117.26');
+  });
 });

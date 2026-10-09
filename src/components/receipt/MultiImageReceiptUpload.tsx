@@ -517,7 +517,7 @@ const MultiImageReceiptUpload: React.FC<MultiImageReceiptUploadProps> = ({
 
           {isLongReceiptMode && sections.some(s => s.ocrResult?.lineItems?.length) && (
             <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-              Running total of all parts so far: <strong>${sections.reduce((t, s) => t + calculateLineItemsSubtotal(s.ocrResult?.lineItems || []), 0).toFixed(2)}</strong>
+              Running total of all parts so far (overlap counted once): <strong>${combineLongReceipt(sections.map(s => s.ocrResult).filter(Boolean) as any).itemsSum.toFixed(2)}</strong>
               {check && (
                 <div className="mt-1 text-muted-foreground">
                   Items add up to ${check.itemsSum.toFixed(2)}
