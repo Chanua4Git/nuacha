@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { getReviewState, toggleReviewed, finishGroup, groupBulkSaves } from '@/lib/reviewBatch';
+import { getReviewState, toggleReviewed, finishGroup, groupBulkSaves, syncReviewState } from '@/lib/reviewBatch';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
@@ -146,6 +146,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   useEffect(() => {
     const sync = () => setReview(getReviewState());
     window.addEventListener('nuacha:review-state', sync);
+    void syncReviewState();
     return () => window.removeEventListener('nuacha:review-state', sync);
   }, []);
   useEffect(() => {
