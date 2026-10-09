@@ -22,6 +22,7 @@ type Journey = {
   joined_at: string; last_sign_in_at: string | null; family_count: number;
   total_scans: number; scans_today: number; best_day_scans: number; expense_count: number;
   last_nudge_at: string | null; nudge_count: number;
+  persons_count?: number; has_budget?: boolean;
   completed_modules?: string[]; last_module?: string | null; last_learning_at?: string | null;
   open_questions?: { module: string; message: string; at: string }[];
   admin_note?: string | null;
@@ -33,12 +34,16 @@ type Template = { id: string; name: string; stage: string; channel: string; mess
 const stageOf = (j: Journey) => {
   if (!j.phone) return "needs_phone";
   if (j.family_count === 0) return "no_household";
+  if ((j.persons_count ?? 0) === 0) return "no_persons";
+  if (!j.has_budget) return "no_budget";
   if (j.total_scans === 0 && j.expense_count === 0) return "no_scan";
   if (j.best_day_scans < 3) return "under_three";
   return "done";
 };
 const STAGE_LABEL: Record<string, string> = {
-  needs_phone: "Needs phone", no_household: "No household yet", no_scan: "Hasn't scanned",
+  needs_phone: "Needs phone", no_household: "No household yet",
+  no_persons: "No household persons", no_budget: "No budget yet",
+  no_scan: "Hasn't scanned",
   under_three: "Under 3 scans in a day", done: "Reached 3 scans 🎉",
   learning: "Next lesson", lesson_reply: "Lesson question reply",
 };
@@ -93,7 +98,7 @@ export default function AdminUsers() {
     const s = stageOf(r);
     const query = search.trim().toLowerCase();
     if (query && !`${r.email} ${r.phone || ""} ${r.admin_note || ""}`.toLowerCase().includes(query)) return false;
-    if (filter === "stuck") return s === "no_scan" || s === "no_household";
+    if (filter === "stuck") return ["no_scan", "no_household", "no_persons", "no_budget"].includes(s);
     if (filter === "phone") return !r.phone;
     if (filter === "week") return Date.now() - new Date(r.joined_at).getTime() < 7 * 864e5;
     if (filter === "done") return s === "done";
@@ -167,12 +172,14 @@ export default function AdminUsers() {
   const visibleUsers = [...(showMine ? mine : []), ...others];
   const joinedThisWeek = others.filter((j) => Date.now() - new Date(j.joined_at).getTime() < 7 * 864e5).length;
   const joinedToday = others.filter((j) => isToday(new Date(j.joined_at))).length;
-  const awaitingAction = others.filter((j) => ["needs_phone", "no_household", "no_scan"].includes(stageOf(j))).length;
+  const awaitingAction = others.filter((j) => ["needs_phone", "no_household", "no_persons", "no_budget", "no_scan"].includes(stageOf(j))).length;
   const readyToNudge = others.filter((j) => stageOf(j) !== "done").length;
   const nextAction = (j: Journey) => {
     const stage = stageOf(j);
     if (stage === "needs_phone") return "Ask for WhatsApp";
     if (stage === "no_household") return "Guide household setup";
+    if (stage === "no_persons") return "Add household persons";
+    if (stage === "no_budget") return "Set up a gentle budget";
     if (stage === "no_scan") return "Invite first scan";
     if (stage === "under_three") return "Encourage the next scan";
     return "Celebrate their progress";
