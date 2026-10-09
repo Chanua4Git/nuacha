@@ -2833,10 +2833,12 @@ export type Database = {
           email: string
           expense_count: number
           family_count: number
+          has_budget: boolean
           joined_at: string
           last_nudge_at: string
           last_sign_in_at: string
           nudge_count: number
+          persons_count: number
           phone: string
           provider: string
           scans_today: number
