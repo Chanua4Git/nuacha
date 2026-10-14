@@ -338,7 +338,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
     }
 
     if (!amount || !description || !category || !place) {
-      toast.error('Please fill in all required fields');
+      const missing = [!amount && 'amount', !description && 'description', !category && 'category', !place && 'place'].filter(Boolean).join(', ');
+      toast.error(`Almost there — please add the ${missing}`, { description: 'Then tap Save again. Your receipt photo is still here.' });
       return;
     }
 
