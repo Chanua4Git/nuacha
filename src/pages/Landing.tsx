@@ -1,3 +1,4 @@
+import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart, Loader2 } from "lucide-react";
