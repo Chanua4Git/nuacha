@@ -269,6 +269,33 @@ export default function AdminUsers() {
         </nav>
       </header>
 
+      <Card className="rounded-lg shadow-sm">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">Activity since your last check</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {activity
+                ? `Your previous visit was ${formatDistanceToNow(new Date(activity.checkedAt), { addSuffix: true })}.`
+                : "This is your first check — we'll start watching from your next visit."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {activity ? ([
+              { label: "new sign-ups", value: activity.signups, tone: activity.signups > 0 },
+              { label: "receipts saved", value: activity.receipts, tone: activity.receipts > 0 },
+              { label: "numbers added", value: activity.phones, tone: activity.phones > 0 },
+              { label: "nudges sent", value: activity.nudges, tone: activity.nudges > 0 },
+            ] as { label: string; value: number; tone: boolean }[]).map((chip) => (
+              <span key={chip.label} className={`inline-flex items-baseline gap-1 rounded-full px-3 py-1.5 text-sm ${chip.tone ? "bg-primary/10 text-primary font-medium" : "bg-muted text-muted-foreground"}`}>
+                <span className="font-semibold tabular-nums">{chip.value}</span> {chip.label}
+              </span>
+            )) : (
+              <span className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">Baselines saved ✨</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5" aria-label="Sign-up summary">
         {[
           { label: "Signed up today", value: joinedToday, icon: CalendarDays, note: "Newest at the top of the list" },
