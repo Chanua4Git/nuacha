@@ -12,8 +12,22 @@ function gtag(..._args: unknown[]) {
   window.dataLayer.push(arguments);
 }
 
+const INTERNAL_KEY = 'nuacha:internal-device';
+/** Your own phones/laptops: never counted in Google Analytics. Set by signing in as the owner, or opening any page with ?internal=1 (?internal=0 undoes it). */
+export const isInternalDevice = () => {
+  try {
+    const q = new URLSearchParams(window.location.search).get('internal');
+    if (q === '1') localStorage.setItem(INTERNAL_KEY, '1');
+    if (q === '0') localStorage.removeItem(INTERNAL_KEY);
+    return localStorage.getItem(INTERNAL_KEY) === '1';
+  } catch { return false; }
+};
+const silence = () => { if (measurementId) (window as any)[`ga-disable-${measurementId}`] = true; };
+export const markInternalDevice = () => { try { localStorage.setItem(INTERNAL_KEY, '1'); } catch { /* ignore */ } silence(); };
+
 /** Loads gtag.js once at app startup. No-op when the measurement ID is absent. */
 export const initAnalytics = () => {
+  if (isInternalDevice()) { silence(); return; }
   if (!measurementId || document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) return;
 
   const script = document.createElement('script');

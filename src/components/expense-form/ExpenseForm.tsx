@@ -1,3 +1,4 @@
+import { trackEvent } from '@/lib/analytics';
 import { useState, useMemo } from 'react';
 import { PaidFromSelect } from '@/components/money/PaidFromSelect';
 import { setPaidFrom, PaidFromValue } from '@/lib/paidFrom';
@@ -339,6 +340,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
     if (!amount || !description || !category || !place) {
       const missing = [!amount && 'amount', !description && 'description', !category && 'category', !place && 'place'].filter(Boolean).join(', ');
+      trackEvent('expense_save_blocked', { missing, from_scan: !!ocrResult });
       toast.error(`Almost there — please add the ${missing}`, { description: 'Then tap Save again. Your receipt photo is still here.' });
       return;
     }
@@ -596,6 +598,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
       setPendingSubmission(null);
 
       const expenseCount = createdExpenses.length;
+      trackEvent('expense_saved', { from_scan: !!receiptUrlToUse, count: expenseCount });
       toast.success(`${expenseCount} expense${expenseCount > 1 ? 's' : ''} added successfully${payrollLink.enabled ? ' and payroll logged' : ''}`);
 
       // Call the callback after successful expense creation
@@ -605,6 +608,7 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
 
     } catch (error) {
       console.error('Error adding expense:', error);
+      trackEvent('expense_save_failed', { reason: String((error as any)?.message || error).slice(0, 90) });
       toast.error('An error occurred while adding the expense');
     } finally {
       setIsSubmitting(false);
