@@ -40,10 +40,19 @@ const stageOf = (j: Journey) => {
   if (j.best_day_scans < 3) return "under_three";
   return "done";
 };
+// Suggested next nudge: once someone has already been nudged (e.g. the people/budget nudge)
+// but still has no scan, ask gently why — instead of repeating setup steps.
+const nudgeStageOf = (j: Journey) => {
+  const s = stageOf(j);
+  const noScan = j.total_scans === 0 && j.expense_count === 0;
+  if (noScan && j.phone && (j.nudge_count ?? 0) > 0 && ["no_persons", "no_budget", "no_scan"].includes(s)) return "why_no_scan";
+  return s;
+};
+const WHY_NO_SCAN_MESSAGE = "Hey [Name]! Quick curious question from the founder side 🌿 I noticed you joined Nuacha but haven't tried a scan yet. Did you just not have a paper receipt nearby, or did something feel confusing when you landed in? Even an old grocery or pharmacy slip from this week works. Here's the quickest way in: https://nuacha.com/?start=scan — I'd love to help you get that first one sorted ✨";
 const STAGE_LABEL: Record<string, string> = {
   needs_phone: "Needs phone", no_household: "No household yet",
   no_persons: "No household persons", no_budget: "No budget yet",
-  no_scan: "Hasn't scanned",
+  no_scan: "Hasn't scanned", why_no_scan: "Ask why no scan yet",
   under_three: "Under 3 scans in a day", done: "Reached 3 scans 🎉",
   learning: "Next lesson", lesson_reply: "Lesson question reply",
 };
@@ -89,7 +98,14 @@ export default function AdminUsers() {
     j = ((j as Journey[]) || []).map((r) => ({ ...r, ...(byUser.get(r.user_id) || {}), admin_note: noteBy.get(r.user_id) ?? null }));
     if (error) toast("Couldn't load users", { description: error.message });
     setRows((j as Journey[]) || []);
-    setTemplates((t as Template[]) || []);
+    let tpls = (t as Template[]) || [];
+    if (!tpls.some((x) => x.stage === "why_no_scan")) {
+      const { data: added } = await (supabase.from as any)("nudge_templates")
+        .insert({ name: "Why no scan check-in", stage: "why_no_scan", channel: "both", message: WHY_NO_SCAN_MESSAGE })
+        .select().single();
+      if (added) tpls = [...tpls, added as Template];
+    }
+    setTemplates(tpls);
     setLoading(false);
   };
   useEffect(() => { if (isAdmin) load(); }, [isAdmin]);
@@ -120,8 +136,8 @@ export default function AdminUsers() {
       .replace(/\[QuestionLesson\]/g, moduleTitle(j.open_questions?.[0]?.module));
 
   const openNudge = (j: Journey, stage?: string) => {
-    const s = stage || stageOf(j);
-    const tpl = templates.find((t) => t.stage === s) || templates.find((t) => t.stage === "re_engagement") || templates[0];
+    const s = stage || nudgeStageOf(j);
+    const tpl = templates.find((t) => t.stage === s) || templates.find((t) => t.stage === stageOf(j)) || templates.find((t) => t.stage === "re_engagement") || templates[0];
     setNudging(j);
     setTemplateId(tpl?.id || "");
     setMessage(tpl ? fill(tpl.message, j) : "");
@@ -180,6 +196,7 @@ export default function AdminUsers() {
     if (stage === "no_household") return "Guide household setup";
     if (stage === "no_persons") return "Add household persons";
     if (stage === "no_budget") return "Set up a gentle budget";
+    if (nudgeStageOf(j) === "why_no_scan") return "Ask why no scan yet";
     if (stage === "no_scan") return "Invite first scan";
     if (stage === "under_three") return "Encourage the next scan";
     return "Celebrate their progress";
@@ -415,7 +432,7 @@ export default function AdminUsers() {
             <Select value={editing.stage} onValueChange={(v) => setEditing({ ...editing, stage: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["needs_phone", "no_household", "no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
+                {["needs_phone", "no_household", "no_persons", "no_budget", "no_scan", "why_no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea rows={5} value={editing.message} onChange={(e) => setEditing({ ...editing, message: e.target.value })} />
