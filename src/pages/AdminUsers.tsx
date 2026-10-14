@@ -78,6 +78,7 @@ export default function AdminUsers() {
   const [manualNudge, setManualNudge] = useState<{ phone: string; name: string; templateId: string; message: string } | null>(null);
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [activity, setActivity] = useState<{ checkedAt: string; signups: number; receipts: number; phones: number; nudges: number } | null>(null);
 
   const openManualNudge = (template?: Template) => {
     const chosen = template || templates.find((t) => t.name === "Invite to setup") || templates[0];
