@@ -46,13 +46,15 @@ const nudgeStageOf = (j: Journey) => {
   const s = stageOf(j);
   const noScan = j.total_scans === 0 && j.expense_count === 0;
   if (noScan && j.phone && (j.nudge_count ?? 0) > 0 && ["no_persons", "no_budget", "no_scan"].includes(s)) return "why_no_scan";
+  if (s === "under_three") return "toward_three";
   return s;
 };
+const TOWARD_THREE_MESSAGE = "Hi [Name]! 🌿 You've already got a receipt saved in Nuacha, thank you for being one of the first! The real magic shows up at 3 receipts in one day: you start to see where the day's money actually went. Next time you're out, try snapping 3 (coffee, groceries, gas, anything): https://nuacha.com/?start=scan. Your 3 scans are free every day. Want me to walk through it with you on a quick voice note?";
 const WHY_NO_SCAN_MESSAGE = "Hey [Name]! Quick curious question from the founder side 🌿 I noticed you joined Nuacha but haven't tried a scan yet. Did you just not have a paper receipt nearby, or did something feel confusing when you landed in? Even an old grocery or pharmacy slip from this week works. Here's the quickest way in: https://nuacha.com/?start=scan — I'd love to help you get that first one sorted ✨";
 const STAGE_LABEL: Record<string, string> = {
   needs_phone: "Needs phone", no_household: "No household yet",
   no_persons: "No household persons", no_budget: "No budget yet",
-  no_scan: "Hasn't scanned", why_no_scan: "Ask why no scan yet",
+  no_scan: "Hasn't scanned", why_no_scan: "Ask why no scan yet", toward_three: "Toward 3 scans in a day",
   under_three: "Under 3 scans in a day", done: "Reached 3 scans 🎉",
   learning: "Next lesson", lesson_reply: "Lesson question reply",
 };
@@ -102,6 +104,12 @@ export default function AdminUsers() {
     if (!tpls.some((x) => x.stage === "why_no_scan")) {
       const { data: added } = await (supabase.from as any)("nudge_templates")
         .insert({ name: "Why no scan check-in", stage: "why_no_scan", channel: "both", message: WHY_NO_SCAN_MESSAGE })
+        .select().single();
+      if (added) tpls = [...tpls, added as Template];
+    }
+    if (!tpls.some((x) => x.stage === "toward_three")) {
+      const { data: added } = await (supabase.from as any)("nudge_templates")
+        .insert({ name: "Toward 3 scans in a day", stage: "toward_three", channel: "both", message: TOWARD_THREE_MESSAGE })
         .select().single();
       if (added) tpls = [...tpls, added as Template];
     }
@@ -198,7 +206,7 @@ export default function AdminUsers() {
     if (stage === "no_budget") return "Set up a gentle budget";
     if (nudgeStageOf(j) === "why_no_scan") return "Ask why no scan yet";
     if (stage === "no_scan") return "Invite first scan";
-    if (stage === "under_three") return "Encourage the next scan";
+    if (stage === "under_three") return j.expense_count > 0 ? `Has ${j.expense_count} saved — aim for 3 in a day` : "Encourage the next scan";
     return "Celebrate their progress";
   };
   const latestActivity = (j: Journey) => j.last_learning_at || j.last_sign_in_at || j.joined_at;
@@ -432,7 +440,7 @@ export default function AdminUsers() {
             <Select value={editing.stage} onValueChange={(v) => setEditing({ ...editing, stage: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["needs_phone", "no_household", "no_persons", "no_budget", "no_scan", "why_no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
+                {["needs_phone", "no_household", "no_persons", "no_budget", "no_scan", "why_no_scan", "under_three", "toward_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea rows={5} value={editing.message} onChange={(e) => setEditing({ ...editing, message: e.target.value })} />
