@@ -1,3 +1,4 @@
+import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Shield, Scan, Users2, Calculator, FileSpreadsheet, TrendingUp, PieChart, Loader2 } from "lucide-react";
@@ -82,6 +83,7 @@ const Landing = () => {
     if (!hasUnlimitedScans && !canScan()) {
       console.log('❌ Landing: Scan limit reached for non-subscriber');
       setShowScanLimitModal(true);
+      trackEvent('scan_limit_hit', { from: 'home' });
       return;
     }
     
@@ -92,6 +94,7 @@ const Landing = () => {
     
     setCurrentFile(file);
     setIsProcessing(true);
+    trackEvent('scan_started', { from: 'home' });
     
     try {
       console.log('📸 Landing: Starting OCR processing...');
@@ -131,6 +134,7 @@ const Landing = () => {
       }
 
       console.log('✅ Landing: OCR processing successful:', ocrResult);
+      trackEvent('scan_read_ok', { from: 'home', has_total: !!ocrResult.amount });
       
       // Increment scan count for all non-subscribers after successful scan
       if (!hasUnlimitedScans) {
@@ -159,6 +163,7 @@ const Landing = () => {
 
     } catch (error) {
       console.error('❌ Landing: Error processing receipt:', error);
+      trackEvent('scan_read_failed', { from: 'home', reason: String((error as any)?.message || error).slice(0, 90) });
       toast.error("Couldn't process your receipt", {
         description: "Let's try that again, or you can enter details manually.",
         action: {

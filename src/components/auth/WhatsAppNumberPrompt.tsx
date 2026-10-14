@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/contexts/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { identifyUser, trackEvent } from "@/lib/analytics";
+import { identifyUser, trackEvent, markInternalDevice } from "@/lib/analytics";
 import { toast } from "sonner";
 
 /** Asks signed-in people without a WhatsApp number (e.g. Google sign-ups) for one, once per day. */
@@ -53,6 +53,7 @@ export default function WhatsAppNumberPrompt() {
   }, [location.search, location.pathname, user, isLoading]);
 
   useEffect(() => {
+    if (user?.email?.toLowerCase().includes("chanuajohnson")) markInternalDevice();
     identifyUser(user?.id ?? null);
     if (!user) return;
     const provider = (user.app_metadata as any)?.provider ?? "email";
