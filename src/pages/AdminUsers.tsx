@@ -78,6 +78,7 @@ export default function AdminUsers() {
   const [manualNudge, setManualNudge] = useState<{ phone: string; name: string; templateId: string; message: string } | null>(null);
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [activity, setActivity] = useState<{ checkedAt: string; signups: number; receipts: number; phones: number; nudges: number } | null>(null);
 
   const openManualNudge = (template?: Template) => {
     const chosen = template || templates.find((t) => t.name === "Invite to setup") || templates[0];
@@ -111,9 +112,39 @@ export default function AdminUsers() {
       const { data: added } = await (supabase.from as any)("nudge_templates")
         .insert({ name: "Toward 3 scans in a day", stage: "toward_three", channel: "both", message: TOWARD_THREE_MESSAGE })
         .select().single();
-      if (added) tpls = [...tpls, added as Template];
+    if (added) tpls = [...tpls, added as Template];
     }
     setTemplates(tpls);
+
+    // Activity since the admin's last check — snapshot totals stored per admin in app_settings.
+    const allOthers = (((j as Journey[]) || []) as Journey[]).filter((r) => !r.email?.toLowerCase().includes("chanuajohnson"));
+    const totals = {
+      users: allOthers.length,
+      receipts: allOthers.reduce((a, r) => a + (r.expense_count || 0), 0),
+      phones: allOthers.filter((r) => r.phone).length,
+      nudges: allOthers.reduce((a, r) => a + (r.nudge_count || 0), 0),
+    };
+    const checkKey = `admin_check:${user?.id || "unknown"}`;
+    const { data: prevCheck } = await (supabase.from as any)("app_settings").select("value").eq("key", checkKey).maybeSingle();
+    const prev: { checked_at: string; users: number; receipts: number; phones: number; nudges: number } | null =
+      prevCheck?.value ? (() => { try { return JSON.parse(prevCheck.value); } catch { return null; } })() : null;
+    if (prev) {
+      const since = new Date(prev.checked_at).getTime();
+      setActivity({
+        checkedAt: prev.checked_at,
+        signups: allOthers.filter((r) => new Date(r.joined_at).getTime() > since).length,
+        receipts: Math.max(0, totals.receipts - (prev.receipts ?? 0)),
+        phones: Math.max(0, totals.phones - (prev.phones ?? 0)),
+        nudges: Math.max(0, totals.nudges - (prev.nudges ?? 0)),
+      });
+    } else {
+      setActivity(null);
+    }
+    await (supabase.from as any)("app_settings").upsert({
+      key: checkKey,
+      value: JSON.stringify({ checked_at: new Date().toISOString(), ...totals }),
+    });
+
     setLoading(false);
   };
   useEffect(() => { if (isAdmin) load(); }, [isAdmin]);
@@ -237,6 +268,33 @@ export default function AdminUsers() {
           <button type="button" className="pb-3 text-muted-foreground hover:text-foreground" onClick={() => document.getElementById('setup-requests')?.scrollIntoView({ behavior: 'smooth' })}>Setup requests</button>
         </nav>
       </header>
+
+      <Card className="rounded-lg shadow-sm">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">Activity since your last check</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {activity
+                ? `Your previous visit was ${formatDistanceToNow(new Date(activity.checkedAt), { addSuffix: true })}.`
+                : "This is your first check — we'll start watching from your next visit."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {activity ? ([
+              { label: "new sign-ups", value: activity.signups, tone: activity.signups > 0 },
+              { label: "receipts saved", value: activity.receipts, tone: activity.receipts > 0 },
+              { label: "numbers added", value: activity.phones, tone: activity.phones > 0 },
+              { label: "nudges sent", value: activity.nudges, tone: activity.nudges > 0 },
+            ] as { label: string; value: number; tone: boolean }[]).map((chip) => (
+              <span key={chip.label} className={`inline-flex items-baseline gap-1 rounded-full px-3 py-1.5 text-sm ${chip.tone ? "bg-primary/10 text-primary font-medium" : "bg-muted text-muted-foreground"}`}>
+                <span className="font-semibold tabular-nums">{chip.value}</span> {chip.label}
+              </span>
+            )) : (
+              <span className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">Baselines saved ✨</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5" aria-label="Sign-up summary">
         {[
