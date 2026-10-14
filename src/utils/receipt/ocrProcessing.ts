@@ -54,9 +54,31 @@ export async function processReceiptWithEdgeFunction(receiptUrl: string, familyI
       }
     }
     
-    const { data, error } = await supabase.functions.invoke('process-receipt', {
-      body: JSON.stringify(requestBody)
-    });
+    // Long receipts can take a while: reassure after 12s, and quietly retry once
+    // on a dropped connection or server hiccup so people don't have to rescan.
+    const slowToast = setTimeout(() => {
+      toast("Still reading your receipt…", { description: "Detailed slips take a little longer. Almost there." });
+    }, 12000);
+    let data: any, error: any;
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          ({ data, error } = await supabase.functions.invoke('process-receipt', {
+            body: JSON.stringify(requestBody)
+          }));
+        } catch (e) {
+          error = e;
+          data = null;
+        }
+        const status = (error as any)?.context?.status;
+        const transient = error && (!status || status >= 500 || status === 429);
+        if (!transient || attempt === 1) break;
+        console.warn('🔁 Receipt read hiccup, retrying once…', error);
+        await new Promise((res) => setTimeout(res, status === 429 ? 3000 : 1500));
+      }
+    } finally {
+      clearTimeout(slowToast);
+    }
     
     if (error) {
       console.error('❌ Error from Edge Function:', error);
