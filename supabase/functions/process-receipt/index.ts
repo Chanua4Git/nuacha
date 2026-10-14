@@ -299,6 +299,21 @@ serve(async (req) => {
       );
     }
 
+    // Record the scan against the signed-in person so admin can see attempts even if they never save.
+    if (supabaseUrl && supabaseServiceKey && !requestBody.isDemo) {
+      try {
+        const authHeader = req.headers.get('authorization') || '';
+        const admin = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: { user: scanUser } } = await admin.auth.getUser(authHeader.replace('Bearer ', ''));
+        if (scanUser?.email) {
+          await admin.rpc('increment_scan_count', { p_email: scanUser.email, p_user_id: scanUser.id, p_ip_address: null });
+          console.log(`📊 Scan recorded for ${scanUser.id}`);
+        }
+      } catch (e) {
+        console.log('⚠️ Could not record scan:', e);
+      }
+    }
+
     // If we have line items, try to suggest categories for them
     if (result.lineItems && result.lineItems.length > 0 && supabaseUrl && supabaseServiceKey) {
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
