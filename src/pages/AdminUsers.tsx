@@ -196,6 +196,7 @@ export default function AdminUsers() {
     if (stage === "no_household") return "Guide household setup";
     if (stage === "no_persons") return "Add household persons";
     if (stage === "no_budget") return "Set up a gentle budget";
+    if (nudgeStageOf(j) === "why_no_scan") return "Ask why no scan yet";
     if (stage === "no_scan") return "Invite first scan";
     if (stage === "under_three") return "Encourage the next scan";
     return "Celebrate their progress";
@@ -431,7 +432,7 @@ export default function AdminUsers() {
             <Select value={editing.stage} onValueChange={(v) => setEditing({ ...editing, stage: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["needs_phone", "no_household", "no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
+                {["needs_phone", "no_household", "no_persons", "no_budget", "no_scan", "why_no_scan", "under_three", "re_engagement", "share", "manual"].map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s] || s.replace("_", " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea rows={5} value={editing.message} onChange={(e) => setEditing({ ...editing, message: e.target.value })} />
