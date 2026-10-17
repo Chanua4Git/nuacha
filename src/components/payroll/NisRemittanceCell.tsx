@@ -4,6 +4,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Check } from 'lucide-react';
 import { useNisRemittance } from '@/hooks/useNisRemittance';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   employeeId: string;
@@ -16,6 +18,8 @@ export const NisRemittanceCell: React.FC<Props> = ({ employeeId, periodMonth, to
   const [code, setCode] = useState(data.nib_transaction_code || '');
   const [date, setDate] = useState(data.paid_on_date || '');
   const [saved, setSaved] = useState<null | 'date' | 'code' | 'chk'>(null);
+  const [savingCode, setSavingCode] = useState(false);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setCode(data.nib_transaction_code || '');
@@ -25,6 +29,20 @@ export const NisRemittanceCell: React.FC<Props> = ({ employeeId, periodMonth, to
   const flash = (k: 'date' | 'code' | 'chk') => {
     setSaved(k);
     setTimeout(() => setSaved((s) => (s === k ? null : s)), 1200);
+  };
+
+  const saveCode = async () => {
+    if (savingCode) return;
+    setSavingCode(true);
+    try {
+      await save({ nib_transaction_code: code.trim() || null });
+      flash('code');
+      toast({ title: 'Transaction number saved' });
+    } catch {
+      toast({ title: 'Transaction number wasn’t saved', description: 'Please try Save again.', variant: 'destructive' });
+    } finally {
+      setSavingCode(false);
+    }
   };
 
   return (
@@ -50,16 +68,27 @@ export const NisRemittanceCell: React.FC<Props> = ({ employeeId, periodMonth, to
         <Input
           type="text"
           placeholder="Ref #"
+          aria-label={`NIS transaction number for ${periodMonth}`}
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          onBlur={async () => {
-            if ((data.nib_transaction_code || '') !== code) {
-              await save({ nib_transaction_code: code.trim() || null });
-              flash('code');
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              void saveCode();
             }
           }}
-          className="h-7 w-[110px] text-xs"
+          className="h-7 w-[150px] text-xs"
         />
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          disabled={savingCode}
+          onClick={() => void saveCode()}
+          aria-label={`Save NIS transaction number for ${periodMonth}`}
+        >
+          {savingCode ? 'Saving…' : 'Save'}
+        </Button>
         {saved === 'code' && <Check className="h-3 w-3 text-green-600" />}
       </div>
       <label className="flex items-center gap-1 cursor-pointer">
