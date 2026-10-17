@@ -59,9 +59,8 @@ export function useNisRemittance(
 
   const save = useCallback(
     async (patch: Partial<NisRemittance>) => {
-      if (!user || !employeeId || !periodMonth) return;
+      if (!user || !employeeId || !periodMonth) throw new Error('Please sign in before saving.');
       const next = { ...data, ...patch };
-      setData(next);
       const payload: any = {
         user_id: user.id,
         employee_id: employeeId,
@@ -74,9 +73,11 @@ export function useNisRemittance(
           ? next.ni184_submitted_at || new Date().toISOString()
           : null,
       };
-      await supabase
+      const { error } = await supabase
         .from('nis_remittances')
         .upsert(payload, { onConflict: 'user_id,employee_id,period_month' });
+      if (error) throw error;
+      setData(next);
     },
     [user, employeeId, periodMonth, totalNis, data],
   );
