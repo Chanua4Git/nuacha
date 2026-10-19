@@ -17,3 +17,4 @@
 - Long-receipt sections are joined by dropping only the run of lines where one photo overlaps the next, never by removing every look-alike line, so genuine repeats (4 × Red Pear) stay counted.
 - Bulk receipt photos are read through a small queue (two at a time, one automatic retry) with unique storage file names, because firing them all at once collided on names and overwhelmed the reader.
 - "Check these" groups receipts by when they were saved (2+ within 3 minutes = one bulk group), and checked/finished marks are stored per account (review_marks) with a local cache, so review progress follows the user across devices.
+- Statement screenshots are read into review-only suggestions; charges/fees save as expenses, matches (same amount, ±3 days) are skipped, payments to a card are never expenses.
