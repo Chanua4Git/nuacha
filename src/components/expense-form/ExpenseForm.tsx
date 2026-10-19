@@ -38,6 +38,7 @@ import { ReceiptDuplicateDialog } from '../ReceiptDuplicateDialog';
 import { detectPartialReceipt, isReceiptComplete, mergeReceiptPages, calculateLineItemsSubtotal, type ReceiptPage } from '@/utils/receipt/mergeReceipts';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import StatementUpload from './StatementUpload';
 import { cn } from '@/lib/utils';
 import FamilySetupModal from './FamilySetupModal';
 import { useFamilies } from '@/hooks/useFamilies';
@@ -806,6 +807,8 @@ const ExpenseForm = ({ initialOcrData, receiptUrl, requireLeadCaptureInDemo, onS
           onFileSelect={handleHeroFileSelect}
           onLongReceiptClick={() => setIsLongReceiptMode(true)}
         />
+              {!isDemo && <StatementUpload familyId={selectedFamily?.id} />}
+              
               
               {/* Manual entry option */}
               <div className="text-center">
