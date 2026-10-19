@@ -96,7 +96,7 @@ export default function StatementUpload({ familyId }: { familyId?: string }) {
       if (paidFrom) for (const row of data ?? []) await setPaidFrom({ expenseId: row.id }, Number(row.amount), paidFrom, opts ?? undefined);
       toast.success(`${data?.length} ${data?.length === 1 ? 'entry' : 'entries'} saved. Nicely done.`);
       setOpen(false);
-      window.location.href = `/app?tab=expenses&highlight=${(data ?? []).map((r) => r.id).join(',')}`;
+      window.location.href = `/app?tab=expenses&fam=${familyId}&new=${(data ?? []).map((r) => r.id).join(',')}`;
     } catch (e: any) {
       toast("That didn't save yet", { description: e.message });
     } finally { setBusy(null); }
