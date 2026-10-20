@@ -33,6 +33,7 @@ import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
 import Updates from "./pages/Updates";
 import AdminUsers from "./pages/AdminUsers";
+import AdminReels from "./pages/AdminReels";
 import Setup from "./pages/Setup";
 import MoneyPots from "./pages/MoneyPots";
 import GetStarted from "./pages/GetStarted";
@@ -120,6 +121,7 @@ const App = () => {
                     <Route path="/" element={<Landing />} />
                     <Route path="/setup" element={<Setup />} />
                     <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+                    <Route path="/admin/reels" element={<ProtectedRoute><AdminReels /></ProtectedRoute>} />
                     <Route path="/app" element={
                       <ProtectedRoute>
                         <Index />

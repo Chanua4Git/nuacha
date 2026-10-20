@@ -2660,6 +2660,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tutorial_reels: {
+        Row: {
+          created_at: string
+          id: string
+          slug: string
+          sort_order: number
+          spec: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slug: string
+          sort_order?: number
+          spec?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slug?: string
+          sort_order?: number
+          spec?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           admin_response: string | null
