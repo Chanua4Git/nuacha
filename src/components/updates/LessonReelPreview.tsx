@@ -25,7 +25,12 @@ export function LessonReelPreview({ moduleId }: { moduleId: string }) {
     const ctx = canvas.current?.getContext('2d'); if (!ctx || !spec) return;
     stop.current();
     const audio = new AudioContext(); let frame = 0;
-    stop.current = () => { cancelAnimationFrame(frame); void audio.close(); setPlaying(false); };
+    stop.current = () => {
+      cancelAnimationFrame(frame);
+      stop.current = () => {};
+      if (audio.state !== 'closed') void audio.close().catch(() => {});
+      setPlaying(false);
+    };
     try {
       await audio.resume(); setPlaying(true);
       const gain = audio.createGain(); gain.gain.value = .8; gain.connect(audio.destination);
