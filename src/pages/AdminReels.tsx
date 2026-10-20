@@ -26,6 +26,7 @@ export default function AdminReels() {
   const [busy, setBusy] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [stillTime, setStillTime] = useState(1);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stopRef = useRef<() => void>(() => {});
   const current = reels.find(spec => spec.slug === selected);
@@ -46,10 +47,23 @@ export default function AdminReels() {
   }, [isAdmin]);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
-    if (ctx && current && ready && !busy) renderReel(ctx, reelTimeline(current).scenes[2]?.start ?? 0, current);
-  }, [current, ready, busy]);
+    if (ctx && current && ready && !busy) renderReel(ctx, stillTime, current);
+  }, [current, ready, busy, stillTime]);
   useEffect(() => () => stopRef.current(), []);
-  const update = (patch: Partial<ReelSpec>) => setReels(all => all.map(spec => spec.slug === selected ? { ...spec, ...patch } : spec));
+  const update = (patch: Partial<ReelSpec>) => {
+    if (current) {
+      const timeline = reelTimeline(current);
+      if (patch.hook) setStillTime(1);
+      else if (patch.stamp !== undefined) setStillTime(timeline.resultStart + 1);
+      else if (patch.cta) setStillTime(timeline.ctaStart + 1);
+      else if (patch.steps) {
+        const index = patch.steps.findIndex((step, i) => step.caption !== current.steps[i]?.caption);
+        const scene = timeline.scenes[index];
+        if (scene) setStillTime(scene.start + scene.step.seconds * .6);
+      }
+    }
+    setReels(all => all.map(spec => spec.slug === selected ? { ...spec, ...patch } : spec));
+  };
 
   async function save(status = statuses[selected] ?? 'draft') {
     if (!current) return;
@@ -122,7 +136,7 @@ export default function AdminReels() {
       <div className="flex flex-wrap items-center gap-3 mb-6"><h1 className="font-heading text-3xl">Tutorial Reel Studio</h1><Badge variant="secondary">Sample scenes</Badge></div>
       <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)_340px]">
         <nav aria-label="Tutorial reels" className="space-y-2 min-w-0">
-          {reels.map(spec => <Button key={spec.slug} variant={selected === spec.slug ? 'secondary' : 'outline'} className="w-full h-auto min-h-16 whitespace-normal text-left justify-start" disabled={!!busy || !ready} onClick={() => setSelected(spec.slug)}>{spec.order}. {spec.title}</Button>)}
+          {reels.map(spec => <Button key={spec.slug} variant={selected === spec.slug ? 'secondary' : 'outline'} className="w-full h-auto min-h-16 whitespace-normal text-left justify-start" disabled={!!busy || !ready} onClick={() => { setSelected(spec.slug); setStillTime(1); }}>{spec.order}. {spec.title}</Button>)}
           <h2 className="text-sm font-medium pt-6">Later in the series</h2>
           {UPCOMING_REELS.map(title => <div key={title} className="py-2 border-b border-border text-sm text-muted-foreground">{title}<Badge variant="outline" className="ml-2 text-xs">Upcoming</Badge></div>)}
         </nav>

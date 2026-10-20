@@ -54,9 +54,10 @@ function receipt(ctx: CanvasRenderingContext2D, index: number, y: number, h = 68
   text(ctx, data.merchant, 540, y + 74, 34, c.text, SW - 260, 'center');
   text(ctx, 'SAMPLE RECEIPT · T&T', 540, y + 120, 22, c.muted, 480, 'center');
   text(ctx, data.date, 540, y + 168, 25, c.muted, 400, 'center');
+  const itemGap = Math.min(68, (h - 360) / Math.max(1, data.items.length));
   data.items.forEach(([item, amount], i) => {
-    text(ctx, item, SX + 126, y + 245 + i * 68, 25, c.text, 300);
-    text(ctx, amount, SX + SW - 126, y + 245 + i * 68, 25, c.text, 150, 'right');
+    text(ctx, item, SX + 126, y + 222 + i * itemGap, 25, c.text, 300);
+    text(ctx, amount, SX + SW - 126, y + 222 + i * itemGap, 25, c.text, 150, 'right');
   });
   text(ctx, 'TOTAL', SX + 126, y + h - 118, 30, c.text, 200);
   text(ctx, data.total, SX + SW - 126, y + h - 118, 30, c.text, 265, 'right');

@@ -27,5 +27,6 @@
 - [x] Corrected past scans saved one day early (JTA flagged for owner to check)
 - [ ] PINNED: revisit marketing plan — next step is a public pricing page + fix crossed-out TT$149 (plan saved in Files).
 - [x] Tutorial Reel Studio at /admin/reels with the "Scan your first receipt" reel.
-- [ ] Make the first two tutorial reels automatic: drawn scenes, scripted taps, sound, text-only editing, video and PNG downloads; show frames for approval.
+- [x] Make the first two tutorial reels automatic: drawn scenes, scripted taps, sound, text-only editing, video and PNG downloads; sample frames and 1080×1920 audio/video verified.
+- [ ] Verify saved text and downloads through the signed-in admin page (external Supabase session unavailable to automated checks).
 - [ ] Remaining eight automatic reels (waiting on owner to approve the first two).
