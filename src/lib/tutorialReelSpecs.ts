@@ -2,9 +2,9 @@ export const REEL_W = 1080;
 export const REEL_H = 1920;
 export const REEL_FPS = 30;
 export type SceneKind = "home" | "camera" | "photos" | "reading" | "review" | "saved";
-export interface ReelStep { scene: SceneKind; caption: string; receipt: number; count: number; seconds: number; via?: "snap" | "upload" }
+export interface ReelStep { scene: SceneKind; caption: string; receipt: number; count: number; seconds: number; via?: "snap" | "upload"; lessonStepId?: string }
 export interface ReelSpec {
-  slug: string; order: number; title: string; hook: string[]; steps: ReelStep[];
+  slug: string; order: number; title: string; hook: string[]; steps: ReelStep[]; moduleId: string;
   stamp: string; cta: string[]; caption_instagram: string; caption_whatsapp: string; caption_tiktok: string;
 }
 export const DEMO_RECEIPTS = [
@@ -13,21 +13,21 @@ export const DEMO_RECEIPTS = [
   { merchant: "Massy Stores", total: "TT$86.00", date: "20/10/2026", category: "Groceries", items: [["Vegetables", "36.00"], ["Bread & eggs", "50.00"]] },
 ] as const;
 export const SCAN_FIRST_RECEIPT: ReelSpec = {
-  slug: "scan-first-receipt", order: 2, title: "Scan your first receipt",
+  slug: "scan-first-receipt", order: 2, title: "Scan your first receipt", moduleId: "first-receipt-scan",
   hook: ["Still keeping receipts", "in a shoebox?"],
   steps: [
-    { scene: "home", caption: "Tap Snap Receipt", receipt: 0, count: 0, seconds: 3, via: "snap" },
-    { scene: "camera", caption: "Snap your receipt", receipt: 0, count: 0, seconds: 3.5 },
-    { scene: "reading", caption: "Nuacha reads the details", receipt: 0, count: 1, seconds: 3.5 },
-    { scene: "review", caption: "Check it, then save", receipt: 0, count: 1, seconds: 4 },
-    { scene: "saved", caption: "Your first receipt, organised", receipt: 0, count: 1, seconds: 2 },
+    { scene: "home", caption: "Tap Snap Receipt", receipt: 0, count: 0, seconds: 3, via: "snap", lessonStepId: "step-2-1" },
+    { scene: "camera", caption: "Snap your receipt", receipt: 0, count: 0, seconds: 3.5, lessonStepId: "step-2-2" },
+    { scene: "reading", caption: "Nuacha reads the details", receipt: 0, count: 1, seconds: 3.5, lessonStepId: "step-2-3" },
+    { scene: "review", caption: "Check it, then save", receipt: 0, count: 1, seconds: 4, lessonStepId: "step-2-4" },
+    { scene: "saved", caption: "Your first receipt, organised", receipt: 0, count: 1, seconds: 2, lessonStepId: "step-2-6" },
   ], stamp: "SAVED", cta: ["Next: scan receipts", "2 and 3"],
   caption_instagram: "Still keeping receipts in a shoebox? Scan, check, save. A softer way to track spending. https://nuacha.com/?start=scan #Nuacha #TrinidadAndTobago",
   caption_whatsapp: "Your first receipt, organised. Three free scans a day. https://nuacha.com/?start=scan",
   caption_tiktok: "Posting this until it finds its tribe. Scan, check, save. https://nuacha.com/?start=scan #Nuacha #TrinidadAndTobago",
 };
 export const SCAN_TWO_AND_THREE: ReelSpec = {
-  slug: "scan-receipts-two-and-three", order: 3, title: "Scan receipts 2 and 3",
+  slug: "scan-receipts-two-and-three", order: 3, title: "Scan receipts 2 and 3", moduleId: "first-receipt-scan",
   hook: ["One receipt down.", "Two more to go."],
   steps: [
     { scene: "home", caption: "Already have a photo? Tap Upload Receipt", receipt: 1, count: 1, seconds: 2.5, via: "upload" },
@@ -44,6 +44,10 @@ export const SCAN_TWO_AND_THREE: ReelSpec = {
   caption_tiktok: "Receipt two. Receipt three. A little less clutter. https://nuacha.com/?start=scan #Nuacha #ReceiptScanning",
 };
 export const REEL_DEFAULTS = [SCAN_FIRST_RECEIPT, SCAN_TWO_AND_THREE];
+export function reelsForLesson(moduleId: string) { return REEL_DEFAULTS.filter(reel => reel.moduleId === moduleId); }
+export function reelLessonPath(reel: ReelSpec, stepId?: string) {
+  return `/updates?tab=learning&module=${encodeURIComponent(reel.moduleId)}${stepId ? `&step=${encodeURIComponent(stepId)}` : ''}`;
+}
 export const UPCOMING_REELS = ["Sign up and log in", "Review and fix a scanned receipt", "Categories and your spending overview", "Make your first budget", "Run payroll", "Reports and export", "Upgrade: the payment screen", "What you unlock after paying"];
 
 /** Saved legacy media/tap/data fields must never enter a rendered reel. Only words are accepted. */

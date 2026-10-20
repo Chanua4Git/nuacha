@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Download, Image, Play, RotateCcw, Save, Square } from 'lucide-react';
 import { REEL_H, REEL_W, REEL_FPS, ReelSpec, REEL_DEFAULTS, UPCOMING_REELS, applyReelWords, reelWords, renderReel, reelTimeline, scheduleReelSounds } from '@/lib/tutorialReel';
+import { reelLessonPath } from '@/lib/tutorialReelSpecs';
+import { learningModules } from '@/constants/learningCenterData';
 
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob), anchor = document.createElement('a');
@@ -19,9 +21,10 @@ function png(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not create image')), 'image/png'));
 }
 export default function AdminReels() {
+  const [searchParams] = useSearchParams();
   const { isAdmin, isLoading } = useAdminRole();
   const [reels, setReels] = useState<ReelSpec[]>(REEL_DEFAULTS.map(spec => applyReelWords(spec, null)));
-  const [selected, setSelected] = useState(REEL_DEFAULTS[0].slug);
+  const [selected, setSelected] = useState(REEL_DEFAULTS.find(reel => reel.slug === searchParams.get('reel'))?.slug ?? REEL_DEFAULTS[0].slug);
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -142,9 +145,10 @@ export default function AdminReels() {
         </nav>
         {current && <section aria-label="Reel words" className="space-y-4 min-w-0">
           <h2 className="font-heading text-2xl">{current.title}</h2>
+          <Button asChild variant="outline" size="sm"><Link to={reelLessonPath(current)}>Open Learning lesson: {learningModules.find(module => module.id === current.moduleId)?.title}</Link></Button>
           <fieldset disabled={!!busy || !ready} className="space-y-4">
             <label className="block text-sm font-medium">Opening line<Textarea rows={2} value={current.hook.join('\n')} onChange={e => update({ hook: e.target.value.split('\n') })} /></label>
-            {current.steps.map((step, i) => <label key={i} className="block text-sm font-medium">Step {i + 1} caption<Input value={step.caption} maxLength={240} onChange={e => update({ steps: current.steps.map((s, j) => i === j ? { ...s, caption: e.target.value } : s) })} /></label>)}
+            {current.steps.map((step, i) => <div key={i}><label className="block text-sm font-medium">Step {i + 1} caption<Input value={step.caption} maxLength={240} onChange={e => update({ steps: current.steps.map((s, j) => i === j ? { ...s, caption: e.target.value } : s) })} /></label>{step.lessonStepId && <Link className="text-sm text-primary underline" to={reelLessonPath(current, step.lessonStepId)}>Open matching lesson step</Link>}</div>)}
             <label className="block text-sm font-medium">Stamp words<Input value={current.stamp} maxLength={120} onChange={e => update({ stamp: e.target.value })} /></label>
             <label className="block text-sm font-medium">Ending line<Textarea rows={2} value={current.cta.join('\n')} onChange={e => update({ cta: e.target.value.split('\n') })} /></label>
             {(['instagram', 'whatsapp', 'tiktok'] as const).map(channel => { const key = `caption_${channel}` as const; return <label key={channel} className="block text-sm font-medium">{channel === 'instagram' ? 'Instagram' : channel === 'whatsapp' ? 'WhatsApp Status' : 'TikTok'} caption<Textarea rows={3} value={current[key]} onChange={e => update({ [key]: e.target.value })} /></label>; })}
