@@ -19,3 +19,4 @@
 - "Check these" groups receipts by when they were saved (2+ within 3 minutes = one bulk group), and checked/finished marks are stored per account (review_marks) with a local cache, so review progress follows the user across devices.
 - Statement screenshots are read into review-only suggestions; charges/fees save as expenses, matches (same amount, ±3 days) are skipped, payments to a card are never expenses.
 - Tutorial reels render deterministic, code-drawn demo scenes in a browser canvas; only text overrides persist in admin-only tutorial_reels, and MediaRecorder mixes local Web Audio, so no real account data or uploaded media enters exports.
+- Map tutorial reels to Learning module/step IDs in the reel specs and reuse the same renderer and sound schedule for Learning playback and social exports; public Learning uses generic defaults, never admin-only saved overrides, so teaching stays aligned without publishing private drafts.

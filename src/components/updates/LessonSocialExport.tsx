@@ -5,6 +5,8 @@ import type { LearningModule } from '@/constants/learningCenterData';
 import { trackEvent } from '@/lib/analytics';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { reelsForLesson, type ReelSpec } from '@/lib/tutorialReelSpecs';
+import { recordLessonReel } from '@/lib/lessonReelVideo';
 
 const SIZES = [
   { key: 'story', label: 'Story / TikTok (1080×1920)', w: 1080, h: 1920 },
@@ -255,6 +257,7 @@ async function renderVideo(module: LearningModule): Promise<{ blob: Blob; extens
 /** Download a branded, social-sized image of a lesson. Generic lesson content only — no personal data. */
 export function LessonSocialExport({ module }: { module: LearningModule }) {
   const [isCreatingVideo, setIsCreatingVideo] = useState(false);
+  const lessonReels = reelsForLesson(module.id);
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -272,15 +275,15 @@ export function LessonSocialExport({ module }: { module: LearningModule }) {
     trackEvent('lesson_social_download', { module_id: module.id, size: s.key });
   };
 
-  const downloadVideo = async () => {
+  const downloadVideo = async (reel?: ReelSpec) => {
     setIsCreatingVideo(true);
     try {
-      const result = await renderVideo(module);
+      const result = reel ? await recordLessonReel(reel) : await renderVideo(module);
       if (!result) {
         toast.error('Video creation is not available in this browser. You can still download an image.');
         return;
       }
-      downloadBlob(result.blob, `nuacha-${module.id}-story-video.${result.extension}`);
+      downloadBlob(result.blob, `nuacha-${reel?.slug ?? module.id}-story-video.${result.extension}`);
       trackEvent('lesson_social_video_download', { module_id: module.id, format: result.extension });
       toast.success('Your lesson video is ready to share.');
     } catch (error) {
@@ -300,9 +303,11 @@ export function LessonSocialExport({ module }: { module: LearningModule }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={downloadVideo} className="gap-2">
+        {lessonReels.length ? lessonReels.map(reel => <DropdownMenuItem key={reel.slug} onClick={() => downloadVideo(reel)} className="gap-2">
+          <Film className="h-4 w-4" />{reel.title} (1080×1920)
+        </DropdownMenuItem>) : <DropdownMenuItem onClick={() => downloadVideo()} className="gap-2">
           <Film className="h-4 w-4" /> Story video (1080×1920)
-        </DropdownMenuItem>
+        </DropdownMenuItem>}
         {SIZES.map((s) => (
           <DropdownMenuItem key={s.key} onClick={() => download(s)} className="gap-2">
             <Image className="h-4 w-4" /> {s.label}

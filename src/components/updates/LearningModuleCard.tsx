@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,7 @@ import { useLearningProgress } from '@/hooks/useLearningProgress';
 import { toast } from 'sonner';
 import { LessonQuestion } from './LessonQuestion';
 import { LessonSocialExport } from './LessonSocialExport';
+import { LessonReelPreview } from './LessonReelPreview';
 import { type ModuleStatus } from '@/utils/learningVisuals';
 
 interface LearningModuleCardProps {
@@ -24,6 +25,13 @@ interface LearningModuleCardProps {
 export function LearningModuleCard({ module, initialExpanded = false, highlightStepId = null, moduleStatus = 'active' }: LearningModuleCardProps) {
   const isComingSoon = moduleStatus === 'coming-soon';
   const [isOpen, setIsOpen] = useState(initialExpanded);
+  const moduleRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!initialExpanded || isComingSoon) return;
+    setIsOpen(true);
+    const timer = window.setTimeout(() => moduleRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' }), 100);
+    return () => window.clearTimeout(timer);
+  }, [initialExpanded, highlightStepId, isComingSoon]);
   const {
     getModuleProgress,
     markStepComplete,
@@ -60,7 +68,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
 
   return (
     <Collapsible open={isOpen} onOpenChange={isComingSoon ? undefined : setIsOpen}>
-      <Card className={`hover:shadow-md transition-shadow ${isComingSoon ? 'opacity-60 grayscale' : ''}`}>
+      <Card ref={moduleRef} id={`lesson-${module.id}`} className={`scroll-mt-24 hover:shadow-md transition-shadow ${isComingSoon ? 'opacity-60 grayscale' : ''}`}>
         <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
           <div className="flex items-start gap-2 sm:gap-4">
             {/* Icon */}
@@ -131,7 +139,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
 
         <CardContent className="px-3 sm:px-6 pt-0 pb-3 sm:pb-6">
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             {isComingSoon ? (
               <Button variant="outline" size="sm" disabled className="gap-2">
                 <Timer className="w-4 h-4" />
@@ -171,6 +179,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
                   )}
                 </Button>
                 <LessonSocialExport module={module} />
+                <LessonReelPreview moduleId={module.id} />
               </>
             )}
           </div>

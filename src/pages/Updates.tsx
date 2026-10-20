@@ -72,7 +72,7 @@ export default function Updates() {
 
         {/* Tabs */}
         <Tabs
-          defaultValue={initialTab}
+          value={initialTab}
           onValueChange={(value) => setSearchParams({ tab: value })}
           className="w-full"
         >
