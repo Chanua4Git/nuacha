@@ -280,12 +280,14 @@ const Navbar = () => {
               <Link to="/updates">Updates</Link>
             </Button>
             {isAdmin && (
-              <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
-                <Link to="/admin/users">Sign-ups</Link>
-              </Button>
-              <Button variant={isActive('/admin/reels') ? "secondary" : "ghost"} asChild>
-                <Link to="/admin/reels">Reels</Link>
-              </Button>
+              <>
+                <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
+                  <Link to="/admin/users">Sign-ups</Link>
+                </Button>
+                <Button variant={isActive('/admin/reels') ? "secondary" : "ghost"} asChild>
+                  <Link to="/admin/reels">Reels</Link>
+                </Button>
+              </>
             )}
             <AuthButton />
           </nav>
