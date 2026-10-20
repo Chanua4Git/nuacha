@@ -25,3 +25,5 @@
 - [x] Receipt dates no longer shift to the day before (all scan paths) + automatic checks
 - [x] Talk-it-through save opens Expenses with new entries highlighted
 - [x] Corrected past scans saved one day early (JTA flagged for owner to check)
+- [ ] PINNED: revisit marketing plan — next step is a public pricing page + fix crossed-out TT$149 (plan saved in Files).
+- [ ] Tutorial Reel Studio at /admin/reels: renderer + "Scan your first receipt" reel first, then confirm before the rest.
