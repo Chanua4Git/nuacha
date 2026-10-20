@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { applyReelWords, DEMO_RECEIPTS, REEL_DEFAULTS, REEL_H, REEL_W, reelTimeline, reelWords } from './tutorialReelSpecs';
+import { applyReelWords, DEMO_RECEIPTS, REEL_DEFAULTS, REEL_H, REEL_W, reelTimeline, reelWords, reelsForLesson, reelLessonPath } from './tutorialReelSpecs';
+import { learningModules } from '@/constants/learningCenterData';
+
+describe('Learning and reel alignment', () => {
+  it('connects both receipt reels to the first-receipt lesson and valid steps', () => {
+    expect(reelsForLesson('first-receipt-scan').map(reel => reel.slug)).toEqual(['scan-first-receipt', 'scan-receipts-two-and-three']);
+    for (const reel of REEL_DEFAULTS) {
+      const lesson = learningModules.find(module => module.id === reel.moduleId);
+      expect(lesson).toBeDefined();
+      for (const step of reel.steps.filter(step => step.lessonStepId)) {
+        expect(lesson?.steps.some(item => item.id === step.lessonStepId)).toBe(true);
+      }
+    }
+    expect(reelLessonPath(REEL_DEFAULTS[0], 'step-2-2')).toBe('/updates?tab=learning&module=first-receipt-scan&step=step-2-2');
+  });
+  it('does not let saved admin words change lesson mapping', () => {
+    const reel = applyReelWords(REEL_DEFAULTS[0], { version: 2, moduleId: 'private-lesson', steps: [{ lessonStepId: 'wrong-step' }] });
+    expect(reel.moduleId).toBe('first-receipt-scan');
+    expect(reel.steps[0].lessonStepId).toBe('step-2-1');
+  });
+});
 
 describe('automatic tutorial reel privacy', () => {
   it('ignores legacy uploaded receipts and user-positioned taps', () => {
