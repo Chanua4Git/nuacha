@@ -107,7 +107,7 @@ export const learningModules: LearningModule[] = [
 
 **What you will notice:**
 
-- **Hero section**: Front and center, you will see a prompt like "Scan a receipt to start" with two buttons: 📷 Camera and 📤 Upload.
+- **Hero section**: Front and center, you will see a prompt like "Scan a receipt to start" with two buttons: **Snap Receipt** and **Upload Receipt**.
 - **Navigation bar**: At the top, you will find the Nuacha logo (click it anytime to return home) and main menu options.
 - **Feature highlights**: Scroll down to see how Nuacha helps you track spending more softly and clearly.
 
@@ -169,13 +169,13 @@ After you have signed in, bookmark /dashboard to jump straight into your expense
         description: 'Locate the receipt upload area on the landing page.',
         detailedInstructions: `1. Go to the home page (click the Nuacha logo if you are elsewhere).
 2. Look at the **hero section** – the large area at the top of the page.
-3. You will see the heading like "Scan a receipt to start".
-4. Just below, you will find two buttons side by side:
-   - 📷 **Camera** – opens your device camera.
-   - 📤 **Upload** – lets you pick a saved file.
+3. Look for **Snap Receipt** and **Upload Receipt** beneath the heading.
+4. Choose how to add your receipt:
+   - **Snap Receipt** – take a new photo on your phone.
+   - **Upload Receipt** – choose a receipt photo already on your device.
 
 **Where to find it:**
-Landing page → Hero section → Camera / Upload buttons
+Home → Snap Receipt / Upload Receipt
 
 **Pro tip:**
 Make sure your receipt is well-lit and the text is clear for best OCR results.`,
@@ -186,36 +186,36 @@ Make sure your receipt is well-lit and the text is clear for best OCR results.`,
         id: 'step-2-2',
         title: 'Snap or Select',
         description: 'Pick the right method for your situation.',
-        detailedInstructions: `**Use 📷 Camera when:**
+        detailedInstructions: `**Use Snap Receipt when:**
 
 - You have a physical receipt in front of you.
 - You are on your phone.
 - You want to capture it right now.
 
-**Use 📤 Upload when:**
+**Use Upload Receipt when:**
 
 - You already took a photo earlier.
 - The receipt image is saved on your device.
 - You are on a laptop/desktop.
-- You have a scanned PDF.
+- You have a saved receipt photo.
 
 **How to use Camera (mobile):**
 
-1. Tap **Camera**.
-2. Your phone camera opens.
+1. Tap **Snap Receipt**.
+2. Follow your phone’s camera prompts (these vary by device and browser).
 3. Position the receipt so all text is visible.
 4. Take the photo.
-5. Confirm the image to start processing.
+5. If your phone asks, confirm the photo so Nuacha can read it.
 
 **How to use Upload:**
 
-1. Click **Upload**.
+1. Tap **Upload Receipt**.
 2. Browse your files.
-3. Select the receipt image (JPG, PNG, or PDF).
+3. Select a receipt photo (for example, JPG, PNG, or HEIC).
 4. Click Open / Select to upload.
 
 **Where to find it:**
-Landing page → Hero section → Camera / Upload
+Home → Snap Receipt / Upload Receipt
 
 **Pro tip:**
 For best results, make sure the receipt is well-lit, flat, and all the text is readable.`,
@@ -314,7 +314,7 @@ Line-item detail gives you a clear picture of where your money truly goes – no
 1. **Select a Family** – choose which household this expense belongs to.
    - If you do not have any families yet, you will see a friendly setup prompt.
 2. Review the amount, description, category, and date.
-3. Click **"Save Expense"**.
+3. Tap **Add Expense**.
 
 **After saving:**
 
@@ -323,7 +323,7 @@ Line-item detail gives you a clear picture of where your money truly goes – no
 - It will show up in your Expenses tab, reports, and budget tracking.
 
 **Where to find it:**
-Add Expense tab → bottom of the form → Save Expense button
+Add Expense tab → bottom of the form → Add Expense button
 
 **Pro tip:**
 After saving, you will land on the Expenses tab so you can see your new entry right away.`,
