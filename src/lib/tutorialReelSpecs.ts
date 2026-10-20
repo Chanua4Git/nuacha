@@ -1,22 +1,22 @@
 export const REEL_W = 1080;
 export const REEL_H = 1920;
 export const REEL_FPS = 30;
-export type SceneKind = "home" | "camera" | "reading" | "review" | "saved";
-export interface ReelStep { scene: SceneKind; caption: string; receipt: number; count: number; seconds: number }
+export type SceneKind = "home" | "camera" | "photos" | "reading" | "review" | "saved";
+export interface ReelStep { scene: SceneKind; caption: string; receipt: number; count: number; seconds: number; via?: "snap" | "upload" }
 export interface ReelSpec {
   slug: string; order: number; title: string; hook: string[]; steps: ReelStep[];
   stamp: string; cta: string[]; caption_instagram: string; caption_whatsapp: string; caption_tiktok: string;
 }
 export const DEMO_RECEIPTS = [
-  { merchant: "Hi-Lo Food Stores", total: "TT$214.50", date: "20/10/2026", category: "Groceries", items: [["Fresh fruit", "48.00"], ["Rice", "36.50"], ["Milk & cereal", "75.00"], ["Household essentials", "55.00"]] },
-  { merchant: "Massy Gas Station", total: "TT$150.00", date: "20/10/2026", category: "Transportation", items: [["Fuel", "150.00"]] },
-  { merchant: "Hi-Lo Food Stores", total: "TT$86.00", date: "20/10/2026", category: "Groceries", items: [["Vegetables", "36.00"], ["Bread & eggs", "50.00"]] },
+  { merchant: "Massy Stores", total: "TT$214.50", date: "20/10/2026", category: "Groceries", items: [["Fresh fruit", "48.00"], ["Rice", "36.50"], ["Milk & cereal", "75.00"], ["Household essentials", "55.00"]] },
+  { merchant: "NP Service Station", total: "TT$150.00", date: "20/10/2026", category: "Transportation", items: [["Fuel", "150.00"]] },
+  { merchant: "Massy Stores", total: "TT$86.00", date: "20/10/2026", category: "Groceries", items: [["Vegetables", "36.00"], ["Bread & eggs", "50.00"]] },
 ] as const;
 export const SCAN_FIRST_RECEIPT: ReelSpec = {
   slug: "scan-first-receipt", order: 2, title: "Scan your first receipt",
   hook: ["Still keeping receipts", "in a shoebox?"],
   steps: [
-    { scene: "home", caption: "Tap Snap Receipt", receipt: 0, count: 0, seconds: 3 },
+    { scene: "home", caption: "Tap Snap Receipt", receipt: 0, count: 0, seconds: 3, via: "snap" },
     { scene: "camera", caption: "Snap your receipt", receipt: 0, count: 0, seconds: 3.5 },
     { scene: "reading", caption: "Nuacha reads the details", receipt: 0, count: 1, seconds: 3.5 },
     { scene: "review", caption: "Check it, then save", receipt: 0, count: 1, seconds: 4 },
@@ -30,11 +30,12 @@ export const SCAN_TWO_AND_THREE: ReelSpec = {
   slug: "scan-receipts-two-and-three", order: 3, title: "Scan receipts 2 and 3",
   hook: ["One receipt down.", "Two more to go."],
   steps: [
-    { scene: "home", caption: "One saved. Tap Snap Receipt again", receipt: 1, count: 1, seconds: 2.5 },
-    { scene: "camera", caption: "Capture receipt number two", receipt: 1, count: 1, seconds: 2.5 },
+    { scene: "home", caption: "Already have a photo? Tap Upload Receipt", receipt: 1, count: 1, seconds: 2.5, via: "upload" },
+    { scene: "photos", caption: "Pick receipt two from your photos", receipt: 1, count: 1, seconds: 3 },
     { scene: "reading", caption: "Two scans today", receipt: 1, count: 2, seconds: 2.5 },
     { scene: "review", caption: "Check the details and save", receipt: 1, count: 2, seconds: 3 },
-    { scene: "camera", caption: "Now capture receipt number three", receipt: 2, count: 2, seconds: 2.5 },
+    { scene: "home", caption: "Receipt three? Tap Snap Receipt", receipt: 2, count: 2, seconds: 2, via: "snap" },
+    { scene: "camera", caption: "Snap it with your camera", receipt: 2, count: 2, seconds: 2.5 },
     { scene: "reading", caption: "Three scans today", receipt: 2, count: 3, seconds: 2.5 },
     { scene: "review", caption: "Check, save, and you're done", receipt: 2, count: 3, seconds: 3 },
   ], stamp: "3 SCANS TODAY", cta: ["Next: see where", "your spending goes"],
@@ -69,6 +70,8 @@ export function reelTimeline(spec: ReelSpec) {
   const scenes = spec.steps.map(step => { const scene = { start, end: start + step.seconds, step }; start = scene.end; return scene; });
   return { hookEnd: stepsStart, stepsStart, scenes, resultStart: start, ctaStart: start + 2, duration: start + 5 };
 }
+/** Where in each scene (as a fraction of its length) the scripted finger taps. */
+export const TAP_AT: Partial<Record<SceneKind, number[]>> = { home: [0.72], camera: [0.72], photos: [0.42, 0.8], review: [0.72] };
 export function reelTapTimes(spec: ReelSpec) {
-  return reelTimeline(spec).scenes.filter(s => ["home", "camera", "review"].includes(s.step.scene)).map(s => s.start + s.step.seconds * 0.72);
+  return reelTimeline(spec).scenes.flatMap(s => (TAP_AT[s.step.scene] ?? []).map(f => s.start + s.step.seconds * f));
 }
