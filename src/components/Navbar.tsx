@@ -202,6 +202,30 @@ const Navbar = () => {
                     >
                       Updates
                     </Button>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          variant={isActive('/admin/users') ? "secondary" : "ghost"}
+                          className="justify-start h-12 text-base w-full"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            navigate('/admin/users');
+                          }}
+                        >
+                          <Users className="h-5 w-5 mr-3" /> Sign-ups
+                        </Button>
+                        <Button
+                          variant={isActive('/admin/reels') ? "secondary" : "ghost"}
+                          className="justify-start h-12 text-base w-full"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            navigate('/admin/reels');
+                          }}
+                        >
+                          <FileImage className="h-5 w-5 mr-3" /> Reels
+                        </Button>
+                      </>
+                    )}
                     {authDemoActive && (
                       <Button
                         variant="ghost"
@@ -280,9 +304,14 @@ const Navbar = () => {
               <Link to="/updates">Updates</Link>
             </Button>
             {isAdmin && (
-              <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
-                <Link to="/admin/users">Sign-ups</Link>
-              </Button>
+              <>
+                <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} asChild>
+                  <Link to="/admin/users">Sign-ups</Link>
+                </Button>
+                <Button variant={isActive('/admin/reels') ? "secondary" : "ghost"} asChild>
+                  <Link to="/admin/reels">Reels</Link>
+                </Button>
+              </>
             )}
             <AuthButton />
           </nav>
