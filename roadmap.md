@@ -27,4 +27,5 @@
 - [x] Corrected past scans saved one day early (JTA flagged for owner to check)
 - [ ] PINNED: revisit marketing plan — next step is a public pricing page + fix crossed-out TT$149 (plan saved in Files).
 - [x] Tutorial Reel Studio at /admin/reels with the "Scan your first receipt" reel.
-- [ ] Rest of the reel series (waiting on owner to approve the first reel). Photo shelf, HEIC conversion and auto-capture not built yet.
+- [ ] Make the first two tutorial reels automatic: drawn scenes, scripted taps, sound, text-only editing, video and PNG downloads; show frames for approval.
+- [ ] Remaining eight automatic reels (waiting on owner to approve the first two).
