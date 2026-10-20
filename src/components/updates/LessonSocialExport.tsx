@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Download, Film, Image } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Download, Film, Image, Play, Square, Eye } from 'lucide-react';
 import type { LearningModule } from '@/constants/learningCenterData';
 import { trackEvent } from '@/lib/analytics';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { reelsForLesson, type ReelSpec } from '@/lib/tutorialReelSpecs';
 import { recordLessonReel } from '@/lib/lessonReelVideo';
+import { renderReel, reelTimeline } from '@/lib/tutorialReel';
 
 const SIZES = [
   { key: 'story', label: 'Story / TikTok (1080×1920)', w: 1080, h: 1920 },
@@ -257,63 +258,89 @@ async function renderVideo(module: LearningModule): Promise<{ blob: Blob; extens
 /** Download a branded, social-sized image of a lesson. Generic lesson content only — no personal data. */
 export function LessonSocialExport({ module }: { module: LearningModule }) {
   const [isCreatingVideo, setIsCreatingVideo] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [choice, setChoice] = useState('video-0');
+  const [playing, setPlaying] = useState(false);
+  const [file, setFile] = useState<{ blob: Blob; url: string; name: string } | null>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const frame = useRef(0);
   const lessonReels = reelsForLesson(module.id);
+  const isVideo = choice.startsWith('video-');
+  const reel: ReelSpec | undefined = lessonReels[Number(choice.split('-')[1])];
+  const size = SIZES.find(s => s.key === choice);
 
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setFile(null); setPlaying(false);
+    cancelAnimationFrame(frame.current);
+    void document.fonts.ready.then(async () => {
+      if (!active) return;
+      if (isVideo) {
+        const ctx = canvas.current?.getContext('2d');
+        if (ctx) { if (reel) renderReel(ctx, 1, reel); else drawVideoFrame(ctx, module, 1); }
+      } else if (size) {
+        const blob = await render(module, size.w, size.h);
+        if (active && blob) setFile({ blob, url: URL.createObjectURL(blob), name: `nuacha-${module.id}-${size.key}.png` });
+      }
+    });
+    return () => { active = false; cancelAnimationFrame(frame.current); };
+  }, [open, choice, module]);
+  useEffect(() => () => { if (file) URL.revokeObjectURL(file.url); }, [file]);
+
+  const play = () => {
+    if (playing) { cancelAnimationFrame(frame.current); setPlaying(false); return; }
+    const ctx = canvas.current?.getContext('2d'); if (!ctx) return;
+    const duration = reel ? reelTimeline(reel).duration : INTRO_SECONDS + module.steps.length * STEP_SECONDS + OUTRO_SECONDS;
+    const start = performance.now(); setPlaying(true);
+    const paint = (now: number) => {
+      const elapsed = Math.min((now - start) / 1000, duration);
+      if (reel) renderReel(ctx, elapsed, reel); else drawVideoFrame(ctx, module, elapsed);
+      if (elapsed < duration) frame.current = requestAnimationFrame(paint); else setPlaying(false);
+    };
+    frame.current = requestAnimationFrame(paint);
   };
-
-  const download = async (s: typeof SIZES[number]) => {
-    const blob = await render(module, s.w, s.h);
-    if (!blob) return;
-    downloadBlob(blob, `nuacha-${module.id}-${s.key}.png`);
-    trackEvent('lesson_social_download', { module_id: module.id, size: s.key });
-  };
-
-  const downloadVideo = async (reel?: ReelSpec) => {
-    setIsCreatingVideo(true);
+  const createVideo = async () => {
+    cancelAnimationFrame(frame.current); setPlaying(false); setIsCreatingVideo(true);
     try {
       const result = reel ? await recordLessonReel(reel) : await renderVideo(module);
-      if (!result) {
-        toast.error('Video creation is not available in this browser. You can still download an image.');
-        return;
-      }
-      downloadBlob(result.blob, `nuacha-${reel?.slug ?? module.id}-story-video.${result.extension}`);
-      trackEvent('lesson_social_video_download', { module_id: module.id, format: result.extension });
-      toast.success('Your lesson video is ready to share.');
-    } catch (error) {
-      console.error('Lesson video creation failed:', error);
-      toast.error('The video could not be created. Please try again.');
-    } finally {
-      setIsCreatingVideo(false);
-    }
+      if (!result) { toast.error('Video creation is not available in this browser.'); return; }
+      setFile({ blob: result.blob, url: URL.createObjectURL(result.blob), name: `nuacha-${reel?.slug ?? module.id}-story-video.${result.extension}` });
+    } catch { toast.error('The video could not be created. Please try again.'); }
+    finally { setIsCreatingVideo(false); }
   };
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2" disabled={isCreatingVideo}>
-          {isCreatingVideo ? <Film className="w-4 h-4 animate-pulse" /> : <Download className="w-4 h-4" />}
-          {isCreatingVideo ? 'Creating video…' : 'For socials'}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {lessonReels.length ? lessonReels.map(reel => <DropdownMenuItem key={reel.slug} onClick={() => downloadVideo(reel)} className="gap-2">
-          <Film className="h-4 w-4" />{reel.title} (1080×1920)
-        </DropdownMenuItem>) : <DropdownMenuItem onClick={() => downloadVideo()} className="gap-2">
-          <Film className="h-4 w-4" /> Story video (1080×1920)
-        </DropdownMenuItem>}
-        {SIZES.map((s) => (
-          <DropdownMenuItem key={s.key} onClick={() => download(s)} className="gap-2">
-            <Image className="h-4 w-4" /> {s.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const download = async () => {
+    if (!file) return;
+    const shareFile = new File([file.blob], file.name, { type: file.blob.type });
+    if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [shareFile] })) {
+      try { await navigator.share({ files: [shareFile], title: module.title }); return; }
+      catch (error) { if ((error as DOMException).name === 'AbortError') return; }
+    }
+    const url = URL.createObjectURL(file.blob);
+    const a = document.createElement('a'); a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    trackEvent(isVideo ? 'lesson_social_video_download' : 'lesson_social_download', { module_id: module.id, size: choice });
+  };
+  return <Dialog open={open} onOpenChange={value => { if (!isCreatingVideo) setOpen(value); }}>
+    <DialogTrigger asChild><Button variant="ghost" size="sm" className="gap-2"><Eye className="h-4 w-4 shrink-0" />Preview for socials</Button></DialogTrigger>
+    <DialogContent className="w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
+      <DialogHeader className="pr-6"><DialogTitle className="leading-snug">Preview for socials</DialogTitle><DialogDescription>{module.title}</DialogDescription></DialogHeader>
+      <div className="grid min-w-0 gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="grid grid-cols-2 content-start gap-2 sm:grid-cols-1">
+          {(lessonReels.length ? lessonReels : [undefined]).map((item, i) => <Button key={item?.slug ?? 'video'} variant={choice === `video-${i}` ? 'secondary' : 'outline'} disabled={isCreatingVideo} onClick={() => setChoice(`video-${i}`)} className="h-auto min-h-12 justify-start gap-2 whitespace-normal text-left py-2"><Film className="h-4 w-4 shrink-0" /><span className="min-w-0">{item?.title ?? 'Story video'}<span className="block text-xs text-muted-foreground">1080 × 1920</span></span></Button>)}
+          {SIZES.map(s => <Button key={s.key} variant={choice === s.key ? 'secondary' : 'outline'} disabled={isCreatingVideo} onClick={() => setChoice(s.key)} className="h-auto min-h-12 justify-start gap-2 whitespace-normal text-left py-2"><Image className="h-4 w-4 shrink-0" /><span>{s.key === 'story' ? 'Story image' : s.key === 'feed' ? 'Feed image' : 'Square image'}<span className="block text-xs text-muted-foreground">{s.w} × {s.h}</span></span></Button>)}
+        </div>
+        <div className="min-w-0 space-y-3">
+          <div className="flex min-h-32 items-center justify-center bg-muted p-2 rounded-lg">
+            {isVideo ? file ? <video src={file.url} controls playsInline className="max-h-[43dvh] max-w-full" aria-label="Social video preview" /> : <canvas ref={canvas} width={1080} height={1920} aria-label="Social video preview" className="max-h-[43dvh] max-w-full w-auto aspect-[9/16]" /> : file ? <img src={file.url} alt={`${module.title} social image preview`} className="max-h-[43dvh] max-w-full object-contain" /> : <p className="text-sm text-muted-foreground">Preparing preview…</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isVideo && !file && <><Button variant="outline" onClick={play} disabled={isCreatingVideo} className="gap-2">{playing ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}{playing ? 'Stop preview' : 'Play preview'}</Button><Button onClick={createVideo} disabled={isCreatingVideo} className="gap-2"><Film className="h-4 w-4" />{isCreatingVideo ? 'Preparing video…' : 'Prepare video'}</Button></>}
+            {file && <Button onClick={download} className="gap-2"><Download className="h-4 w-4" />{isVideo ? 'Download video' : 'Download image'}</Button>}
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>;
 }

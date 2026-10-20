@@ -79,9 +79,9 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
             {/* Header Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-2 mb-1">
+                    <h3 className="min-w-0 flex-1 break-words font-semibold text-lg text-foreground flex flex-wrap items-center gap-2">
                       {module.title}
                       {progress.completed && !isComingSoon && (
                         <Check className="w-5 h-5 text-green-600" />
@@ -97,7 +97,7 @@ export function LearningModuleCard({ module, initialExpanded = false, highlightS
                       variant="ghost"
                       size="icon"
                       onClick={handleCopyLink}
-                      className="h-7 w-7"
+                      className="h-7 w-7 shrink-0"
                       title="Copy link to this module"
                     >
                       <Link className="w-4 h-4" />

@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Replace overlapping Learning social menus with image/video previews before downloads; phone and desktop previews, downloads, and prepared receipt-video playback verified.
+
 - [x] Align Learning receipt lessons and automatic reels: shared playback/export, lesson links, and current receipt button names (both previews and video-with-audio download browser-verified).
 
 - [x] Rebuild Sign-ups as a polished admin journey dashboard with summary cards, compact progress rows, expandable user details, grouped test accounts, and a nudge-template sidebar.
