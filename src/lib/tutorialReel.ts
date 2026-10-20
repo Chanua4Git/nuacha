@@ -1,30 +1,45 @@
-import { DEMO_RECEIPTS, REEL_H, REEL_W, ReelSpec, ReelStep, reelTimeline, reelTapTimes } from './tutorialReelSpecs';
+import { DEMO_RECEIPTS, REEL_H, REEL_W, ReelSpec, ReelStep, TAP_AT, reelTimeline, reelTapTimes } from './tutorialReelSpecs';
 export * from './tutorialReelSpecs';
 
-type Palette = { bg: string; text: string; muted: string; primary: string; onPrimary: string; card: string; accent: string; green: string; blush: string; border: string };
-let colors: Palette | undefined;
+/**
+ * Reels always use Nuacha's light brand palette (same values as the light theme tokens in index.css),
+ * so an admin in dark mode still exports on-brand videos. The native camera/photo picker
+ * colours below imitate the phone's own screens, which are not Nuacha UI.
+ */
+type Palette = { bg: string; text: string; muted: string; primary: string; onPrimary: string; card: string; accent: string; green: string; blush: string; border: string; mutedBg: string };
+const BRAND: Palette = { bg: '#FAF9F7', text: '#2F2F2F', muted: '#5C5C5C', primary: '#5A7684', onPrimary: '#FAF9F7', card: '#FFFFFF', accent: '#F4E8D3', green: '#C3DCD1', blush: '#F1CBC7', border: '#E5E0DA', mutedBg: '#F2EFEB' };
+const DEVICE = { dark: '#121212', glass: 'rgba(255,255,255,0.18)', sheet: '#FFFFFF', sheetText: '#111111', sheetMuted: '#8E8E93', select: '#0A84FF', table: '#C9B79C' };
+let fontsRequested = false;
 function palette(): Palette {
-  if (colors) return colors;
-  const css = getComputedStyle(document.documentElement);
-  const token = (name: string) => `hsl(${css.getPropertyValue(`--${name}`).trim()})`;
-  colors = { bg: token('background'), text: token('foreground'), muted: token('muted-foreground'), primary: token('primary'), onPrimary: token('primary-foreground'), card: token('card'), accent: token('accent'), green: token('soft-green'), blush: token('blush'), border: token('border') };
-  return colors;
+  if (!fontsRequested && typeof document !== 'undefined' && document.fonts) {
+    fontsRequested = true;
+    ['400 40px "Playfair Display"', '700 40px "Playfair Display"'].forEach(f => document.fonts.load(f).catch(() => undefined));
+  }
+  return BRAND;
 }
 const ease = (n: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, n)), 3);
-const SX = 174, SY = 290, SW = 732, SH = 1300;
+const SANS = 'Inter, sans-serif';
+const SERIF = '"Playfair Display", Georgia, serif';
+
+// Phone screen on the 1080×1920 canvas. Inside it we draw in the app's own CSS pixels (428 wide).
+const SX = 150, SY = 290, SW = 780, SH = 1340;
+const U = SW / 428;
+const px = (x: number) => SX + x * U, py = (y: number) => SY + y * U;
+
 function box(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, r = 24) {
   ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
 }
-function text(ctx: CanvasRenderingContext2D, words: string, x: number, y: number, size = 36, color = palette().text, max = 650, align: CanvasTextAlign = 'left', serif = false) {
+function text(ctx: CanvasRenderingContext2D, words: string, x: number, y: number, size = 36, color = palette().text, max = 650, align: CanvasTextAlign = 'left', serif = false, weight = 500) {
   ctx.fillStyle = color; ctx.textAlign = align;
   let fontSize = size;
-  ctx.font = `500 ${fontSize}px ${serif ? '"Playfair Display", Georgia, serif' : '"Inter", sans-serif'}`;
-  while (ctx.measureText(words).width > max && fontSize > 16) { fontSize--; ctx.font = `500 ${fontSize}px ${serif ? '"Playfair Display", Georgia, serif' : '"Inter", sans-serif'}`; }
+  const font = () => `${weight} ${fontSize}px ${serif ? SERIF : SANS}`;
+  ctx.font = font();
+  while (ctx.measureText(words).width > max && fontSize > 12) { fontSize--; ctx.font = font(); }
   ctx.fillText(words, x, y);
 }
 function lines(ctx: CanvasRenderingContext2D, words: string[], y: number, size: number, color: string, max = 900) {
   const all: string[] = [];
-  ctx.font = `500 ${size}px "Playfair Display", Georgia, serif`;
+  ctx.font = `500 ${size}px ${SERIF}`;
   for (const paragraph of words) {
     let current = '';
     for (const word of paragraph.split(/\s+/)) {
@@ -36,32 +51,57 @@ function lines(ctx: CanvasRenderingContext2D, words: string[], y: number, size: 
   const fitted = Math.min(size, 360 / Math.max(1, all.length) / 1.22);
   all.forEach((line, i) => text(ctx, line, 540, y + i * fitted * 1.22, fitted, color, max, 'center', true));
 }
-function button(ctx: CanvasRenderingContext2D, label: string, y: number, secondary = false) {
-  const c = palette(); box(ctx, SX + 40, y, SW - 80, 90, secondary ? c.accent : c.primary, 24);
-  text(ctx, label, 540, y + 58, 36, secondary ? c.text : c.onPrimary, SW - 120, 'center');
+
+// ---- Drawing in app CSS pixels ----
+function R(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, r = 0) { box(ctx, px(x), py(y), w * U, h * U, color, r * U); }
+function stroke(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, r = 0, lw = 1) {
+  ctx.strokeStyle = color; ctx.lineWidth = lw * U; ctx.beginPath(); ctx.roundRect(px(x), py(y), w * U, h * U, r * U); ctx.stroke();
 }
-function header(ctx: CanvasRenderingContext2D, count: number, heading: string) {
+function T(ctx: CanvasRenderingContext2D, words: string, x: number, y: number, size: number, color: string, o: { align?: CanvasTextAlign; serif?: boolean; weight?: number; max?: number } = {}) {
+  text(ctx, words, px(x), py(y), size * U, color, (o.max ?? 396) * U, o.align ?? 'left', o.serif ?? false, o.weight ?? 400);
+}
+function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px(x), py(y), r * U, 0, Math.PI * 2); ctx.fill(); }
+function path(ctx: CanvasRenderingContext2D, color: string, lw: number, draw: (m: (x: number, y: number) => void, l: (x: number, y: number) => void) => void) {
+  ctx.strokeStyle = color; ctx.lineWidth = lw * U; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+  draw((x, y) => ctx.moveTo(px(x), py(y)), (x, y) => ctx.lineTo(px(x), py(y))); ctx.stroke();
+}
+// lucide-like icons
+function iconCamera(ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string) {
+  stroke(ctx, cx - 10, cy - 7, 20, 15, color, 3, 2);
+  path(ctx, color, 2, (m, l) => { m(cx - 4, cy - 7); l(cx - 2, cy - 10); l(cx + 2, cy - 10); l(cx + 4, cy - 7); });
+  ctx.strokeStyle = color; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.arc(px(cx), py(cy + 0.5), 3.5 * U, 0, Math.PI * 2); ctx.stroke();
+}
+function iconUpload(ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string) {
+  path(ctx, color, 2, (m, l) => { m(cx - 10, cy + 2); l(cx - 10, cy + 9); l(cx + 10, cy + 9); l(cx + 10, cy + 2); m(cx, cy + 3); l(cx, cy - 10); m(cx - 5, cy - 5); l(cx, cy - 10); l(cx + 5, cy - 5); });
+}
+function iconLeaf(ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string) {
+  ctx.strokeStyle = color; ctx.lineWidth = 2.2 * U; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(px(cx - 12), py(cy + 12)); ctx.bezierCurveTo(px(cx - 14), py(cy - 6), px(cx), py(cy - 8), px(cx + 13), py(cy - 13));
+  ctx.bezierCurveTo(px(cx + 16), py(cy + 4), px(cx + 4), py(cy + 14), px(cx - 9), py(cy + 9)); ctx.stroke();
+  path(ctx, color, 2.2, (m, l) => { m(cx - 12, cy + 12); l(cx + 2, cy); });
+}
+function navbar(ctx: CanvasRenderingContext2D) {
   const c = palette();
-  text(ctx, 'Nuacha', SX + 40, SY + 82, 58, c.primary, 430, 'left', true);
-  text(ctx, 'A softer way to track spending.', SX + 40, SY + 133, 25, c.muted);
-  box(ctx, SX + 40, SY + 169, SW - 80, 65, c.green, 20);
-  text(ctx, count === 3 ? 'No free scans left today' : `${3 - count} of 3 free scans left`, 540, SY + 212, 28, c.text, 630, 'center');
-  text(ctx, heading, SX + 40, SY + 307, 46, c.text, 652, 'left', true);
+  R(ctx, 0, 0, 428, 64, c.card); R(ctx, 0, 64, 428, 1, c.border);
+  T(ctx, 'Nuacha', 16, 41, 22, c.text, { serif: true, weight: 700 });
+  [24, 32, 40].forEach(y => R(ctx, 383, y - 1, 18, 2, c.text, 1));
 }
-function receipt(ctx: CanvasRenderingContext2D, index: number, y: number, h = 680) {
+function receiptPaper(ctx: CanvasRenderingContext2D, index: number, x: number, y: number, w: number, h: number) {
   const c = palette(), data = DEMO_RECEIPTS[index] ?? DEMO_RECEIPTS[0];
-  box(ctx, SX + 100, y, SW - 200, h, c.card, 6);
-  text(ctx, data.merchant, 540, y + 74, 34, c.text, SW - 260, 'center');
-  text(ctx, 'SAMPLE RECEIPT · T&T', 540, y + 120, 22, c.muted, 480, 'center');
-  text(ctx, data.date, 540, y + 168, 25, c.muted, 400, 'center');
-  const itemGap = Math.min(68, (h - 360) / Math.max(1, data.items.length));
+  R(ctx, x, y, w, h, c.card, 2);
+  const s = w / 220;
+  T(ctx, data.merchant.toUpperCase(), x + w / 2, y + 26 * s, 13 * s, c.text, { align: 'center', weight: 700, max: w - 20 });
+  T(ctx, 'Port of Spain · Trinidad', x + w / 2, y + 42 * s, 8 * s, c.muted, { align: 'center', max: w - 20 });
+  T(ctx, data.date, x + w / 2, y + 56 * s, 8 * s, c.muted, { align: 'center', max: w - 20 });
+  const gap = Math.min(18 * s, (h - 120 * s) / Math.max(1, data.items.length));
   data.items.forEach(([item, amount], i) => {
-    text(ctx, item, SX + 126, y + 222 + i * itemGap, 25, c.text, 300);
-    text(ctx, amount, SX + SW - 126, y + 222 + i * itemGap, 25, c.text, 150, 'right');
+    T(ctx, item, x + 14 * s, y + 80 * s + i * gap, 9 * s, c.text, { max: w * .6 });
+    T(ctx, amount, x + w - 14 * s, y + 80 * s + i * gap, 9 * s, c.text, { align: 'right', max: w * .3 });
   });
-  text(ctx, 'TOTAL', SX + 126, y + h - 118, 30, c.text, 200);
-  text(ctx, data.total, SX + SW - 126, y + h - 118, 30, c.text, 265, 'right');
-  text(ctx, 'Thank you', 540, y + h - 58, 25, c.muted, 400, 'center');
+  R(ctx, x + 14 * s, y + h - 46 * s, w - 28 * s, 1, c.border);
+  T(ctx, 'TOTAL', x + 14 * s, y + h - 28 * s, 11 * s, c.text, { weight: 700 });
+  T(ctx, data.total, x + w - 14 * s, y + h - 28 * s, 11 * s, c.text, { align: 'right', weight: 700 });
+  T(ctx, 'Thank you', x + w / 2, y + h - 10 * s, 7 * s, c.muted, { align: 'center' });
 }
 function finger(ctx: CanvasRenderingContext2D, x: number, y: number, p: number) {
   const c = palette(); ctx.save(); ctx.translate(x, y); ctx.scale(1 - p * .1, 1 - p * .1);
@@ -70,69 +110,155 @@ function finger(ctx: CanvasRenderingContext2D, x: number, y: number, p: number) 
   ctx.lineTo(18, 56); ctx.bezierCurveTo(65, 48, 90, 72, 85, 122); ctx.lineTo(75, 170); ctx.lineTo(0, 170);
   ctx.lineTo(-40, 110); ctx.bezierCurveTo(-58, 84, -42, 64, -18, 88); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
 }
-function tap(ctx: CanvasRenderingContext2D, x: number, y: number, local: number, seconds: number) {
-  const at = seconds * .72, approach = ease((local - at + 1) / .85);
+/** Finger glides in and taps at `at` seconds into the scene. x/y in app CSS px. */
+function tap(ctx: CanvasRenderingContext2D, ax: number, ay: number, local: number, at: number) {
   if (local < at - 1 || local > at + .65) return;
-  const c = palette();
+  const x = px(ax), y = py(ay), approach = ease((local - at + 1) / .85), c = palette();
   ctx.save(); ctx.strokeStyle = c.blush; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.arc(x, y, 64, 0, Math.PI * 2); ctx.stroke();
-  if (local > at) { ctx.globalAlpha = Math.max(0, 1 - (local - at) / .65); ctx.beginPath(); ctx.arc(x, y, 35 + (local - at) * 160, 0, Math.PI * 2); ctx.stroke(); }
+  if (local > at) { ctx.globalAlpha = Math.max(0, 1 - (local - at) / .65); ctx.beginPath(); ctx.arc(x, y, 30 + (local - at) * 160, 0, Math.PI * 2); ctx.stroke(); }
   ctx.restore(); finger(ctx, x + (1 - approach) * 180, y + (1 - approach) * 220, local > at && local < at + .18 ? 1 : 0);
 }
-function field(ctx: CanvasRenderingContext2D, label: string, value: string, y: number, p = 1) {
-  const c = palette(); text(ctx, label, SX + 40, y, 25, c.muted);
-  box(ctx, SX + 40, y + 16, SW - 80, 76, c.card, 16);
-  ctx.strokeStyle = c.border; ctx.lineWidth = 2; ctx.strokeRect(SX + 41, y + 17, SW - 82, 74);
-  text(ctx, value.slice(0, Math.floor(value.length * Math.max(0, Math.min(1, p)))), SX + 60, y + 66, 31, c.text, 610);
+const tapAt = (step: ReelStep, i = 0) => step.seconds * (TAP_AT[step.scene]?.[i] ?? .72);
+
+// ---- Screens, copied from the live app layout ----
+function homeScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  const c = palette();
+  navbar(ctx);
+  T(ctx, 'Home  ›', 16, 96, 14, c.muted);
+  // Hero card: soft green → blush wash, like the home page
+  const g = ctx.createLinearGradient(px(16), py(165), px(412), py(760));
+  g.addColorStop(0, 'rgba(195,220,209,0.35)'); g.addColorStop(.55, 'rgba(244,232,211,0.25)'); g.addColorStop(1, 'rgba(241,203,199,0.3)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(px(16), py(165), 396 * U, 640 * U, 24 * U); ctx.fill();
+  circle(ctx, 214, 257, 28, 'rgba(195,220,209,0.55)'); iconLeaf(ctx, 214, 257, c.primary);
+  T(ctx, 'Begin Your Journey to', 214, 332, 30, c.text, { align: 'center', serif: true });
+  T(ctx, 'Financial Peace', 214, 368, 30, c.text, { align: 'center', serif: true });
+  ['Take a gentle first step. Upload your receipt', 'and watch as we transform it into organized,', 'peaceful financial clarity.'].forEach((l, i) => T(ctx, l, 214, 409 + i * 29, 16, c.muted, { align: 'center', max: 360 }));
+  const pressSnap = step.via !== 'upload' && local > tapAt(step) && local < tapAt(step) + .2;
+  const pressUp = step.via === 'upload' && local > tapAt(step) && local < tapAt(step) + .2;
+  R(ctx, 32, 509 + (pressSnap ? 2 : 0), 364, 91, c.primary, 16);
+  circle(ctx, 160, 555, 20, 'rgba(255,255,255,0.2)'); iconCamera(ctx, 160, 555, c.onPrimary);
+  T(ctx, 'Snap Receipt', 192, 551, 17, c.onPrimary, { max: 200 }); T(ctx, 'Take a photo', 192, 571, 12, 'rgba(250,249,247,0.85)', { max: 200 });
+  T(ctx, 'or', 214, 634, 15, c.muted, { align: 'center' });
+  R(ctx, 32, 657 + (pressUp ? 2 : 0), 364, 91, pressUp ? c.mutedBg : c.bg, 16); stroke(ctx, 33, 658, 362, 89, c.primary, 16, 2);
+  circle(ctx, 153, 703, 20, c.mutedBg); iconUpload(ctx, 153, 703, c.primary);
+  T(ctx, 'Upload Receipt', 185, 699, 17, c.primary, { max: 200 }); T(ctx, 'From your device', 185, 719, 12, c.primary, { max: 200 });
+  R(ctx, 109, 781, 210, 40, c.bg, 20); stroke(ctx, 109, 781, 210, 40, c.border, 20, 1);
+  T(ctx, 'Long receipt (2+ photos)', 214, 806, 14, c.text, { align: 'center' });
+  
+  step.via === 'upload' ? tap(ctx, 214, 703, local, tapAt(step)) : tap(ctx, 214, 555, local, tapAt(step));
+}
+function cameraScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  R(ctx, 0, 0, 428, 800, DEVICE.dark);
+  // live view: receipt resting on a table
+  R(ctx, 0, 60, 428, 540, DEVICE.table);
+  ctx.save(); ctx.translate(px(214), py(370)); ctx.rotate(-.03); ctx.translate(-px(214), -py(370));
+  receiptPaper(ctx, step.receipt, 104, 100, 220, 450); ctx.restore();
+  const c = palette();
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 3 * U;
+  [[84, 84, 1, 1], [344, 84, -1, 1], [84, 572, 1, -1], [344, 572, -1, -1]].forEach(([x, y, dx, dy]) => { ctx.beginPath(); ctx.moveTo(px(x), py(y + 28 * dy)); ctx.lineTo(px(x), py(y)); ctx.lineTo(px(x + 28 * dx), py(y)); ctx.stroke(); });
+  T(ctx, 'PHOTO', 214, 624, 13, '#F5C04A', { align: 'center', weight: 600 });
+  T(ctx, 'Cancel', 30, 686, 16, '#FFFFFF');
+  circle(ctx, 214, 680, 34, '#FFFFFF'); circle(ctx, 214, 680, 29, DEVICE.dark); circle(ctx, 214, 680, 26, '#FFFFFF');
+  tap(ctx, 214, 680, local, tapAt(step));
+  const since = local - tapAt(step);
+  if (since > 0 && since < .25) { ctx.save(); ctx.globalAlpha = 1 - since / .25; ctx.fillStyle = c.card; ctx.fillRect(SX, SY, SW, SH); ctx.restore(); }
+}
+function photosScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  const pick = tapAt(step, 0), add = tapAt(step, 1), picked = local > pick;
+  // App dimmed behind the native photo picker sheet
+  homeScreen(ctx, { ...step, scene: 'home', via: 'upload' }, -5);
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
+  const rise = ease(local / .45) ; const top = 40 + (1 - rise) * 700;
+  R(ctx, 0, top, 428, 800, DEVICE.sheet, 14);
+  T(ctx, 'Cancel', 16, top + 34, 16, DEVICE.select);
+  T(ctx, 'Recents', 214, top + 34, 17, DEVICE.sheetText, { align: 'center', weight: 600 });
+  T(ctx, 'Add', 412, top + 34, 16, picked ? DEVICE.select : DEVICE.sheetMuted, { align: 'right', weight: 600 });
+  R(ctx, 120, top + 52, 188, 28, '#EEEEF0', 8); R(ctx, 122, top + 54, 92, 24, '#FFFFFF', 7);
+  T(ctx, 'Photos', 168, top + 71, 12, DEVICE.sheetText, { align: 'center', weight: 600 }); T(ctx, 'Albums', 261, top + 71, 12, DEVICE.sheetText, { align: 'center' });
+  const tiles = ['#B8C9C0', '#E8D9C4', 'receipt-other', '#D9C2BE', 'target', '#A9B9C6', '#EADFCF', 'receipt-other', '#C9D3C3', '#DCCFB8', '#BFC8D2', '#E6CFC9'];
+  const size = 141, gap = 2.5, gy = top + 92;
+  tiles.forEach((tile, i) => {
+    const x = (i % 3) * (size + gap), y = gy + Math.floor(i / 3) * (size + gap);
+    if (tile === 'target' || tile === 'receipt-other') {
+      R(ctx, x, y, size, size, DEVICE.table);
+      if (tile === 'target') receiptPaper(ctx, step.receipt, x + 36, y + 6, 70, 150);
+      else { R(ctx, x + 40, y + 8, 60, 140, '#FFFFFF', 1); [30, 44, 58, 72, 86].forEach(l => R(ctx, x + 48, y + l, 44, 3, '#CCCCCC')); }
+    } else R(ctx, x, y, size, size, tile);
+    if (tile === 'target' && picked) {
+      stroke(ctx, x + 2, y + 2, size - 4, size - 4, DEVICE.select, 0, 4);
+      circle(ctx, x + size - 16, y + size - 16, 11, DEVICE.select);
+      path(ctx, '#FFFFFF', 2.2, (m, l) => { m(x + size - 21, y + size - 16); l(x + size - 17, y + size - 12); l(x + size - 11, y + size - 20); });
+    }
+  });
+  tap(ctx, 1 * (size + gap) + 70, gy + (size + gap) + 70, local, pick);
+  tap(ctx, 400, top + 30, local, add);
+}
+function readingScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  const c = palette();
+  navbar(ctx);
+  R(ctx, 16, 84, 396, 600, c.card, 8); stroke(ctx, 16, 84, 396, 600, c.border, 8, 1);
+  T(ctx, 'Receipt Preview', 32, 118, 18, c.text, { serif: true, weight: 600 });
+  receiptPaper(ctx, step.receipt, 104, 140, 220, 470);
+  // ReceiptProcessingLoader: dim overlay, white card, spinner, rotating line
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.roundRect(px(16), py(84), 396 * U, 600 * U, 8 * U); ctx.fill(); ctx.restore();
+  R(ctx, 74, 314, 280, 130, c.card, 8);
+  ctx.strokeStyle = c.primary; ctx.lineWidth = 3 * U; ctx.lineCap = 'round'; ctx.beginPath();
+  const a = local * 6; ctx.arc(px(214), py(356), 14 * U, a, a + Math.PI * 1.5); ctx.stroke();
+  const msgs = ['Organised Finances', 'All Your Receipts Scanned With Ease', 'Your Receipts, Perfectly Organized'];
+  T(ctx, msgs[Math.floor(local / 1.4) % msgs.length], 214, 410, 14, c.text, { align: 'center', weight: 500, max: 250 });
+}
+function field(ctx: CanvasRenderingContext2D, label: string, value: string, y: number, p: number, chevron = false) {
+  const c = palette();
+  T(ctx, label, 32, y, 14, c.text, { weight: 500 });
+  R(ctx, 32, y + 8, 364, 40, c.card, 6); stroke(ctx, 32, y + 8, 364, 40, c.border, 6, 1);
+  const shown = value.slice(0, Math.floor(value.length * Math.max(0, Math.min(1, p))));
+  T(ctx, shown, 44, y + 33, 14, c.text, { max: 320 });
+  if (chevron) path(ctx, c.muted, 1.5, (m, l) => { m(374, y + 25); l(379, y + 30); l(384, y + 25); });
+}
+function reviewScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  const c = palette(), data = DEMO_RECEIPTS[step.receipt] ?? DEMO_RECEIPTS[0];
+  navbar(ctx);
+  R(ctx, 16, 84, 396, 630, c.card, 8); stroke(ctx, 16, 84, 396, 630, c.border, 8, 1);
+  T(ctx, 'Add Expense', 32, 124, 24, c.text, { serif: true, weight: 600 });
+  const values: [string, string, boolean][] = [['Family', 'My household', true], ['Amount ($)', data.total.replace('TT$', ''), false], ['Description', data.items.length > 1 ? 'Groceries' : data.items[0][0], false], ['Place', data.merchant, false], ['Date', 'October 20th, 2026', false], ['Category', data.category, true]];
+  values.forEach(([label, value, chev], i) => field(ctx, label, value, 168 + i * 78, (local - i * .2) * 3, chev));
+  const press = local > tapAt(step) && local < tapAt(step) + .2;
+  R(ctx, 32, 650 + (press ? 1 : 0), 364, 40, c.primary, 6);
+  T(ctx, 'Add Expense', 214, 676, 14, c.onPrimary, { align: 'center', weight: 500 });
+  tap(ctx, 214, 670, local, tapAt(step));
+}
+function savedScreen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
+  const c = palette(), data = DEMO_RECEIPTS[step.receipt] ?? DEMO_RECEIPTS[0];
+  navbar(ctx);
+  T(ctx, 'Expenses', 16, 112, 28, c.text, { serif: true, weight: 600 });
+  R(ctx, 16, 136, 396, 96, c.card, 12); stroke(ctx, 16, 136, 396, 96, c.primary, 12, 2);
+  T(ctx, data.merchant, 32, 168, 17, c.text, { weight: 600, max: 240 });
+  R(ctx, 32, 182, 86, 22, c.green, 11); T(ctx, data.category, 75, 198, 11, c.text, { align: 'center', max: 80 });
+  T(ctx, 'My household · 20 Oct 2026', 126, 198, 12, c.muted, { max: 200 });
+  T(ctx, data.total, 396, 168, 17, c.primary, { align: 'right', weight: 600, max: 140 });
+  [248, 336].forEach(y => { R(ctx, 16, y, 396, 76, c.card, 12); stroke(ctx, 16, y, 396, 76, c.border, 12, 1); R(ctx, 32, y + 22, 150, 10, c.mutedBg, 5); R(ctx, 32, y + 44, 90, 10, c.mutedBg, 5); });
+  const show = ease(local / .4);
+  ctx.save(); ctx.globalAlpha = show;
+  R(ctx, 16, 640 + (1 - show) * 30, 396, 64, c.card, 8); stroke(ctx, 16, 640 + (1 - show) * 30, 396, 64, c.border, 8, 1);
+  T(ctx, 'That’s saved.', 32, 666 + (1 - show) * 30, 15, c.text, { weight: 600 });
+  T(ctx, 'Keep going at your own pace.', 32, 688 + (1 - show) * 30, 13, c.muted);
+  ctx.restore();
 }
 function screen(ctx: CanvasRenderingContext2D, step: ReelStep, local: number) {
-  const c = palette(), data = DEMO_RECEIPTS[step.receipt] ?? DEMO_RECEIPTS[0];
-  if (step.scene === 'home') {
-    header(ctx, step.count, 'Begin your journey');
-    text(ctx, 'Financial clarity, at your own pace.', SX + 40, SY + 368, 29, c.muted);
-    receipt(ctx, step.receipt, SY + 423, 510);
-    button(ctx, 'Snap Receipt', SY + 980); button(ctx, 'Upload Receipt', SY + 1095, true);
-    tap(ctx, 540, SY + 1025, local, step.seconds);
-  } else if (step.scene === 'camera') {
-    header(ctx, step.count, 'Snap Receipt');
-    box(ctx, SX + 30, SY + 350, SW - 60, 780, c.accent, 20);
-    receipt(ctx, step.receipt, SY + 410, 640);
-    ctx.strokeStyle = c.primary; ctx.lineWidth = 7;
-    [[SX + 70, SY + 390, 1, 1], [SX + SW - 70, SY + 390, -1, 1], [SX + 70, SY + 1090, 1, -1], [SX + SW - 70, SY + 1090, -1, -1]].forEach(([x, y, dx, dy]) => { ctx.beginPath(); ctx.moveTo(x, y + 65 * dy); ctx.lineTo(x, y); ctx.lineTo(x + 65 * dx, y); ctx.stroke(); });
-    box(ctx, 490, SY + 1160, 100, 100, c.primary, 50); box(ctx, 508, SY + 1178, 64, 64, c.card, 32);
-    tap(ctx, 540, SY + 1210, local, step.seconds);
-    const since = local - step.seconds * .72;
-    if (since > 0 && since < .23) { ctx.save(); ctx.globalAlpha = 1 - since / .23; ctx.fillStyle = c.card; ctx.fillRect(SX, SY, SW, SH); ctx.restore(); }
-  } else if (step.scene === 'reading') {
-    header(ctx, step.count, 'Processing your receipt…');
-    receipt(ctx, step.receipt, SY + 370, 575);
-    const progress = ease(local / (step.seconds - .3));
-    ctx.save(); ctx.strokeStyle = c.primary; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(SX + 95, SY + 385 + progress * 550); ctx.lineTo(SX + SW - 95, SY + 385 + progress * 550); ctx.stroke(); ctx.restore();
-    box(ctx, SX + 40, SY + 1000, SW - 80, 18, c.accent, 9); box(ctx, SX + 40, SY + 1000, Math.max(18, (SW - 80) * progress), 18, c.primary, 9);
-    text(ctx, `${Math.round(progress * 100)}%`, 540, SY + 1060, 34, c.primary, 630, 'center');
-    text(ctx, data.merchant.slice(0, Math.floor(data.merchant.length * progress)), 540, SY + 1130, 33, c.text, 630, 'center');
-    if (progress > .65) text(ctx, data.total, 540, SY + 1210, 52, c.primary, 630, 'center');
-  } else if (step.scene === 'review') {
-    header(ctx, step.count, 'Add Expense');
-    const values = [['Family', 'My household'], ['Item / description', data.merchant], ['Amount', data.total], ['Place', data.merchant], ['Date', data.date], ['Category', data.category]];
-    values.forEach(([label, value], i) => field(ctx, label, value, SY + 365 + i * 126, (local - i * .16) * 3));
-    button(ctx, 'Add Expense', SY + 1150); tap(ctx, 540, SY + 1195, local, step.seconds);
-  } else {
-    header(ctx, step.count, 'Expenses');
-    box(ctx, SX + 40, SY + 370, SW - 80, 210, c.card, 20);
-    text(ctx, data.merchant, SX + 65, SY + 440, 36, c.text, 585);
-    text(ctx, data.category + ' · My household', SX + 65, SY + 495, 25, c.muted, 585);
-    text(ctx, data.total, SX + 65, SY + 550, 38, c.primary, 585);
-    box(ctx, SX + 40, SY + 650, SW - 80, 140, c.green, 24);
-    text(ctx, 'That’s saved.', 540, SY + 707, 42, c.text, 610, 'center', true);
-    text(ctx, 'Keep going at your own pace.', 540, SY + 758, 27, c.muted, 610, 'center');
-  }
+  if (step.scene === 'home') homeScreen(ctx, step, local);
+  else if (step.scene === 'camera') cameraScreen(ctx, step, local);
+  else if (step.scene === 'photos') photosScreen(ctx, step, local);
+  else if (step.scene === 'reading') readingScreen(ctx, step, local);
+  else if (step.scene === 'review') reviewScreen(ctx, step, local);
+  else savedScreen(ctx, step, local);
 }
 function phone(ctx: CanvasRenderingContext2D, step: ReelStep, local: number, animate: boolean) {
-  const c = palette(); const zoom = animate ? 1 + .018 * Math.sin(Math.PI * local / step.seconds) : 1;
-  ctx.save(); ctx.translate(540, 940); ctx.scale(zoom, zoom); ctx.translate(-540, -940);
-  box(ctx, SX - 18, SY - 18, SW + 36, SH + 36, c.primary, 54);
-  ctx.save(); ctx.beginPath(); ctx.roundRect(SX, SY, SW, SH, 38); ctx.clip(); box(ctx, SX, SY, SW, SH, c.bg, 38); screen(ctx, step, local); ctx.restore(); ctx.restore();
+  const c = palette(); const zoom = animate ? 1 + .015 * Math.sin(Math.PI * local / step.seconds) : 1;
+  ctx.save(); ctx.translate(540, 960); ctx.scale(zoom, zoom); ctx.translate(-540, -960);
+  ctx.save(); ctx.shadowColor = 'rgba(47,47,47,0.18)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 18;
+  box(ctx, SX - 16, SY - 16, SW + 32, SH + 32, '#2F2F2F', 60); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.roundRect(SX, SY, SW, SH, 46); ctx.clip(); box(ctx, SX, SY, SW, SH, c.bg, 46); screen(ctx, step, local); ctx.restore(); ctx.restore();
+}
 }
 export function renderReel(ctx: CanvasRenderingContext2D, t: number, spec: ReelSpec) {
   const c = palette(), tl = reelTimeline(spec), animate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -157,7 +283,7 @@ export function renderReel(ctx: CanvasRenderingContext2D, t: number, spec: ReelS
   const local = Math.min(active.step.seconds, t - active.start);
   text(ctx, 'Nuacha', 540, 108, 62, c.primary, 800, 'center', true);
   const overall = Math.min(1, (t - tl.stepsStart) / (tl.resultStart - tl.stepsStart));
-  box(ctx, 174, 170, 732, 16, c.accent, 8); box(ctx, 174, 170, Math.max(16, 732 * overall), 16, c.primary, 8);
+  box(ctx, 150, 170, 780, 16, c.accent, 8); box(ctx, 150, 170, Math.max(16, 780 * overall), 16, c.primary, 8);
   text(ctx, `Scan ${active.step.count} of 3 today`, 540, 240, 32, c.muted, 860, 'center');
   phone(ctx, active.step, local, animate);
   lines(ctx, [active.step.caption], 1715, 50, c.text, 920);
