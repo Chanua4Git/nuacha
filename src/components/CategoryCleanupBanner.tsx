@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2, CheckCircle, Wrench } from 'lucide-react';
 import { useCategoryCleanup } from '@/hooks/useCategoryCleanup';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 export const CategoryCleanupBanner: React.FC = () => {
   const { 
@@ -10,6 +11,8 @@ export const CategoryCleanupBanner: React.FC = () => {
     validateCategories, 
     isProcessing 
   } = useCategoryCleanup();
+  const { isAdmin } = useAdminRole();
+  if (!isAdmin) return null;
 
   return (
     <Alert className="mb-4 border-yellow-200 bg-yellow-50">
