@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Align Learning receipt lessons and automatic reels: shared playback/export, lesson links, and current receipt button names.
+
 - [x] Rebuild Sign-ups as a polished admin journey dashboard with summary cards, compact progress rows, expandable user details, grouped test accounts, and a nudge-template sidebar.
 
 - [x] Make each Learning module's social download create a vertical lesson video from the loaded module, while keeping image formats available.
