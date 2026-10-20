@@ -259,7 +259,6 @@ function phone(ctx: CanvasRenderingContext2D, step: ReelStep, local: number, ani
   box(ctx, SX - 16, SY - 16, SW + 32, SH + 32, '#2F2F2F', 60); ctx.restore();
   ctx.save(); ctx.beginPath(); ctx.roundRect(SX, SY, SW, SH, 46); ctx.clip(); box(ctx, SX, SY, SW, SH, c.bg, 46); screen(ctx, step, local); ctx.restore(); ctx.restore();
 }
-}
 export function renderReel(ctx: CanvasRenderingContext2D, t: number, spec: ReelSpec) {
   const c = palette(), tl = reelTimeline(spec), animate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   ctx.globalAlpha = 1; ctx.fillStyle = c.bg; ctx.fillRect(0, 0, REEL_W, REEL_H);
