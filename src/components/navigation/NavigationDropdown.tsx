@@ -25,7 +25,7 @@ interface NavigationDropdownProps {
 const NavigationDropdown = ({ title, items, className }: NavigationDropdownProps) => {
   const location = useLocation();
   
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path.split('?')[0];
   const hasActiveItem = items.some(item => isActive(item.path));
 
   return (

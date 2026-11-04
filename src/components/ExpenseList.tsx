@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { getReviewState, toggleReviewed, finishGroup, groupBulkSaves, syncReviewState } from '@/lib/reviewBatch';
 import { supabase } from '@/integrations/supabase/client';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { useContextAwareExpense } from '@/hooks/useContextAwareExpense';
 import { useExpense } from '@/context/ExpenseContext';
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { format } from 'date-fns';
-import { Download, Filter, Trash2 } from 'lucide-react';
+import { Download, FileText, Filter, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectDuplicates, getConfidenceColor, getConfidenceLabel, getReasonLabel } from '@/utils/duplicateDetection';
 import { toast } from 'sonner';
@@ -308,6 +308,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
               Story recap
             </Button>
           )}
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/app?tab=add-expense&statement=1" className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Statement screenshots</span>
+              <span className="sm:hidden">Statement</span>
+            </Link>
+          </Button>
           <Input
             placeholder="Search expenses..."
             value={searchTerm}

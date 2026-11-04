@@ -51,7 +51,7 @@ const Navbar = () => {
   // Expense dropdown items
   const expenseItems = [
     { name: 'Dashboard', icon: <Home className="h-4 w-4" />, path: '/dashboard' },
-    { name: 'Add Expense', icon: <PlusCircle className="h-4 w-4" />, path: '/app' },
+    { name: 'Add Expense', icon: <PlusCircle className="h-4 w-4" />, path: '/app?tab=add-expense' },
     { name: 'Budget & Planning', icon: <PieChart className="h-4 w-4" />, path: '/budget' },
     { name: 'Cash & Accounts', icon: <Wallet className="h-4 w-4" />, path: '/money' },
     { name: 'Receipt Management', icon: <FileImage className="h-4 w-4" />, path: '/receipts' },
@@ -73,7 +73,7 @@ const Navbar = () => {
 
   const { isAdmin } = useAdminRole();
   const isActive = (path: string) => {
-    return location.pathname === path;
+    return location.pathname === path.split('?')[0];
   };
 
   const AuthButton = () => (
