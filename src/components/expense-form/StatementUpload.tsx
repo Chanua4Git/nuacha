@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -37,6 +37,14 @@ export default function StatementUpload({ familyId }: { familyId?: string }) {
   const [note, setNote] = useState('');
   const [paidFrom, setPaidFromValue] = useState<PaidFromValue>(null);
   const opts = usePaidFromOptions();
+  const highlight = useMemo(() => new URLSearchParams(window.location.search).get('statement') === '1', []);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!highlight) return;
+    const t = setTimeout(() => wrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    return () => clearTimeout(t);
+  }, [highlight]);
 
   const pick = () => {
     const input = document.createElement('input');
@@ -106,10 +114,15 @@ export default function StatementUpload({ familyId }: { familyId?: string }) {
 
   return (
     <>
-      <Button type="button" variant="outline" className="w-full h-auto py-3 flex-col gap-1" onClick={pick}>
-        <span className="flex items-center gap-2"><FileText className="h-4 w-4" /> Upload a bank or card statement</span>
-        <span className="text-xs text-muted-foreground font-normal">Screenshots from your banking app — we skip anything already saved</span>
-      </Button>
+      <div ref={wrapRef} className={`rounded-xl transition-shadow ${highlight ? 'ring-4 ring-primary/40 ring-offset-4' : ''}`}>
+        <Button type="button" variant="outline" className="w-full h-auto py-3 flex-col gap-1" onClick={pick}>
+          <span className="flex items-center gap-2"><FileText className="h-4 w-4" /> Upload a bank or card statement</span>
+          <span className="text-xs text-muted-foreground font-normal">Screenshots from your banking app — we skip anything already saved</span>
+        </Button>
+        {highlight && (
+          <p className="mt-2 text-center text-sm text-primary">Tap here to add your statement screenshots.</p>
+        )}
+      </div>
 
       <Dialog open={open} onOpenChange={(o) => !busy && setOpen(o)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">

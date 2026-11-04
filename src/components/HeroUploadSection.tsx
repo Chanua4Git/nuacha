@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Leaf, Layers, Images } from "lucide-react";
+import { Camera, Upload, Leaf, Layers, Images, FileText } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
@@ -171,6 +171,22 @@ const HeroUploadSection = ({
                 navigate('/?talk=true');
               }}
             />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isBusy}
+              onClick={() => {
+                trackEvent('statement_link_open', { from: 'home' });
+                navigate('/app?tab=add-expense&statement=1');
+              }}
+              className="rounded-2xl gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Bank or card statement
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Screenshots from your banking app — we read the charges and skip anything you already saved.
+            </p>
           </div>
 
           {/* Reassuring message */}
