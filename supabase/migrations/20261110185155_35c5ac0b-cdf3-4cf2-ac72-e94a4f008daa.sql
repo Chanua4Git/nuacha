@@ -1,0 +1,1 @@
+UPDATE public.expenses SET date = '2026-11-10' WHERE amount = 451.60 AND date = '2023-10-11' AND place ILIKE '%pennywise%';
