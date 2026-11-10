@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense } from '@/types/expense';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 import { useExpense } from '@/context/ExpenseContext';
 import { Calendar, MapPin, TagIcon, Trash2, Edit, AlertTriangle, FileText, Download } from 'lucide-react';
 import { PaidFromBadge } from '@/components/money/PaidFromSelect';
@@ -47,6 +48,7 @@ const ExpenseCard = ({
   
   const category = categories.find(c => c.id === expense.category);
   const hasReceipt = !!expense.receiptImageUrl || !!expense.receiptUrl;
+  const purchaseDate = parseReceiptCalendarDate(expense.date);
 
   const handleCategoryChange = (categoryId: string) => {
     if (onCategoryChange && categoryId !== expense.category) {
@@ -98,7 +100,7 @@ const ExpenseCard = ({
             <div>
               <div className="text-lg font-bold">${expense.amount.toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">
-                {format(parseISO(expense.date), 'MMM d, yyyy')}
+                {purchaseDate ? format(purchaseDate, 'MMM d, yyyy') : 'Check purchase date'}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">

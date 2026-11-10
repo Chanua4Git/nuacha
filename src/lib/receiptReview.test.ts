@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
 import { receiptDateConcern, pendingReviewGroups } from './receiptReview';
 import { groupBulkSaves } from './reviewBatch';
 
