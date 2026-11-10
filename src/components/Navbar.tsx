@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { ShoppingBasket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart, PieChart, FileImage, Wallet } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
@@ -54,6 +55,7 @@ const Navbar = () => {
     { name: 'Add Expense', icon: <PlusCircle className="h-4 w-4" />, path: '/app?tab=add-expense' },
     { name: 'Budget & Planning', icon: <PieChart className="h-4 w-4" />, path: '/budget' },
     { name: 'Cash & Accounts', icon: <Wallet className="h-4 w-4" />, path: '/money' },
+    { name: 'Shopping list', icon: <ShoppingBasket className="h-4 w-4" />, path: '/shopping' },
     { name: 'Receipt Management', icon: <FileImage className="h-4 w-4" />, path: '/receipts' },
     { name: 'Reports', icon: <BarChart3 className="h-4 w-4" />, path: '/reports' },
     { name: 'Settings', icon: <Settings className="h-4 w-4" />, path: '/options' },

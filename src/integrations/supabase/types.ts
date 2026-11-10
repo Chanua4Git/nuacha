@@ -2549,6 +2549,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_list_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_checked: boolean
+          list_name: string
+          name: string
+          notes: string | null
+          store: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_checked?: boolean
+          list_name?: string
+          name: string
+          notes?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_checked?: boolean
+          list_name?: string
+          name?: string
+          notes?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_orders: {
         Row: {
           admin_notes: string | null

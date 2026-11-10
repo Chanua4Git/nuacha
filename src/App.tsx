@@ -28,6 +28,7 @@ import { ExpenseProvider } from "./context/ExpenseContext";
 
 import Reports from "./pages/Reports";
 import Budget from "./pages/Budget";
+import ShoppingList from "./pages/ShoppingList";
 import DemoBudget from "./pages/DemoBudget";
 import Receipts from "./pages/Receipts";
 import AuthenticationDemo from "./pages/AuthenticationDemo";
@@ -163,6 +164,7 @@ const App = () => {
                         <MoneyPots />
                       </ProtectedRoute>
                     } />
+                    <Route path="/shopping" element={<ProtectedRoute><ShoppingList /></ProtectedRoute>} />
                     <Route path="/updates" element={<Updates />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
