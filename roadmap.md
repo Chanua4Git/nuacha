@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Populate the owner's attached shopping list, reconcile bought items, refresh suggestions after scans, and publish the current shopping page.
+
 - [x] Make single and bulk saved scans reviewable regardless of receipt date; flag unusual dates and keep just-saved entries visible (six regression tests passed).
 - [ ] Verify saved scan review in the signed-in Expenses page (external Supabase browser session unavailable).
 
