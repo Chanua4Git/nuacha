@@ -52,7 +52,7 @@ export function setStoreRule(place: string, rule: StoreDateRule) {
   write(RULES_KEY, all);
 }
 
-export interface DateAdjustment { date: string; adjusted: boolean; reason?: 'store' | 'future' }
+export interface DateAdjustment { date: string; adjusted: boolean; reason?: 'store' | 'future' | 'stale' }
 
 /**
  * Apply store memory, then the sense check (a future date whose flip is
@@ -63,6 +63,18 @@ export function adjustScannedDate(place: string, ymd: string, today: string): Da
   if (!flipped) return { date: ymd, adjusted: false };
   if (getStoreRule(place) === 'swap') return { date: flipped, adjusted: true, reason: 'store' };
   if (ymd > today && flipped <= today) return { date: flipped, adjusted: true, reason: 'future' };
+  // Stale check: a date over a year old on a fresh scan usually means the
+  // reader misread a 2-digit year (and maybe day/month). Try this year's
+  // versions and pick the latest one that isn't in the future.
+  const ty = Number(today.slice(0, 4));
+  const lastYear = `${ty - 1}${today.slice(4)}`;
+  if (ymd < lastYear) {
+    const cands = [ymd, flipped].flatMap(d => [`${ty}${d.slice(4)}`, `${ty - 1}${d.slice(4)}`])
+      .filter(d => d <= today && d >= lastYear && !isNaN(Date.parse(d)))
+      .sort();
+    const best = cands[cands.length - 1];
+    if (best) return { date: best, adjusted: true, reason: 'stale' };
+  }
   return { date: ymd, adjusted: false };
 }
 
