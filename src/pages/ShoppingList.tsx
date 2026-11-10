@@ -99,17 +99,22 @@ export default function ShoppingList() {
   const visible = hints.filter(h => (filter === 'all' || (filter === 'due' ? h.due : h.daysSince <= 14)) && `${h.name} ${h.usualStore} ${h.lastPlace}`.toLowerCase().includes(search.toLowerCase()));
   const selectedHints = hints.filter(h => selected.has(h.key) && !onList.has(h.key));
 
-  const addItems = async (entries: { name: string; store: string }[]) => {
+  const addItems = async (entries: { name: string; store: string }[], stocked = false) => {
     if (!user || saving) return;
     const unique = entries.filter((entry, index, all) => entry.name.trim() && !onList.has(itemKey(entry.name)) && all.findIndex(e => itemKey(e.name) === itemKey(entry.name)) === index);
     if (!unique.length) return toast('Those items are already on this list.');
+    const existing = new Map(current.map(i => [itemKey(i.name), i]));
+    const revive = stocked ? [] : unique.map(e => existing.get(itemKey(e.name))).filter((i): i is Item => !!i);
+    const fresh = unique.filter(e => !existing.has(itemKey(e.name)));
+    if (!fresh.length && !revive.length) return toast('Those items are already on your complete list.');
     setSaving(true);
-    const { error } = await supabase.from('shopping_list_items').insert(unique.map(entry => ({ user_id: user.id, list_name: list, name: entry.name.trim(), store: entry.store.trim() || null })));
+    if (revive.length) await supabase.from('shopping_list_items').update({ is_checked: false }).in('id', revive.map(i => i.id)).eq('user_id', user.id);
+    const { error } = fresh.length ? await supabase.from('shopping_list_items').insert(fresh.map(entry => ({ user_id: user.id, list_name: list, name: entry.name.trim(), store: entry.store.trim() || null, is_checked: stocked }))) : { error: null };
     setSaving(false);
     if (error) return toast('That didn’t save — try again in a moment.');
     setName(''); setStore(''); setSelected(new Set());
     await load();
-    toast(`${unique.length === 1 ? 'Item' : `${unique.length} items`} added to ${list}.`);
+    toast(stocked ? `${fresh.length} past purchases saved to your complete list as “at home”.` : `${unique.length === 1 ? 'Item' : `${unique.length} items`} added to ${list}.`);
   };
   const toggle = async (i: Item) => {
     if (!user) return;
@@ -124,7 +129,10 @@ export default function ShoppingList() {
     if (error) return toast('That didn’t save — please try again.');
     load();
   };
-  const byStore = current.reduce<Record<string, Item[]>>((a, i) => { (a[i.store || 'Any store'] ||= []).push(i); return a; }, {});
+  const toGet = current.filter(i => !i.is_checked);
+  const atHome = current.filter(i => i.is_checked).sort((a, b) => a.name.localeCompare(b.name));
+  const missingHints = hints.filter(h => !current.some(i => itemKey(i.name) === h.key));
+  const byStore = toGet.reduce<Record<string, Item[]>>((a, i) => { (a[i.store || 'Any store'] ||= []).push(i); return a; }, {});
 
   return (
     <div className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -178,6 +186,7 @@ export default function ShoppingList() {
           <Input value={store} onChange={e => setStore(e.target.value)} placeholder="Store (optional)" aria-label="Shopping store" className="sm:w-44" />
           <Button type="submit" disabled={saving || !name.trim()}><Plus className="h-4 w-4 mr-1" /> Add</Button>
         </form>
+        {missingHints.length > 0 && <Button variant="outline" size="sm" disabled={saving} onClick={() => addItems(missingHints.map(h => ({ name: h.name, store: h.usualStore })), true)}><Sparkles className="h-4 w-4 mr-1" />Add all {missingHints.length} past purchases to my complete list</Button>}
         {current.length === 0 && <p className="text-sm text-muted-foreground">Nothing here yet — and that’s okay.</p>}
         {Object.entries(byStore).map(([s, its]) => <div key={s}>
           <h3 className="text-sm font-medium text-primary mb-1 break-words">{s}</h3>
@@ -190,7 +199,16 @@ export default function ShoppingList() {
             <Button size="icon" variant="ghost" onClick={() => remove(i.id)} aria-label={`Remove ${i.name}`} title={`Remove ${i.name}`}><Trash2 className="h-4 w-4" /></Button>
           </div>)}
         </div>)}
-        {current.some(i => i.is_checked) && <Button variant="outline" size="sm" onClick={() => remove()}>Clear ticked items</Button>}
+        {toGet.length === 0 && current.length > 0 && <p className="text-sm text-muted-foreground">Nothing to get right now — you’re all stocked.</p>}
+        {atHome.length > 0 && <div className="border-t border-border pt-4 space-y-1">
+          <h3 className="text-sm font-medium">At home · your complete list ({atHome.length})</h3>
+          <p className="text-xs text-muted-foreground">Ticked items stay here. Tap “Need it” when you’re running low.</p>
+          {atHome.map(i => <div key={i.id} className="flex items-center gap-2 py-1">
+            <span className="flex-1 min-w-0 break-words text-muted-foreground">{i.name}{i.store ? <span className="text-xs"> · {i.store}</span> : null}</span>
+            <Button size="sm" variant="outline" onClick={() => toggle(i)}>Need it</Button>
+            <Button size="icon" variant="ghost" onClick={() => remove(i.id)} aria-label={`Remove ${i.name}`} title={`Remove ${i.name}`}><Trash2 className="h-4 w-4" /></Button>
+          </div>)}
+        </div>}
       </section>
     </div>
   );
