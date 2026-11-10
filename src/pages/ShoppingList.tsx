@@ -35,6 +35,8 @@ export default function ShoppingList() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [receiptCount, setReceiptCount] = useState(0);
+  const [sightings, setSightings] = useState<{ id: string; item_name: string; store: string; price: number; seen_on: string }[]>([]);
+  const [priceForm, setPriceForm] = useState({ item: '', store: '', price: '' });
 
   useEffect(() => {
     const update = () => setRefresh(v => v + 1);
@@ -71,17 +73,19 @@ export default function ShoppingList() {
         if (familyIds.length) {
           for (let offset = 0; ; offset += 1000) {
             const { data, error } = await supabase.from('receipt_line_items')
-              .select('id, description, expense_id, expenses!inner(date, place, family_id)')
+              .select('id, description, expense_id, unit_price, total_price, quantity, expenses!inner(date, place, family_id)')
               .in('expenses.family_id', familyIds).order('id').range(offset, offset + 999);
             if (error) throw error;
             if (!active) return;
             for (const row of data || []) {
-              lines.push({ description: row.description, date: row.expenses.date, place: row.expenses.place });
+              lines.push({ description: row.description, date: row.expenses.date, place: row.expenses.place, price: Number(row.unit_price) || (row.total_price && row.quantity ? Number(row.total_price) / Number(row.quantity) : Number(row.total_price)) || null });
               receiptIds.add(row.expense_id);
             }
             if (!data || data.length < 1000) break;
           }
         }
+        const { data: seen } = await supabase.from('shopping_price_sightings').select('id, item_name, store, price, seen_on').eq('user_id', user.id).order('seen_on');
+        if (active) setSightings(seen || []);
         if (active) {
           setHints(shoppingSuggestions(lines, format(new Date(), 'yyyy-MM-dd')));
           setReceiptCount(receiptIds.size);
@@ -129,6 +133,34 @@ export default function ShoppingList() {
     if (error) return toast('That didn’t save — please try again.');
     load();
   };
+  useEffect(() => {
+    if (!user || loading || receiptError || !hints.length) return;
+    const have = new Set(items.map(i => itemKey(i.name)));
+    const missing = hints.filter(h => !have.has(h.key));
+    if (!missing.length) return;
+    supabase.from('shopping_list_items').insert(missing.map(h => ({ user_id: user.id, list_name: 'Household', name: h.name, store: h.usualStore || null, is_checked: h.daysSince <= 14 || !h.due }))).then(({ error }) => { if (!error) load(); });
+  }, [hints, loading]);
+  const priceInfo = (name: string) => {
+    const key = itemKey(name);
+    const all: Record<string, number> = { ...(hints.find(h => h.key === key)?.storePrices || {}) };
+    for (const s of sightings) if (itemKey(s.item_name) === key) all[s.store] = Number(s.price);
+    const entries = Object.entries(all).sort((a, b) => a[1] - b[1]);
+    return entries;
+  };
+  const priceLine = (name: string) => {
+    const e = priceInfo(name);
+    if (!e.length) return null;
+    const best = e[0];
+    const tie = e.filter(x => x[1] === best[1]).map(x => x[0]);
+    return `${tie.length > 1 ? `Same price at ${tie.join(' & ')}` : `Best: ${best[0]}`} TT$${best[1].toFixed(2)}${e.length > 1 && tie.length < e.length ? ` · ${e.slice(tie.length).map(([st, p]) => `${st} TT$${p.toFixed(2)}`).join(' · ')}` : ''}`;
+  };
+  const savePrice = async () => {
+    const price = Number(priceForm.price);
+    if (!user || !priceForm.item.trim() || !priceForm.store.trim() || !(price > 0)) return toast('Add the item, store and price.');
+    const { error } = await supabase.from('shopping_price_sightings').insert({ user_id: user.id, item_name: priceForm.item.trim(), store: priceForm.store.trim(), price });
+    if (error) return toast('That didn’t save — please try again.');
+    setPriceForm({ item: '', store: '', price: '' }); setRefresh(v => v + 1); toast('Price saved.');
+  };
   const toGet = current.filter(i => !i.is_checked);
   const atHome = current.filter(i => i.is_checked).sort((a, b) => a.name.localeCompare(b.name));
   const missingHints = hints.filter(h => !current.some(i => itemKey(i.name) === h.key));
@@ -144,6 +176,17 @@ export default function ShoppingList() {
           <Button size="sm" variant="ghost" type="submit" aria-label="Add list"><Plus className="h-4 w-4" /></Button>
         </form>
       </div>
+
+      <section className="space-y-2 border-t border-border pt-5" aria-label="Shelf prices">
+        <h2 className="text-lg font-playfair">Spotted a price?</h2>
+        <p className="text-xs text-muted-foreground">Prices from your scans are added automatically. Add shelf tags here to compare stores.</p>
+        <form className="flex flex-col sm:flex-row gap-2" onSubmit={e => { e.preventDefault(); savePrice(); }}>
+          <Input value={priceForm.item} onChange={e => setPriceForm(f => ({ ...f, item: e.target.value }))} placeholder="Item (e.g. adult diapers)" aria-label="Price item" />
+          <Input value={priceForm.store} onChange={e => setPriceForm(f => ({ ...f, store: e.target.value }))} placeholder="Store" aria-label="Price store" className="sm:w-36" />
+          <Input value={priceForm.price} onChange={e => setPriceForm(f => ({ ...f, price: e.target.value }))} placeholder="TT$" inputMode="decimal" aria-label="Price" className="sm:w-24" />
+          <Button type="submit" variant="outline">Save price</Button>
+        </form>
+      </section>
 
       <section className="space-y-4 order-last" aria-label="Receipt suggestions">
         <div className="flex items-center justify-between gap-2">
@@ -194,6 +237,7 @@ export default function ShoppingList() {
             <Checkbox checked={i.is_checked} onCheckedChange={() => toggle(i)} aria-label={`Got ${i.name}`} />
             <div className="flex-1 min-w-0">
               <span className={`break-words ${i.is_checked ? 'line-through text-muted-foreground' : ''}`}>{i.name}</span>
+              {priceLine(i.name) && <p className="text-xs text-primary">{priceLine(i.name)}</p>}
               {hints.find(h => h.key === itemKey(i.name)) && <p className="text-xs text-muted-foreground">Last bought {dateLabel(hints.find(h => h.key === itemKey(i.name))?.lastDate || '')}</p>}
             </div>
             <Button size="icon" variant="ghost" onClick={() => remove(i.id)} aria-label={`Remove ${i.name}`} title={`Remove ${i.name}`}><Trash2 className="h-4 w-4" /></Button>
@@ -204,7 +248,7 @@ export default function ShoppingList() {
           <h3 className="text-sm font-medium">At home · your complete list ({atHome.length})</h3>
           <p className="text-xs text-muted-foreground">Ticked items stay here. Tap “Need it” when you’re running low.</p>
           {atHome.map(i => <div key={i.id} className="flex items-center gap-2 py-1">
-            <span className="flex-1 min-w-0 break-words text-muted-foreground">{i.name}{i.store ? <span className="text-xs"> · {i.store}</span> : null}</span>
+            <span className="flex-1 min-w-0 break-words text-muted-foreground">{i.name}{i.store ? <span className="text-xs"> · {i.store}</span> : null}{priceLine(i.name) && <span className="block text-xs text-primary">{priceLine(i.name)}</span>}</span>
             <Button size="sm" variant="outline" onClick={() => toggle(i)}>Need it</Button>
             <Button size="icon" variant="ghost" onClick={() => remove(i.id)} aria-label={`Remove ${i.name}`} title={`Remove ${i.name}`}><Trash2 className="h-4 w-4" /></Button>
           </div>)}
