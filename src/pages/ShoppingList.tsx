@@ -36,6 +36,19 @@ export default function ShoppingList() {
   const [search, setSearch] = useState('');
   const [receiptCount, setReceiptCount] = useState(0);
 
+  useEffect(() => {
+    const update = () => setRefresh(v => v + 1);
+    const visible = () => { if (document.visibilityState === 'visible') update(); };
+    window.addEventListener('nuacha:checkin-saved', update);
+    window.addEventListener('focus', update);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      window.removeEventListener('nuacha:checkin-saved', update);
+      window.removeEventListener('focus', update);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, []);
+
   const load = async () => {
     if (!user) return;
     const { data, error } = await supabase.from('shopping_list_items').select('*').eq('user_id', user.id).order('created_at');
@@ -124,9 +137,9 @@ export default function ShoppingList() {
         </form>
       </div>
 
-      <section className="space-y-4" aria-label="Receipt suggestions">
+      <section className="space-y-4 order-last" aria-label="Receipt suggestions">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl font-playfair flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary shrink-0" /> From your receipts</h2>
+          <h2 className="text-xl font-playfair flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary shrink-0" /> Smart shopping suggestions</h2>
           <Button variant="ghost" size="icon" aria-label="Refresh receipt suggestions" title="Refresh receipt suggestions" disabled={loading} onClick={() => setRefresh(v => v + 1)}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin motion-reduce:animate-none' : ''}`} /></Button>
         </div>
         {!loading && !receiptError && <p className="text-sm text-muted-foreground">{receiptCount} saved receipts · {hints.length} shopping items</p>}
@@ -170,7 +183,10 @@ export default function ShoppingList() {
           <h3 className="text-sm font-medium text-primary mb-1 break-words">{s}</h3>
           {its.map(i => <div key={i.id} className="flex items-center gap-3 py-1.5">
             <Checkbox checked={i.is_checked} onCheckedChange={() => toggle(i)} aria-label={`Got ${i.name}`} />
-            <span className={`flex-1 min-w-0 break-words ${i.is_checked ? 'line-through text-muted-foreground' : ''}`}>{i.name}</span>
+            <div className="flex-1 min-w-0">
+              <span className={`break-words ${i.is_checked ? 'line-through text-muted-foreground' : ''}`}>{i.name}</span>
+              {hints.find(h => h.key === itemKey(i.name)) && <p className="text-xs text-muted-foreground">Last bought {dateLabel(hints.find(h => h.key === itemKey(i.name))?.lastDate || '')}</p>}
+            </div>
             <Button size="icon" variant="ghost" onClick={() => remove(i.id)} aria-label={`Remove ${i.name}`} title={`Remove ${i.name}`}><Trash2 className="h-4 w-4" /></Button>
           </div>)}
         </div>)}

@@ -13,7 +13,7 @@ const products: [RegExp, string][] = [
   [/\b(?:oats|oatmeal)\b/i, 'Oats'],
   [/\b(?:gloves?|nitrile)\b/i, 'Gloves'],
   [/\b(?:adult.*diapers?|diapers?.*adult)\b/i, 'Adult diapers'],
-  [/\b(?:wet wipes?|washcloths?|cleansing (?:cloths?|wipes?)|ms wipes)\b/i, 'Wipes / cleansing cloths'],
+  [/\b(?:wet wipes?|washcloths?|wcloth|cleansing (?:cloths?|wipes?)|ms wipes|clnsg cloths)\b/i, 'Wipes / cleansing cloths'],
   [/\b(?:dettol|rexoguard|salve.*antiseptic)\b/i, 'Antiseptic liquid'],
   [/\b(?:yogurt|yoghurt)\b/i, 'Yogurt'],
   [/\bolive oil\b/i, 'Olive oil'],
@@ -27,7 +27,7 @@ export const itemKey = (s: string): string => {
 };
 
 function productName(description: string, place: string): string | null {
-  if (/\b(?:misc|miscellaneous|unknown|item|department|tax|vat|discount|subtotal|total|payment|fee|delivery|service charge)\b/i.test(description)) return null;
+  if (/\b(?:misc|miscellaneous|unknown|item|department|tax|vat|discount|subtotal|total|payment|fee|delivery|service charge|membership)\b/i.test(description)) return null;
   // Restaurants and financial transactions are not household replenishment.
   if (/\b(?:pizza|fudge|restaurant|kfc|mcdonald|wendy|subway|starbucks|amazon|apple|canva|aeropost|prd trading|tstt|telecom|service station)\b/i.test(place)) return null;
   const alias = products.find(([pattern]) => pattern.test(description));
