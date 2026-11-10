@@ -2585,6 +2585,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_price_sightings: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          notes: string | null
+          price: number
+          seen_on: string
+          store: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          price: number
+          seen_on?: string
+          store: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          price?: number
+          seen_on?: string
+          store?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_orders: {
         Row: {
           admin_notes: string | null
