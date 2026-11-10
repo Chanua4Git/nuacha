@@ -208,7 +208,9 @@ function mapOcrResponseToFormData(ocrResponse: MindeeResponse | any): OCRResult 
       toast(`Date read as ${format(processedDate!, 'd MMM yyyy')}`, {
         description: fix.reason === 'store'
           ? `${place} prints day/month, so we used that. Change it if it looks off.`
-          : 'The date looked like it was in the future, so we swapped day and month. Change it if it looks off.',
+          : fix.reason === 'stale'
+            ? 'The date looked over a year old, so we used the most likely recent date. Change it if it looks off.'
+            : 'The date looked like it was in the future, so we swapped day and month. Change it if it looks off.',
       });
     }
   }

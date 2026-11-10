@@ -27,4 +27,10 @@ describe('store date memory', () => {
     learnFromSavedDate('Riaz', '2026-10-09');
     expect(adjustScannedDate('Riaz', '2026-10-25', '2026-10-26').date).toBe('2026-10-25');
   });
+  it('fixes a stale misread year using day/month flip (Pennywise 11/10/26)', () => {
+    expect(adjustScannedDate('Unknown Shop Xyz', '2023-10-11', '2026-11-10')).toEqual({ date: '2026-11-10', adjusted: true, reason: 'stale' });
+  });
+  it('leaves recent dates alone', () => {
+    expect(adjustScannedDate('Unknown Shop Xyz', '2026-03-04', '2026-11-10').adjusted).toBe(false);
+  });
 });
