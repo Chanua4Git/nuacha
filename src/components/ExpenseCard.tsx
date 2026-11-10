@@ -49,6 +49,7 @@ const ExpenseCard = ({
   const category = categories.find(c => c.id === expense.category);
   const hasReceipt = !!expense.receiptImageUrl || !!expense.receiptUrl;
   const purchaseDate = parseReceiptCalendarDate(expense.date);
+  const replacementDate = parseReceiptCalendarDate(expense.nextReplacementDate);
 
   const handleCategoryChange = (categoryId: string) => {
     if (onCategoryChange && categoryId !== expense.category) {
@@ -216,7 +217,7 @@ const ExpenseCard = ({
           {expense.needsReplacement && (
             <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
               <Calendar className="h-3 w-3 mr-1" />
-              Next: {format(parseISO(expense.nextReplacementDate || ''), 'MMM d, yyyy')}
+              Next: {replacementDate ? format(replacementDate, 'MMM d, yyyy') : 'Date not set'}
             </div>
           )}
           
