@@ -1,10 +1,11 @@
 import { differenceInCalendarDays, format } from 'date-fns';
 import { parseReceiptCalendarDate } from '@/utils/receipt/calendarDate';
 
-export interface PurchaseLine { description: string; date: string; place: string; }
+export interface PurchaseLine { description: string; date: string; place: string; price?: number | null; }
 export interface ShoppingSuggestion {
   key: string; name: string; lastDate: string; lastPlace: string; usualStore: string;
   times: number; avgGapDays: number | null; daysSince: number; due: boolean;
+  lastPrice?: number | null; storePrices?: Record<string, number>;
 }
 export interface DueHint extends ShoppingSuggestion { avgGapDays: number; }
 
@@ -72,7 +73,9 @@ export function shoppingSuggestions(lines: PurchaseLine[], today: string): Shopp
       days.add(p.date); stores.set(p.place, days);
     }
     const usualStore = [...stores].sort((a, b) => b[1].size - a[1].size)[0]?.[0] || '';
-    out.push({ key, name: latest.name, lastDate: latest.date, lastPlace: latest.place, usualStore, times: dates.length, avgGapDays, daysSince, due: avgGapDays !== null && daysSince >= avgGapDays });
+    const storePrices: Record<string, number> = {};
+    for (const p of [...purchases].reverse()) if (p.price && p.price > 0 && p.place.trim()) storePrices[p.place] = p.price;
+    out.push({ lastPrice: latest.price ?? null, storePrices, key, name: latest.name, lastDate: latest.date, lastPlace: latest.place, usualStore, times: dates.length, avgGapDays, daysSince, due: avgGapDays !== null && daysSince >= avgGapDays });
   }
   return out.sort((a, b) => Number(b.due) - Number(a.due) || b.times - a.times || b.lastDate.localeCompare(a.lastDate));
 }
