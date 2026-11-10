@@ -109,14 +109,20 @@ export const useExpenses = (filters?: ExpenseFilters) => {
         }
         
         // Sort by date DESC, then by created_at DESC for same-day ordering
-        query = query.order('date', { ascending: false }).order('created_at', { ascending: false });
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
+        query = query.order('date', { ascending: false }).order('created_at', { ascending: false }).order('id');
+
+        // Old misread dates must not disappear past PostgREST's 1,000-row cap.
+        const data = [];
+        for (let offset = 0; ; offset += 1000) {
+          const { data: page, error } = await query.range(offset, offset + 999);
+          if (error) throw error;
+          data.push(...(page || []));
+          if (!page || page.length < 1000) break;
+        }
         
         const mappedExpenses = data.map((item: any) => ({
           id: item.id,
+          createdAt: item.created_at,
           familyId: item.family_id,
           amount: item.amount,
           description: item.description,

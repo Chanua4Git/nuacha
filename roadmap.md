@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Make single and bulk saved scans reviewable regardless of receipt date; flag unusual dates and keep just-saved entries visible.
+
 - [x] Improve shopping creation from all saved receipt lines: readable household items, recent purchases, usual stores, and reviewed bulk additions (eight logic tests passed).
 - [ ] Verify receipt suggestions and bulk additions in the signed-in shopping page (external Supabase browser session unavailable).
 
