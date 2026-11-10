@@ -169,6 +169,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   // "Check these": receipts saved together (bulk) are grouped into cards to check against paper copies.
   const [review, setReview] = useState(() => getReviewState());
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   useEffect(() => {
     const sync = () => setReview(getReviewState());
     window.addEventListener('nuacha:review-state', sync);
@@ -200,7 +201,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   
   // "Just added" highlight after a Talk-it-through save (?new=id1,id2&fam=familyId)
   const [searchParams, setSearchParams] = useSearchParams();
-  const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const newParam = searchParams.get('new');
   const famParam = searchParams.get('fam');
 
