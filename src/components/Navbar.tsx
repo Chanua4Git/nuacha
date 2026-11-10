@@ -1,5 +1,6 @@
 
-import { ShoppingBasket, useState } from 'react';
+import { useState } from 'react';
+import { ShoppingBasket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart, PieChart, FileImage, Wallet } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
