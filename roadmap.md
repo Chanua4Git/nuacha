@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Improve shopping creation from all saved receipt lines: readable household items, recent purchases, usual stores, and reviewed bulk additions.
+
 - [x] Replace overlapping Learning social menus with image/video previews before downloads; phone and desktop previews, downloads, and prepared receipt-video playback verified.
 
 - [x] Align Learning receipt lessons and automatic reels: shared playback/export, lesson links, and current receipt button names (both previews and video-with-audio download browser-verified).
