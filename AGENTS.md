@@ -21,3 +21,4 @@
 - Tutorial reels render deterministic, code-drawn demo scenes in a browser canvas; only text overrides persist in admin-only tutorial_reels, and MediaRecorder mixes local Web Audio, so no real account data or uploaded media enters exports.
 - Map tutorial reels to Learning module/step IDs in the reel specs and reuse the same renderer and sound schedule for Learning playback and social exports; public Learning uses generic defaults, never admin-only saved overrides, so teaching stays aligned without publishing private drafts.
 - Learning social exports open a preview dialog, then generate a temporary file and offer a separate download/share click, so long video generation cannot lose Safari user activation.
+- Shopping list items are stored per user; 'Probably due' hints are computed in the browser from the user's own receipt lines (3+ purchase days, usual gap passed), so nothing is stored or shared.
