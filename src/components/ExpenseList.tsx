@@ -25,6 +25,7 @@ import { Expense } from '@/types/expense';
 import DetailedReceiptView from './receipt/DetailedReceiptView';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { StoryExportDialog } from '@/components/story/StoryExportDialog';
+import { receiptDateConcern, pendingReviewGroups } from '@/lib/receiptReview';
 
 const STORY_CREATOR_EMAIL = 'chanuajohnson4@gmail.com';
 
@@ -167,7 +168,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
   
   // "Check these": receipts saved together (bulk) are grouped into cards to check against paper copies.
   const [review, setReview] = useState(() => getReviewState());
-  const [savedRows, setSavedRows] = useState<{ id: string; created_at: string }[]>([]);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   useEffect(() => {
     const sync = () => setReview(getReviewState());
@@ -175,30 +175,27 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
     void syncReviewState();
     return () => window.removeEventListener('nuacha:review-state', sync);
   }, []);
-  useEffect(() => {
-    if (!selectedFamily?.id) return;
-    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
-    supabase.from('expenses').select('id,created_at').eq('family_id', selectedFamily.id).gte('created_at', since)
-      .then(({ data }) => setSavedRows((data ?? []) as any));
-  }, [selectedFamily?.id, allExpenses]);
   const reviewGroups = useMemo(() => {
-    const live = new Set((allExpenses || []).map((e) => e.id));
-    return groupBulkSaves(savedRows)
-      .map((g) => g.filter((r) => live.has(r.id)))
-      .filter((g) => g.length >= 2)
-      .map((g) => ({ key: g[0].id, savedAt: g[0].created_at, ids: g.map((r) => r.id) }))
-      .filter((g) => !review.finished.includes(g.key));
-  }, [savedRows, allExpenses, review.finished]);
+    const rows = allExpenses.flatMap(e => e.createdAt ? [{ id: e.id, created_at: e.createdAt }] : []);
+    return pendingReviewGroups(groupBulkSaves(rows, undefined, true), review.finished, review.checked)
+      .flatMap(g => {
+        const first = g[0];
+        return first ? [{ key: first.id, savedAt: first.created_at, ids: g.map(r => r.id) }] : [];
+      });
+  }, [allExpenses, review.finished, review.checked]);
   const activeGroup = reviewGroups.find((g) => g.key === openGroup) || null;
   const groupExpenses = useMemo(
     () => (activeGroup ? (allExpenses || []).filter((e) => activeGroup.ids.includes(e.id)) : []),
     [activeGroup, allExpenses],
   );
 
+  const pendingExpenses = allExpenses.filter(e => reviewGroups.some(g => g.ids.includes(e.id)));
+  const flaggedExpenses = pendingExpenses.filter(e => receiptDateConcern(e.date, e.createdAt));
+  const hiddenRecent = pendingExpenses.filter(e => e.createdAt && Date.now() - new Date(e.createdAt).getTime() <= 7 * 86400000 && !expenses.some(visible => visible.id === e.id));
   const displayExpenses = selectedTab === 'duplicates'
     ? expenses.filter(e => duplicateExpenseIds.has(e.id))
     : selectedTab === 'review'
-      ? groupExpenses
+      ? (activeGroup ? groupExpenses : pendingExpenses.filter(e => justAdded.has(e.id)))
       : expenses;
   
   // "Just added" highlight after a Talk-it-through save (?new=id1,id2&fam=familyId)
@@ -233,12 +230,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
     }, 300);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newParam, allExpenses, selectedFamily?.id]);
-
-  useEffect(() => {
-    if (!justAdded.size) return;
-    const t = setTimeout(() => setJustAdded(new Set()), 8000);
-    return () => clearTimeout(t);
-  }, [justAdded]);
 
   const totalAmount = displayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
@@ -368,8 +359,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
           )}
         </div>
 
+        {selectedTab !== 'review' && (hiddenRecent.length > 0 || flaggedExpenses.length > 0) && (
+          <div className="mb-4 border border-primary/30 bg-accent/30 rounded-lg p-4 space-y-2" role="status">
+            {hiddenRecent.length > 0 && <p className="text-sm">{hiddenRecent.length} recently saved {hiddenRecent.length === 1 ? 'entry is' : 'entries are'} outside these filters.</p>}
+            {flaggedExpenses.length > 0 && <p className="text-sm">{flaggedExpenses.length} {flaggedExpenses.length === 1 ? 'purchase date needs' : 'purchase dates need'} a second look.</p>}
+            <Button size="sm" variant="outline" onClick={() => { setSelectedTab('review'); setOpenGroup(null); }}>Review saved scans</Button>
+          </div>
+        )}
+
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList>
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 h-auto w-full gap-1">
             <TabsTrigger value="all">All Expenses</TabsTrigger>
             <TabsTrigger value="review" className="relative">
               Check these
@@ -457,24 +456,25 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         
         {selectedTab === 'review' && !activeGroup && (
           <div className="mt-4 space-y-3">
-            <p className="text-sm text-muted-foreground">Receipts you saved together are grouped here so you can check them against the paper copies. Tap a group to start.</p>
+            <p className="text-sm text-muted-foreground">Saved entries awaiting your check · newest saved first · any purchase date</p>
             {reviewGroups.length === 0 && <p className="text-sm">Nothing waiting to be checked — and that's okay.</p>}
             {reviewGroups.map((g) => {
               const rows = (allExpenses || []).filter((e) => g.ids.includes(e.id));
               const total = rows.reduce((t, e) => t + e.amount, 0);
               const done = g.ids.filter((id) => review.checked.includes(id)).length;
               return (
-                <button key={g.key} type="button" onClick={() => setOpenGroup(g.key)}
-                  className="w-full text-left rounded-2xl border bg-card p-4 shadow-sm hover:border-primary/50 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{g.ids.length} receipts saved together</span>
+                <Button key={g.key} type="button" variant="outline" onClick={() => setOpenGroup(g.key)}
+                  className="w-full h-auto block text-left whitespace-normal p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">{g.ids.length === 1 ? '1 saved entry' : `${g.ids.length} entries saved together`}</span>
                     <Badge variant={done === g.ids.length ? 'default' : 'secondary'}>{done} of {g.ids.length} checked</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {new Date(g.savedAt).toLocaleString('en-TT', { dateStyle: 'medium', timeStyle: 'short' })} · ${total.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1 truncate">{rows.map((e) => e.place).join(' · ')}</p>
-                </button>
+                  {rows.some(e => receiptDateConcern(e.date, e.createdAt) && !review.checked.includes(e.id)) && <Badge variant="outline" className="mt-2">Check purchase date</Badge>}
+                </Button>
               );
             })}
           </div>
@@ -483,13 +483,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         {selectedTab === 'review' && activeGroup && (
           <div className="mt-4 rounded-lg border border-primary/30 bg-card p-4 space-y-2">
             <Button size="sm" variant="ghost" className="px-0" onClick={() => setOpenGroup(null)}>← All groups</Button>
-            <p className="font-medium">{activeGroup.ids.length} receipts saved together</p>
+            <p className="font-medium">{activeGroup.ids.length === 1 ? '1 saved entry' : `${activeGroup.ids.length} entries saved together`}</p>
             <p className="text-sm text-muted-foreground">
               Hold each paper receipt next to its card. Check the store, date and total, fix anything with the pencil, then tap <span className="font-medium">Looks right</span>.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm">{activeGroup.ids.filter((id) => review.checked.includes(id)).length} of {activeGroup.ids.length} checked</span>
-              <Button size="sm" onClick={() => { finishGroup(activeGroup.key); setOpenGroup(null); toast.success("Finished checking. You're doing beautifully."); }}>
+              <Button size="sm" disabled={!activeGroup.ids.every(id => review.checked.includes(id))} onClick={() => { finishGroup(activeGroup.key); setOpenGroup(null); toast.success("Finished checking. You're doing beautifully."); }}>
                 Finish checking
               </Button>
             </div>
@@ -515,6 +515,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
         <div className="space-y-4">
           {displayExpenses.map((expense) => (
             <div key={expense.id} className="space-y-1">
+            {receiptDateConcern(expense.date, expense.createdAt) && !review.checked.includes(expense.id) && (
+              <div className="border border-primary/30 rounded-lg bg-accent/30 p-3 flex flex-wrap items-center gap-2">
+                <p className="text-sm flex-1 min-w-0">{receiptDateConcern(expense.date, expense.createdAt)}.</p>
+                {onEditExpense && <Button size="sm" variant="outline" onClick={() => handleEditExpense(expense)}>Check date</Button>}
+              </div>
+            )}
             {selectedTab === 'review' && activeGroup && (
               <Button
                 size="sm"
