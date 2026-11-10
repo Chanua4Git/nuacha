@@ -56,6 +56,7 @@ export interface Reminder {
 // Expense type
 export interface Expense {
   id: string;
+  createdAt?: string;
   familyId: string;
   amount: number;
   description: string;

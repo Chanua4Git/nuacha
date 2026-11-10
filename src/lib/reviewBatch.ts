@@ -48,7 +48,7 @@ export const finishGroup = (key: string) => {
 
 export interface SavedRow { id: string; created_at: string }
 /** Receipts saved within 3 minutes of each other count as one bulk group (2+ receipts). */
-export function groupBulkSaves(rows: SavedRow[], gapMs = 3 * 60 * 1000): SavedRow[][] {
+export function groupBulkSaves(rows: SavedRow[], gapMs = 3 * 60 * 1000, includeSingles = false): SavedRow[][] {
   const sorted = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at));
   const groups: SavedRow[][] = [];
   for (const r of sorted) {
@@ -56,5 +56,5 @@ export function groupBulkSaves(rows: SavedRow[], gapMs = 3 * 60 * 1000): SavedRo
     if (g && new Date(r.created_at).getTime() - new Date(g[g.length - 1].created_at).getTime() <= gapMs) g.push(r);
     else groups.push([r]);
   }
-  return groups.filter((g) => g.length >= 2).reverse();
+  return groups.filter((g) => includeSingles || g.length >= 2).reverse();
 }
