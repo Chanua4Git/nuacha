@@ -621,6 +621,33 @@ export type Database = {
         }
         Relationships: []
       }
+      coparenting_display: {
+        Row: {
+          coverage: Json
+          my_role: string | null
+          other_role: string | null
+          phases: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coverage?: Json
+          my_role?: string | null
+          other_role?: string | null
+          phases?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coverage?: Json
+          my_role?: string | null
+          other_role?: string | null
+          phases?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coparenting_entries: {
         Row: {
           amount: number | null
@@ -721,6 +748,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coparenting_profile: {
+        Row: {
+          children: Json
+          created_at: string
+          invite_pref: string | null
+          lives_with: string | null
+          maintenance: string | null
+          my_country: string | null
+          my_role: string | null
+          onboarded_at: string | null
+          other_country: string | null
+          other_role: string | null
+          relationship: string | null
+          safety_concern: string | null
+          stage: string | null
+          start_mode: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          children?: Json
+          created_at?: string
+          invite_pref?: string | null
+          lives_with?: string | null
+          maintenance?: string | null
+          my_country?: string | null
+          my_role?: string | null
+          onboarded_at?: string | null
+          other_country?: string | null
+          other_role?: string | null
+          relationship?: string | null
+          safety_concern?: string | null
+          stage?: string | null
+          start_mode?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          children?: Json
+          created_at?: string
+          invite_pref?: string | null
+          lives_with?: string | null
+          maintenance?: string | null
+          my_country?: string | null
+          my_role?: string | null
+          onboarded_at?: string | null
+          other_country?: string | null
+          other_role?: string | null
+          relationship?: string | null
+          safety_concern?: string | null
+          stage?: string | null
+          start_mode?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       coparenting_viewers: {
         Row: {
