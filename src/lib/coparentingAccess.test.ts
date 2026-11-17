@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { coParentingTabs, invitedEmailSchema } from './coparentingAccess';
+import { coParentingTabs, coParentingSection, invitedEmailSchema } from './coparentingAccess';
 
 describe('co-parenting invitations', () => {
+  it('opens the welcome page unless a valid section is explicitly selected', () => {
+    expect(coParentingSection(null)).toBeNull();
+    expect(coParentingSection('unknown')).toBeNull();
+    expect(coParentingSection('timeline')).toBe('timeline');
+    expect(coParentingSection('setup')).toBe('setup');
+  });
   it('allows invited viewers only the timeline', () => {
     expect(coParentingTabs(true)).toEqual(['timeline']);
   });

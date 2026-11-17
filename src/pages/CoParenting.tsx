@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,7 @@ import { CoParentingWelcome, CoParentingDisclaimer } from '@/components/coparent
 import { Onboarding } from '@/components/coparenting/Onboarding';
 import { Plus, Printer, Archive } from 'lucide-react';
 import { Timeline, catColor } from '@/components/coparenting/Timeline';
-import { coParentingTabs, invitedEmailSchema } from '@/lib/coparentingAccess';
+import { coParentingTabs, coParentingSection, invitedEmailSchema } from '@/lib/coparentingAccess';
 
 // New tables are not in generated types until the draft is accepted.
 const db = supabase as any;
@@ -33,6 +33,9 @@ const money = (n: number) => `TT$${n.toFixed(2)}`;
 
 export default function CoParenting() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const section = coParentingSection(searchParams.get('section'));
+  const goSection = (value: string) => { setSearchParams({ section: value }); window.scrollTo(0, 0); };
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [shared, setShared] = useState<{ owner_id: string }[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -72,7 +75,7 @@ export default function CoParenting() {
     if (e.error || c.error) setError('Your log could not load. If this was just set up, it becomes available once the update is accepted.');
     setEntries(e.data || []); setCalls(c.data || []); setLoading(false);
   }
-  useEffect(() => { void load(); }, [ownerId]);
+  useEffect(() => { if (section) void load(); }, [ownerId, section]);
 
   const visible = useMemo(() => entries.filter(e => (!cats.length || cats.includes(e.category)) && (status === 'all' || e.status === status) && (!q || `${e.title} ${e.details || ''}`.toLowerCase().includes(q.toLowerCase()))), [entries, cats, status, q]);
 
@@ -110,9 +113,11 @@ export default function CoParenting() {
     await db.from('coparenting_entries').update({ archived_at: new Date().toISOString() }).eq('id', e.id).eq('user_id', user.id); setEditing(null); void load();
   }
   if (!user) { localStorage.setItem('intendedPath', '/co-parenting'); return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn={false} /></main>; }
+  if (!section) return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn readOnly={readOnly} startLabel={readOnly ? 'View shared timeline' : ownerId && !needsSetup ? 'Open my private log' : 'Start my private log'} onStart={() => goSection(readOnly ? 'timeline' : needsSetup ? 'setup' : 'timeline')} onSection={goSection} /></main>;
   if (!ownerId) return <main className="container mx-auto max-w-3xl px-4 py-8"><p role="status">Checking your private access…</p></main>;
   return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
+      <Button variant="ghost" onClick={() => { setSearchParams({}); window.scrollTo(0, 0); }}>← Co-parenting home</Button>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl">Co-parenting</h1>
         {shared.length > 0 && <Select value={ownerId || ''} onValueChange={setOwnerId}><SelectTrigger className="w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={user.id}>My record</SelectItem>{shared.map((s, i) => <SelectItem key={s.owner_id} value={s.owner_id}>Shared record {i + 1} (view only)</SelectItem>)}</SelectContent></Select>}
@@ -121,8 +126,8 @@ export default function CoParenting() {
       {readOnly && <Badge variant="secondary">Timeline only · Read-only access</Badge>}
     </header>
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    {needsSetup && !readOnly ? <><CoParentingWelcome signedIn onStart={() => document.getElementById('cp-onboarding')?.scrollIntoView({ behavior: 'smooth' })} /><div id="cp-onboarding" /><Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); void load(); }} /></> : <>
-    <Tabs key={ownerId} defaultValue="timeline">
+    {needsSetup && !readOnly ? <><div id="cp-onboarding" /><Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); goSection('timeline'); void load(); }} /></> : <>
+    <Tabs key={ownerId} value={coParentingTabs(readOnly).includes(section) ? section : 'timeline'} onValueChange={goSection}>
       <TabsList className="flex h-auto flex-wrap print:hidden">
         {coParentingTabs(readOnly).map(tab => <TabsTrigger key={tab} value={tab}>{{ timeline: 'Timeline', access: 'Access & calls', maintenance: 'Maintenance', summary: 'Summary', sharing: 'Sharing' }[tab]}</TabsTrigger>)}
       </TabsList>

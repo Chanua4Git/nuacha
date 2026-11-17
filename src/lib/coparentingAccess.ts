@@ -4,3 +4,7 @@ export const invitedEmailSchema = z.string().trim().email().max(254).transform(v
 export const coParentingTabs = (readOnly: boolean) => readOnly
   ? ['timeline']
   : ['timeline', 'access', 'maintenance', 'summary', 'sharing'];
+
+export function coParentingSection(value: string | null) {
+  return ['timeline', 'access', 'maintenance', 'summary', 'sharing', 'setup'].includes(value ?? '') ? value : null;
+}

@@ -4,6 +4,7 @@ import { Feather, CalendarCheck, PhoneCall, Wallet, FileText, Lock, ArrowRight }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { invitedEmailSchema } from '@/lib/coparentingAccess';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function CoParentingDisclaimer() {
   return (
@@ -15,13 +16,14 @@ export function CoParentingDisclaimer() {
 }
 
 const cards = [
-  { icon: CalendarCheck, title: 'Timeline', body: 'Note what happened and when, in plain words. Mark what matters most.' },
-  { icon: PhoneCall, title: 'Access & calls', body: 'Tick off scheduled calls and visits so patterns are easy to see.' },
-  { icon: Wallet, title: 'Maintenance', body: 'Track amounts due and received, month by month, without the mental load.' },
-  { icon: FileText, title: 'Calm summary', body: 'Turn your own records into a clear summary you can print or share.' },
+  { section: 'timeline', icon: CalendarCheck, title: 'Timeline', body: 'Note what happened and when, in plain words. Mark what matters most.', detail: 'Keep moments in date order, find a year, and mark important events. Your records stay separate from every other family’s.' },
+  { section: 'access', icon: PhoneCall, title: 'Access & calls', body: 'Tick off scheduled calls and visits so patterns are easy to see.', detail: 'Keep a record of scheduled calls and what happened, with space for factual notes.' },
+  { section: 'maintenance', icon: Wallet, title: 'Maintenance', body: 'Track amounts due and received, month by month, without the mental load.', detail: 'Compare amounts due with payments you have logged. These are your records, not a court determination.' },
+  { section: 'summary', icon: FileText, title: 'Calm summary', body: 'Turn your own records into a clear summary you can print or share.', detail: 'Choose a period and prepare a factual summary from your own log. Nuacha does not provide legal advice.' },
 ];
 
-export function CoParentingWelcome({ signedIn, onStart }: { signedIn: boolean; onStart?: () => void }) {
+export function CoParentingWelcome({ signedIn, onStart, onSection, startLabel = 'Start my private log', readOnly = false }: { signedIn: boolean; onStart?: () => void; onSection?: (section: string) => void; startLabel?: string; readOnly?: boolean }) {
+  const [preview, setPreview] = useState<(typeof cards)[number] | null>(null);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
@@ -33,12 +35,13 @@ export function CoParentingWelcome({ signedIn, onStart }: { signedIn: boolean; o
     navigate('/login', { state: { email: result.data, timelineViewer: true } });
   }
   const cta = signedIn
-    ? <Button size="lg" className="rounded-2xl" onClick={onStart}>Start my private log <ArrowRight className="ml-2 h-4 w-4" /></Button>
+    ? <Button size="lg" className="rounded-2xl" onClick={onStart}>{startLabel} <ArrowRight className="ml-2 h-4 w-4" /></Button>
     : <Button size="lg" className="rounded-2xl" asChild><Link to="/signup">Start my private log <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>;
   return (
     <section className="space-y-8">
       <div className="rounded-3xl bg-gradient-to-br from-secondary/60 via-background to-accent/40 px-6 py-12 text-center">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-secondary"><Feather className="h-6 w-6 text-primary" /></div>
+        <p className="mb-3 text-sm font-medium text-primary">Nuacha co-parenting</p>
         <h1 className="font-heading text-3xl md:text-4xl">Begin your journey to steady, peaceful records</h1>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Take a gentle first step. Log one moment today and watch it become an organised, calm timeline you can rely on — whenever you need it.</p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -65,10 +68,19 @@ export function CoParentingWelcome({ signedIn, onStart }: { signedIn: boolean; o
             <c.icon className="h-5 w-5 text-primary" />
             <h2 className="mt-3 font-heading text-xl">{c.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{c.body}</p>
+            <Button variant="ghost" className="mt-3 px-0" onClick={() => signedIn && onSection && (!readOnly || c.section === 'timeline') ? onSection(c.section) : setPreview(c)}>
+              {signedIn && (!readOnly || c.section === 'timeline') ? `Open ${c.title.toLowerCase()}` : `Explore ${c.title.toLowerCase()}`}<ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         ))}
       </div>
       <CoParentingDisclaimer />
+      <Dialog open={!!preview} onOpenChange={open => { if (!open) setPreview(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>{preview?.title}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{preview?.detail}</p>
+          {readOnly ? <p className="text-sm">Your invitation gives access to the shared timeline only.</p> : signedIn ? <Button onClick={() => { setPreview(null); onStart?.(); }}>Start my private log</Button> : <Button asChild><Link to="/signup">Start my private log</Link></Button>}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
