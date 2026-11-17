@@ -582,6 +582,164 @@ export type Database = {
           },
         ]
       }
+      coparenting_calls: {
+        Row: {
+          call_date: string
+          child_mood: string | null
+          created_at: string
+          duration_min: number | null
+          id: string
+          made_by: string | null
+          notes: string | null
+          outcome: string
+          scheduled: boolean
+          user_id: string
+        }
+        Insert: {
+          call_date: string
+          child_mood?: string | null
+          created_at?: string
+          duration_min?: number | null
+          id?: string
+          made_by?: string | null
+          notes?: string | null
+          outcome?: string
+          scheduled?: boolean
+          user_id: string
+        }
+        Update: {
+          call_date?: string
+          child_mood?: string | null
+          created_at?: string
+          duration_min?: number | null
+          id?: string
+          made_by?: string | null
+          notes?: string | null
+          outcome?: string
+          scheduled?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coparenting_entries: {
+        Row: {
+          amount: number | null
+          archived_at: string | null
+          category: string
+          channel: string | null
+          child_effect: string | null
+          created_at: string
+          date_label: string | null
+          date_precision: string
+          details: string | null
+          event_date: string
+          expense_id: string | null
+          history: Json
+          id: string
+          initiated_by: string | null
+          my_response: string | null
+          phase: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          archived_at?: string | null
+          category: string
+          channel?: string | null
+          child_effect?: string | null
+          created_at?: string
+          date_label?: string | null
+          date_precision?: string
+          details?: string | null
+          event_date: string
+          expense_id?: string | null
+          history?: Json
+          id?: string
+          initiated_by?: string | null
+          my_response?: string | null
+          phase?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          archived_at?: string | null
+          category?: string
+          channel?: string | null
+          child_effect?: string | null
+          created_at?: string
+          date_label?: string | null
+          date_precision?: string
+          details?: string | null
+          event_date?: string
+          expense_id?: string | null
+          history?: Json
+          id?: string
+          initiated_by?: string | null
+          my_response?: string | null
+          phase?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coparenting_private: {
+        Row: {
+          details: string | null
+          entry_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          details?: string | null
+          entry_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          details?: string | null
+          entry_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coparenting_private_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: true
+            referencedRelation: "coparenting_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coparenting_viewers: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          viewer_email: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          viewer_email: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          viewer_email?: string
+        }
+        Relationships: []
+      }
       demo_leads: {
         Row: {
           additional_info: string | null
@@ -2969,6 +3127,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      can_view_coparenting: { Args: { _owner: string }; Returns: boolean }
       clean_duplicate_families: { Args: never; Returns: undefined }
       cleanup_duplicate_budget_categories: { Args: never; Returns: undefined }
       cleanup_duplicate_categories_advanced: {
