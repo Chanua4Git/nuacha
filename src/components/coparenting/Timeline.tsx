@@ -37,7 +37,7 @@ export function Timeline({ entries, onOpen, onToggleImportant, readOnly }: { ent
   const firstOfYear = new Set(years.map(y => sorted.find(e => e.event_date.startsWith(y))!.id));
 
   return <div className="space-y-5">
-    <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-1 border-b bg-background/95 px-4 py-2 backdrop-blur print:hidden">
+    <div className="sticky top-16 z-10 -mx-4 flex flex-wrap items-center gap-1 border-b bg-background/95 px-4 py-2 backdrop-blur print:hidden">
       {years.map(y => <button key={y} className="rounded-md px-2 py-1 text-sm tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => document.getElementById(`cp-year-${y}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{y}</button>)}
       <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setNewest(n => !n)}>{newest ? 'Newest first' : 'Oldest first'}</Button>
     </div>
@@ -48,9 +48,9 @@ export function Timeline({ entries, onOpen, onToggleImportant, readOnly }: { ent
         <p className="text-sm text-muted-foreground">{g.note}</p>
       </header>
       <ol className="relative before:absolute before:bottom-1 before:left-[79px] before:top-1 before:w-0.5 before:bg-border sm:before:left-[101px]">
-        {g.items.map(e => <li key={e.id} id={firstOfYear.has(e.id) ? `cp-year-${e.event_date.slice(0, 4)}` : undefined} className="group grid scroll-mt-14 grid-cols-[68px_24px_minmax(0,1fr)] items-start gap-x-0 py-2 sm:grid-cols-[90px_24px_minmax(0,1fr)]">
+        {g.items.map(e => <li key={e.id} id={firstOfYear.has(e.id) ? `cp-year-${e.event_date.slice(0, 4)}` : undefined} className="group grid scroll-mt-32 grid-cols-[68px_24px_minmax(0,1fr)] items-start gap-x-0 py-2 sm:grid-cols-[90px_24px_minmax(0,1fr)]">
           <span className="pr-2 pt-0.5 text-right text-[13px] tabular-nums leading-snug text-muted-foreground">{e.date_label || format(new Date(`${e.event_date}T12:00:00`), 'd MMM yyyy')}</span>
-          <span className="flex justify-center pt-1.5"><span className="h-3 w-3 rounded-full ring-2 ring-background" style={{ background: catColor(e.category) }} /></span>
+          <span className="flex justify-center pt-1.5"><span className="relative z-[1] h-3 w-3 rounded-full ring-2 ring-background" style={{ background: catColor(e.category) }} /></span>
           <div className="flex min-w-0 items-start gap-2">
             <button className="min-w-0 flex-1 text-left text-[15px] leading-normal hover:underline hover:decoration-muted-foreground/40" onClick={() => onOpen(e)}>
               <span className="mr-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: catColor(e.category) }}>{e.category}</span>
