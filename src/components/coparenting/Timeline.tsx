@@ -9,15 +9,10 @@ export const CAT_VAR: Record<string, string> = {
 };
 export const catColor = (c: string) => `hsl(var(${CAT_VAR[c] || '--muted-foreground'}))`;
 
-export const PHASES = [
-  { from: '2000-01-01', to: '2021-04-20', range: '2019 – Apr 2021', title: 'Father in the country, in-person access', note: 'Visits every other day, 3–6 p.m.; disputes through lawyers from Sep 2020.' },
-  { from: '2021-04-21', to: '2022-12-31', range: 'Apr 2021 – Sep 2022', title: 'Father leaves; daily video calls begin without an agreed plan', note: 'No plan for long-distance contact is agreed.' },
-  { from: '2023-01-01', to: '2024-12-31', range: '2023 – 2024', title: 'Court case opens; a fixed call schedule', note: 'Interim orders set voice and video access pending the probation report.' },
-  { from: '2025-01-01', to: '2099-12-31', range: '2025 – 2026', title: 'Final orders and a new application', note: 'Final consent orders in Aug 2025; a new application follows in Oct 2026.' },
-];
-const COVERAGE: [string, number, number][] = [['Jan–Feb 2024', 12, 18], ['Mar–Dec 2024', 80, 87], ['Jan–Aug 2025', 92, 98], ['Aug–Dec 2025', 32, 51]];
+export type Phase = { from: string; to: string; range?: string; title: string; note?: string };
+export type Coverage = { title?: string; rows?: [string, number, number][]; note?: string };
 
-export type TimelineEntry = { id: string; event_date: string; date_label: string | null; category: string; title: string; status: string; is_important?: boolean };
+export type TimelineEntry = { id: string; event_date: string; date_label: string | null; phase?: string | null; category: string; title: string; status: string; is_important?: boolean };
 
 /** Bold the first sentence of important entries. */
 function Text({ e }: { e: TimelineEntry }) {
@@ -26,11 +21,13 @@ function Text({ e }: { e: TimelineEntry }) {
   return m ? <><b className="font-semibold">{m[1]}</b>{m[2]}</> : <b className="font-semibold">{e.title}</b>;
 }
 
-export function Timeline({ entries, onOpen, onToggleImportant, readOnly }: { entries: TimelineEntry[]; onOpen: (e: TimelineEntry) => void; onToggleImportant: (e: TimelineEntry) => void; readOnly: boolean }) {
+export function Timeline({ entries, phases = [], coverage, onOpen, onToggleImportant, readOnly }: { entries: TimelineEntry[]; phases?: Phase[]; coverage?: Coverage; onOpen: (e: TimelineEntry) => void; onToggleImportant: (e: TimelineEntry) => void; readOnly: boolean }) {
   const [newest, setNewest] = useState(false);
   const sorted = useMemo(() => [...entries].sort((a, b) => newest ? b.event_date.localeCompare(a.event_date) : a.event_date.localeCompare(b.event_date)), [entries, newest]);
   const groups = useMemo(() => {
-    const list = PHASES.map(p => ({ ...p, items: sorted.filter(e => e.event_date >= p.from && e.event_date <= p.to) })).filter(g => g.items.length);
+    let list: (Phase & { items: TimelineEntry[] })[];
+    if (phases.length) list = phases.map(p => ({ ...p, items: sorted.filter(e => e.event_date >= p.from && e.event_date <= p.to) })).filter(g => g.items.length);
+    else { const m = new Map<string, TimelineEntry[]>(); [...sorted].sort((a, b) => a.event_date.localeCompare(b.event_date)).forEach(e => { const k = e.phase || e.event_date.slice(0, 4); m.set(k, [...(m.get(k) || []), e]); }); list = [...m.entries()].map(([title, items]) => ({ title, from: items[0].event_date, to: items[items.length - 1].event_date, items: newest ? [...items].reverse() : items })); }
     return newest ? list.reverse() : list;
   }, [sorted, newest]);
   const years = [...new Set(sorted.map(e => e.event_date.slice(0, 4)))].sort();
@@ -43,9 +40,9 @@ export function Timeline({ entries, onOpen, onToggleImportant, readOnly }: { ent
     </div>
     {groups.map(g => <section key={g.title} className="space-y-2">
       <header className="border-t pt-3">
-        <small className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.range}</small>
+        <small className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.range || `${g.items[0]?.event_date.slice(0, 4)}`}</small>
         <h2 className="font-heading text-lg">{g.title}</h2>
-        <p className="text-sm text-muted-foreground">{g.note}</p>
+        {g.note && <p className="text-sm text-muted-foreground">{g.note}</p>}
       </header>
       <ol className="relative before:absolute before:bottom-1 before:left-[79px] before:top-1 before:w-0.5 before:bg-border sm:before:left-[101px]">
         {g.items.map(e => <li key={e.id} id={firstOfYear.has(e.id) ? `cp-year-${e.event_date.slice(0, 4)}` : undefined} className="group grid scroll-mt-32 grid-cols-[68px_24px_minmax(0,1fr)] items-start gap-x-0 py-2 sm:grid-cols-[90px_24px_minmax(0,1fr)]">
@@ -62,12 +59,12 @@ export function Timeline({ entries, onOpen, onToggleImportant, readOnly }: { ent
         </li>)}
       </ol>
     </section>)}
-    <section className="space-y-3 rounded-lg border bg-card p-4">
-      <h2 className="font-heading text-lg">Scheduled call evenings Mother called</h2>
-      {COVERAGE.map(([l, n, d]) => <div key={l} className="grid grid-cols-[96px_minmax(0,1fr)_48px] items-center gap-3 text-[13px] sm:grid-cols-[120px_minmax(0,1fr)_56px]">
-        <span>{l}</span><span className="h-3 overflow-hidden rounded-full bg-muted"><span className="block h-full" style={{ width: `${(n / d) * 100}%`, background: catColor('Calls') }} /></span><span className="text-right tabular-nums">{n}/{d}</span>
+    {!!coverage?.rows?.length && <section className="space-y-3 rounded-lg border bg-card p-4">
+      <h2 className="font-heading text-lg">{coverage.title || 'Scheduled call coverage'}</h2>
+      {coverage.rows.map(([l, n, d]) => <div key={l} className="grid grid-cols-[96px_minmax(0,1fr)_48px] items-center gap-3 text-[13px] sm:grid-cols-[120px_minmax(0,1fr)_56px]">
+        <span>{l}</span><span className="h-3 overflow-hidden rounded-full bg-muted"><span className="block h-full" style={{ width: `${d ? (n / d) * 100 : 0}%`, background: catColor('Calls') }} /></span><span className="text-right tabular-nums">{n}/{d}</span>
       </div>)}
-      <p className="text-xs text-muted-foreground">From phone call history, 29 Dec 2023 – 31 Jan 2026: 429 calls, 266 placed by Mother.</p>
-    </section>
+      {coverage.note && <p className="text-xs text-muted-foreground">{coverage.note}</p>}
+    </section>}
   </div>;
 }

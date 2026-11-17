@@ -11,13 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CATEGORIES, parseSeed } from '@/utils/coparentingSeed';
-import { Plus, Printer, Upload, Archive } from 'lucide-react';
+import { CATEGORIES } from '@/utils/coparentingSeed';
+import { Onboarding } from '@/components/coparenting/Onboarding';
+import { Plus, Printer, Archive } from 'lucide-react';
 import { Timeline, catColor } from '@/components/coparenting/Timeline';
 
 // New tables are not in generated types until the draft is accepted.
 const db = supabase as any;
-const ROLES = ['Mother', 'Father', 'Child', 'Paternal grandmother', 'Paternal relative', 'My lawyer', 'His lawyer', 'Court officer', 'Police', 'School', 'Other'];
+const ROLES = ['Mother', 'Father', 'Child', 'Grandparent', 'Relative', 'My lawyer', 'Their lawyer', 'Court officer', 'Police', 'School', 'Other'];
 const CHANNELS = ['In person', 'Video call', 'Voice call', 'Text', 'WhatsApp', 'Email', 'Letter', 'Court', 'Police'];
 const STATUSES = ['Documented', 'My account', 'To confirm'];
 const BANNED = /\b(narcissist|manipulativ\w*|spite\w*|alienat\w*|gaslight\w*)\b/i;
@@ -42,15 +43,30 @@ export default function CoParenting() {
   const [editing, setEditing] = useState<Partial<Entry> | null>(null);
   const [privateText, setPrivateText] = useState('');
   const readOnly = !!user && ownerId !== null && ownerId !== user.id;
+  const [display, setDisplay] = useState<any>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const me = display?.my_role || 'You'; const other = display?.other_role || 'Other parent';
 
-  useEffect(() => { if (user) { setOwnerId(user.id); void db.from('coparenting_viewers').select('owner_id').neq('owner_id', user.id).then(({ data }: any) => setShared(data || [])); } }, [user?.id]);
+  useEffect(() => { if (!user) return; void (async () => {
+    const [v, prof, own] = await Promise.all([
+      db.from('coparenting_viewers').select('owner_id').neq('owner_id', user.id),
+      db.from('coparenting_profile').select('onboarded_at').eq('user_id', user.id).maybeSingle(),
+      db.from('coparenting_entries').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    ]);
+    const sh = v.data || []; setShared(sh);
+    const hasOwn = !!prof.data?.onboarded_at || (own.count || 0) > 0;
+    // Someone invited to view (with no record of their own) lands on the shared record.
+    if (!hasOwn && sh.length) setOwnerId(sh[0].owner_id); else { setOwnerId(user.id); setNeedsSetup(!hasOwn); }
+  })(); }, [user?.id]);
   async function load() {
     if (!ownerId) return;
     setLoading(true); setError('');
-    const [e, c] = await Promise.all([
+    const [e, c, d] = await Promise.all([
       db.from('coparenting_entries').select('*').eq('user_id', ownerId).is('archived_at', null).order('event_date', { ascending: false }),
       db.from('coparenting_calls').select('*').eq('user_id', ownerId).order('call_date', { ascending: false }),
+      db.from('coparenting_display').select('*').eq('user_id', ownerId).maybeSingle(),
     ]);
+    setDisplay(d.data || null);
     if (e.error || c.error) setError('Your log could not load. If this was just set up, it becomes available once the update is accepted.');
     setEntries(e.data || []); setCalls(c.data || []); setLoading(false);
   }
@@ -89,17 +105,6 @@ export default function CoParenting() {
     if (!user || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
     await db.from('coparenting_entries').update({ archived_at: new Date().toISOString() }).eq('id', e.id).eq('user_id', user.id); setEditing(null); void load();
   }
-  async function importHistory() {
-    if (!user) return;
-    const seed = parseSeed();
-    const have = new Set(entries.map(e => `${e.event_date}|${e.title}`));
-    const fresh = seed.filter(s => !have.has(`${s.event_date}|${s.title}`)).map(s => ({ ...s, user_id: user.id }));
-    if (!fresh.length) { toast('Your history is already in the log.'); return; }
-    const r = await db.from('coparenting_entries').insert(fresh);
-    if (r.error) { toast.error('Import did not finish. Please try again.'); return; }
-    toast.success(`${fresh.length} entries imported. Review any marked "To confirm".`); void load();
-  }
-
   if (!user) return null;
   return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
@@ -111,6 +116,7 @@ export default function CoParenting() {
       {readOnly && <Badge variant="secondary">You are viewing a shared record. You can read it but not change it.</Badge>}
     </header>
     {error && <p role="alert" className="text-destructive">{error}</p>}
+    {needsSetup && !readOnly ? <Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); void load(); }} /> : <>
     <Tabs defaultValue="timeline">
       <TabsList className="flex h-auto flex-wrap print:hidden">
         <TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="access">Access & calls</TabsTrigger><TabsTrigger value="maintenance">Maintenance</TabsTrigger><TabsTrigger value="summary">Summary</TabsTrigger>{!readOnly && <TabsTrigger value="sharing">Sharing</TabsTrigger>}
@@ -119,20 +125,20 @@ export default function CoParenting() {
       <TabsContent value="timeline" className="space-y-4">
         <div className="flex flex-wrap gap-2 print:hidden">
           {!readOnly && <Button onClick={() => openEntry(blank())}><Plus className="mr-2 h-4 w-4" />Log something</Button>}
-          {!readOnly && <Button variant="outline" onClick={importHistory}><Upload className="mr-2 h-4 w-4" />Import my prepared history</Button>}
           <Input className="max-w-xs" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
           <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">{CATEGORIES.map(c => { const on = !cats.length || cats.includes(c); return <button key={c} aria-pressed={on} className={`inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-[13px] font-medium transition-opacity ${on ? '' : 'opacity-45'}`} onClick={() => setCats(p => { const cur = p.length ? p : [...CATEGORIES]; const next = cur.includes(c) ? cur.filter(x => x !== c) : [...cur, c]; return next.length === CATEGORIES.length ? [] : next; })}><span className="h-2 w-2 rounded-full" style={{ background: catColor(c) }} />{c}</button>; })}</div>
-        {loading ? <p role="status">Loading your log…</p> : !entries.length ? <p className="py-8 text-muted-foreground">Nothing here yet — and that's okay. Log today's call, or import the history you prepared.</p> :
-          <Timeline entries={visible} readOnly={readOnly} onOpen={e => openEntry(e as Entry)} onToggleImportant={toggleImportant} />}
+        {loading ? <p role="status">Loading your log…</p> : !entries.length ? <p className="py-8 text-muted-foreground">Nothing here yet — and that's okay. Tap “Log something” to add your first entry.</p> :
+          <Timeline entries={visible} phases={display?.phases || []} coverage={display?.coverage} readOnly={readOnly} onOpen={e => openEntry(e as Entry)} onToggleImportant={toggleImportant} />}
       </TabsContent>
 
-      <TabsContent value="access"><CallTracker calls={calls} readOnly={readOnly} userId={user.id} onChange={load} /></TabsContent>
-      <TabsContent value="maintenance"><Maintenance entries={entries} onLog={() => openEntry({ ...blank(), category: 'Money', initiated_by: 'Father', title: 'Maintenance received' })} readOnly={readOnly} /></TabsContent>
-      <TabsContent value="summary"><Summary entries={entries} calls={calls} /></TabsContent>
+      <TabsContent value="access"><CallTracker other={other} calls={calls} readOnly={readOnly} userId={user.id} onChange={load} /></TabsContent>
+      <TabsContent value="maintenance"><Maintenance entries={entries} other={other} onLog={() => openEntry({ ...blank(), category: 'Money', initiated_by: other, title: 'Maintenance received' })} readOnly={readOnly} /></TabsContent>
+      <TabsContent value="summary"><Summary entries={entries} calls={calls} me={me} other={other} /></TabsContent>
       {!readOnly && <TabsContent value="sharing"><Sharing userId={user.id} /></TabsContent>}
     </Tabs>
+    </>}
 
     <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -167,7 +173,7 @@ function scheduledDays(month: string) {
   for (let d = 1; d <= new Date(y, m, 0).getDate(); d++) { const dt = new Date(y, m - 1, d); if (SCHEDULE_DAYS.includes(dt.getDay())) out.push(format(dt, 'yyyy-MM-dd')); }
   return out;
 }
-function CallTracker({ calls, readOnly, userId, onChange }: { calls: Call[]; readOnly: boolean; userId: string; onChange: () => void }) {
+function CallTracker({ other, calls, readOnly, userId, onChange }: { other: string; calls: Call[]; readOnly: boolean; userId: string; onChange: () => void }) {
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const days = scheduledDays(month); const byDate = new Map(calls.map(c => [c.call_date, c]));
   const logged = days.map(d => byDate.get(d)).filter(Boolean) as Call[];
@@ -176,23 +182,23 @@ function CallTracker({ calls, readOnly, userId, onChange }: { calls: Call[]; rea
     const r = await db.from('coparenting_calls').upsert({ user_id: userId, call_date: date, outcome, scheduled: true }, { onConflict: 'user_id,call_date' });
     if (r.error) toast.error('Not saved.'); else onChange();
   }
-  const OUT: [string, string][] = [['happened', 'Happened'], ['father_missed', 'Father did not call'], ['child_unavailable', 'Child unavailable'], ['mother_missed', 'I missed it']];
+  const OUT: [string, string][] = [['happened', 'Happened'], ['father_missed', `${other} did not call`], ['child_unavailable', 'Child unavailable'], ['mother_missed', 'You missed it']];
   return <div className="space-y-4">
-    <p className="text-sm text-muted-foreground">Scheduled calls under the current order: Tuesday, Thursday and Saturday, 6–7 pm. Tap what happened after each call.</p>
+    <p className="text-sm text-muted-foreground">Scheduled call days shown: Tuesday, Thursday and Saturday. Tap what happened after each call.</p>
     <Input type="month" className="w-48" value={month} onChange={e => setMonth(e.target.value)} />
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">{[['Scheduled', days.length], ['Happened', count('happened')], ['Father did not call', count('father_missed')], ['Child unavailable', count('child_unavailable')], ['I missed', count('mother_missed')]].map(([l, v]) => <div key={l} className="rounded-lg border p-3"><dt className="text-xs text-muted-foreground">{l}</dt><dd className="text-xl">{v}</dd></div>)}</dl>
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">{[['Scheduled', days.length], ['Happened', count('happened')], [`${other} did not call`, count('father_missed')], ['Child unavailable', count('child_unavailable')], ['You missed', count('mother_missed')]].map(([l, v]) => <div key={l} className="rounded-lg border p-3"><dt className="text-xs text-muted-foreground">{l}</dt><dd className="text-xl">{v}</dd></div>)}</dl>
     <ul className="space-y-2">{days.map(d => { const c = byDate.get(d); return <li key={d} className="flex flex-wrap items-center gap-2 rounded-lg border p-2"><span className="w-28 text-sm">{format(new Date(`${d}T12:00:00`), 'EEE d MMM')}</span>{OUT.map(([k, l]) => <Button key={k} size="sm" disabled={readOnly} variant={c?.outcome === k ? 'default' : 'outline'} onClick={() => mark(d, k)}>{l}</Button>)}</li>; })}</ul>
   </div>;
 }
 
-function Maintenance({ entries, onLog, readOnly }: { entries: Entry[]; onLog: () => void; readOnly: boolean }) {
-  const [weekly, setWeekly] = useState(250); const [from, setFrom] = useState('2025-08-19');
+function Maintenance({ other, entries, onLog, readOnly }: { other: string; entries: Entry[]; onLog: () => void; readOnly: boolean }) {
+  const [weekly, setWeekly] = useState(0); const [from, setFrom] = useState(format(new Date(new Date().getFullYear(), 0, 1), 'yyyy-MM-dd'));
   const rows = useMemo(() => {
     const out: { month: string; due: number; received: number }[] = [];
     const start = new Date(`${from}T12:00:00`); const now = new Date();
     for (let d = new Date(start.getFullYear(), start.getMonth(), 1); d <= now && out.length < 120; d.setMonth(d.getMonth() + 1)) {
       const key = format(d, 'yyyy-MM'); const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-      const received = entries.filter(e => e.category === 'Money' && e.initiated_by === 'Father' && e.amount && e.event_date.startsWith(key)).reduce((s, e) => s + Number(e.amount), 0);
+      const received = entries.filter(e => e.category === 'Money' && e.initiated_by === other && e.amount && e.event_date.startsWith(key)).reduce((s, e) => s + Number(e.amount), 0);
       out.push({ month: key, due: Math.round(weekly * days / 7 * 100) / 100, received });
     }
     return out;
@@ -200,17 +206,17 @@ function Maintenance({ entries, onLog, readOnly }: { entries: Entry[]; onLog: ()
   const owed = rows.reduce((s, r) => s + r.due - r.received, 0);
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end gap-3"><label className="text-sm">Order / week (TT$)<Input type="number" value={weekly} onChange={e => setWeekly(Number(e.target.value))} className="w-32" /></label><label className="text-sm">Order started<Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>{!readOnly && <Button onClick={onLog}><Plus className="mr-2 h-4 w-4" />Log a payment received</Button>}</div>
-    <p className="text-sm">Difference across these months: <strong>{money(owed)}</strong> {owed > 0 ? '(due but not logged as received)' : ''}. Only payments you log here, with the Father as payer, count as received.</p>
+    <p className="text-sm">Difference across these months: <strong>{money(owed)}</strong> {owed > 0 ? '(due but not logged as received)' : ''}. Only payments you log here, with the {other} as payer, count as received.</p>
     <div className="overflow-hidden rounded-lg border"><table className="w-full text-sm"><thead className="bg-muted/50 text-left"><tr><th className="p-2">Month</th><th className="p-2 text-right">Due</th><th className="p-2 text-right">Received</th><th className="p-2 text-right">Difference</th></tr></thead><tbody>{rows.map(r => <tr key={r.month} className="border-t"><td className="p-2">{format(new Date(`${r.month}-15T12:00:00`), 'MMM yyyy')}</td><td className="p-2 text-right">{money(r.due)}</td><td className="p-2 text-right">{money(r.received)}</td><td className="p-2 text-right">{money(r.due - r.received)}</td></tr>)}</tbody></table></div>
     <p className="text-sm text-muted-foreground">For what the child actually costs month by month (and half-shares of medical, dental, optical and school costs), use <Link className="underline" to="/reports">Reports → Child expense evidence</Link>.</p>
   </div>;
 }
 
-function Summary({ entries, calls }: { entries: Entry[]; calls: Call[] }) {
-  const [from, setFrom] = useState('2025-08-19'); const [to, setTo] = useState(format(new Date(), 'yyyy-MM-dd')); const [intro, setIntro] = useState(''); const [meeting, setMeeting] = useState('Family Court social services officer');
+function Summary({ entries, calls, me, other }: { entries: Entry[]; calls: Call[]; me: string; other: string }) {
+  const [from, setFrom] = useState(format(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1), 'yyyy-MM-dd')); const [to, setTo] = useState(format(new Date(), 'yyyy-MM-dd')); const [intro, setIntro] = useState(''); const [meeting, setMeeting] = useState('');
   const list = entries.filter(e => e.event_date >= from && e.event_date <= to).sort((a, b) => a.event_date.localeCompare(b.event_date));
   const inRange = calls.filter(c => c.call_date >= from && c.call_date <= to);
-  const paid = list.filter(e => e.category === 'Money' && e.initiated_by === 'Father').reduce((s, e) => s + Number(e.amount || 0), 0);
+  const paid = list.filter(e => e.category === 'Money' && e.initiated_by === other).reduce((s, e) => s + Number(e.amount || 0), 0);
   return <div className="space-y-4">
     <div className="grid gap-3 print:hidden sm:grid-cols-3"><label className="text-sm">From<Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label><label className="text-sm">To<Input type="date" value={to} onChange={e => setTo(e.target.value)} /></label><label className="text-sm">Prepared for<Input value={meeting} onChange={e => setMeeting(e.target.value)} /></label></div>
     <Textarea className="print:hidden" placeholder="Short opening paragraph in your words" value={intro} onChange={e => setIntro(e.target.value)} />
@@ -218,10 +224,10 @@ function Summary({ entries, calls }: { entries: Entry[]; calls: Call[] }) {
     <article className="space-y-3 rounded-lg border p-6 print:border-0 print:p-0">
       <h2 className="font-heading text-2xl">Summary of events — {format(new Date(`${from}T12:00:00`), 'd MMM yyyy')} to {format(new Date(`${to}T12:00:00`), 'd MMM yyyy')}</h2>
       <p className="text-sm">Prepared for: {meeting}</p>{intro && <p>{intro}</p>}
-      <p className="text-sm">Scheduled calls logged: {inRange.length} · happened {inRange.filter(c => c.outcome === 'happened').length} · Father did not call {inRange.filter(c => c.outcome === 'father_missed').length} · I missed {inRange.filter(c => c.outcome === 'mother_missed').length} · Payments logged from Father: {money(paid)}</p>
+      <p className="text-sm">Scheduled calls logged: {inRange.length} · happened {inRange.filter(c => c.outcome === 'happened').length} · {other} did not call {inRange.filter(c => c.outcome === 'father_missed').length} · {me} missed {inRange.filter(c => c.outcome === 'mother_missed').length} · Payments logged from {other}: {money(paid)}</p>
       <table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-1 pr-2">Date</th><th className="pr-2">Category</th><th className="pr-2">What happened</th><th>Status</th></tr></thead><tbody>{list.map(e => <tr key={e.id} className="border-b align-top"><td className="py-1 pr-2 whitespace-nowrap">{e.date_label || e.event_date}</td><td className="pr-2">{e.category}</td><td className="pr-2">{e.title}</td><td>{e.status}</td></tr>)}</tbody></table>
       <p className="text-sm">Open questions: {list.filter(e => e.status === 'To confirm').length} entries still need a document.</p>
-      <p className="border-t pt-2 text-xs text-muted-foreground">Prepared by the mother from her own records. People are named by role. Not legal advice.</p>
+      <p className="border-t pt-2 text-xs text-muted-foreground">Prepared by the {me === 'You' ? 'parent' : me.toLowerCase()} from their own records. People are named by role. Not legal advice.</p>
     </article>
   </div>;
 }
@@ -234,7 +240,7 @@ function Sharing({ userId }: { userId: string }) {
     const e = email.trim().toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(e)) { toast.error('Enter a valid email.'); return; }
     const r = await db.from('coparenting_viewers').insert({ owner_id: userId, viewer_email: e }); if (r.error) toast.error('Could not add.'); else { setEmail(''); load(); }
   }
-  const link = `${window.location.origin}/co-parenting`;
+  const link = 'https://nuacha.com/co-parenting';
   return <div className="max-w-xl space-y-4">
     <p className="text-sm text-muted-foreground">Give a trusted person read-only access. They sign in to Nuacha with this exact email, then open the link. They never see private details, and cannot change anything.</p>
     <div className="flex gap-2"><Input type="email" placeholder="their@email.com" value={email} onChange={e => setEmail(e.target.value)} /><Button onClick={add}>Add</Button></div>

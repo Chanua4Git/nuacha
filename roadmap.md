@@ -53,3 +53,5 @@
 - [ ] Phase editing in settings (phases currently fixed)
 - [ ] Access & calls redesign (role-neutral outcomes, schedules, call-history import)
 - [ ] Summary rebuilt as court-ready report (sort dates, split 2019/2020 entry, presets, PDF/Word)
+- [x] Co-parenting setup for new families (6 steps), role labels, private safety answer, nuacha.com share link
+- [ ] "Getting ready" track, history import, T&T info pack (needs lawyer review), shared/professional access
