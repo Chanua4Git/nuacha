@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CategoryWithCamelCase, ReceiptLineItem } from '@/types/expense';
 import { useAuth } from '@/auth/contexts/AuthProvider';
+import { relevantServiceCategory } from '@/utils/receipt/relevantCategory';
 
 interface SmartSuggestion {
   categoryId: string;
@@ -306,7 +307,7 @@ export const useSmartCategorySuggestions = (
       user: !!user
     });
 
-    if (!place || categories.length === 0) {
+    if ((!place && !lineItems?.length) || categories.length === 0) {
       console.log('❌ Early return - missing place or categories:', { place, categoriesCount: categories.length });
       setSuggestions([]);
       setIsLoading(false);
@@ -316,6 +317,11 @@ export const useSmartCategorySuggestions = (
     const generateSuggestions = async () => {
       setIsLoading(true);
       try {
+        const service = relevantServiceCategory(place, lineItems, categories);
+        if (service) {
+          setSuggestions([{ categoryId: service.category.id, category: service.category, score: 1, confidence: service.confidence, reasons: [service.reason] }]);
+          return;
+        }
         // First check baseline intelligence for vendors and line items
         const baselineSuggestions = getBaselineSuggestions(place, lineItems, categories);
         console.log('📊 Baseline suggestions:', baselineSuggestions);
@@ -488,7 +494,7 @@ export const useSmartCategorySuggestions = (
           );
 
           // Only include suggestions with meaningful scores
-          if (score > 0.1) {
+          if (score > 0.1 && (factors.merchantScore > 0 || factors.lineItemScore > 0)) {
             const reasons: string[] = [];
             if (factors.merchantScore > 0.3) reasons.push(`Based on ${place} purchases`);
             if (factors.lineItemScore > 0.3) reasons.push('Similar items purchased');

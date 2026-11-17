@@ -1,5 +1,10 @@
 # Roadmap
 
+- [x] Focus category suggestions on dental/medical receipt evidence, not unrelated usage frequency.
+- [x] Add private, editable child expense evidence report using all household receipts and line items, with reviewed allocations and exports.
+- [x] Research T&T maintenance variation requirements and distinguish expense evidence from any predicted court award.
+- [ ] Verify child report loading, saving, exporting and source edits while signed in (external Supabase session unavailable).
+
 - [x] Populate the owner's attached shopping list (13 to buy, 25 ticked purchases), refresh suggestions after scans, and request publication of the current shopping page; signed-in verification remains unavailable.
 
 - [x] Make single and bulk saved scans reviewable regardless of receipt date; flag unusual dates and keep just-saved entries visible (six regression tests passed).

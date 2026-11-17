@@ -180,7 +180,7 @@ const LineItemsTableBody: React.FC<LineItemsTableBodyProps> = ({
                   }}
                   suggestedCategoryId={item.suggestedCategoryId}
                   place={vendorName}
-                  lineItems={allLineItems}
+                  lineItems={[editingItem]}
                   className="mb-0"
                 />
               )}

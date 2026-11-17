@@ -131,7 +131,7 @@ const CategorySelector = ({
     // 2. We have suggestions
     // 3. Suggestions are done loading
     // 4. This receipt content is different from what we last auto-selected for
-    if (!value && suggestions.length > 0 && !suggestionsLoading && currentReceiptKey !== lastAutoSelectKey.current) {
+    if (autoSelectTopSuggestion && !value && suggestions.length > 0 && !suggestionsLoading && currentReceiptKey !== lastAutoSelectKey.current) {
       lastAutoSelectKey.current = currentReceiptKey;
       const topSuggestion = suggestions[0];
       
@@ -142,7 +142,7 @@ const CategorySelector = ({
         console.log(`⚠️ Top suggestion confidence too low (${topSuggestion.confidence}%) - not auto-selecting`);
       }
     }
-  }, [suggestions, value, onChange, suggestionsLoading, currentReceiptKey]);
+  }, [suggestions, value, onChange, suggestionsLoading, currentReceiptKey, autoSelectTopSuggestion]);
   
   const getCategory = (id: string): CategoryWithCamelCase | any => {
     if (!user) {

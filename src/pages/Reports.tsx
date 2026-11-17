@@ -17,6 +17,7 @@ import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { StoryExportDialog } from '@/components/story/StoryExportDialog';
+import ChildExpenseReport from '@/components/reports/ChildExpenseReport';
 
 const STORY_CREATOR_EMAIL = 'chanuajohnson4@gmail.com';
 
@@ -24,7 +25,7 @@ const Reports = () => {
   const { selectedFamily, expenses, categories, families } = useExpense();
   const { user } = useAuth();
   const { templates, isLoading: templatesLoading } = useReportTemplates();
-  const [reportType, setReportType] = useState<string>('expenses');
+  const [reportType, setReportType] = useState<string>(() => new URLSearchParams(window.location.search).get('tab') === 'child' ? 'child' : 'expenses');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
@@ -135,8 +136,8 @@ const Reports = () => {
           </Card>
         ) : (
           <>
-            <Tabs defaultValue={["expenses","category","time"].includes(new URLSearchParams(window.location.search).get('tab') || "") ? new URLSearchParams(window.location.search).get('tab')! : "expenses"} onValueChange={setReportType} className="mb-8">
-              <TabsList>
+            <Tabs defaultValue={["expenses","category","time","child"].includes(new URLSearchParams(window.location.search).get('tab') || "") ? (new URLSearchParams(window.location.search).get('tab') || "expenses") : "expenses"} onValueChange={setReportType} className="mb-8">
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 md:grid-cols-4">
                 <TabsTrigger value="expenses">
                   <ListFilter className="h-4 w-4 mr-2" />
                   Expense Analysis
@@ -149,9 +150,11 @@ const Reports = () => {
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   Time Trends
                 </TabsTrigger>
+                <TabsTrigger value="child">Child expense evidence</TabsTrigger>
               </TabsList>
+              <TabsContent value="child"><ChildExpenseReport /></TabsContent>
               
-              <div className="mt-6 space-y-4">
+              <div className={cn("mt-6 space-y-4", reportType === 'child' && 'hidden')}>
                 <Card>
                   <CardHeader>
                     <CardTitle>Report Filters</CardTitle>
