@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Feather, CalendarCheck, PhoneCall, Wallet, FileText, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { invitedEmailSchema } from '@/lib/coparentingAccess';
 
 export function CoParentingDisclaimer() {
   return (
@@ -19,6 +22,16 @@ const cards = [
 ];
 
 export function CoParentingWelcome({ signedIn, onStart }: { signedIn: boolean; onStart?: () => void }) {
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const navigate = useNavigate();
+  function viewTimeline(event: React.FormEvent) {
+    event.preventDefault();
+    const result = invitedEmailSchema.safeParse(email);
+    if (!result.success) { setEmailError('Please enter a valid email address.'); return; }
+    localStorage.setItem('intendedPath', '/co-parenting');
+    navigate('/login', { state: { email: result.data, timelineViewer: true } });
+  }
   const cta = signedIn
     ? <Button size="lg" className="rounded-2xl" onClick={onStart}>Start my private log <ArrowRight className="ml-2 h-4 w-4" /></Button>
     : <Button size="lg" className="rounded-2xl" asChild><Link to="/signup">Start my private log <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>;
@@ -34,6 +47,18 @@ export function CoParentingWelcome({ signedIn, onStart }: { signedIn: boolean; o
         </div>
         <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" /> Private to you. People appear by role only. Share read-only, only if you choose.</p>
       </div>
+      {!signedIn && <section className="border-y py-6" aria-labelledby="invited-timeline-title">
+        <h2 id="invited-timeline-title" className="font-heading text-2xl">Invited to view a timeline?</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Enter the email the owner invited, then sign in to view their timeline only. An email alone never grants access.</p>
+        <form onSubmit={viewTimeline} className="mt-4 space-y-3">
+          <label htmlFor="timeline-viewer-email" className="block text-sm">Your invited email</label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input id="timeline-viewer-email" type="email" required maxLength={254} autoComplete="email" value={email} onChange={event => { setEmail(event.target.value); setEmailError(''); }} placeholder="you@example.com" className="min-w-0" />
+            <Button type="submit" className="shrink-0"><Lock className="mr-2 h-4 w-4" />View shared timeline</Button>
+          </div>
+          {emailError && <p role="alert" className="text-sm text-destructive">{emailError}</p>}
+        </form>
+      </section>}
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map(c => (
           <div key={c.title} className="rounded-2xl border bg-card p-5 shadow-sm">

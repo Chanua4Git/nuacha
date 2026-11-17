@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabaseClient } from '../utils/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,9 @@ import BackToAuthDemo from "./BackToAuthDemo";
 import { handleGoogleLogin, handleFacebookLogin } from '../utils/socialLogin';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const viewerState = location.state as { email?: string; timelineViewer?: boolean } | null;
+  const [email, setEmail] = useState(viewerState?.email ?? '');
   const [password, setPassword] = useState('');
   const { user } = useAuth();
 
@@ -33,7 +35,7 @@ const Login = () => {
           <BackToAuthDemo />
           <CardTitle className="text-2xl font-playfair">Welcome back</CardTitle>
           <CardDescription>
-            Sign in to continue your mindful financial journey
+            {viewerState?.timelineViewer ? 'Sign in to Nuacha with your invited email to view the shared timeline.' : 'Sign in to continue your mindful financial journey'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -123,7 +125,7 @@ const Login = () => {
             </div>
             <div className="text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:underline">
+              <Link to="/signup" state={{ email }} className="text-primary hover:underline">
                 Sign up
               </Link>
             </div>

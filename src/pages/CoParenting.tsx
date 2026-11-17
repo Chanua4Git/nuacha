@@ -16,6 +16,7 @@ import { CoParentingWelcome, CoParentingDisclaimer } from '@/components/coparent
 import { Onboarding } from '@/components/coparenting/Onboarding';
 import { Plus, Printer, Archive } from 'lucide-react';
 import { Timeline, catColor } from '@/components/coparenting/Timeline';
+import { coParentingTabs, invitedEmailSchema } from '@/lib/coparentingAccess';
 
 // New tables are not in generated types until the draft is accepted.
 const db = supabase as any;
@@ -60,11 +61,11 @@ export default function CoParenting() {
     if (!hasOwn && sh.length) setOwnerId(sh[0].owner_id); else { setOwnerId(user.id); setNeedsSetup(!hasOwn); }
   })(); }, [user?.id]);
   async function load() {
-    if (!ownerId) return;
+    if (!ownerId || !user) return;
     setLoading(true); setError('');
     const [e, c, d] = await Promise.all([
       db.from('coparenting_entries').select('*').eq('user_id', ownerId).is('archived_at', null).order('event_date', { ascending: false }),
-      db.from('coparenting_calls').select('*').eq('user_id', ownerId).order('call_date', { ascending: false }),
+      ownerId === user.id ? db.from('coparenting_calls').select('*').eq('user_id', ownerId).order('call_date', { ascending: false }) : Promise.resolve({ data: [], error: null }),
       db.from('coparenting_display').select('*').eq('user_id', ownerId).maybeSingle(),
     ]);
     setDisplay(d.data || null);
@@ -80,12 +81,14 @@ export default function CoParenting() {
     if (e.id && !readOnly) { const { data } = await db.from('coparenting_private').select('details').eq('entry_id', e.id).maybeSingle(); setPrivateText(data?.details || ''); }
   }
   async function saveEntry() {
+    if (readOnly) return;
     if (!user || !editing?.title?.trim() || !editing.event_date) { toast.error('Add a date and a short title.'); return; }
     if (BANNED.test(`${editing.title} ${editing.details || ''}`)) { toast('Try describing what was said or done instead of a label. Facts read stronger.'); return; }
     const fields = { event_date: editing.event_date, date_label: editing.date_label || null, date_precision: editing.date_precision || 'exact', phase: editing.phase || null, category: editing.category, title: editing.title.trim(), details: editing.details || null, initiated_by: editing.initiated_by || null, channel: editing.channel || null, child_effect: editing.child_effect || null, my_response: editing.my_response || null, status: editing.status || 'My account', is_important: !!editing.is_important, amount: editing.amount ? Number(editing.amount) : null };
     let id = editing.id;
     if (id) {
-      const prev = entries.find(x => x.id === id)!;
+      const prev = entries.find(x => x.id === id);
+      if (!prev) return;
       const { title, details, event_date, status: st, amount } = prev;
       const r = await db.from('coparenting_entries').update({ ...fields, history: [...(prev.history || []), { changed_at: new Date().toISOString(), previous: { title, details, event_date, status: st, amount } }], updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', user.id);
       if (r.error) { toast.error('Not saved. Please try again.'); return; }
@@ -98,15 +101,16 @@ export default function CoParenting() {
     toast.success('Saved to your log.'); setEditing(null); void load();
   }
   async function toggleImportant(e: { id: string; is_important?: boolean }) {
-    if (!user) return;
+    if (!user || readOnly) return;
     const r = await db.from('coparenting_entries').update({ is_important: !e.is_important }).eq('id', e.id).eq('user_id', user.id);
     if (r.error) toast.error('Not saved. Please try again.'); else setEntries(p => p.map(x => x.id === e.id ? { ...x, is_important: !e.is_important } : x));
   }
   async function archive(e: Entry) {
-    if (!user || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
+    if (!user || readOnly || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
     await db.from('coparenting_entries').update({ archived_at: new Date().toISOString() }).eq('id', e.id).eq('user_id', user.id); setEditing(null); void load();
   }
   if (!user) { localStorage.setItem('intendedPath', '/co-parenting'); return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn={false} /></main>; }
+  if (!ownerId) return <main className="container mx-auto max-w-3xl px-4 py-8"><p role="status">Checking your private access…</p></main>;
   return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -114,13 +118,13 @@ export default function CoParenting() {
         {shared.length > 0 && <Select value={ownerId || ''} onValueChange={setOwnerId}><SelectTrigger className="w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={user.id}>My record</SelectItem>{shared.map((s, i) => <SelectItem key={s.owner_id} value={s.owner_id}>Shared record {i + 1} (view only)</SelectItem>)}</SelectContent></Select>}
       </div>
       <p className="text-muted-foreground">A private, factual record of access, maintenance and issues for your child. People appear by role only. Prepared from your own records — not legal advice.</p>
-      {readOnly && <Badge variant="secondary">You are viewing a shared record. You can read it but not change it.</Badge>}
+      {readOnly && <Badge variant="secondary">Timeline only · Read-only access</Badge>}
     </header>
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {needsSetup && !readOnly ? <><CoParentingWelcome signedIn onStart={() => document.getElementById('cp-onboarding')?.scrollIntoView({ behavior: 'smooth' })} /><div id="cp-onboarding" /><Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); void load(); }} /></> : <>
-    <Tabs defaultValue="timeline">
+    <Tabs key={ownerId} defaultValue="timeline">
       <TabsList className="flex h-auto flex-wrap print:hidden">
-        <TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="access">Access & calls</TabsTrigger><TabsTrigger value="maintenance">Maintenance</TabsTrigger><TabsTrigger value="summary">Summary</TabsTrigger>{!readOnly && <TabsTrigger value="sharing">Sharing</TabsTrigger>}
+        {coParentingTabs(readOnly).map(tab => <TabsTrigger key={tab} value={tab}>{{ timeline: 'Timeline', access: 'Access & calls', maintenance: 'Maintenance', summary: 'Summary', sharing: 'Sharing' }[tab]}</TabsTrigger>)}
       </TabsList>
 
       <TabsContent value="timeline" className="space-y-4">
@@ -134,9 +138,11 @@ export default function CoParenting() {
           <Timeline entries={visible} phases={display?.phases || []} coverage={display?.coverage} readOnly={readOnly} onOpen={e => openEntry(e as Entry)} onToggleImportant={toggleImportant} />}
       </TabsContent>
 
+      {!readOnly && <>
       <TabsContent value="access"><CallTracker other={other} calls={calls} readOnly={readOnly} userId={user.id} onChange={load} /></TabsContent>
       <TabsContent value="maintenance"><Maintenance entries={entries} other={other} onLog={() => openEntry({ ...blank(), category: 'Money', initiated_by: other, title: 'Maintenance received' })} readOnly={readOnly} /></TabsContent>
       <TabsContent value="summary"><Summary entries={entries} calls={calls} me={me} other={other} /></TabsContent>
+      </>}
       {!readOnly && <TabsContent value="sharing"><Sharing userId={user.id} /></TabsContent>}
     </Tabs>
     </>}
@@ -239,12 +245,13 @@ function Sharing({ userId }: { userId: string }) {
   const load = () => db.from('coparenting_viewers').select('id,viewer_email').eq('owner_id', userId).then(({ data }: any) => setList(data || []));
   useEffect(() => { void load(); }, [userId]);
   async function add() {
-    const e = email.trim().toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(e)) { toast.error('Enter a valid email.'); return; }
+    const result = invitedEmailSchema.safeParse(email); if (!result.success) { toast.error('Enter a valid email.'); return; }
+    const e = result.data;
     const r = await db.from('coparenting_viewers').insert({ owner_id: userId, viewer_email: e }); if (r.error) toast.error('Could not add.'); else { setEmail(''); load(); }
   }
   const link = 'https://nuacha.com/co-parenting';
   return <div className="max-w-xl space-y-4">
-    <p className="text-sm text-muted-foreground">Give a trusted person read-only access. They sign in to Nuacha with this exact email, then open the link. They never see private details, and cannot change anything.</p>
+    <p className="text-sm text-muted-foreground">Approve a trusted person to view your timeline only. They enter this exact email on the shared page and sign in. They cannot open Access & calls, Maintenance, Summary or Sharing, see private details, or change anything. No invitation email is sent; send them the link yourself.</p>
     <div className="flex gap-2"><Input type="email" placeholder="their@email.com" value={email} onChange={e => setEmail(e.target.value)} /><Button onClick={add}>Add</Button></div>
     <ul className="space-y-2">{list.map(v => <li key={v.id} className="flex items-center justify-between rounded-lg border p-2 text-sm">{v.viewer_email}<Button size="sm" variant="ghost" onClick={async () => { await db.from('coparenting_viewers').delete().eq('id', v.id).eq('owner_id', userId); load(); }}>Remove</Button></li>)}</ul>
     {list.length > 0 && <div className="flex gap-2"><Input readOnly value={link} /><Button variant="outline" onClick={() => { void navigator.clipboard.writeText(link); toast.success('Link copied.'); }}>Copy link</Button></div>}

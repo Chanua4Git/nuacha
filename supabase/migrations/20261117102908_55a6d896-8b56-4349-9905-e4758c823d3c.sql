@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Viewers read calls" ON public.coparenting_calls;

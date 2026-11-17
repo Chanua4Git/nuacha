@@ -49,7 +49,8 @@
 - [ ] Remaining eight automatic reels (waiting on owner to approve the first two).
 
 ## Co-parenting
-- [ ] Add invited-email sign-in on the public page and restrict invited viewers to timeline-only access (owner approval required).
+- [x] Add invited-email sign-in on the public page and restrict invited viewers to timeline-only access; public handoff and phone layout tested, separate calls now owner-only.
+- [ ] Verify owner invitation and brother's signed-in timeline-only view (external Supabase authenticated browser access unavailable).
 - [ ] Separate co-parenting shared-link preview (waiting on upgrade decision; current previews unchanged).
 - [x] Timeline redesign (compact rail, phases, colours, Important, status fix, call coverage)
 - [ ] Phase editing in settings (phases currently fixed)
