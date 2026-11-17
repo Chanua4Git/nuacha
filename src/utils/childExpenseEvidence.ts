@@ -58,3 +58,26 @@ export function evidenceSummary(rows: EvidenceRow[], decisions: Record<string, E
   const weekly = total / days * 7;
   return { total, weekly, monthly: weekly * 52 / 12, orderMonthly: weeklyOrder * 52 / 12, days };
 }
+/** Month-by-month reviewed child cost vs. the weekly order (weeks = days in month / 7). */
+export function monthlyEvidence(rows: EvidenceRow[], decisions: Record<string, EvidenceDecision>, start: string, end: string, weeklyOrder: number) {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    if (r.date < start || r.date > end) continue;
+    const d = decisions[r.id];
+    if (!d?.included || !Number.isFinite(d.amount) || d.amount < 0 || d.amount > r.amount) continue;
+    const m = r.date.slice(0, 7);
+    map.set(m, (map.get(m) || 0) + d.amount);
+  }
+  const out: { month: string; total: number; orderDue: number; gap: number }[] = [];
+  let [y, mo] = start.slice(0, 7).split('-').map(Number);
+  const last = end.slice(0, 7);
+  while (`${y}-${String(mo).padStart(2, '0')}` <= last && out.length < 240) {
+    const key = `${y}-${String(mo).padStart(2, '0')}`;
+    const days = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    const total = Math.round((map.get(key) || 0) * 100) / 100;
+    const orderDue = Math.round(weeklyOrder * days / 7 * 100) / 100;
+    out.push({ month: key, total, orderDue, gap: Math.round((total - orderDue) * 100) / 100 });
+    mo++; if (mo > 12) { mo = 1; y++; }
+  }
+  return out;
+}

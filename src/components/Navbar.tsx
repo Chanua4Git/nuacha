@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { ShoppingBasket } from 'lucide-react';
+import { ShoppingBasket, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Home, PlusCircle, BarChart3, Calendar, Menu, X, LogOut, LogIn, ArrowRight, Settings, Users, Calculator, FileBarChart, PieChart, FileImage, Wallet } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
@@ -68,6 +68,7 @@ const Navbar = () => {
 
   // Mobile navigation items (flattened for mobile)
   const mobileNavItems = user ? [
+    { name: 'Co-parenting', icon: <HeartHandshake className="h-4 w-4" />, path: '/co-parenting' },
     ...expenseItems,
     { name: 'Reminders', icon: <Calendar className="h-5 w-5" />, path: '/reminders' },
     ...payrollItems,
@@ -275,6 +276,11 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center space-x-1">
             {user && (
               <>
+                <NavigationDropdown title="Co-parenting" items={[
+                  { name: 'Timeline', icon: <HeartHandshake className="h-4 w-4" />, path: '/co-parenting' },
+                  { name: 'Access & calls', icon: <Calendar className="h-4 w-4" />, path: '/co-parenting' },
+                  { name: 'Maintenance', icon: <Wallet className="h-4 w-4" />, path: '/co-parenting' },
+                ]} />
                 <NavigationDropdown title="Expense" items={expenseItems} />
                 <Button 
                   variant={isActive('/reminders') ? "secondary" : "ghost"} 

@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/auth/contexts/AuthProvider';
 import { useExpense } from '@/context/ExpenseContext';
@@ -10,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import DetailedReceiptView from '@/components/receipt/DetailedReceiptView';
-import { buildEvidenceRows, evidenceSummary, EvidenceDecision, EvidenceExpense, EvidenceRow } from '@/utils/childExpenseEvidence';
+import { buildEvidenceRows, evidenceSummary, monthlyEvidence, EvidenceDecision, EvidenceExpense, EvidenceRow } from '@/utils/childExpenseEvidence';
 import { parseReceiptCalendarDate, toCalendarString } from '@/utils/receipt/calendarDate';
 import { Download, FileText, RefreshCw, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -96,6 +97,7 @@ export default function ChildExpenseReport() {
 
   const rows = useMemo(() => buildEvidenceRows(expenses, memberId, Object.fromEntries(categories.map(c => [c.id, c.name]))), [expenses, memberId, categories]);
   const summary = evidenceSummary(rows, decisions, start, end, weeklyOrder);
+  const months = summary.days ? monthlyEvidence(rows, decisions, start, end, weeklyOrder) : [];
   const visible = rows.filter(r => {
     if (r.date < start || r.date > end) return false;
     if (query && !`${r.description} ${r.place}`.toLowerCase().includes(query.toLowerCase())) return false;
@@ -122,7 +124,7 @@ export default function ChildExpenseReport() {
     const records: (string | number)[][] = [
       ['Child expense evidence', member?.name || '', selectedFamily?.name || ''], ['Period', start, end],
       ['Reviewed total TTD', summary.total.toFixed(2)], ['Weekly average TTD', summary.weekly.toFixed(2)], ['Monthly average TTD', summary.monthly.toFixed(2)], ['Existing order weekly TTD', weeklyOrder], ['Existing order monthly equivalent TTD', summary.orderMonthly.toFixed(2)],
-      ['Context / changes since order', context], ['Expense evidence only; not a court award or complete financial affidavit'],
+      ['Context / changes since order', context], ['Month','Reviewed child cost TTD','Order for month TTD','Difference TTD'], ...months.map(m => [m.month, m.total.toFixed(2), m.orderDue.toFixed(2), m.gap.toFixed(2)]), ['Expense evidence only; not a court award or complete financial affidavit'],
       ['Date','Store/provider','Item','Receipt/item total TTD','Child share TTD','Heading','Reason / allocation note','Expense ID','Line ID'],
       ...rows.filter(r => r.date >= start && r.date <= end && decisions[r.id]?.included).map(r => [r.date,r.place,r.description,r.amount,decisions[r.id].amount,decisions[r.id].bucket,decisions[r.id].note,r.expenseId,r.lineId || ''])
     ];
@@ -143,6 +145,7 @@ export default function ChildExpenseReport() {
     {error || savedError ? <p role="alert" className="text-destructive">{error || savedError}</p> : null}
     {summary.days === 0 && <p role="alert">Choose a valid date range.</p>}
     <dl className="grid gap-4 border-y py-5 sm:grid-cols-2 lg:grid-cols-4">{[['Reviewed child cost',summary.total],['Weekly average',summary.weekly],['Monthly average',summary.monthly],['Order / month equivalent',summary.orderMonthly]].map(([label,value]) => <div key={String(label)}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="text-xl font-medium">{money(Number(value))}</dd></div>)}</dl>
+    {months.length > 0 && <div className="space-y-2"><h3 className="font-heading text-lg">Month by month</h3><div className="overflow-hidden rounded-lg border"><table className="w-full text-sm"><thead className="bg-muted/50 text-left"><tr><th className="p-2">Month</th><th className="p-2 text-right">Reviewed child cost</th><th className="p-2 text-right">Order for month</th><th className="p-2 text-right">Difference</th></tr></thead><tbody>{months.map(m => <tr key={m.month} className="border-t"><td className="p-2">{format(new Date(`${m.month}-15T12:00:00`), 'MMM yyyy')}</td><td className="p-2 text-right">{money(m.total)}</td><td className="p-2 text-right">{money(m.orderDue)}</td><td className={`p-2 text-right ${m.gap > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>{m.gap > 0 ? '+' : ''}{money(m.gap)}</td></tr>)}</tbody></table></div><p className="text-xs text-muted-foreground">Order for month = weekly amount × days in month ÷ 7. Months with few receipts understate real costs.</p></div>}
     <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{buckets.map(bucket => {
       const total = rows.filter(r => r.date >= start && r.date <= end && decisions[r.id]?.included && decisions[r.id]?.bucket === bucket).reduce((sum,r) => sum + (decisions[r.id].amount >= 0 && decisions[r.id].amount <= r.amount ? decisions[r.id].amount : 0),0);
       return total > 0 ? <div key={bucket} className="flex justify-between gap-3 text-sm"><dt>{bucket}</dt><dd className="shrink-0 font-medium">{money(total)}</dd></div> : null;
