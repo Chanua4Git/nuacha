@@ -166,7 +166,7 @@ const App = () => {
                       </ProtectedRoute>
                     } />
                     <Route path="/shopping" element={<ProtectedRoute><ShoppingList /></ProtectedRoute>} />
-                    <Route path="/co-parenting" element={<ProtectedRoute><CoParenting /></ProtectedRoute>} />
+                    <Route path="/co-parenting" element={<CoParenting />} />
                     <Route path="/updates" element={<Updates />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />

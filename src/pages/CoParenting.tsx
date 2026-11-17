@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CATEGORIES } from '@/utils/coparentingSeed';
+import { CoParentingWelcome, CoParentingDisclaimer } from '@/components/coparenting/CoParentingWelcome';
 import { Onboarding } from '@/components/coparenting/Onboarding';
 import { Plus, Printer, Archive } from 'lucide-react';
 import { Timeline, catColor } from '@/components/coparenting/Timeline';
@@ -105,7 +106,7 @@ export default function CoParenting() {
     if (!user || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
     await db.from('coparenting_entries').update({ archived_at: new Date().toISOString() }).eq('id', e.id).eq('user_id', user.id); setEditing(null); void load();
   }
-  if (!user) return null;
+  if (!user) { localStorage.setItem('intendedPath', '/co-parenting'); return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn={false} /></main>; }
   return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -116,7 +117,7 @@ export default function CoParenting() {
       {readOnly && <Badge variant="secondary">You are viewing a shared record. You can read it but not change it.</Badge>}
     </header>
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    {needsSetup && !readOnly ? <Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); void load(); }} /> : <>
+    {needsSetup && !readOnly ? <><CoParentingWelcome signedIn onStart={() => document.getElementById('cp-onboarding')?.scrollIntoView({ behavior: 'smooth' })} /><div id="cp-onboarding" /><Onboarding userId={user.id} onDone={() => { setNeedsSetup(false); void load(); }} /></> : <>
     <Tabs defaultValue="timeline">
       <TabsList className="flex h-auto flex-wrap print:hidden">
         <TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="access">Access & calls</TabsTrigger><TabsTrigger value="maintenance">Maintenance</TabsTrigger><TabsTrigger value="summary">Summary</TabsTrigger>{!readOnly && <TabsTrigger value="sharing">Sharing</TabsTrigger>}
@@ -165,6 +166,7 @@ export default function CoParenting() {
         </fieldset>}
       </DialogContent>
     </Dialog>
+    <div className="pt-4"><CoParentingDisclaimer /></div>
   </main>;
 }
 
