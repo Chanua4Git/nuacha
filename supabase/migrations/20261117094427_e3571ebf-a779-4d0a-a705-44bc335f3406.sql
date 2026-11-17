@@ -1,0 +1,1 @@
+ALTER TABLE public.coparenting_entries ADD COLUMN IF NOT EXISTS is_important boolean NOT NULL DEFAULT false;

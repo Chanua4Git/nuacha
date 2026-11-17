@@ -637,6 +637,7 @@ export type Database = {
           history: Json
           id: string
           initiated_by: string | null
+          is_important: boolean
           my_response: string | null
           phase: string | null
           status: string
@@ -659,6 +660,7 @@ export type Database = {
           history?: Json
           id?: string
           initiated_by?: string | null
+          is_important?: boolean
           my_response?: string | null
           phase?: string | null
           status?: string
@@ -681,6 +683,7 @@ export type Database = {
           history?: Json
           id?: string
           initiated_by?: string | null
+          is_important?: boolean
           my_response?: string | null
           phase?: string | null
           status?: string
