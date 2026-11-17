@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CATEGORIES, parseSeed } from '@/utils/coparentingSeed';
-import { Plus, Printer, Upload, Archive, History } from 'lucide-react';
+import { Plus, Printer, Upload, Archive } from 'lucide-react';
+import { Timeline, catColor } from '@/components/coparenting/Timeline';
 
 // New tables are not in generated types until the draft is accepted.
 const db = supabase as any;
@@ -22,7 +23,7 @@ const STATUSES = ['Documented', 'My account', 'To confirm'];
 const BANNED = /\b(narcissist|manipulativ\w*|spite\w*|alienat\w*|gaslight\w*)\b/i;
 const SCHEDULE_DAYS = [2, 4, 6]; // Tue, Thu, Sat per current order
 
-type Entry = { id: string; user_id: string; event_date: string; date_label: string | null; date_precision: string; phase: string | null; category: string; title: string; details: string | null; initiated_by: string | null; channel: string | null; child_effect: string | null; my_response: string | null; status: string; amount: number | null; history: any[]; created_at: string };
+type Entry = { id: string; user_id: string; event_date: string; date_label: string | null; date_precision: string; phase: string | null; category: string; title: string; details: string | null; initiated_by: string | null; channel: string | null; child_effect: string | null; my_response: string | null; status: string; amount: number | null; history: any[]; created_at: string; is_important?: boolean };
 type Call = { id: string; call_date: string; outcome: string; made_by: string | null; duration_min: number | null; child_mood: string | null; notes: string | null };
 const blank = (): Partial<Entry> => ({ event_date: format(new Date(), 'yyyy-MM-dd'), category: 'Calls', title: '', details: '', status: 'My account', date_precision: 'exact' });
 const money = (n: number) => `TT$${n.toFixed(2)}`;
@@ -56,7 +57,6 @@ export default function CoParenting() {
   useEffect(() => { void load(); }, [ownerId]);
 
   const visible = useMemo(() => entries.filter(e => (!cats.length || cats.includes(e.category)) && (status === 'all' || e.status === status) && (!q || `${e.title} ${e.details || ''}`.toLowerCase().includes(q.toLowerCase()))), [entries, cats, status, q]);
-  const byPhase = useMemo(() => { const m = new Map<string, Entry[]>(); visible.forEach(e => { const k = e.phase || String(e.event_date.slice(0, 4)); m.set(k, [...(m.get(k) || []), e]); }); return [...m.entries()]; }, [visible]);
 
   async function openEntry(e: Partial<Entry>) {
     setEditing(e); setPrivateText('');
@@ -65,7 +65,7 @@ export default function CoParenting() {
   async function saveEntry() {
     if (!user || !editing?.title?.trim() || !editing.event_date) { toast.error('Add a date and a short title.'); return; }
     if (BANNED.test(`${editing.title} ${editing.details || ''}`)) { toast('Try describing what was said or done instead of a label. Facts read stronger.'); return; }
-    const fields = { event_date: editing.event_date, date_label: editing.date_label || null, date_precision: editing.date_precision || 'exact', phase: editing.phase || null, category: editing.category, title: editing.title.trim(), details: editing.details || null, initiated_by: editing.initiated_by || null, channel: editing.channel || null, child_effect: editing.child_effect || null, my_response: editing.my_response || null, status: editing.status || 'My account', amount: editing.amount ? Number(editing.amount) : null };
+    const fields = { event_date: editing.event_date, date_label: editing.date_label || null, date_precision: editing.date_precision || 'exact', phase: editing.phase || null, category: editing.category, title: editing.title.trim(), details: editing.details || null, initiated_by: editing.initiated_by || null, channel: editing.channel || null, child_effect: editing.child_effect || null, my_response: editing.my_response || null, status: editing.status || 'My account', is_important: !!editing.is_important, amount: editing.amount ? Number(editing.amount) : null };
     let id = editing.id;
     if (id) {
       const prev = entries.find(x => x.id === id)!;
@@ -79,6 +79,11 @@ export default function CoParenting() {
     }
     if (privateText.trim()) await db.from('coparenting_private').upsert({ entry_id: id, user_id: user.id, details: privateText.trim(), updated_at: new Date().toISOString() });
     toast.success('Saved to your log.'); setEditing(null); void load();
+  }
+  async function toggleImportant(e: { id: string; is_important?: boolean }) {
+    if (!user) return;
+    const r = await db.from('coparenting_entries').update({ is_important: !e.is_important }).eq('id', e.id).eq('user_id', user.id);
+    if (r.error) toast.error('Not saved. Please try again.'); else setEntries(p => p.map(x => x.id === e.id ? { ...x, is_important: !e.is_important } : x));
   }
   async function archive(e: Entry) {
     if (!user || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
@@ -96,7 +101,7 @@ export default function CoParenting() {
   }
 
   if (!user) return null;
-  return <main className="container mx-auto max-w-5xl space-y-6 px-4 py-8 print:py-0">
+  return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl">Co-parenting</h1>
@@ -118,11 +123,9 @@ export default function CoParenting() {
           <Input className="max-w-xs" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
           <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
         </div>
-        <div className="flex flex-wrap gap-2 print:hidden">{CATEGORIES.map(c => <Button key={c} size="sm" variant={cats.includes(c) ? 'default' : 'outline'} className="rounded-full" onClick={() => setCats(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])}>{c}</Button>)}</div>
+        <div className="flex flex-wrap gap-2 print:hidden">{CATEGORIES.map(c => { const on = !cats.length || cats.includes(c); return <button key={c} aria-pressed={on} className={`inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-[13px] font-medium transition-opacity ${on ? '' : 'opacity-45'}`} onClick={() => setCats(p => { const cur = p.length ? p : [...CATEGORIES]; const next = cur.includes(c) ? cur.filter(x => x !== c) : [...cur, c]; return next.length === CATEGORIES.length ? [] : next; })}><span className="h-2 w-2 rounded-full" style={{ background: catColor(c) }} />{c}</button>; })}</div>
         {loading ? <p role="status">Loading your log…</p> : !entries.length ? <p className="py-8 text-muted-foreground">Nothing here yet — and that's okay. Log today's call, or import the history you prepared.</p> :
-          byPhase.map(([phase, list]) => <section key={phase} className="space-y-2"><h2 className="font-heading text-xl">{phase}</h2><ol className="space-y-2 border-l pl-4">{list.map(e => <li key={e.id}><button className="w-full rounded-lg border p-3 text-left hover:bg-muted/40" onClick={() => openEntry(e)}>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>{e.date_label || format(new Date(`${e.event_date}T12:00:00`), 'd MMM yyyy')}</span><Badge variant="outline">{e.category}</Badge><Badge variant={e.status === 'Documented' ? 'default' : 'secondary'}>{e.status}</Badge>{e.amount ? <span>{money(Number(e.amount))}</span> : null}{e.history?.length ? <span className="flex items-center gap-1"><History className="h-3 w-3" />edited</span> : null}</div>
-            <p className="mt-1">{e.title}</p></button></li>)}</ol></section>)}
+          <Timeline entries={visible} readOnly={readOnly} onOpen={e => openEntry(e as Entry)} onToggleImportant={toggleImportant} />}
       </TabsContent>
 
       <TabsContent value="access"><CallTracker calls={calls} readOnly={readOnly} userId={user.id} onChange={load} /></TabsContent>
@@ -145,6 +148,7 @@ export default function CoParenting() {
             <label className="text-sm">Who started it<Select value={editing.initiated_by || ''} onValueChange={v => setEditing({ ...editing, initiated_by: v })}><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger><SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></label>
             <label className="text-sm">Channel<Select value={editing.channel || ''} onValueChange={v => setEditing({ ...editing, channel: v })}><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger><SelectContent>{CHANNELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></label>
             <label className="text-sm">Status<Select value={editing.status} onValueChange={v => setEditing({ ...editing, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></label>
+            <label className="col-span-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={!!editing.is_important} onChange={e => setEditing({ ...editing, is_important: e.target.checked })} />Important — show the key sentence in bold</label>
             <label className="text-sm">Amount (TT$, optional)<Input type="number" min="0" step="0.01" value={editing.amount ?? ''} onChange={e => setEditing({ ...editing, amount: e.target.value as any })} /></label>
           </div>
           <label className="block text-sm">Effect on the child (what they did or said)<Textarea value={editing.child_effect || ''} onChange={e => setEditing({ ...editing, child_effect: e.target.value })} /></label>

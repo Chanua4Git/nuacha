@@ -47,3 +47,9 @@
 - [x] Make the first two tutorial reels automatic: drawn scenes, scripted taps, sound, text-only editing, video and PNG downloads; sample frames and 1080×1920 audio/video verified.
 - [ ] Verify saved text and downloads through the signed-in admin page (external Supabase session unavailable to automated checks).
 - [ ] Remaining eight automatic reels (waiting on owner to approve the first two).
+
+## Co-parenting
+- [x] Timeline redesign (compact rail, phases, colours, Important, status fix, call coverage)
+- [ ] Phase editing in settings (phases currently fixed)
+- [ ] Access & calls redesign (role-neutral outcomes, schedules, call-history import)
+- [ ] Summary rebuilt as court-ready report (sort dates, split 2019/2020 entry, presets, PDF/Word)

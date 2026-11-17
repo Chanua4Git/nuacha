@@ -203,3 +203,13 @@
     }
   }
 }
+
+/* Co-parenting timeline category colours */
+:root {
+  --cp-arr: 211 59% 44%; --cp-com: 162 50% 36%; --cp-money: 38 73% 38%; --cp-court: 268 38% 50%;
+  --cp-travel: 10 53% 50%; --cp-police: 0 55% 39%; --cp-well: 186 56% 38%;
+}
+.dark {
+  --cp-arr: 212 70% 67%; --cp-com: 160 47% 57%; --cp-money: 38 70% 59%; --cp-court: 268 63% 73%;
+  --cp-travel: 11 77% 68%; --cp-police: 0 65% 65%; --cp-well: 186 50% 58%;
+}
