@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Diagnose KFC scan failure: direct synthetic receipt test returned Payment required; browser preflight passes, receipt-reader code unchanged.
+- [ ] Restore and retest scanning after app-service funding is available (service requests workspace credits; billing/rollover/top-up balances are zero, only daily credits remain).
 
 - [x] Focus category suggestions on dental/medical receipt evidence, not unrelated usage frequency.
 - [x] Add private, editable child expense evidence report using all household receipts and line items, with reviewed allocations and exports.
@@ -49,7 +51,7 @@
 - [ ] Remaining eight automatic reels (waiting on owner to approve the first two).
 
 ## Co-parenting
-- [ ] Always open co-parenting on the welcome cards, with working section links and setup CTA, for signed-in and signed-out visitors.
+- [x] Always open co-parenting on welcome cards with section links and setup CTA; all four public cards and signup link checked on phone and desktop, signed-in private section flow remains unverified.
 - [x] Add invited-email sign-in on the public page and restrict invited viewers to timeline-only access; public handoff and phone layout tested, separate calls now owner-only.
 - [ ] Verify owner invitation and brother's signed-in timeline-only view (external Supabase authenticated browser access unavailable).
 - [ ] Separate co-parenting shared-link preview (waiting on upgrade decision; current previews unchanged).
