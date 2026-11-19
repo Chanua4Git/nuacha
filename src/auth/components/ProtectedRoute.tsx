@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 function welcomeFor(path: string, search: string) {
-  if (path.startsWith('/co-parenting')) return { title: 'A private co-parenting log', body: 'Keep a calm, factual record of care, contact and child costs — private to your account. Sign in or create a free account to set yours up in about five minutes.' };
+  if ((path.startsWith('/co-parenting') || path.startsWith('/parenting'))) return { title: 'A private parenting log', body: 'Keep a calm, factual record of care, contact and child costs — private to your account. Sign in or create a free account to set yours up in about five minutes.' };
   if (path.startsWith('/options')) return { title: 'Set up your household', body: 'Create your family and add the people you spend for, so every expense finds its home.' };
   if (path.startsWith('/budget')) return { title: 'Set a soft budget', body: 'A gentle monthly plan per category. No pressure, just clarity.' };
   if (path.startsWith('/payroll') && search.includes('calculator')) return { title: 'Check your NIS before you pay', body: 'See employee and employer amounts side by side, worked out for you.' };

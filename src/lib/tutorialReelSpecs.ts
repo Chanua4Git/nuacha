@@ -23,7 +23,7 @@ export const SCAN_FIRST_RECEIPT: ReelSpec = {
     { scene: "saved", caption: "Your first receipt, organised", receipt: 0, count: 1, seconds: 2, lessonStepId: "step-2-6" },
   ], stamp: "SAVED", cta: ["Next: scan receipts", "2 and 3"],
   caption_instagram: "Still keeping receipts in a shoebox? Scan, check, save. A softer way to track spending. https://nuacha.com/?start=scan #Nuacha #TrinidadAndTobago",
-  caption_whatsapp: "Your first receipt, organised. Three free scans a day. https://nuacha.com/?start=scan",
+  caption_whatsapp: "Your first receipt, organised. https://nuacha.com/?start=scan",
   caption_tiktok: "Posting this until it finds its tribe. Scan, check, save. https://nuacha.com/?start=scan #Nuacha #TrinidadAndTobago",
 };
 export const SCAN_TWO_AND_THREE: ReelSpec = {

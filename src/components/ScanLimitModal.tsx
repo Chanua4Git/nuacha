@@ -43,7 +43,7 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
           <DialogHeader>
             <DialogTitle className="font-playfair text-2xl text-center">See you tomorrow 🤍</DialogTitle>
             <DialogDescription className="text-center pt-2">
-              Your 3 free scans come back in {timeUntilReset}. While you wait, here's something you can set up for free.
+              While you decide, here's something you can set up for free.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-2">
@@ -66,10 +66,10 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-playfair text-2xl text-center">
-            You've used your free scans today
+            Scanning comes with a Nuacha plan
           </DialogTitle>
           <DialogDescription className="text-center pt-2">
-            Great job tracking your expenses! You've used all 3 free scans for today.
+            Our free trial has ended. Choose a plan to keep scanning, or type expenses in for free anytime.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,7 +114,7 @@ export function ScanLimitModal({ open, onOpenChange, timeUntilReset }: ScanLimit
               <h3 className="font-semibold">Come back tomorrow</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Your free scans reset in <span className="font-semibold text-foreground">{timeUntilReset}</span>
+              Typing expenses in stays free
             </p>
             <Button 
               variant="outline" 

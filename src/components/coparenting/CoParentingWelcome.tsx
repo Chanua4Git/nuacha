@@ -31,7 +31,7 @@ export function CoParentingWelcome({ signedIn, onStart, onSection, startLabel = 
     event.preventDefault();
     const result = invitedEmailSchema.safeParse(email);
     if (!result.success) { setEmailError('Please enter a valid email address.'); return; }
-    localStorage.setItem('intendedPath', '/co-parenting');
+    localStorage.setItem('intendedPath', '/parenting');
     navigate('/login', { state: { email: result.data, timelineViewer: true } });
   }
   const cta = signedIn
@@ -41,7 +41,7 @@ export function CoParentingWelcome({ signedIn, onStart, onSection, startLabel = 
     <section className="space-y-8">
       <div className="rounded-3xl bg-gradient-to-br from-secondary/60 via-background to-accent/40 px-6 py-12 text-center">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-secondary"><Feather className="h-6 w-6 text-primary" /></div>
-        <p className="mb-3 text-sm font-medium text-primary">Nuacha co-parenting</p>
+        <p className="mb-3 text-sm font-medium text-primary">Nuacha parenting</p>
         <h1 className="font-heading text-3xl md:text-4xl">Begin your journey to steady, peaceful records</h1>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Take a gentle first step. Log one moment today and watch it become an organised, calm timeline you can rely on — whenever you need it.</p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">

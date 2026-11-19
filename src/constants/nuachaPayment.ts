@@ -19,7 +19,7 @@ export const NUACHA_SUBSCRIPTION_PLANS = {
     name: 'Getting Tidy',
     tagline: 'Start bringing order to your finances',
     storageMB: 500,
-    dailyScanLimit: 3,
+    dailyScanLimit: 0,
     monthlyPriceTTD: 0,
     yearlyPriceTTD: 0,
     monthlyPriceUSD: 0,
@@ -27,7 +27,7 @@ export const NUACHA_SUBSCRIPTION_PLANS = {
     features: [
       'Basic expense tracking',
       'Single family',
-      'Receipt scanning (3/day)',
+      'Type expenses in (no scanning)',
       '500MB storage'
     ],
     badge: 'Free Forever'

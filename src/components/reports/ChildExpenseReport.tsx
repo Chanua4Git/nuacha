@@ -20,7 +20,7 @@ const buckets = ['Health & dental', 'Education', 'Childcare & activities', 'Clot
 const money = (n: number) => `TT$${n.toFixed(2)}`;
 type SavedConfig = { memberId?: string; start?: string; end?: string; weeklyOrder?: number; decisions?: Record<string, EvidenceDecision>; context?: string };
 
-export default function ChildExpenseReport() {
+export default function ChildExpenseReport({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const { selectedFamily, categories } = useExpense();
   const { members } = useFamilyMembers(selectedFamily?.id);
@@ -29,7 +29,7 @@ export default function ChildExpenseReport() {
   const [decisions, setDecisions] = useState<Record<string, EvidenceDecision>>({});
   const [start, setStart] = useState(`${new Date().getFullYear()}-01-01`);
   const [end, setEnd] = useState(toCalendarString(new Date()));
-  const [weeklyOrder, setWeeklyOrder] = useState(250);
+  const [weeklyOrder, setWeeklyOrder] = useState(0);
   const [context, setContext] = useState('');
   const [query, setQuery] = useState('');
   const [view, setView] = useState('suggested');
@@ -47,7 +47,7 @@ export default function ChildExpenseReport() {
   useEffect(() => { setMemberId(''); setExpenses([]); setDecisions({}); }, [selectedFamily?.id, user?.id]);
   useEffect(() => {
     const current = members.filter(m => m.familyId === selectedFamily?.id);
-    if (!memberId && current.length) setMemberId((current.find(m => m.name.toLowerCase() === 'zi') || current.find(m => m.type === 'child') || current[0]).id);
+    if (!memberId && current.length) setMemberId((current.find(m => m.type === 'child') || current[0]).id);
   }, [members, memberId, selectedFamily?.id]);
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export default function ChildExpenseReport() {
     const a = document.createElement('a'); a.href = url; a.download = `child-expense-evidence-${start}-${end}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
   }
 
-  return <section className="space-y-6 border-t pt-6">
+  return <section className={embedded ? "space-y-6" : "space-y-6 border-t pt-6"}>
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl font-heading">Child expense evidence</h2><Button variant="outline" size="sm" onClick={() => setRefresh(n => n + 1)} disabled={loading}><RefreshCw className="mr-2 h-4 w-4"/>Refresh receipts</Button></div>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <label className="space-y-2 text-sm">Person<Select value={memberId} onValueChange={setMemberId}><SelectTrigger><SelectValue placeholder="Choose a person"/></SelectTrigger><SelectContent>{familyMembers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent></Select></label>
@@ -167,7 +167,7 @@ export default function ChildExpenseReport() {
     <details className="border-t pt-4 text-sm space-y-3"><summary className="cursor-pointer font-medium">🇹🇹 Maintenance review — sources and evidence</summary>
       <p className="mt-3">Under Chapter 46:08, section 19 considers the child’s financial needs, resources, disability and education, alongside each parent’s resources and responsibilities. Section 21 addresses changed circumstances when varying periodical payments. The existing order determines which legal route applies; divorce orders may instead fall under Chapter 45:51.</p>
       <p>Keep the existing order, child’s school and medical invoices, receipts, explained household shares, income records, contributions from both parents and evidence of changed circumstances. This report is a receipt schedule, not a complete financial affidavit, legal advice or a prediction of an award. Receipts alone do not establish what the other parent should pay.</p>
-      <p>TT$250 weekly equals TT$13,000 annually or TT$1,083.33 monthly using 52 weeks. It is not evidence of payments actually received. There is no verified standard updated rate in this research.</p>
+      <p>A weekly order × 52 ÷ 12 gives its monthly equivalent. It is not evidence of payments actually received.</p>
       <ul className="list-disc pl-5 space-y-2"><li><a className="text-primary underline" href="https://laws.gov.tt/ttdll-web/revision/download/46119?type=act" target="_blank" rel="noreferrer">Chapter 46:08, sections 19 and 21</a> — official consolidation reviewed 17 November 2026, updated through December 2007; later amendments not verified.</li><li><a className="text-primary underline" href="https://www.ttlawcourts.org/uncategorised/family-court-form" target="_blank" rel="noreferrer">Judiciary financial application and evidence forms</a> — Form 8 / Form 9 depend on the proceedings.</li><li><a className="text-primary underline" href="https://tt.vlex.com/vid/david-v-david-794053433" target="_blank" rel="noreferrer">David v David (2014)</a> and <a className="text-primary underline" href="https://tt.vlex.com/vid/ali-v-manjoo-ali-793681021" target="_blank" rel="noreferrer">Ali v Manjoo-Ali (2010)</a> — historical variation cases, not current tariffs; full judgments and outcomes not independently verified here.</li></ul>
     </details>
     <Sheet open={!!receiptId} onOpenChange={open => { if (!open) { setReceiptId(undefined); setRefresh(n => n + 1); } }}><SheetContent className="w-full sm:max-w-xl overflow-y-auto"><SheetHeader><SheetTitle>Source receipt</SheetTitle></SheetHeader>{receiptId && <DetailedReceiptView expenseId={receiptId} receiptUrl={expenses.find(e => e.id === receiptId)?.receipt_image_url || expenses.find(e => e.id === receiptId)?.receipt_url}/>}</SheetContent></Sheet>

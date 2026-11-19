@@ -16,6 +16,7 @@ import { CoParentingWelcome, CoParentingDisclaimer } from '@/components/coparent
 import { Onboarding } from '@/components/coparenting/Onboarding';
 import { Plus, Printer, Archive } from 'lucide-react';
 import { Timeline, catColor } from '@/components/coparenting/Timeline';
+import ChildExpenseReport from '@/components/reports/ChildExpenseReport';
 import { coParentingTabs, coParentingSection, invitedEmailSchema } from '@/lib/coparentingAccess';
 
 // New tables are not in generated types until the draft is accepted.
@@ -112,14 +113,14 @@ export default function CoParenting() {
     if (!user || readOnly || !confirm('Archive this entry? It stays in your records but leaves the timeline.')) return;
     await db.from('coparenting_entries').update({ archived_at: new Date().toISOString() }).eq('id', e.id).eq('user_id', user.id); setEditing(null); void load();
   }
-  if (!user) { localStorage.setItem('intendedPath', '/co-parenting'); return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn={false} /></main>; }
+  if (!user) { localStorage.setItem('intendedPath', window.location.pathname); return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn={false} /></main>; }
   if (!section) return <main className="container mx-auto max-w-3xl px-4 py-8"><CoParentingWelcome signedIn readOnly={readOnly} startLabel={readOnly ? 'View shared timeline' : ownerId && !needsSetup ? 'Open my private log' : 'Start my private log'} onStart={() => goSection(readOnly ? 'timeline' : needsSetup ? 'setup' : 'timeline')} onSection={goSection} /></main>;
   if (!ownerId) return <main className="container mx-auto max-w-3xl px-4 py-8"><p role="status">Checking your private access…</p></main>;
   return <main className="container mx-auto max-w-3xl space-y-6 px-4 py-8 print:py-0">
     <header className="space-y-2 print:hidden">
-      <Button variant="ghost" onClick={() => { setSearchParams({}); window.scrollTo(0, 0); }}>← Co-parenting home</Button>
+      <Button variant="ghost" onClick={() => { setSearchParams({}); window.scrollTo(0, 0); }}>← Parenting home</Button>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl">Co-parenting</h1>
+        <h1 className="font-heading text-3xl">Parenting</h1>
         {shared.length > 0 && <Select value={ownerId || ''} onValueChange={setOwnerId}><SelectTrigger className="w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={user.id}>My record</SelectItem>{shared.map((s, i) => <SelectItem key={s.owner_id} value={s.owner_id}>Shared record {i + 1} (view only)</SelectItem>)}</SelectContent></Select>}
       </div>
       <p className="text-muted-foreground">A private, factual record of access, maintenance and issues for your child. People appear by role only. Prepared from your own records — not legal advice.</p>
@@ -221,7 +222,7 @@ function Maintenance({ other, entries, onLog, readOnly }: { other: string; entri
     <div className="flex flex-wrap items-end gap-3"><label className="text-sm">Order / week (TT$)<Input type="number" value={weekly} onChange={e => setWeekly(Number(e.target.value))} className="w-32" /></label><label className="text-sm">Order started<Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>{!readOnly && <Button onClick={onLog}><Plus className="mr-2 h-4 w-4" />Log a payment received</Button>}</div>
     <p className="text-sm">Difference across these months: <strong>{money(owed)}</strong> {owed > 0 ? '(due but not logged as received)' : ''}. Only payments you log here, with the {other} as payer, count as received.</p>
     <div className="overflow-hidden rounded-lg border"><table className="w-full text-sm"><thead className="bg-muted/50 text-left"><tr><th className="p-2">Month</th><th className="p-2 text-right">Due</th><th className="p-2 text-right">Received</th><th className="p-2 text-right">Difference</th></tr></thead><tbody>{rows.map(r => <tr key={r.month} className="border-t"><td className="p-2">{format(new Date(`${r.month}-15T12:00:00`), 'MMM yyyy')}</td><td className="p-2 text-right">{money(r.due)}</td><td className="p-2 text-right">{money(r.received)}</td><td className="p-2 text-right">{money(r.due - r.received)}</td></tr>)}</tbody></table></div>
-    <p className="text-sm text-muted-foreground">For what the child actually costs month by month (and half-shares of medical, dental, optical and school costs), use <Link className="underline" to="/reports">Reports → Child expense evidence</Link>.</p>
+    {!readOnly && <div className="rounded-2xl border bg-card p-4"><h3 className="font-heading text-xl">What your child costs, from your receipts</h3><p className="mb-4 text-sm text-muted-foreground">Nuacha suggests your child’s share from your saved receipts. Adjust any share, untick what isn’t theirs, add notes, then save.</p><ChildExpenseReport embedded /></div>}
   </div>;
 }
 
@@ -254,7 +255,7 @@ function Sharing({ userId }: { userId: string }) {
     const e = result.data;
     const r = await db.from('coparenting_viewers').insert({ owner_id: userId, viewer_email: e }); if (r.error) toast.error('Could not add.'); else { setEmail(''); load(); }
   }
-  const link = 'https://nuacha.com/co-parenting';
+  const link = 'https://nuacha.com/parenting';
   return <div className="max-w-xl space-y-4">
     <p className="text-sm text-muted-foreground">Approve a trusted person to view your timeline only. They enter this exact email on the shared page and sign in. They cannot open Access & calls, Maintenance, Summary or Sharing, see private details, or change anything. No invitation email is sent; send them the link yourself.</p>
     <div className="flex gap-2"><Input type="email" placeholder="their@email.com" value={email} onChange={e => setEmail(e.target.value)} /><Button onClick={add}>Add</Button></div>

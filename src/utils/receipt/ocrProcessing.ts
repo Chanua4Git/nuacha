@@ -151,6 +151,12 @@ function handleOcrError(data: { type: string; error: string; message?: string })
         description: "Please try again in a moment."
       });
       break;
+    case 'SCAN_PLAN_REQUIRED':
+      toast("Scanning comes with a Nuacha plan", {
+        description: "You can still type this expense in for free, or choose a plan to scan.",
+        action: { label: 'See plans', onClick: () => { window.location.href = '/get-started'; } },
+      });
+      break;
     case 'OCR_CONFIDENCE_LOW':
       toast("The text is a bit hard to read", {
         description: "Feel free to adjust any details that don't look right."

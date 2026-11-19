@@ -84,7 +84,7 @@ const HeroUploadSection = ({
                 <li>Take a clear photo of any receipt from today.</li>
                 <li>Check what Nuacha read, then save. That's it ✨</li>
               </ol>
-              <p className="mt-2 text-xs text-muted-foreground">3 free scans every day. No pressure — take your time.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Scanning comes with a Nuacha plan. Typing expenses in stays free.</p>
             </div>
           )}
 

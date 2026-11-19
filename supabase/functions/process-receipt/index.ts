@@ -59,6 +59,25 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
+
+    // No free scans: only signed-in members with an active plan (or admins) may use the paid receipt reader.
+    {
+      const gateAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
+      const { data: { user: gateUser } } = await gateAdmin.auth.getUser(token);
+      let allowed = false;
+      if (gateUser) {
+        const { data: usage } = await gateAdmin.rpc('get_scan_usage', { p_email: gateUser.email ?? null, p_user_id: gateUser.id });
+        allowed = !!(Array.isArray(usage) ? usage[0]?.has_subscription : (usage as any)?.has_subscription);
+      }
+      if (!allowed) {
+        return new Response(JSON.stringify({
+          error: 'Scanning is part of a Nuacha plan',
+          type: 'SCAN_PLAN_REQUIRED',
+          message: 'Receipt scanning now comes with a Nuacha plan. You can still type expenses in for free.'
+        }), { status: 200, headers: corsHeaders });
+      }
+    }
     let imageData: Blob;
     let originalBase64: string | null = null;
     

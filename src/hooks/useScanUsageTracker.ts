@@ -9,7 +9,8 @@ interface ScanUsage {
 }
 
 const STORAGE_KEY = 'nuacha_scan_usage';
-const FREE_DAILY_SCAN_LIMIT = NUACHA_SUBSCRIPTION_PLANS.getting_tidy.dailyScanLimit || 3;
+// The free trial has ended: scanning needs a paid plan (enforced server-side too).
+const FREE_DAILY_SCAN_LIMIT = NUACHA_SUBSCRIPTION_PLANS.getting_tidy.dailyScanLimit ?? 0;
 
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];

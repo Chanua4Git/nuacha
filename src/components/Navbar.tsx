@@ -68,7 +68,7 @@ const Navbar = () => {
 
   // Mobile navigation items (flattened for mobile)
   const mobileNavItems = user ? [
-    { name: 'Co-parenting', icon: <HeartHandshake className="h-4 w-4" />, path: '/co-parenting' },
+    { name: 'Parenting', icon: <HeartHandshake className="h-4 w-4" />, path: '/parenting' },
     ...expenseItems,
     { name: 'Reminders', icon: <Calendar className="h-5 w-5" />, path: '/reminders' },
     ...payrollItems,
@@ -276,10 +276,10 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center space-x-1">
             {user && (
               <>
-                <NavigationDropdown title="Co-parenting" items={[
-                  { name: 'Timeline', icon: <HeartHandshake className="h-4 w-4" />, path: '/co-parenting' },
-                  { name: 'Access & calls', icon: <Calendar className="h-4 w-4" />, path: '/co-parenting' },
-                  { name: 'Maintenance', icon: <Wallet className="h-4 w-4" />, path: '/co-parenting' },
+                <NavigationDropdown title="Parenting" items={[
+                  { name: 'Timeline', icon: <HeartHandshake className="h-4 w-4" />, path: '/parenting?section=timeline' },
+                  { name: 'Access & calls', icon: <Calendar className="h-4 w-4" />, path: '/parenting?section=access' },
+                  { name: 'Maintenance', icon: <Wallet className="h-4 w-4" />, path: '/parenting?section=maintenance' },
                 ]} />
                 <NavigationDropdown title="Expense" items={expenseItems} />
                 <Button 

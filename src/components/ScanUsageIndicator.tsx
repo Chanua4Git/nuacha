@@ -44,7 +44,7 @@ export function ScanUsageIndicator() {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blush/50 px-3 py-1.5 rounded-full">
         <Scan className="h-4 w-4" />
-        <span>No free scans left today</span>
+        <span>Scanning comes with a Nuacha plan</span>
       </div>
     );
   }
