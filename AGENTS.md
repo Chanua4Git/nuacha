@@ -29,3 +29,4 @@
 - Invited co-parenting viewers see only Timeline; separate calls are owner-only under RLS, and entering an email only starts sign-in, never grants permission.
 - The bare co-parenting route always renders the generic welcome cards for every session; explicit section query parameters open private sections after access checks, so sign-in never skips the home page.
 - Co-parenting stage names, call-coverage figures and role labels live per owner in coparenting_display (viewers may read); setup and safety answers live in owner-only coparenting_profile; no case data ships in app code, so other families never see one owner's history.
+- Receipt scanning is gated server-side in process-receipt before any AI call (active plan or admin via get_scan_usage), because each read costs paid credits.
